@@ -52,6 +52,7 @@ export default function App() {
   const [planMeals, setPlanMeals] = useState<PlanMeal[]>([]);
   const [loading, setLoading] = useState(true);
   const [locked, setLocked] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -66,6 +67,7 @@ export default function App() {
 
   const loadProfile = async () => {
     setLoading(true);
+    setLoadFailed(false);
     let prof: Profile | null = null;
     try {
       prof = await getOrCreateProfile();
@@ -76,6 +78,11 @@ export default function App() {
         setLoading(false);
         return;
       }
+    }
+    if (!prof) {
+      setLoadFailed(true);
+      setLoading(false);
+      return;
     }
     if (prof) {
       setProfile(prof);
@@ -239,6 +246,23 @@ export default function App() {
 
   if (locked) {
     return <PasswordGate failed={getPassword() !== ''} onSubmit={loadProfile} />;
+  }
+
+  if (loadFailed) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div role="alert" className="max-w-xs text-center space-y-3">
+          <p className="text-base font-semibold text-gray-800">Der Server antwortet gerade nicht</p>
+          <p className="text-sm text-gray-500">Meist hilft es, kurz zu warten und neu zu laden.</p>
+          <button
+            onClick={loadProfile}
+            className="px-6 h-11 rounded-xl text-sm font-semibold bg-green-700 text-white hover:bg-green-800"
+          >
+            Neu laden
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (loading) {

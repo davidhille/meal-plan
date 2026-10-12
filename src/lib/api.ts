@@ -34,6 +34,8 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
       'X-App-Password': getPassword(),
     },
     body: body === undefined ? undefined : JSON.stringify(body),
+    // Lesende Anfragen nicht ewig hängen lassen (Planen/KI darf länger dauern)
+    signal: method === 'GET' ? AbortSignal.timeout(25000) : undefined,
   });
   if (res.status === 401) throw new UnauthorizedError();
   const data = await res.json().catch(() => ({}));
