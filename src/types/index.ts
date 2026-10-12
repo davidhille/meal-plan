@@ -1,6 +1,25 @@
 export type MealType = 'vegetarisch' | 'fleisch' | 'wochenende';
 
-export type ViewTab = 'speiseplan' | 'einkaufsliste' | 'nachtisch' | 'favoriten' | 'einstellungen';
+export type ViewTab = 'speiseplan' | 'einkaufsliste' | 'rezepte' | 'favoriten' | 'einstellungen';
+
+/** Gericht aus der Rezept-Übersicht (alles, was geplant werden kann) */
+export interface CatalogRecipe {
+  name: string;
+  type: MealType;
+  ingredients: string[];
+  instructions: string;
+  durationMin: number | null;
+  imageUrl: string | null;
+  imageCredit: ImageCredit | null;
+  /** basis = feste Sammlung, ki = KI-Rezept, import = aus dem Web, favorit = eigener Favorit */
+  origin: 'basis' | 'ki' | 'import' | 'favorit';
+}
+
+export interface RecipeCatalog {
+  recipes: CatalogRecipe[];
+  /** Ausgeblendete bzw. abgelehnte Gerichte */
+  hidden: string[];
+}
 
 export type DessertCategory = 'kuchen' | 'gebaeck' | 'creme' | 'pfanne' | 'obst';
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ViewTab, Profile, FamilyMember, Routine, MealPlan, PlanMeal, Favorite, Dessert } from './types';
+import { ViewTab, Profile, FamilyMember, Routine, MealPlan, PlanMeal, Favorite, Dessert, CatalogRecipe } from './types';
 import {
   getOrCreateProfile,
   updateProfile,
@@ -26,6 +26,7 @@ import {
   getPassword,
   UnauthorizedError,
   setMealDessert,
+  replacePlanMeal,
 } from './lib/api';
 import PasswordGate from './components/PasswordGate';
 import { familyPortions } from './lib/portions';
@@ -33,7 +34,7 @@ import { toPlanDessert } from './lib/desserts';
 import PlanCreationModal from './components/PlanCreationModal';
 import Header from './components/Header';
 import TabSwitcher from './components/TabSwitcher';
-import DessertsView from './components/DessertsView';
+import RecipesView from './components/RecipesView';
 import WeekSelector from './components/WeekSelector';
 import { getWeeksInRange, isDateInWeek } from './lib/dateUtils';
 import FavoritesView from './components/FavoritesView';
@@ -242,6 +243,12 @@ export default function App() {
     setPlanMeals((prev) => prev.map((m) => (m.id === pm.id ? { ...m, dessert: saved } : m)));
   };
 
+  const handleReplaceWithRecipe = async (pm: PlanMeal, recipe: CatalogRecipe) => {
+    const replacement = await replacePlanMeal(pm.id, recipe.name);
+    swapMeal(pm.id, replacement);
+    setFavorites(await getFavorites());
+  };
+
   const favoriteNames = new Set(favorites.map((f) => f.meal_name));
 
   const handleToggleFavorite = async (pm: PlanMeal) => {
@@ -326,8 +333,13 @@ export default function App() {
             week={showWeeks && selectedWeek ? { from: selectedWeek.weekStart, to: selectedWeek.weekEnd } : undefined}
             onCreatePlan={() => setShowPlanModal(true)}
           />
-        ) : activeTab === 'nachtisch' ? (
-          <DessertsView plan={currentPlan} />
+        ) : activeTab === 'rezepte' ? (
+          <RecipesView
+            planMeals={currentPlan ? planMeals : []}
+            onReplace={currentPlan ? handleReplaceWithRecipe : undefined}
+            onAssignDessert={currentPlan ? handleSetDessert : undefined}
+            defaultPortions={familyPortions(familyMembers)}
+          />
         ) : activeTab === 'favoriten' ? (
           <FavoritesView
             favorites={favorites}

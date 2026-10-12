@@ -1,0 +1,285 @@
+import { useEffect, useMemo, useState } from 'react';
+import { ChefHat, Clock, Loader2, Search, Trash2, X, RotateCcw, ChevronDown } from 'lucide-react';
+import { CatalogRecipe, Meal, MealType, PlanMeal, RecipeCatalog } from '../types';
+import { getRecipeCatalog, setRecipeHidden } from '../lib/api';
+import { RECIPE_BASE_PORTIONS } from '../lib/portions';
+import MealModal from './MealModal';
+import DayAssignSheet from './DayAssignSheet';
+import ConfirmDialog from './ConfirmDialog';
+
+interface MainDishesViewProps {
+  planMeals: PlanMeal[];
+  /** Gericht eines Tages durch das gewählte Rezept ersetzen */
+  onReplace?: (pm: PlanMeal, recipe: CatalogRecipe) => Promise<void>;
+  defaultPortions?: number;
+}
+
+const FILTERS: { id: MealType | 'alle'; label: string }[] = [
+  { id: 'alle', label: 'Alle' },
+  { id: 'vegetarisch', label: 'Vegetarisch' },
+  { id: 'fleisch', label: 'Fleisch & Fisch' },
+  { id: 'wochenende', label: 'Wochenende' },
+];
+
+const TYPE_LABEL: Record<MealType, string> = { vegetarisch: 'Vegetarisch', fleisch: 'Fleisch & Fisch', wochenende: 'Wochenende' };
+
+const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+/** TheMealDB-Fotos gibt es auch klein; eigene Bilder bleiben, wie sie sind */
+const thumb = (url: string) => (url.startsWith('https://www.themealdb.com/') ? `${url}/small` : url);
+
+function toMeal(r: CatalogRecipe): Meal {
+  return {
+    day: TYPE_LABEL[r.type],
+    dayShort: '',
+    meal: r.name,
+    description: '',
+    type: r.type,
+    ingredients: r.ingredients,
+    instructions: r.instructions,
+    imageUrl: r.imageUrl ?? undefined,
+    imageCredit: r.imageCredit,
+    durationMin: r.durationMin,
+  };
+}
+
+/** Übersicht aller Hauptgerichte: ansehen, in den Plan übernehmen, ausblenden */
+export default function MainDishesView({ planMeals, onReplace, defaultPortions = RECIPE_BASE_PORTIONS }: MainDishesViewProps) {
+  const [catalog, setCatalog] = useState<RecipeCatalog | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<MealType | 'alle'>('alle');
+  const [query, setQuery] = useState('');
+  const [selected, setSelected] = useState<CatalogRecipe | null>(null);
+  const [assign, setAssign] = useState<CatalogRecipe | null>(null);
+  const [hideCandidate, setHideCandidate] = useState<CatalogRecipe | null>(null);
+  const [showHidden, setShowHidden] = useState(false);
+  const [restoring, setRestoring] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    getRecipeCatalog()
+      .then(setCatalog)
+      .catch((e) => setLoadError((e as Error).message || 'Die Gerichte konnten nicht geladen werden.'));
+  }, []);
+
+  const flash = (text: string) => {
+    setNotice(text);
+    setTimeout(() => setNotice(null), 4000);
+  };
+
+  const visible = useMemo(() => {
+    if (!catalog) return [];
+    const q = normalize(query.trim());
+    return catalog.recipes.filter(
+      (r) =>
+        (filter === 'alle' || r.type === filter) &&
+        (!q || normalize(r.name).includes(q) || r.ingredients.some((i) => normalize(i).includes(q)))
+    );
+  }, [catalog, filter, query]);
+
+  if (loadError) {
+    return <p className="px-4 py-12 text-sm text-center text-red-600">{loadError}</p>;
+  }
+  if (!catalog) {
+    return (
+      <div className="px-4 py-12 flex justify-center" role="status" aria-label="Gerichte werden geladen">
+        <Loader2 size={24} className="animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  const restore = async (name: string) => {
+    setRestoring(name);
+    try {
+      setCatalog(await setRecipeHidden(name, false));
+      flash(`„${name}“ wird wieder vorgeschlagen.`);
+    } catch (e) {
+      flash((e as Error).message || 'Das hat nicht geklappt.');
+    } finally {
+      setRestoring(null);
+    }
+  };
+
+  return (
+    <>
+      <div className="px-4 py-4 space-y-3">
+        <label className="relative block">
+          <span className="sr-only">Gericht suchen</span>
+          <Search size={16} aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            enterKeyHint="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Suchen, z. B. Curry oder Hähnchen"
+            className="w-full h-11 pl-9 pr-9 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          {query && (
+            <button
+              onClick={() => setQuery('')}
+              aria-label="Suche leeren"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </label>
+
+        <div className="flex gap-1.5 overflow-x-auto -mx-4 px-4 pb-1" role="group" aria-label="Art">
+          {FILTERS.map((f) => (
+            <button
+              key={f.id}
+              aria-pressed={filter === f.id}
+              onClick={() => setFilter(f.id)}
+              className={`flex-none px-3 h-8 rounded-lg text-xs font-semibold transition-colors ${
+                filter === f.id ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        <p className="text-xs text-gray-500 px-1" aria-live="polite">
+          {visible.length === catalog.recipes.length
+            ? `${catalog.recipes.length} Gerichte`
+            : `${visible.length} von ${catalog.recipes.length} Gerichten`}
+        </p>
+
+        {visible.length === 0 ? (
+          <div className="py-10 flex flex-col items-center text-center gap-2">
+            <ChefHat size={28} className="text-gray-300" />
+            <p className="text-sm text-gray-500">Nichts gefunden – versuch es mit einem anderen Begriff.</p>
+          </div>
+        ) : (
+          <ul className="grid grid-cols-2 gap-3">
+            {visible.map((r) => (
+              <li key={r.name} className="relative">
+                <button
+                  onClick={() => setSelected(r)}
+                  className="w-full h-full text-left bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                >
+                  <div className="relative aspect-[4/3] bg-gray-100">
+                    <ChefHat size={28} aria-hidden="true" className="absolute inset-0 m-auto text-gray-300" />
+                    {r.imageUrl && (
+                      <img
+                        src={thumb(r.imageUrl)}
+                        alt=""
+                        loading="lazy"
+                        onError={(e) => {
+                          const img = e.currentTarget;
+                          if (r.imageUrl && img.src !== r.imageUrl) img.src = r.imageUrl;
+                          else img.style.visibility = 'hidden';
+                        }}
+                        className="relative w-full h-full object-cover"
+                      />
+                    )}
+                  </div>
+                  <div className="p-3">
+                    <h2 className="text-sm leading-snug font-semibold text-gray-800 line-clamp-2">{r.name}</h2>
+                    <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 text-xs text-gray-500">
+                      <span className="whitespace-nowrap">{TYPE_LABEL[r.type]}</span>
+                      {r.durationMin ? (
+                        <span className="flex items-center gap-1 whitespace-nowrap">
+                          <Clock size={12} aria-hidden="true" />
+                          {r.durationMin} Min
+                        </span>
+                      ) : null}
+                    </p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setHideCandidate(r)}
+                  aria-label={`${r.name} ausblenden`}
+                  title="Ausblenden – wird nicht mehr vorgeschlagen"
+                  className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full bg-white/90 text-gray-600 shadow-sm hover:text-red-600 hover:bg-white"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {catalog.hidden.length > 0 && (
+          <div className="pt-2">
+            <button
+              onClick={() => setShowHidden((v) => !v)}
+              aria-expanded={showHidden}
+              className="flex items-center gap-1.5 px-1 text-xs font-medium text-gray-600 hover:text-gray-800"
+            >
+              <ChevronDown size={14} className={`transition-transform ${showHidden ? 'rotate-180' : ''}`} />
+              Ausgeblendete Gerichte ({catalog.hidden.length})
+            </button>
+            {showHidden && (
+              <ul className="mt-2 bg-white rounded-xl border border-gray-100 divide-y divide-gray-100">
+                {catalog.hidden.map((name) => (
+                  <li key={name} className="flex items-center gap-3 px-3 py-2">
+                    <span className="flex-1 min-w-0 text-sm text-gray-700 truncate">{name}</span>
+                    <button
+                      onClick={() => restore(name)}
+                      disabled={restoring === name}
+                      className="flex items-center gap-1 px-2.5 h-8 rounded-lg text-xs font-semibold text-green-700 bg-green-50 hover:bg-green-100"
+                    >
+                      {restoring === name ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
+                      Wiederherstellen
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
+
+      {selected && (
+        <MealModal
+          meal={toMeal(selected)}
+          defaultPortions={defaultPortions}
+          onChoose={onReplace ? async () => setAssign(selected) : undefined}
+          chooseLabel="In den Speiseplan übernehmen"
+          onClose={() => setSelected(null)}
+        />
+      )}
+
+      {assign && onReplace && (
+        <DayAssignSheet
+          mode="replace"
+          itemName={assign.name}
+          planMeals={planMeals}
+          onConfirm={async (pm) => {
+            await onReplace(pm, assign);
+            setSelected(null);
+            flash(`„${assign.name}“ ist jetzt im Speiseplan.`);
+          }}
+          onClose={() => setAssign(null)}
+        />
+      )}
+
+      {hideCandidate && (
+        <ConfirmDialog
+          title="Gericht ausblenden?"
+          message={
+            <>
+              <strong>{hideCandidate.name}</strong> wird nicht mehr vorgeschlagen. Unten unter „Ausgeblendete Gerichte“ kannst du es
+              jederzeit zurückholen.
+            </>
+          }
+          confirmLabel="Ausblenden"
+          danger
+          onConfirm={async () => {
+            setCatalog(await setRecipeHidden(hideCandidate.name, true));
+            flash(`„${hideCandidate.name}“ ist ausgeblendet.`);
+          }}
+          onClose={() => setHideCandidate(null)}
+        />
+      )}
+
+      {notice && (
+        <div role="status" className="fixed bottom-6 inset-x-4 z-40 max-w-md mx-auto px-4 py-3 rounded-2xl bg-gray-800 text-white text-sm shadow-lg">
+          {notice}
+        </div>
+      )}
+    </>
+  );
+}

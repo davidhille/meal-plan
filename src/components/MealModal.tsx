@@ -69,6 +69,7 @@ export default function MealModal({
       await onChoose();
     } catch (e) {
       setChooseError((e as Error).message || 'Das hat nicht geklappt.');
+    } finally {
       setChoosing(false);
     }
   };

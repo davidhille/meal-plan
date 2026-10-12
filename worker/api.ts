@@ -4,7 +4,7 @@
 //   APP_PASSWORD  – Familien-Passwort für die App (Secret, optional; leer = kein Schutz)
 
 import { neon } from "@neondatabase/serverless";
-import { pickMeal, pickReplacement, preferredTypeFor, scoreMeal, MEAL_DATABASE, type Recipe, type ScoringContext } from "./meals";
+import { pickMeal, pickReplacement, preferredTypeFor, scoreMeal, violatesHealthConditions, MEAL_DATABASE, type Recipe, type ScoringContext } from "./meals";
 import { buildPlanItems, familyPortions, mergeKey } from "./shopping";
 import { generateImage, fillMissingImages, serveImage, IMAGE_URL_SQL, IMAGE_CREDIT_SQL, type AiEnv } from "./images";
 import { generateRecipes } from "./aiRecipes";
@@ -518,6 +518,67 @@ function parseDessert(raw: unknown) {
   return { name, ingredients, instructions, durationMin, imageUrl, yield: yieldText };
 }
 
+/** Alle Gerichte, die geplant werden können (ohne ausgeblendete und solche, die nicht zum Profil passen) */
+async function recipeCatalog(sql: Sql, profileId: string) {
+  const [{ pool, favorites }, ctx, images, dbRecipes] = await Promise.all([
+    loadPool(sql, profileId),
+    loadContext(sql, profileId),
+    sql`SELECT meal_name, image_url, source, credit_name, credit_url FROM meal_images WHERE image_data IS NOT NULL`,
+    sql`SELECT name, source FROM recipes`,
+  ]);
+  const imageBy = new Map(images.map((r) => [r.meal_name as string, r]));
+  const hidden = new Set(ctx.rejectedMeals);
+  const builtIn = new Set(MEAL_DATABASE.map((m) => m.name));
+  const sourceBy = new Map(dbRecipes.map((r) => [r.name as string, r.source as string]));
+  const favoriteNames = new Set(favorites.map((f) => f.meal_name as string));
+  const recipes = pool
+    .filter((r) => !hidden.has(r.name) && !violatesHealthConditions(r, ctx.healthConditions))
+    .map((r) => {
+      const img = imageBy.get(r.name);
+      return {
+        name: r.name,
+        type: r.type,
+        ingredients: r.ingredients,
+        instructions: r.instructions,
+        durationMin: r.durationMin ?? null,
+        imageUrl: (img?.image_url as string | undefined) ?? r.imageUrl ?? null,
+        imageCredit: img
+          ? img.source !== "ai" && img.credit_name ? { name: img.credit_name, url: img.credit_url } : null
+          : r.imageUrl ? { name: "TheMealDB", url: "https://www.themealdb.com/" } : null,
+        origin: builtIn.has(r.name) ? "basis" : sourceBy.get(r.name) === "import" ? "import" : favoriteNames.has(r.name) && !sourceBy.has(r.name) ? "favorit" : "ki",
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name, "de"));
+  return { recipes, hidden: [...hidden].sort((a, b) => a.localeCompare(b, "de")) };
+}
+
+/** Gericht im Plan gezielt durch ein Rezept aus der Übersicht ersetzen (Nachtisch bleibt am Tag) */
+async function replaceWithRecipe(env: Env, sql: Sql, profileId: string, planMealId: string, recipeName: string,
+  waitUntil: (p: Promise<unknown>) => void) {
+  const owned = await sql`SELECT 1 FROM plan_meals pm JOIN meal_plans mp ON mp.id = pm.plan_id
+    WHERE pm.id = ${planMealId} AND mp.profile_id = ${profileId}`;
+  if (!owned[0]) return null;
+  const rows = await sql.query(`SELECT ${PLAN_MEAL_COLS} FROM plan_meals WHERE id = $1`, [planMealId]);
+  const old = rows[0];
+  if (!old) return null;
+  const { pool } = await loadPool(sql, profileId);
+  const recipe = pool.find((r) => r.name === recipeName);
+  if (!recipe) return null;
+  await sql`DELETE FROM plan_meals WHERE id = ${planMealId}`;
+  const inserted = await sql.query(
+    `INSERT INTO plan_meals (plan_id, meal_date, meal_name, meal_type, ingredients, instructions, duration_min, dessert, rejected)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false) RETURNING ${PLAN_MEAL_COLS}`,
+    [old.plan_id, old.meal_date, recipe.name, recipe.type, recipe.ingredients, recipe.instructions, recipe.durationMin ?? null,
+      old.dessert ? JSON.stringify(old.dessert) : null]
+  );
+  const replacement = inserted[0];
+  await markFavoritesPlanned(sql, profileId, old.plan_id);
+  const img = await sql`SELECT image_url FROM meal_images WHERE meal_name = ${recipe.name} AND image_data IS NOT NULL`;
+  if (img[0]) replacement.image_url = img[0].image_url;
+  else waitUntil(generateImage(env, sql, recipe.name));
+  return replacement;
+}
+
 async function latestPlan(sql: Sql, profileId: string) {
   const rows = await sql.query(
     `SELECT ${PLAN_COLS} FROM meal_plans WHERE profile_id = $1 AND status = 'active' ORDER BY created_at DESC LIMIT 1`,
@@ -684,6 +745,33 @@ export async function handleApi(
       const p = await getProfile(sql);
       const replacement = await replaceMeal(env, sql, p.id, id, parts[2] === "reject", waitUntil);
       if (!replacement) return json({ error: "Kein passender Ersatz gefunden" }, 404);
+      return json({ replacement });
+    }
+
+    // ---------- Rezept-Übersicht ----------
+    if (route === "GET /recipes/catalog") {
+      const p = await getProfile(sql);
+      return json(await recipeCatalog(sql, p.id));
+    }
+    // Gericht ausblenden (wird nie mehr vorgeschlagen) bzw. wieder einblenden
+    if (route === "POST /recipes/hide" || route === "POST /recipes/unhide") {
+      const p = await getProfile(sql);
+      const name = String(body.name ?? "").trim();
+      if (!name) return json({ error: "Name fehlt" }, 400);
+      if (route === "POST /recipes/hide") {
+        await sql`INSERT INTO rejected_meals (profile_id, meal_name, reason)
+          SELECT ${p.id}, ${name}, 'ausgeblendet'
+          WHERE NOT EXISTS (SELECT 1 FROM rejected_meals WHERE profile_id = ${p.id} AND meal_name = ${name})`;
+      } else {
+        await sql`DELETE FROM rejected_meals WHERE profile_id = ${p.id} AND meal_name = ${name}`;
+      }
+      return json(await recipeCatalog(sql, p.id));
+    }
+    // Gericht im Plan durch ein bestimmtes Rezept ersetzen
+    if (parts[0] === "plan-meals" && id && parts[2] === "replace" && request.method === "POST") {
+      const p = await getProfile(sql);
+      const replacement = await replaceWithRecipe(env, sql, p.id, id, String(body.name ?? ""), waitUntil);
+      if (!replacement) return json({ error: "Gericht oder Rezept nicht gefunden" }, 404);
       return json({ replacement });
     }
 

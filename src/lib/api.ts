@@ -1,6 +1,6 @@
 import {
   Profile, FamilyMember, MealRating, MealPlan, PlanMeal, Routine, ShoppingItem, ShoppingLabel, Favorite, MealType, ImageCredit,
-  ShopState, ShopProvider, ProductResult, PlanDessert,
+  ShopState, ShopProvider, ProductResult, PlanDessert, RecipeCatalog,
 } from '../types';
 
 // Alle Daten laufen über die Cloudflare-Functions unter /api (→ Neon).
@@ -243,6 +243,22 @@ export async function regenerateMeal(planMealId: string): Promise<PlanMeal | nul
 export async function setMealDessert(planMealId: string, dessert: PlanDessert | null): Promise<PlanDessert | null> {
   const result = await request<{ dessert: PlanDessert | null }>('PUT', `/plan-meals/${planMealId}/dessert`, { dessert });
   return result.dessert;
+}
+
+/** Alle planbaren Gerichte plus ausgeblendete; wirft bei Fehlern */
+export async function getRecipeCatalog(): Promise<RecipeCatalog> {
+  return request<RecipeCatalog>('GET', '/recipes/catalog');
+}
+
+/** Gericht ausblenden (wird nicht mehr vorgeschlagen) bzw. wieder einblenden; liefert die neue Übersicht */
+export async function setRecipeHidden(name: string, hidden: boolean): Promise<RecipeCatalog> {
+  return request<RecipeCatalog>('POST', hidden ? '/recipes/hide' : '/recipes/unhide', { name });
+}
+
+/** Gericht im Plan durch ein bestimmtes Rezept ersetzen; wirft bei Fehlern */
+export async function replacePlanMeal(planMealId: string, recipeName: string): Promise<PlanMeal> {
+  const result = await request<{ replacement: PlanMeal }>('POST', `/plan-meals/${planMealId}/replace`, { name: recipeName });
+  return result.replacement;
 }
 
 /** Kompletten Plan für denselben Zeitraum neu erstellen (ersetzt den alten) */
