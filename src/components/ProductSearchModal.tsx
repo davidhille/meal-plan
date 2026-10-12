@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { X, Search, Loader2, Check, ImageOff } from 'lucide-react';
+import { X, Search, Loader2, Check, ImageOff, Unlink } from 'lucide-react';
 import { ProductResult, ShoppingLabel } from '../types';
 import { searchShop } from '../lib/api';
 import { useDialog } from '../lib/useDialog';
@@ -10,6 +10,8 @@ interface ProductSearchModalProps {
   provider: 'knuspr' | 'picnic';
   currentProductId?: string;
   onSelect: (product: ProductResult) => Promise<void>;
+  /** Verknüpfung lösen (gewähltes Produkt abwählen) */
+  onRemove?: () => Promise<void>;
   onClose: () => void;
 }
 
@@ -20,6 +22,7 @@ export default function ProductSearchModal({
   provider,
   currentProductId,
   onSelect,
+  onRemove,
   onClose,
 }: ProductSearchModalProps) {
   // Mengenangaben in Klammern helfen der Shop-Suche nicht
@@ -61,7 +64,8 @@ export default function ProductSearchModal({
         className="outline-none relative w-full sm:max-w-md max-h-[88vh] bg-gray-50 rounded-t-3xl sm:rounded-3xl shadow-xl flex flex-col overflow-hidden">
         <div className="flex items-start gap-3 px-5 pt-5 pb-3">
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: label.color }}>
+            <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-600">
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: label.color }} aria-hidden="true" />
               {label.name}
             </p>
             <h2 id="product-dialog-title" className="text-lg font-bold text-gray-800 leading-snug">Produkt für „{ingredientName}“</h2>
@@ -98,6 +102,26 @@ export default function ProductSearchModal({
           </button>
         </form>
 
+        {currentProductId && onRemove && (
+          <div className="px-5 pb-3">
+            <button
+              onClick={async () => {
+                setSavingId('remove');
+                try {
+                  await onRemove();
+                } finally {
+                  setSavingId(null);
+                }
+              }}
+              disabled={savingId !== null}
+              className="w-full flex items-center justify-center gap-2 h-9 rounded-xl text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100"
+            >
+              {savingId === 'remove' ? <Loader2 size={13} className="animate-spin" /> : <Unlink size={13} />}
+              Auswahl entfernen – kein festes Produkt
+            </button>
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto px-5 pb-6 space-y-2">
           {loading && (
             <div className="py-10 flex justify-center" role="status" aria-label="Suche läuft">
@@ -115,10 +139,14 @@ export default function ProductSearchModal({
                 <button
                   key={p.productId}
                   disabled={savingId !== null}
+                  aria-pressed={active}
+                  title={active && onRemove ? 'Nochmal antippen, um die Auswahl zu entfernen' : undefined}
                   onClick={async () => {
                     setSavingId(p.productId);
                     try {
-                      await onSelect(p);
+                      // Gewähltes Produkt nochmal antippen = abwählen
+                      if (active && onRemove) await onRemove();
+                      else await onSelect(p);
                     } finally {
                       setSavingId(null);
                     }
@@ -137,6 +165,7 @@ export default function ProductSearchModal({
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-800 leading-snug">{p.name}</p>
                     <p className="text-xs text-gray-500 mt-0.5">{[p.amount, p.price].filter(Boolean).join(' · ')}</p>
+                    {active && onRemove && <p className="text-[11px] text-green-700 mt-0.5">Ausgewählt – nochmal antippen zum Abwählen</p>}
                   </div>
                   {savingId === p.productId ? (
                     <Loader2 size={16} className="animate-spin text-gray-500" />

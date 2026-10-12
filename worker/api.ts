@@ -10,7 +10,7 @@ import { generateImage, fillMissingImages, serveImage, IMAGE_URL_SQL, IMAGE_CRED
 import { generateRecipes } from "./aiRecipes";
 import { importRecipeFromUrl, ImportError } from "./recipeImport";
 import {
-  encrypt, decrypt, ShopError, knusprLogin, knusprSearch, knusprAddToCart, picnicLogin, picnicVerify, picnicSearch,
+  encrypt, decrypt, ShopError, knusprLogin, knusprSearch, knusprAddToCart, knusprGetCart, picnicLogin, picnicVerify, picnicSearch,
   type ShopEnv,
 } from "./shops";
 
@@ -939,6 +939,16 @@ export async function handleApi(
       return json({ ok: true });
     }
 
+    // Verknüpfung wieder lösen (Zutat hat dann kein festes Produkt mehr)
+    if (route === "DELETE /product-links") {
+      const p = await getProfile(sql);
+      const name = String(new URL(request.url).searchParams.get("name") ?? "").trim();
+      const provider = String(new URL(request.url).searchParams.get("provider") ?? "");
+      if (!name || !provider) return json({ error: "Angaben fehlen" }, 400);
+      await sql`DELETE FROM product_links WHERE profile_id = ${p.id} AND name_key = ${prefKey(name)} AND provider = ${provider}`;
+      return json({ ok: true });
+    }
+
     // ---------- Shops (Einstellungen, Verbinden, Suche, Warenkorb) ----------
     if (parts[0] === "shops") {
       const p = await getProfile(sql);
@@ -1006,6 +1016,13 @@ export async function handleApi(
             ? await knusprSearch(await knusprLogin(conn.email, conn.secret), query)
             : await picnicSearch(conn.secret, conn.deviceId ?? "", query);
         return json({ results });
+      }
+
+      // Was liegt schon im Knuspr-Warenkorb?
+      if (provider === "knuspr" && action === "cart" && request.method === "GET") {
+        const conn = await loadConnection(env, sql, p.id, "knuspr");
+        if (!conn) return json({ error: "not_connected" }, 409);
+        return json({ items: await knusprGetCart(await knusprLogin(conn.email, conn.secret)) });
       }
 
       // Alle offenen, verknüpften Artikel einer Liste in den Knuspr-Warenkorb legen
