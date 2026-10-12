@@ -4,6 +4,7 @@ import { FamilyMember, Profile, Routine } from '../types';
 import FamilyMemberModal from './FamilyMemberModal';
 import PreferencesModal from './PreferencesModal';
 import RoutineModal from './RoutineModal';
+import ShopSettings from './ShopSettings';
 import PlanCreationModal from './PlanCreationModal';
 
 interface SettingsViewProps {
@@ -124,6 +125,9 @@ export default function SettingsView({
             </div>
           </button>
         </div>
+
+        {/* Einkaufen & Shops */}
+        <ShopSettings />
 
         {/* Routines Section */}
         <div>

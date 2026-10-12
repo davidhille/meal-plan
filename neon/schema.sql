@@ -156,3 +156,33 @@ CREATE TABLE IF NOT EXISTS recipes (
   source text NOT NULL DEFAULT 'ai',
   created_at timestamptz DEFAULT now()
 );
+
+-- Ab Version „Shops" (werden vom Worker auch automatisch angelegt)
+ALTER TABLE shopping_labels ADD COLUMN IF NOT EXISTS provider text;     -- amazon | knuspr | picnic | NULL
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS standard_label text;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS metzger_auto boolean NOT NULL DEFAULT true;
+
+-- Zugangsdaten verschlüsselt (AES-GCM, Schlüssel nur im Worker: Secret CREDENTIALS_KEY)
+-- Knuspr: Passwort; Picnic: Sitzungs-Token (kein Passwort) + Geräte-ID
+CREATE TABLE IF NOT EXISTS shop_connections (
+  profile_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  provider text NOT NULL,
+  email text NOT NULL,
+  secret_enc text NOT NULL,
+  secret_iv text NOT NULL,
+  device_id text,
+  updated_at timestamptz DEFAULT now(),
+  PRIMARY KEY (profile_id, provider)
+);
+
+-- Gewähltes Produkt je Zutat und Shop (gilt für alle Pläne)
+CREATE TABLE IF NOT EXISTS product_links (
+  profile_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  name_key text NOT NULL,
+  provider text NOT NULL,
+  product_id text NOT NULL,
+  product_name text,
+  image_url text,
+  updated_at timestamptz DEFAULT now(),
+  PRIMARY KEY (profile_id, name_key, provider)
+);

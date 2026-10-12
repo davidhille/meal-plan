@@ -38,7 +38,13 @@ Die App hat drei Hauptbereiche, die über einen Tab-Switcher erreichbar sind.
 - Abhaken, Liste wechseln, eigene Listen (Aldi, Rewe, DM …) mit Farbe, eigene Artikel („Klopapier"), Basics bei Bedarf auf eine Liste setzen
 - **Gemerkte Zuordnungen:** Wird eine Zutat einmal auf eine andere Liste gesetzt oder mit einem Amazon-Produkt verknüpft, gilt das auch für künftige Pläne
 - „Kopieren" kopiert alle offenen Einträge einer Liste als Text
-- Amazon-Integration: Zutat anklicken → Amazon-Suchvorschläge → Produkt verknüpfen → „Warenkorb" öffnet alle offenen verknüpften Artikel
+- **Shops** (Profil → Einkaufen & Shops, Code aus der Juli-Version übernommen, `worker/shops.ts`):
+  - **Knuspr:** Konto verbinden → Zutat antippen → Produkt suchen (mit Bild/Preis) → verknüpfen; „Warenkorb“ legt alle offenen verknüpften Artikel in den echten Knuspr-Warenkorb
+  - **Picnic:** Konto verbinden (ggf. SMS-Code) → Produkte suchen und verknüpfen (kein Warenkorb)
+  - **Amazon:** nur An/Aus – Zutat antippen öffnet die Amazon-Suche (Amazon blockiert Live-Suchen aus Apps)
+  - Standard-Liste für neue Zutaten wählbar; Metzger-Automatik für Fleisch abschaltbar
+  - Zugangsdaten AES-verschlüsselt in `shop_connections` (Secret `CREDENTIALS_KEY` im Worker empfohlen)
+  - Inoffizielle Schnittstellen – können sich jederzeit ändern
 - **Persistierung:** komplett in Neon (Tabellen `shopping_labels`, `shopping_item_state`, `shopping_extras`, `ingredient_prefs`) – auf allen Geräten gleich
 
 ### 1.3 Favoriten (Tab: „favoriten")
@@ -228,7 +234,6 @@ wrangler.jsonc                   # Cloudflare-Konfiguration
 
 ## 7. Bekannte Lücken & Hinweise
 
-- **Amazon-Suche** nutzt die öffentliche Amazon-Autovervollständigung ohne API-Key — instabil, kann von Amazon geblockt werden.
 - **Gerichtedatenbank** ist fest in den Edge Functions hinterlegt (~23 Rezepte), nicht in der Datenbank — Änderungen erfordern Code-Anpassungen.
 - **Routinen** können angelegt, aber nicht bearbeitet werden (kein Edit, nur Löschen).
 

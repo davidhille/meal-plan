@@ -8,10 +8,15 @@ import { pickMeal, pickReplacement, preferredTypeFor, scoreMeal, MEAL_DATABASE, 
 import { buildPlanItems, familyPortions } from "./shopping";
 import { generateImage, fillMissingImages, serveImage, IMAGE_URL_SQL, type AiEnv } from "./images";
 import { generateRecipes } from "./aiRecipes";
+import {
+  encrypt, decrypt, ShopError, knusprLogin, knusprSearch, knusprAddToCart, picnicLogin, picnicVerify, picnicSearch,
+  type ShopEnv,
+} from "./shops";
 
-export interface Env extends AiEnv {
+export interface Env extends AiEnv, ShopEnv {
   DATABASE_URL: string;
   APP_PASSWORD?: string;
+  CREDENTIALS_KEY?: string;
 }
 
 type Sql = ReturnType<typeof neon>;
@@ -50,6 +55,28 @@ async function migrate(sql: Sql) {
     last_planned date,
     created_at timestamptz DEFAULT now(),
     UNIQUE (profile_id, meal_name))`;
+  await sql`ALTER TABLE shopping_labels ADD COLUMN IF NOT EXISTS provider text`;
+  await sql`UPDATE shopping_labels SET provider = 'knuspr' WHERE id = 'knuspr' AND provider IS NULL`;
+  await sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS standard_label text`;
+  await sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS metzger_auto boolean NOT NULL DEFAULT true`;
+  await sql`CREATE TABLE IF NOT EXISTS shop_connections (
+    profile_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    provider text NOT NULL,
+    email text NOT NULL,
+    secret_enc text NOT NULL,
+    secret_iv text NOT NULL,
+    device_id text,
+    updated_at timestamptz DEFAULT now(),
+    PRIMARY KEY (profile_id, provider))`;
+  await sql`CREATE TABLE IF NOT EXISTS product_links (
+    profile_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    name_key text NOT NULL,
+    provider text NOT NULL,
+    product_id text NOT NULL,
+    product_name text,
+    image_url text,
+    updated_at timestamptz DEFAULT now(),
+    PRIMARY KEY (profile_id, name_key, provider))`;
   await sql`ALTER TABLE meal_images ADD COLUMN IF NOT EXISTS image_data bytea`;
   await sql`ALTER TABLE meal_images ADD COLUMN IF NOT EXISTS content_type text`;
   await sql`ALTER TABLE meal_images ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now()`;
@@ -85,33 +112,42 @@ async function migrate(sql: Sql) {
 }
 
 const DEFAULT_LABELS = [
-  { id: "knuspr", name: "Knuspr", color: "#22c55e" },
-  { id: "metzger", name: "Metzger", color: "#f97316" },
+  { id: "knuspr", name: "Knuspr", color: "#22c55e", provider: "knuspr" },
+  { id: "metzger", name: "Metzger", color: "#f97316", provider: null },
 ];
+
+/** Online-Shops, die sich in den Einstellungen aktivieren lassen (Label-ID = Provider) */
+const SHOP_LABELS: Record<string, { name: string; color: string }> = {
+  amazon: { name: "Amazon", color: "#f59e0b" },
+  knuspr: { name: "Knuspr", color: "#22c55e" },
+  picnic: { name: "Picnic", color: "#e11d48" },
+};
 
 const prefKey = (name: string) => name.trim().toLowerCase();
 
 async function getLabels(sql: Sql, profileId: string) {
-  let rows = await sql`SELECT id, name, color FROM shopping_labels WHERE profile_id = ${profileId} ORDER BY sort, name`;
+  let rows = await sql`SELECT id, name, color, provider FROM shopping_labels WHERE profile_id = ${profileId} ORDER BY sort, name`;
   if (rows.length === 0) {
     for (const [i, l] of DEFAULT_LABELS.entries()) {
-      await sql`INSERT INTO shopping_labels (profile_id, id, name, color, sort)
-        VALUES (${profileId}, ${l.id}, ${l.name}, ${l.color}, ${i}) ON CONFLICT DO NOTHING`;
+      await sql`INSERT INTO shopping_labels (profile_id, id, name, color, sort, provider)
+        VALUES (${profileId}, ${l.id}, ${l.name}, ${l.color}, ${i}, ${l.provider}) ON CONFLICT DO NOTHING`;
     }
-    rows = await sql`SELECT id, name, color FROM shopping_labels WHERE profile_id = ${profileId} ORDER BY sort, name`;
+    rows = await sql`SELECT id, name, color, provider FROM shopping_labels WHERE profile_id = ${profileId} ORDER BY sort, name`;
   }
   return rows;
 }
 
 /** Komplette Einkaufsliste eines Plans: berechnete Zutaten + gespeicherter Zustand + eigene Artikel */
 async function getShopping(sql: Sql, profileId: string, planId: string) {
-  const [labels, meals, members, states, extras, prefs] = await Promise.all([
+  const [labels, meals, members, states, extras, prefs, links, settingsRows] = await Promise.all([
     getLabels(sql, profileId),
     sql`SELECT ingredients FROM plan_meals WHERE plan_id = ${planId} AND NOT rejected`,
     sql`SELECT type, age FROM family_members WHERE profile_id = ${profileId}`,
     sql`SELECT item_key, checked, label FROM shopping_item_state WHERE plan_id = ${planId}`,
     sql`SELECT id, name, label, checked, is_basic FROM shopping_extras WHERE plan_id = ${planId} ORDER BY created_at`,
-    sql`SELECT name_key, label, asin, product_name FROM ingredient_prefs WHERE profile_id = ${profileId}`,
+    sql`SELECT name_key, label FROM ingredient_prefs WHERE profile_id = ${profileId}`,
+    sql`SELECT name_key, provider, product_id, product_name, image_url FROM product_links WHERE profile_id = ${profileId}`,
+    sql`SELECT standard_label, metzger_auto FROM profiles WHERE id = ${profileId}`,
   ]);
   const labelIds = new Set(labels.map((l) => l.id));
   const portions = familyPortions(members as { type: string; age: number | null }[]);
@@ -119,37 +155,99 @@ async function getShopping(sql: Sql, profileId: string, planId: string) {
   const stateBy = new Map(states.map((r) => [r.item_key, r]));
   const prefBy = new Map(prefs.map((r) => [r.name_key, r]));
   const validLabel = (l: string | null | undefined, fallback: string) => (l && labelIds.has(l) ? l : fallback);
+  const settings = settingsRows[0] ?? {};
+  const standard = validLabel(settings.standard_label, labelIds.has("knuspr") ? "knuspr" : (labels[0]?.id as string));
+  const meatLabel = settings.metzger_auto !== false && labelIds.has("metzger") ? "metzger" : standard;
+  const providerOf = new Map(labels.map((l) => [l.id as string, l.provider as string | null]));
+  const linkBy = new Map(links.map((r) => [`${r.name_key}|${r.provider}`, r]));
+  const productFor = (name: string, label: string) => {
+    const provider = providerOf.get(label);
+    const link = provider ? linkBy.get(`${prefKey(name)}|${provider}`) : undefined;
+    return link
+      ? { productId: link.product_id as string, productName: link.product_name as string, productImage: link.image_url as string | undefined }
+      : {};
+  };
 
   const items = [
     ...built.items.map((i) => {
       const st = stateBy.get(i.key);
       const pref = prefBy.get(prefKey(i.baseName));
+      const label = validLabel(st?.label ?? pref?.label, i.defaultLabel === "metzger" ? meatLabel : standard);
       return {
         id: `p:${i.key}`,
         name: i.display,
         baseName: i.baseName,
-        label: validLabel(st?.label ?? pref?.label, validLabel(i.defaultLabel, "knuspr")),
+        label,
         checked: !!st?.checked,
         isBasic: false,
-        asin: pref?.asin ?? undefined,
-        productName: pref?.product_name ?? undefined,
+        ...productFor(i.baseName, label),
       };
     }),
     ...extras.map((x) => {
-      const pref = prefBy.get(prefKey(x.name));
+      const label = validLabel(x.label, standard);
       return {
         id: `x:${x.id}`,
         name: x.name,
         baseName: x.name,
-        label: validLabel(x.label, "knuspr"),
+        label,
         checked: x.checked,
         isBasic: x.is_basic,
-        asin: pref?.asin ?? undefined,
-        productName: pref?.product_name ?? undefined,
+        ...productFor(x.name, label),
       };
     }),
   ];
-  return { labels, items, pantryNeeded: built.pantryNeeded, portions };
+  return { labels, items, pantryNeeded: built.pantryNeeded, portions, standardLabel: standard };
+}
+
+// ---------- Shops: Hilfsfunktionen ----------
+
+async function enableShopLabel(sql: Sql, profileId: string, provider: string) {
+  const meta = SHOP_LABELS[provider];
+  await sql`INSERT INTO shopping_labels (profile_id, id, name, color, sort, provider)
+    VALUES (${profileId}, ${provider}, ${meta.name}, ${meta.color},
+            (SELECT COALESCE(MAX(sort), 0) + 1 FROM shopping_labels WHERE profile_id = ${profileId}), ${provider})
+    ON CONFLICT (profile_id, id) DO UPDATE SET provider = EXCLUDED.provider`;
+}
+
+async function saveConnection(env: Env, sql: Sql, profileId: string, provider: string, email: string, secret: string, deviceId: string | null) {
+  const enc = await encrypt(env, secret);
+  await sql`INSERT INTO shop_connections (profile_id, provider, email, secret_enc, secret_iv, device_id, updated_at)
+    VALUES (${profileId}, ${provider}, ${email}, ${enc.ciphertext}, ${enc.iv}, ${deviceId}, now())
+    ON CONFLICT (profile_id, provider) DO UPDATE SET email = EXCLUDED.email, secret_enc = EXCLUDED.secret_enc,
+      secret_iv = EXCLUDED.secret_iv, device_id = EXCLUDED.device_id, updated_at = now()`;
+}
+
+async function loadConnection(env: Env, sql: Sql, profileId: string, provider: string) {
+  const rows = await sql`SELECT email, secret_enc, secret_iv, device_id FROM shop_connections
+    WHERE profile_id = ${profileId} AND provider = ${provider}`;
+  if (!rows[0]) return null;
+  try {
+    return {
+      email: rows[0].email as string,
+      secret: await decrypt(env, rows[0].secret_enc, rows[0].secret_iv),
+      deviceId: rows[0].device_id as string | null,
+    };
+  } catch {
+    // Schlüssel geändert → Verbindung unbrauchbar, neu verbinden lassen
+    return null;
+  }
+}
+
+/** Zustand für die Einstellungen: Standard-Liste, Metzger-Automatik, aktive Shops, Verbindungen */
+async function getShopState(sql: Sql, profileId: string) {
+  const [labels, settings, conns] = await Promise.all([
+    getLabels(sql, profileId),
+    sql`SELECT standard_label, metzger_auto FROM profiles WHERE id = ${profileId}`,
+    sql`SELECT provider, email, updated_at FROM shop_connections WHERE profile_id = ${profileId}`,
+  ]);
+  const ids = new Set(labels.map((l) => l.id));
+  return {
+    labels,
+    standardLabel: settings[0]?.standard_label && ids.has(settings[0].standard_label) ? settings[0].standard_label : ids.has("knuspr") ? "knuspr" : labels[0]?.id,
+    metzgerAuto: settings[0]?.metzger_auto !== false,
+    activeShops: labels.filter((l) => l.provider).map((l) => l.provider),
+    connections: Object.fromEntries(conns.map((c) => [c.provider, { email: c.email, since: c.updated_at }])),
+  };
 }
 
 async function planOwned(sql: Sql, profileId: string, planId: string) {
@@ -603,15 +701,100 @@ export async function handleApi(
       }
     }
 
-    // Amazon-Produkt pro Zutat merken (gilt für alle Pläne)
-    if (route === "PUT /ingredient-prefs") {
+    // Produkt eines Shops pro Zutat merken (gilt für alle Pläne)
+    if (route === "PUT /product-links") {
       const p = await getProfile(sql);
       const name = String(body.name ?? "").trim();
-      if (!name) return json({ error: "Name fehlt" }, 400);
-      await sql`INSERT INTO ingredient_prefs (profile_id, name_key, asin, product_name)
-        VALUES (${p.id}, ${prefKey(name)}, ${body.asin ?? null}, ${body.productName ?? null})
-        ON CONFLICT (profile_id, name_key) DO UPDATE SET asin = EXCLUDED.asin, product_name = EXCLUDED.product_name, updated_at = now()`;
+      if (!name || !body.provider || !body.productId) return json({ error: "Angaben fehlen" }, 400);
+      await sql`INSERT INTO product_links (profile_id, name_key, provider, product_id, product_name, image_url)
+        VALUES (${p.id}, ${prefKey(name)}, ${body.provider}, ${String(body.productId)}, ${body.productName ?? null}, ${body.imageUrl ?? null})
+        ON CONFLICT (profile_id, name_key, provider) DO UPDATE SET product_id = EXCLUDED.product_id,
+          product_name = EXCLUDED.product_name, image_url = EXCLUDED.image_url, updated_at = now()`;
       return json({ ok: true });
+    }
+
+    // ---------- Shops (Einstellungen, Verbinden, Suche, Warenkorb) ----------
+    if (parts[0] === "shops") {
+      const p = await getProfile(sql);
+      const provider = parts[1];
+      const action = parts[2];
+
+      if (request.method === "GET" && !provider) return json(await getShopState(sql, p.id));
+
+      if (provider === "settings" && request.method === "PUT") {
+        await sql`UPDATE profiles SET standard_label = ${body.standardLabel ?? null},
+          metzger_auto = ${body.metzgerAuto !== false} WHERE id = ${p.id}`;
+        return json(await getShopState(sql, p.id));
+      }
+
+      if (!provider || !SHOP_LABELS[provider]) return json({ error: "Unbekannter Shop" }, 404);
+
+      // Amazon braucht kein Konto – nur die Liste ein-/ausschalten
+      if (provider === "amazon" && action === "enable" && request.method === "POST") {
+        await enableShopLabel(sql, p.id, "amazon");
+        return json(await getShopState(sql, p.id));
+      }
+
+      if (action === "connect" && request.method === "POST") {
+        const email = String(body.email ?? "").trim();
+        const password = String(body.password ?? "");
+        if (!email || !password) return json({ error: "E-Mail und Passwort angeben" }, 400);
+        if (provider === "knuspr") {
+          await knusprLogin(email, password); // prüft die Zugangsdaten
+          await saveConnection(env, sql, p.id, "knuspr", email, password, null);
+        } else if (provider === "picnic") {
+          const login = await picnicLogin(email, password);
+          if (login.needs2fa) {
+            // Noch nichts speichern – erst nach dem SMS-Code
+            return json({ needs2fa: true, tempAuthKey: login.authKey, deviceId: login.deviceId });
+          }
+          await saveConnection(env, sql, p.id, "picnic", email, login.authKey, login.deviceId);
+        } else {
+          return json({ error: "Dieser Shop braucht kein Konto" }, 400);
+        }
+        await enableShopLabel(sql, p.id, provider);
+        return json(await getShopState(sql, p.id));
+      }
+
+      if (provider === "picnic" && action === "verify" && request.method === "POST") {
+        const authKey = await picnicVerify(String(body.tempAuthKey), String(body.deviceId), String(body.code ?? ""));
+        await saveConnection(env, sql, p.id, "picnic", String(body.email ?? ""), authKey, String(body.deviceId));
+        await enableShopLabel(sql, p.id, "picnic");
+        return json(await getShopState(sql, p.id));
+      }
+
+      // Shop trennen bzw. deaktivieren (Liste weg, Artikel fallen auf die Standard-Liste zurück)
+      if (request.method === "DELETE" && !action) {
+        await sql`DELETE FROM shop_connections WHERE profile_id = ${p.id} AND provider = ${provider}`;
+        if (provider !== "knuspr") await sql`DELETE FROM shopping_labels WHERE profile_id = ${p.id} AND id = ${provider}`;
+        return json(await getShopState(sql, p.id));
+      }
+
+      if (action === "search" && request.method === "POST") {
+        const query = String(body.query ?? "").trim();
+        if (!query) return json({ results: [] });
+        const conn = await loadConnection(env, sql, p.id, provider);
+        if (!conn) return json({ error: "not_connected" }, 409);
+        const results =
+          provider === "knuspr"
+            ? await knusprSearch(await knusprLogin(conn.email, conn.secret), query)
+            : await picnicSearch(conn.secret, conn.deviceId ?? "", query);
+        return json({ results });
+      }
+
+      // Alle offenen, verknüpften Artikel einer Liste in den Knuspr-Warenkorb legen
+      if (provider === "knuspr" && action === "cart" && request.method === "POST") {
+        const conn = await loadConnection(env, sql, p.id, "knuspr");
+        if (!conn) return json({ error: "not_connected" }, 409);
+        const ids: string[] = Array.isArray(body.productIds) ? body.productIds.map(String) : [];
+        const cookie = await knusprLogin(conn.email, conn.secret);
+        let added = 0;
+        const failed: string[] = [];
+        for (const pid of ids) (await knusprAddToCart(cookie, pid)) ? added++ : failed.push(pid);
+        return json({ added, failed });
+      }
+
+      return json({ error: "Unbekannte Shop-Aktion" }, 404);
     }
 
     // ---------- Einkaufs-Labels ----------
@@ -659,6 +842,9 @@ export async function handleApi(
 
     return json({ error: `Unbekannte Route: ${route}` }, 404);
   } catch (err) {
+    if (err instanceof ShopError) {
+      return json({ error: err.message, code: err.code }, err.code === "not_connected" ? 409 : 502);
+    }
     console.error(route, err);
     return json({ error: (err as Error).message }, 500);
   }

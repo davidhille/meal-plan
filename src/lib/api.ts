@@ -1,4 +1,7 @@
-import { Profile, FamilyMember, MealRating, MealPlan, PlanMeal, Routine, ShoppingItem, ShoppingLabel, Favorite } from '../types';
+import {
+  Profile, FamilyMember, MealRating, MealPlan, PlanMeal, Routine, ShoppingItem, ShoppingLabel, Favorite,
+  ShopState, ShopProvider, ProductResult,
+} from '../types';
 
 // Alle Daten laufen über die Cloudflare-Functions unter /api (→ Neon).
 // Das Familien-Passwort wird im Browser gemerkt und bei jeder Anfrage mitgeschickt.
@@ -288,6 +291,7 @@ export interface ShoppingData {
   items: ShoppingItem[];
   pantryNeeded: string[];
   portions: number;
+  standardLabel: string;
 }
 
 const enc = encodeURIComponent;
@@ -343,16 +347,6 @@ export async function removeShoppingItem(planId: string, itemId: string): Promis
   }
 }
 
-export async function saveIngredientAsin(name: string, asin: string, productName: string): Promise<boolean> {
-  try {
-    await request('PUT', '/ingredient-prefs', { name, asin, productName });
-    return true;
-  } catch (error) {
-    console.error('Error saving ASIN:', error);
-    return false;
-  }
-}
-
 export async function createLabel(name: string, color: string): Promise<ShoppingLabel[] | null> {
   try {
     return await request<ShoppingLabel[]>('POST', '/labels', { name, color });
@@ -369,4 +363,70 @@ export async function deleteLabel(labelId: string): Promise<ShoppingLabel[] | nu
     console.error('Error deleting label:', error);
     return null;
   }
+}
+
+// ---------- Shops ----------
+
+/** Fehler mit Klartext-Meldung vom Server (z. B. „Knuspr-Login fehlgeschlagen“) */
+async function shopRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
+  return request<T>(method, path, body);
+}
+
+export async function getShopState(): Promise<ShopState | null> {
+  try {
+    return await shopRequest<ShopState>('GET', '/shops');
+  } catch (error) {
+    console.error('Error loading shops:', error);
+    return null;
+  }
+}
+
+export function saveShopSettings(standardLabel: string, metzgerAuto: boolean): Promise<ShopState> {
+  return shopRequest<ShopState>('PUT', '/shops/settings', { standardLabel, metzgerAuto });
+}
+
+export function enableAmazon(): Promise<ShopState> {
+  return shopRequest<ShopState>('POST', '/shops/amazon/enable');
+}
+
+export function disconnectShop(provider: ShopProvider): Promise<ShopState> {
+  return shopRequest<ShopState>('DELETE', `/shops/${provider}`);
+}
+
+/** Knuspr: direkt verbunden. Picnic: evtl. erst SMS-Code nötig (needs2fa). */
+export function connectShop(
+  provider: 'knuspr' | 'picnic',
+  email: string,
+  password: string
+): Promise<ShopState | { needs2fa: true; tempAuthKey: string; deviceId: string }> {
+  return shopRequest('POST', `/shops/${provider}/connect`, { email, password });
+}
+
+export function verifyPicnic(email: string, tempAuthKey: string, deviceId: string, code: string): Promise<ShopState> {
+  return shopRequest<ShopState>('POST', '/shops/picnic/verify', { email, tempAuthKey, deviceId, code });
+}
+
+export async function searchShop(provider: 'knuspr' | 'picnic', query: string): Promise<ProductResult[]> {
+  const result = await shopRequest<{ results: ProductResult[] }>('POST', `/shops/${provider}/search`, { query });
+  return result.results;
+}
+
+export async function saveProductLink(name: string, provider: ShopProvider, product: ProductResult): Promise<boolean> {
+  try {
+    await request('PUT', '/product-links', {
+      name,
+      provider,
+      productId: product.productId,
+      productName: product.name,
+      imageUrl: product.imageUrl,
+    });
+    return true;
+  } catch (error) {
+    console.error('Error saving product link:', error);
+    return false;
+  }
+}
+
+export function addToKnusprCart(productIds: string[]): Promise<{ added: number; failed: string[] }> {
+  return shopRequest('POST', '/shops/knuspr/cart', { productIds });
 }

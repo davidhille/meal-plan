@@ -16,6 +16,7 @@ Workers & Pages → Create → Import a repository → `davidhille/meal-plan`
 Worker `meal-plan` → **Settings → Variables and Secrets** → *Add* → Typ **Secret**:
 - `DATABASE_URL` = Neon Connection String (Connect → Branch `production`)
 - `APP_PASSWORD` = Familien-Passwort
+- `CREDENTIALS_KEY` = beliebige lange Zufallszeichenfolge (verschlüsselt Knuspr-/Picnic-Zugangsdaten; ohne diesen Schlüssel wird ersatzweise der Datenbank-Zugang verwendet)
 
 Secrets wirken sofort, kein neuer Deploy nötig.
 

@@ -31,14 +31,18 @@ export interface ShoppingItem {
   checked: boolean;
   label: string;
   isBasic?: boolean;
-  asin?: string;
+  /** Verknüpftes Produkt im Shop der Liste (Knuspr/Picnic) */
+  productId?: string;
   productName?: string;
+  productImage?: string;
 }
 
 export interface ShoppingLabel {
   id: string;
   name: string;
   color: string;
+  /** Online-Shop hinter der Liste (amazon, knuspr, picnic) */
+  provider?: ShopProvider | null;
 }
 
 export const DEFAULT_LABELS: ShoppingLabel[] = [
@@ -146,4 +150,22 @@ export interface Favorite {
   turnus_weeks: number | null;
   last_planned: string | null;
   created_at: string;
+}
+
+export type ShopProvider = 'amazon' | 'knuspr' | 'picnic';
+
+export interface ShopState {
+  labels: ShoppingLabel[];
+  standardLabel: string;
+  metzgerAuto: boolean;
+  activeShops: ShopProvider[];
+  connections: Partial<Record<ShopProvider, { email: string; since: string }>>;
+}
+
+export interface ProductResult {
+  productId: string;
+  name: string;
+  price?: string;
+  amount?: string;
+  imageUrl?: string;
 }

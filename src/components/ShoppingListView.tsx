@@ -1,18 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Package, X, Loader2, ShoppingCart } from 'lucide-react';
-import { MealPlan, ShoppingItem, ShoppingLabel, DEFAULT_LABELS, LABEL_COLORS, BASICS_ITEMS } from '../types';
-import { buildAmazonCartUrl } from '../lib/amazon';
+import { MealPlan, ShoppingItem, ShoppingLabel, DEFAULT_LABELS, LABEL_COLORS, BASICS_ITEMS, ProductResult } from '../types';
 import {
   getShopping,
   updateShoppingItem,
   addShoppingItem,
   removeShoppingItem,
-  saveIngredientAsin,
+  saveProductLink,
+  addToKnusprCart,
   createLabel,
   deleteLabel,
 } from '../lib/api';
 import ShoppingSection from './ShoppingSection';
-import AmazonPreviewModal from './AmazonPreviewModal';
+import ProductSearchModal from './ProductSearchModal';
 
 interface ShoppingListViewProps {
   plan: MealPlan | null;
@@ -32,7 +32,9 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
   const [newLabelName, setNewLabelName] = useState('');
   const [newLabelColor, setNewLabelColor] = useState(LABEL_COLORS[2]);
   const [newItemName, setNewItemName] = useState('');
-  const [amazonModalItem, setAmazonModalItem] = useState<ShoppingItem | null>(null);
+  const [productItem, setProductItem] = useState<ShoppingItem | null>(null);
+  const [standardLabel, setStandardLabel] = useState('knuspr');
+  const [notice, setNotice] = useState<string | null>(null);
 
   const planId = plan?.id;
 
@@ -47,6 +49,7 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
       setItems(data.items);
       setLabels(data.labels);
       setPantryNeeded(data.pantryNeeded);
+      setStandardLabel(data.standardLabel);
     }
     setLoading(false);
   }, [planId]);
@@ -114,20 +117,39 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
     }
   };
 
-  // --- Amazon ---
+  // --- Shops ---
 
-  const handleAmazonSelect = async (asin: string, productName: string) => {
-    if (!amazonModalItem) return;
-    const base = lc(amazonModalItem.baseName);
-    setItems((prev) => prev.map((i) => (lc(i.baseName) === base ? { ...i, asin, productName } : i)));
-    await saveIngredientAsin(amazonModalItem.baseName, asin, productName);
-    setAmazonModalItem(null);
+  const productLabel = productItem ? labels.find((l) => l.id === productItem.label) : undefined;
+
+  const handleProductSelect = async (product: ProductResult) => {
+    if (!productItem || !productLabel?.provider) return;
+    const base = lc(productItem.baseName);
+    const labelId = productItem.label;
+    setItems((prev) =>
+      prev.map((i) =>
+        lc(i.baseName) === base && i.label === labelId
+          ? { ...i, productId: product.productId, productName: product.name, productImage: product.imageUrl }
+          : i
+      )
+    );
+    await saveProductLink(productItem.baseName, productLabel.provider, product);
+    setProductItem(null);
   };
 
-  const handleAddToCart = (labelId: string) => {
-    const asins = items.filter((i) => i.label === labelId && i.asin && !i.checked).map((i) => i.asin!);
-    if (asins.length === 0) return;
-    window.open(buildAmazonCartUrl(asins), '_blank');
+  const handleAddToCart = async (labelId: string) => {
+    const ids = items.filter((i) => i.label === labelId && i.productId && !i.checked).map((i) => i.productId!);
+    if (ids.length === 0) return;
+    try {
+      const result = await addToKnusprCart(ids);
+      setNotice(
+        result.failed.length
+          ? `${result.added} Artikel im Knuspr-Warenkorb, ${result.failed.length} fehlgeschlagen.`
+          : `${result.added} Artikel liegen jetzt in deinem Knuspr-Warenkorb.`
+      );
+    } catch (e) {
+      setNotice((e as Error).message === 'not_connected' ? 'Knuspr ist nicht verbunden – bitte im Profil verbinden.' : (e as Error).message);
+    }
+    setTimeout(() => setNotice(null), 6000);
   };
 
   // --- Ansicht ---
@@ -181,7 +203,7 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
             e.preventDefault();
             const name = newItemName;
             setNewItemName('');
-            await addItem(name, 'knuspr');
+            await addItem(name, standardLabel);
           }}
           className="flex gap-2"
         >
@@ -211,11 +233,9 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
             allLabels={labels}
             onToggle={toggleItem}
             onLabelChange={changeLabel}
-            onIngredientClick={setAmazonModalItem}
+            onFindProduct={setProductItem}
             onAddToCart={() => handleAddToCart(label.id)}
             onRemove={removeItem}
-            showCopyButton
-            showAmazon
           />
         ))}
 
@@ -273,10 +293,10 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
         )}
 
         {/* Eigene Labels verwalten */}
-        {labels.some((l) => !DEFAULT_LABELS.some((d) => d.id === l.id)) && (
+        {labels.some((l) => !l.provider && !DEFAULT_LABELS.some((d) => d.id === l.id)) && (
           <div className="flex flex-wrap gap-2 px-1">
             {labels
-              .filter((l) => !DEFAULT_LABELS.some((d) => d.id === l.id))
+              .filter((l) => !l.provider && !DEFAULT_LABELS.some((d) => d.id === l.id))
               .map((l) => (
                 <span
                   key={l.id}
@@ -372,12 +392,21 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
         </div>
       </div>
 
-      {amazonModalItem && (
-        <AmazonPreviewModal
-          ingredientName={amazonModalItem.baseName}
-          onSelect={handleAmazonSelect}
-          onClose={() => setAmazonModalItem(null)}
+      {productItem && productLabel && (productLabel.provider === 'knuspr' || productLabel.provider === 'picnic') && (
+        <ProductSearchModal
+          ingredientName={productItem.baseName}
+          label={productLabel}
+          provider={productLabel.provider}
+          currentProductId={productItem.productId}
+          onSelect={handleProductSelect}
+          onClose={() => setProductItem(null)}
         />
+      )}
+
+      {notice && (
+        <div className="fixed bottom-24 inset-x-4 z-40 max-w-md mx-auto px-4 py-3 rounded-2xl bg-gray-800 text-white text-sm shadow-lg">
+          {notice}
+        </div>
       )}
     </>
   );
