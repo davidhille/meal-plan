@@ -298,7 +298,7 @@ export async function generateMealImage(
     '/meal-images/generate',
     { mealName, force }
   );
-  const credit = r.source === 'pexels' && r.creditName && r.creditUrl ? { name: r.creditName, url: r.creditUrl } : null;
+  const credit = r.source && r.source !== 'ai' && r.creditName && r.creditUrl ? { name: r.creditName, url: r.creditUrl } : null;
   return { url: r.imageUrl, credit };
 }
 

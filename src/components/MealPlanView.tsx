@@ -37,7 +37,7 @@ function planMealToMeal(pm: PlanMeal): Meal {
     instructions: pm.instructions,
     imageUrl: pm.image_url,
     imageCredit:
-      pm.image_source === 'pexels' && pm.image_credit_name && pm.image_credit_url
+      pm.image_source && pm.image_source !== 'ai' && pm.image_credit_name && pm.image_credit_url
         ? { name: pm.image_credit_name, url: pm.image_credit_url }
         : null,
     durationMin: pm.duration_min ?? null,
