@@ -93,6 +93,8 @@ export async function knusprAddToCart(cookie: string, productId: string, quantit
 
 export interface CartItem {
   productId: string;
+  /** Kennung der Warenkorb-Zeile (zum Entfernen) */
+  orderFieldId?: string;
   name: string;
   quantity: number;
   price?: string;
@@ -113,8 +115,10 @@ export async function knusprGetCart(cookie: string): Promise<CartItem[]> {
       const price = p.price?.full ?? p.price?.amount ?? p.totalPrice?.full ?? p.price;
       const currency = p.price?.currency ?? p.totalPrice?.currency ?? "€";
       const img = p.imgPath ?? p.image ?? p.imageUrl;
+      const orderFieldId = p.orderFieldId ?? p.orderFieldID ?? p.cartItemId;
       return {
         productId: String(p.productId ?? p.id ?? ""),
+        orderFieldId: orderFieldId != null ? String(orderFieldId) : undefined,
         name: String(p.productName ?? p.name ?? ""),
         quantity: Number(p.quantity ?? p.amount ?? 1) || 1,
         price: typeof price === "number" || typeof price === "string" ? `${price} ${currency}` : undefined,
@@ -122,6 +126,24 @@ export async function knusprGetCart(cookie: string): Promise<CartItem[]> {
       };
     })
     .filter((i) => i.productId);
+}
+
+/** Eine Zeile aus dem Knuspr-Warenkorb entfernen */
+export async function knusprRemoveFromCart(cookie: string, orderFieldId: string): Promise<boolean> {
+  const res = await fetch(`${KNUSPR}/services/frontend-service/v2/cart?orderFieldId=${encodeURIComponent(orderFieldId)}`, {
+    method: "DELETE",
+    headers: { Cookie: cookie, "User-Agent": BROWSER_UA },
+  });
+  return res.ok;
+}
+
+/** Menge eines Produkts setzen: Zeile entfernen und mit der neuen Menge wieder hinzufügen (0 = nur entfernen) */
+export async function knusprSetQuantity(cookie: string, item: CartItem, quantity: number): Promise<void> {
+  if (!item.orderFieldId) throw new ShopError("Dieser Artikel lässt sich im Knuspr-Warenkorb nicht ändern.");
+  if (!(await knusprRemoveFromCart(cookie, item.orderFieldId))) throw new ShopError("Knuspr hat die Änderung abgelehnt.");
+  if (quantity > 0 && !(await knusprAddToCart(cookie, item.productId, quantity))) {
+    throw new ShopError("Die neue Menge konnte nicht gespeichert werden – bitte im Knuspr-Warenkorb prüfen.");
+  }
 }
 
 // ---------- Picnic ----------

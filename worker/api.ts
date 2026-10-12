@@ -10,7 +10,7 @@ import { generateImage, fillMissingImages, serveImage, IMAGE_URL_SQL, IMAGE_CRED
 import { generateRecipes } from "./aiRecipes";
 import { importRecipeFromUrl, ImportError } from "./recipeImport";
 import {
-  encrypt, decrypt, ShopError, knusprLogin, knusprSearch, knusprAddToCart, knusprGetCart, picnicLogin, picnicVerify, picnicSearch,
+  encrypt, decrypt, ShopError, knusprLogin, knusprSearch, knusprAddToCart, knusprGetCart, knusprRemoveFromCart, knusprSetQuantity, picnicLogin, picnicVerify, picnicSearch,
   type ShopEnv,
 } from "./shops";
 
@@ -1056,12 +1056,41 @@ export async function handleApi(
       if (provider === "knuspr" && action === "cart" && request.method === "POST") {
         const conn = await loadConnection(env, sql, p.id, "knuspr");
         if (!conn) return json({ error: "not_connected" }, 409);
-        const ids: string[] = Array.isArray(body.productIds) ? body.productIds.map(String) : [];
+        // { items: [{ productId, quantity }] } oder (älter) { productIds: [...] }
+        const wanted: { productId: string; quantity: number }[] = Array.isArray(body.items)
+          ? body.items.map((i: any) => ({ productId: String(i.productId), quantity: Math.min(Math.max(Math.round(Number(i.quantity) || 1), 1), 50) }))
+          : (Array.isArray(body.productIds) ? body.productIds : []).map((pid: unknown) => ({ productId: String(pid), quantity: 1 }));
         const cookie = await knusprLogin(conn.email, conn.secret);
         let added = 0;
         const failed: string[] = [];
-        for (const pid of ids) (await knusprAddToCart(cookie, pid)) ? added++ : failed.push(pid);
+        for (const w of wanted) (await knusprAddToCart(cookie, w.productId, w.quantity)) ? added++ : failed.push(w.productId);
         return json({ added, failed });
+      }
+
+      // Menge im Knuspr-Warenkorb ändern (0 = entfernen)
+      if (provider === "knuspr" && action === "cart" && request.method === "PATCH") {
+        const conn = await loadConnection(env, sql, p.id, "knuspr");
+        if (!conn) return json({ error: "not_connected" }, 409);
+        const cookie = await knusprLogin(conn.email, conn.secret);
+        const item = (await knusprGetCart(cookie)).find((c) => c.productId === String(body.productId));
+        if (!item) return json({ error: "Artikel liegt nicht (mehr) im Warenkorb" }, 404);
+        await knusprSetQuantity(cookie, item, Math.min(Math.max(Math.round(Number(body.quantity) || 0), 0), 50));
+        return json({ items: await knusprGetCart(cookie) });
+      }
+
+      // Knuspr-Warenkorb leeren
+      if (provider === "knuspr" && action === "cart" && request.method === "DELETE") {
+        const conn = await loadConnection(env, sql, p.id, "knuspr");
+        if (!conn) return json({ error: "not_connected" }, 409);
+        const cookie = await knusprLogin(conn.email, conn.secret);
+        const items = await knusprGetCart(cookie);
+        let failed = 0;
+        for (const item of items) {
+          if (!item.orderFieldId || !(await knusprRemoveFromCart(cookie, item.orderFieldId))) failed++;
+        }
+        const rest = await knusprGetCart(cookie);
+        if (failed && rest.length) return json({ error: `${rest.length} Artikel konnten nicht entfernt werden.`, items: rest }, 502);
+        return json({ items: rest });
       }
 
       return json({ error: "Unbekannte Shop-Aktion" }, 404);

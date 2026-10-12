@@ -11,6 +11,8 @@ import {
   saveProductLink,
   removeProductLink,
   getKnusprCart,
+  setKnusprCartQuantity,
+  clearKnusprCart,
   addToKnusprCart,
   type WeekRange,
   addToPantry,
@@ -212,13 +214,34 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
     refreshCart();
   };
 
-  const transferToCart = async (ids: string[]) => {
+  const knusprError = (e: unknown) =>
+    new Error((e as Error).message === 'not_connected' ? 'Knuspr ist nicht verbunden – bitte im Profil verbinden.' : (e as Error).message);
+
+  const setCartQuantity = async (productId: string, quantity: number) => {
     try {
-      const result = await addToKnusprCart(ids);
+      setCart(await setKnusprCartQuantity(productId, quantity));
+    } catch (e) {
+      await refreshCart();
+      throw knusprError(e);
+    }
+  };
+
+  const emptyCart = async () => {
+    try {
+      setCart(await clearKnusprCart());
+    } catch (e) {
+      await refreshCart();
+      throw knusprError(e);
+    }
+  };
+
+  const transferToCart = async (wanted: { productId: string; quantity: number }[]) => {
+    try {
+      const result = await addToKnusprCart(wanted);
       await refreshCart();
       return result.failed.length
-        ? `${result.added} Artikel übertragen, ${result.failed.length} fehlgeschlagen.`
-        : `${result.added} Artikel liegen jetzt in deinem Knuspr-Warenkorb.`;
+        ? `${result.added} übertragen, ${result.failed.length} fehlgeschlagen.`
+        : `${result.added} ${result.added === 1 ? 'Produkt liegt' : 'Produkte liegen'} jetzt in deinem Knuspr-Warenkorb.`;
     } catch (e) {
       throw new Error((e as Error).message === 'not_connected' ? 'Knuspr ist nicht verbunden – bitte im Profil verbinden.' : (e as Error).message);
     }
@@ -494,6 +517,8 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
           cart={cart ?? null}
           cartLoading={cartLoading || cart === undefined}
           onTransfer={transferToCart}
+          onSetQuantity={setCartQuantity}
+          onClearCart={emptyCart}
           onClose={() => setCartPreviewLabel(null)}
         />
       )}

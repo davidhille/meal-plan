@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { X, Loader2, Check, ShoppingCart, ChevronDown, ImageOff } from 'lucide-react';
+import { X, Loader2, Check, ShoppingCart, ImageOff, Minus, Plus, Trash2 } from 'lucide-react';
 import { useDialog } from '../lib/useDialog';
 import { CartItem, ShoppingItem } from '../types';
+import ConfirmDialog from './ConfirmDialog';
 
 interface CartPreviewSheetProps {
   /** Offene, mit einem Produkt verknüpfte Artikel dieser Liste */
@@ -9,28 +10,82 @@ interface CartPreviewSheetProps {
   /** Aktueller Knuspr-Warenkorb (null = konnte nicht geladen werden) */
   cart: CartItem[] | null;
   cartLoading: boolean;
-  /** Ausgewählte Produkte übertragen; liefert die Meldung */
-  onTransfer: (productIds: string[]) => Promise<string>;
+  /** Ausgewählte Produkte mit Menge übertragen; liefert die Meldung */
+  onTransfer: (items: { productId: string; quantity: number }[]) => Promise<string>;
+  /** Menge im Warenkorb ändern (0 = entfernen); wirft bei Fehlern */
+  onSetQuantity: (productId: string, quantity: number) => Promise<void>;
+  /** Warenkorb leeren; wirft bei Fehlern */
+  onClearCart: () => Promise<void>;
   onClose: () => void;
 }
 
-/** Vorschau vor dem Übertragen: was kommt in den Warenkorb, was liegt dort schon */
-export default function CartPreviewSheet({ items, cart, cartLoading, onTransfer, onClose }: CartPreviewSheetProps) {
+function Stepper({
+  value,
+  onChange,
+  min,
+  disabled,
+  label,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  min: number;
+  disabled?: boolean;
+  label: string;
+}) {
+  return (
+    <div className="flex items-center gap-1 flex-shrink-0" role="group" aria-label={`Menge ${label}`}>
+      <button
+        onClick={() => onChange(value - 1)}
+        disabled={disabled || value <= min}
+        aria-label={`${label}: weniger`}
+        className="w-7 h-7 flex items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 disabled:text-gray-300"
+      >
+        <Minus size={12} />
+      </button>
+      <span className="w-6 text-center text-sm font-semibold text-gray-800" aria-live="polite">
+        {value}
+      </span>
+      <button
+        onClick={() => onChange(value + 1)}
+        disabled={disabled || value >= 50}
+        aria-label={`${label}: mehr`}
+        className="w-7 h-7 flex items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 disabled:text-gray-300"
+      >
+        <Plus size={12} />
+      </button>
+    </div>
+  );
+}
+
+/** Vorschau vor dem Übertragen und Bearbeiten des Knuspr-Warenkorbs */
+export default function CartPreviewSheet({
+  items,
+  cart,
+  cartLoading,
+  onTransfer,
+  onSetQuantity,
+  onClearCart,
+  onClose,
+}: CartPreviewSheetProps) {
   const dialogRef = useDialog(onClose);
   const inCart = useMemo(() => new Map((cart ?? []).map((c) => [c.productId, c])), [cart]);
   // Was schon im Warenkorb liegt, ist zunächst abgewählt
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(items.filter((i) => !inCart.has(i.productId!)).map((i) => i.id))
   );
-  const [showCart, setShowCart] = useState(false);
+  const [qty, setQty] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [cartBusyId, setCartBusyId] = useState<string | null>(null);
+  const [cartError, setCartError] = useState<string | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
 
   // Wenn der Warenkorb erst nach dem Öffnen geladen ist, dort liegende Artikel abwählen
   const [syncedCart, setSyncedCart] = useState(cart);
   if (cart !== syncedCart) {
+    const firstLoad = syncedCart === null && cart !== null;
     setSyncedCart(cart);
-    if (cart) setSelected((prev) => new Set([...prev].filter((id) => !inCart.has(items.find((i) => i.id === id)?.productId ?? ''))));
+    if (firstLoad) setSelected((prev) => new Set([...prev].filter((id) => !inCart.has(items.find((i) => i.id === id)?.productId ?? ''))));
   }
 
   const toggle = (id: string) =>
@@ -42,17 +97,31 @@ export default function CartPreviewSheet({ items, cart, cartLoading, onTransfer,
     });
 
   const chosen = items.filter((i) => selected.has(i.id));
+  const totalPieces = chosen.reduce((sum, i) => sum + (qty[i.id] ?? 1), 0);
 
   const transfer = async () => {
     if (!chosen.length || busy) return;
     setBusy(true);
     setMessage(null);
     try {
-      setMessage(await onTransfer(chosen.map((i) => i.productId!)));
+      setMessage(await onTransfer(chosen.map((i) => ({ productId: i.productId!, quantity: qty[i.id] ?? 1 }))));
+      setSelected(new Set());
     } catch (e) {
       setMessage((e as Error).message || 'Das hat nicht geklappt.');
     } finally {
       setBusy(false);
+    }
+  };
+
+  const changeCart = async (productId: string, quantity: number) => {
+    setCartBusyId(productId);
+    setCartError(null);
+    try {
+      await onSetQuantity(productId, quantity);
+    } catch (e) {
+      setCartError((e as Error).message || 'Die Änderung hat nicht geklappt.');
+    } finally {
+      setCartBusyId(null);
     }
   };
 
@@ -64,12 +133,12 @@ export default function CartPreviewSheet({ items, cart, cartLoading, onTransfer,
         aria-modal="true"
         aria-labelledby="cart-preview-title"
         tabIndex={-1}
-        className="outline-none bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl overflow-hidden flex flex-col max-h-[88vh]"
+        className="outline-none bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl overflow-hidden flex flex-col max-h-[90vh]"
       >
         <div className="flex items-center gap-2 px-4 py-4 border-b border-gray-100">
           <ShoppingCart size={16} className="text-green-700" aria-hidden="true" />
           <h2 id="cart-preview-title" className="flex-1 text-base font-semibold text-gray-900">
-            In den Knuspr-Warenkorb
+            Knuspr-Warenkorb
           </h2>
           <button
             onClick={onClose}
@@ -81,28 +150,30 @@ export default function CartPreviewSheet({ items, cart, cartLoading, onTransfer,
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          <p className="px-4 pt-3 pb-1 text-xs text-gray-500">
-            Wähle, was übertragen wird. Artikel, die schon im Warenkorb liegen, sind abgewählt.
-          </p>
-          <ul className="divide-y divide-gray-100">
-            {items.map((i) => {
-              const already = inCart.get(i.productId!);
-              const on = selected.has(i.id);
-              return (
-                <li key={i.id}>
-                  <button
-                    onClick={() => toggle(i.id)}
-                    role="checkbox"
-                    aria-checked={on}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-gray-50"
-                  >
-                    <span
+          {/* Neu hinzufügen */}
+          <h3 className="px-4 pt-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Hinzufügen</h3>
+          <p className="px-4 pb-1 text-xs text-gray-500">Abgehakt wird übertragen. Was schon im Warenkorb liegt, ist abgewählt.</p>
+          {items.length === 0 ? (
+            <p className="px-4 py-3 text-sm text-gray-500">Alle verknüpften Artikel sind erledigt.</p>
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {items.map((i) => {
+                const already = inCart.get(i.productId!);
+                const on = selected.has(i.id);
+                const name = i.productName ?? i.name;
+                return (
+                  <li key={i.id} className="flex items-center gap-3 px-4 py-2.5">
+                    <button
+                      onClick={() => toggle(i.id)}
+                      role="checkbox"
+                      aria-checked={on}
+                      aria-label={name}
                       className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center border-2 ${
                         on ? 'bg-green-600 border-green-500' : 'bg-white border-gray-300'
                       }`}
                     >
                       {on && <Check size={14} className="text-white" strokeWidth={3} />}
-                    </span>
+                    </button>
                     {i.productImage ? (
                       <img src={i.productImage} alt="" className="w-9 h-9 rounded-lg object-contain bg-white border border-gray-100 flex-shrink-0" />
                     ) : (
@@ -111,48 +182,82 @@ export default function CartPreviewSheet({ items, cart, cartLoading, onTransfer,
                       </span>
                     )}
                     <span className="flex-1 min-w-0">
-                      <span className="block text-sm text-gray-800 truncate">{i.productName ?? i.name}</span>
+                      <span className="block text-sm text-gray-800 truncate">{name}</span>
                       <span className="block text-[11px] text-gray-500 truncate">für: {i.name}</span>
                       {already && (
                         <span className="block text-[11px] font-medium text-amber-700">Schon im Warenkorb ({already.quantity}×)</span>
                       )}
                     </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+                    {on && (
+                      <Stepper
+                        value={qty[i.id] ?? 1}
+                        min={1}
+                        label={name}
+                        onChange={(v) => setQty((prev) => ({ ...prev, [i.id]: v }))}
+                      />
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
 
-          {/* Was schon im Warenkorb liegt */}
-          <div className="px-4 py-3 border-t border-gray-100">
+          {/* Aktueller Warenkorb */}
+          <div className="mt-2 border-t border-gray-100">
+            <div className="flex items-center gap-2 px-4 pt-3">
+              <h3 className="flex-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Im Warenkorb{cart && cart.length ? ` (${cart.length})` : ''}
+              </h3>
+              {cart && cart.length > 0 && (
+                <button
+                  onClick={() => setConfirmClear(true)}
+                  disabled={!!cartBusyId}
+                  className="flex items-center gap-1 px-2.5 h-7 rounded-lg text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100"
+                >
+                  <Trash2 size={12} /> Leeren
+                </button>
+              )}
+            </div>
             {cartLoading ? (
-              <p className="flex items-center gap-2 text-xs text-gray-500">
+              <p className="flex items-center gap-2 px-4 py-3 text-xs text-gray-500">
                 <Loader2 size={12} className="animate-spin" /> Warenkorb wird geladen …
               </p>
             ) : cart === null ? (
-              <p className="text-xs text-gray-500">Der aktuelle Warenkorb konnte nicht geladen werden.</p>
+              <p className="px-4 py-3 text-xs text-gray-500">Der Warenkorb konnte nicht geladen werden.</p>
+            ) : cart.length === 0 ? (
+              <p className="px-4 py-3 text-xs text-gray-500">Der Warenkorb ist leer.</p>
             ) : (
-              <>
-                <button
-                  onClick={() => setShowCart((v) => !v)}
-                  aria-expanded={showCart}
-                  className="flex items-center gap-1.5 text-xs font-medium text-gray-700"
-                >
-                  <ChevronDown size={14} className={`transition-transform ${showCart ? 'rotate-180' : ''}`} />
-                  Aktuell im Knuspr-Warenkorb: {cart.length} Artikel
-                </button>
-                {showCart && cart.length > 0 && (
-                  <ul className="mt-2 space-y-1">
-                    {cart.map((c) => (
-                      <li key={c.productId} className="flex items-center gap-2 text-xs text-gray-600">
-                        <span className="w-6 text-right font-semibold text-gray-700">{c.quantity}×</span>
-                        <span className="flex-1 min-w-0 truncate">{c.name}</span>
-                        {c.price && <span className="text-gray-500">{c.price}</span>}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </>
+              <ul className="divide-y divide-gray-100">
+                {cart.map((c) => (
+                  <li key={c.productId} className={`flex items-center gap-2 px-4 py-2 ${cartBusyId === c.productId ? 'opacity-60' : ''}`}>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-sm text-gray-800 truncate">{c.name}</span>
+                      {c.price && <span className="block text-[11px] text-gray-500">{c.price}</span>}
+                    </span>
+                    {cartBusyId === c.productId && <Loader2 size={14} className="animate-spin text-gray-400" />}
+                    <Stepper
+                      value={c.quantity}
+                      min={1}
+                      label={c.name}
+                      disabled={!!cartBusyId}
+                      onChange={(v) => changeCart(c.productId, v)}
+                    />
+                    <button
+                      onClick={() => changeCart(c.productId, 0)}
+                      disabled={!!cartBusyId}
+                      aria-label={`${c.name} aus dem Warenkorb entfernen`}
+                      className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-full text-gray-500 hover:text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {cartError && (
+              <p role="alert" className="px-4 pb-2 text-xs text-red-600">
+                {cartError}
+              </p>
             )}
           </div>
         </div>
@@ -169,10 +274,23 @@ export default function CartPreviewSheet({ items, cart, cartLoading, onTransfer,
             className="w-full h-11 rounded-xl text-sm font-semibold text-white bg-green-700 hover:bg-green-800 disabled:bg-gray-200 disabled:text-gray-500 flex items-center justify-center gap-2"
           >
             {busy ? <Loader2 size={15} className="animate-spin" /> : <ShoppingCart size={15} />}
-            {chosen.length ? `${chosen.length} Artikel übertragen` : 'Nichts ausgewählt'}
+            {chosen.length
+              ? `${chosen.length} ${chosen.length === 1 ? 'Produkt' : 'Produkte'}${totalPieces > chosen.length ? ` (${totalPieces} Stück)` : ''} übertragen`
+              : 'Nichts zum Übertragen ausgewählt'}
           </button>
         </div>
       </div>
+
+      {confirmClear && (
+        <ConfirmDialog
+          title="Warenkorb leeren?"
+          message={<>Alle {cart?.length ?? 0} Artikel werden aus deinem Knuspr-Warenkorb entfernt – auch die, die du direkt bei Knuspr hineingelegt hast.</>}
+          confirmLabel="Leeren"
+          danger
+          onConfirm={onClearCart}
+          onClose={() => setConfirmClear(false)}
+        />
+      )}
     </div>
   );
 }
