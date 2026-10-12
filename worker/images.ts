@@ -1,5 +1,6 @@
 // Rezeptbilder: zuerst Cloudflare Workers AI (FLUX.1 schnell); ist das Tageskontingent aufgebraucht
-// oder klappt die KI nicht, ein passendes Foto von Pexels (kostenlose API). Speicherung in Neon.
+// oder klappt die KI nicht, ein passendes Foto aus einer freien Bilddatenbank
+// (Pexels/Pixabay mit Schlüssel, Openverse ohne Schlüssel). Speicherung in Neon.
 import type { neon } from "@neondatabase/serverless";
 import { MEAL_DATABASE, dishKeywords } from "./meals";
 
@@ -7,8 +8,9 @@ type Sql = ReturnType<typeof neon>;
 
 export interface AiEnv {
   AI?: { run(model: string, input: Record<string, unknown>): Promise<unknown> };
-  /** Schlüssel für die Pexels-API (Ersatzfotos, wenn die KI nicht kann) */
+  /** Schlüssel für Ersatzfotos, wenn die KI nicht kann (beide optional; Openverse geht ohne) */
   PEXELS_API_KEY?: string;
+  PIXABAY_API_KEY?: string;
 }
 
 const MODEL = "@cf/black-forest-labs/flux-1-schnell";
@@ -20,7 +22,7 @@ export function imageUrl(mealName: string, version: string | number) {
 
 /** SQL-Ausdruck (Alias mi = meal_images): URL nur, wenn ein Bild gespeichert ist */
 export const IMAGE_URL_SQL = `CASE WHEN mi.image_data IS NOT NULL THEN mi.image_url END`;
-/** Dazu Herkunft und Fotograf (bei Pexels-Fotos als Quellenangabe angezeigt) */
+/** Dazu Herkunft und Fotograf (bei Fotos aus Bilddatenbanken als Quellenangabe angezeigt) */
 export const IMAGE_CREDIT_SQL = `CASE WHEN mi.image_data IS NOT NULL THEN mi.source END AS image_source,
   mi.credit_name AS image_credit_name, mi.credit_url AS image_credit_url`;
 
@@ -97,8 +99,11 @@ async function dishInfo(sql: Sql, mealName: string): Promise<{ type?: string; in
   return builtIn ? { type: builtIn.type, ingredients: builtIn.ingredients } : {};
 }
 
+export type PhotoSource = "pexels" | "pixabay" | "openverse";
+export const PHOTO_SOURCES: PhotoSource[] = ["pexels", "pixabay", "openverse"];
+
 export type ImageResult =
-  | { url: string; source: "ai" | "pexels" }
+  | { url: string; source: "ai" | PhotoSource }
   | { error: string; quota?: boolean };
 
 /** Tageskontingent von Workers AI aufgebraucht? (Fehler 4006 „daily free allocation“) */
@@ -134,48 +139,82 @@ async function aiImage(env: AiEnv, sql: Sql, mealName: string): Promise<{ base64
   }
 }
 
-interface PexelsPhoto {
-  alt?: string;
-  photographer: string;
-  photographer_url: string;
-  url: string;
-  src: { large: string; medium: string };
-}
-
 /** Suchbegriffe vom genauen Namen zum Hauptgericht: „Käsespätzle mit Röstzwiebeln“ → …, „Käsespätzle“ */
-function pexelsQueries(mealName: string): string[] {
+function photoQueries(mealName: string): string[] {
   const main = mealName.split(/\s(?:mit|und|&|in|an|auf)\s/i)[0];
   const keywords = [...dishKeywords(main)].join(" ");
   return [...new Set([mealName, main, keywords].map((q) => q.trim()).filter((q) => q.length > 2))];
 }
 
-/** Passendes Foto bei Pexels suchen und laden */
-async function pexelsImage(env: AiEnv, mealName: string) {
-  if (!env.PEXELS_API_KEY) return null;
-  for (const q of pexelsQueries(mealName)) {
-    try {
+interface PhotoHit {
+  imageUrl: string;
+  /** Anzeige, z. B. „Anna / Pixabay“ */
+  creditName: string;
+  creditUrl: string;
+}
+
+const UA = { "User-Agent": "Familien-Speiseplaner/1.0 (private Familien-App)" };
+
+/** Ein Treffer je Anbieter und Suchbegriff (null = nichts gefunden; Fehler beenden die Suche bei diesem Anbieter) */
+const PROVIDERS: { id: PhotoSource; enabled: (env: AiEnv) => boolean; search: (env: AiEnv, q: string) => Promise<PhotoHit | null> }[] = [
+  {
+    id: "pexels",
+    enabled: (env) => !!env.PEXELS_API_KEY,
+    search: async (env, q) => {
       const res = await fetch(
         `https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}&locale=de-DE&per_page=5&orientation=landscape`,
-        { headers: { Authorization: env.PEXELS_API_KEY } }
+        { headers: { Authorization: env.PEXELS_API_KEY! } }
       );
-      if (!res.ok) {
-        console.warn(`Pexels-Suche "${q}": HTTP ${res.status}`);
-        if (res.status === 401 || res.status === 403 || res.status === 429) return null;
-        continue;
+      if (!res.ok) throw new Error(`Pexels HTTP ${res.status}`);
+      const p = ((await res.json()) as { photos?: { photographer: string; url: string; src: { large: string } }[] }).photos?.[0];
+      return p ? { imageUrl: p.src.large, creditName: `${p.photographer} / Pexels`, creditUrl: p.url } : null;
+    },
+  },
+  {
+    id: "pixabay",
+    enabled: (env) => !!env.PIXABAY_API_KEY,
+    search: async (env, q) => {
+      const res = await fetch(
+        `https://pixabay.com/api/?key=${encodeURIComponent(env.PIXABAY_API_KEY!)}&q=${encodeURIComponent(q)}` +
+          `&lang=de&image_type=photo&category=food&orientation=horizontal&safesearch=true&per_page=5`
+      );
+      if (!res.ok) throw new Error(`Pixabay HTTP ${res.status}`);
+      const h = ((await res.json()) as { hits?: { webformatURL: string; largeImageURL?: string; user: string; pageURL: string }[] }).hits?.[0];
+      return h ? { imageUrl: h.largeImageURL || h.webformatURL, creditName: `${h.user} / Pixabay`, creditUrl: h.pageURL } : null;
+    },
+  },
+  {
+    // Freie Creative-Commons-Bildsuche (WordPress), ohne Schlüssel
+    id: "openverse",
+    enabled: () => true,
+    search: async (_env, q) => {
+      const res = await fetch(
+        `https://api.openverse.org/v1/images/?q=${encodeURIComponent(q)}&page_size=5&mature=false&aspect_ratio=wide`,
+        { headers: UA }
+      );
+      if (!res.ok) throw new Error(`Openverse HTTP ${res.status}`);
+      const r = ((await res.json()) as { results?: { url: string; creator?: string; foreign_landing_url: string; license: string }[] }).results?.[0];
+      return r
+        ? { imageUrl: r.url, creditName: `${r.creator || "Unbekannt"} / Openverse (CC ${r.license.toUpperCase()})`, creditUrl: r.foreign_landing_url }
+        : null;
+    },
+  },
+];
+
+/** Passendes Foto suchen (Anbieter der Reihe nach) und laden */
+async function stockPhoto(env: AiEnv, mealName: string) {
+  for (const provider of PROVIDERS.filter((p) => p.enabled(env))) {
+    try {
+      for (const q of photoQueries(mealName)) {
+        const hit = await provider.search(env, q);
+        if (!hit) continue;
+        const img = await fetch(hit.imageUrl, { headers: UA });
+        const type = img.headers.get("content-type") || "";
+        if (!img.ok || !type.startsWith("image/")) continue;
+        return { source: provider.id, base64: toBase64(await img.arrayBuffer()), contentType: type, creditName: hit.creditName, creditUrl: hit.creditUrl };
       }
-      const data = (await res.json()) as { photos?: PexelsPhoto[] };
-      const photo = data.photos?.[0];
-      if (!photo) continue;
-      const img = await fetch(photo.src.large);
-      if (!img.ok) continue;
-      return {
-        base64: toBase64(await img.arrayBuffer()),
-        contentType: img.headers.get("content-type") || "image/jpeg",
-        creditName: photo.photographer,
-        creditUrl: photo.url,
-      };
     } catch (err) {
-      console.warn(`Pexels-Suche "${q}" fehlgeschlagen:`, err);
+      console.warn(`Fotosuche bei ${provider.id} fehlgeschlagen:`, err);
     }
   }
   return null;
@@ -191,7 +230,7 @@ function toBase64(buf: ArrayBuffer): string {
 async function storeImage(
   sql: Sql,
   mealName: string,
-  img: { base64: string; contentType?: string; source: "ai" | "pexels"; creditName?: string; creditUrl?: string }
+  img: { base64: string; contentType?: string; source: "ai" | PhotoSource; creditName?: string; creditUrl?: string }
 ): Promise<string> {
   const rows = await sql`
     INSERT INTO meal_images (meal_name, image_url, image_data, content_type, source, credit_name, credit_url, updated_at)
@@ -207,8 +246,8 @@ async function storeImage(
 }
 
 /**
- * Bild erzeugen und speichern: erst KI, sonst Pexels-Foto.
- * aiOnly = nur KI (zum späteren Ersetzen von Pexels-Fotos).
+ * Bild erzeugen und speichern: erst KI, sonst ein Foto aus einer freien Bilddatenbank.
+ * aiOnly = nur KI (zum späteren Ersetzen der Ersatzfotos).
  */
 export async function generateImage(env: AiEnv, sql: Sql, mealName: string, aiOnly = false): Promise<ImageResult> {
   let aiError: { error: string; quota?: boolean } = { error: "Die Bild-KI ist nicht eingerichtet." };
@@ -221,9 +260,9 @@ export async function generateImage(env: AiEnv, sql: Sql, mealName: string, aiOn
   }
   if (aiOnly) return aiError;
 
-  const photo = await pexelsImage(env, mealName);
-  if (photo) return { url: await storeImage(sql, mealName, { ...photo, source: "pexels" }), source: "pexels" };
-  return env.PEXELS_API_KEY ? { ...aiError, error: `${aiError.error} Auch bei Pexels gab es kein passendes Foto.` } : aiError;
+  const photo = await stockPhoto(env, mealName);
+  if (photo) return { url: await storeImage(sql, mealName, photo), source: photo.source };
+  return { ...aiError, error: `${aiError.error} Ein passendes Ersatzfoto gab es auch nicht.` };
 }
 
 /** Fehlende Bilder für Gerichte in Plänen erzeugen (höchstens `limit` pro Aufruf) */
@@ -240,13 +279,13 @@ export async function fillMissingImages(env: AiEnv, sql: Sql, limit = 5, planId?
     const res = await generateImage(env, sql, r.meal_name);
     if ("error" in res) return; // auch kein Foto → beim nächsten Lauf weiter
   }
-  // Ist die KI wieder verfügbar, Pexels-Ersatzfotos aus aktiven Plänen nach und nach durch KI-Bilder ersetzen
+  // Ist die KI wieder verfügbar, Ersatzfotos aus aktiven Plänen nach und nach durch KI-Bilder ersetzen
   const left = limit - rows.length;
   if (left <= 0 || planId || !aiAvailable(env)) return;
   const fallbacks = await sql`SELECT DISTINCT mi.meal_name FROM meal_images mi
     JOIN plan_meals pm ON pm.meal_name = mi.meal_name AND NOT pm.rejected
     JOIN meal_plans mp ON mp.id = pm.plan_id AND mp.status = 'active'
-    WHERE mi.source = 'pexels' LIMIT ${left}`;
+    WHERE mi.source = ANY(${PHOTO_SOURCES}) LIMIT ${left}`;
   for (const r of fallbacks) {
     const res = await generateImage(env, sql, r.meal_name, true);
     if ("error" in res) break;

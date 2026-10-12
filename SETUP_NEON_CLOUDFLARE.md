@@ -18,7 +18,9 @@ Worker `meal-plan` → **Settings → Variables and Secrets** → *Add* → Typ 
 - `APP_PASSWORD` = Familien-Passwort
 - `CREDENTIALS_KEY` = beliebige lange Zufallszeichenfolge (verschlüsselt Knuspr-/Picnic-Zugangsdaten; ohne diesen Schlüssel wird ersatzweise der Datenbank-Zugang verwendet)
 
-- `PEXELS_API_KEY` (optional) = kostenloser Schlüssel von https://www.pexels.com/api/ – Ersatzfotos, wenn das Tageskontingent der Bild-KI aufgebraucht ist
+- Ersatzfotos, wenn das Tageskontingent der Bild-KI aufgebraucht ist (alle optional – ohne Schlüssel wird Openverse genutzt):
+  - `PIXABAY_API_KEY` = kostenloser Schlüssel von https://pixabay.com/api/docs/ (nach dem Login oben auf der Seite)
+  - `PEXELS_API_KEY` = Schlüssel von https://www.pexels.com/api/ (Vergabe zeitweise pausiert)
 
 Secrets wirken sofort, kein neuer Deploy nötig.
 

@@ -142,7 +142,7 @@ export default function MealModal({
               rel="noopener noreferrer"
               className="absolute bottom-3 left-3 max-w-[55%] truncate px-2 py-1 rounded-md text-[11px] bg-black/60 text-white hover:bg-black/70"
             >
-              Foto: {imageCredit.name} / Pexels
+              Foto: {imageCredit.name}
             </a>
           )}
           {imageUrl && onGenerateImage && (
