@@ -21,6 +21,13 @@ export interface Meal {
   imageUrl?: string;
   /** Zubereitungszeit in Minuten (falls bekannt) */
   durationMin?: number | null;
+  /** Quellenangabe, wenn das Bild ein Pexels-Foto ist */
+  imageCredit?: ImageCredit | null;
+}
+
+export interface ImageCredit {
+  name: string;
+  url: string;
 }
 
 export interface ShoppingItem {
@@ -113,6 +120,9 @@ export interface PlanMeal {
   ingredients: string[];
   instructions: string;
   image_url?: string;
+  image_source?: 'ai' | 'pexels' | null;
+  image_credit_name?: string | null;
+  image_credit_url?: string | null;
   rejected: boolean;
   created_at: string;
   duration_min?: number | null;

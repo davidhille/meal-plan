@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useDialog } from '../lib/useDialog';
 import { X, Clock, ShoppingBasket, BookOpen, Star, ImageIcon, Loader2, Minus, Plus, Users } from 'lucide-react';
-import { Meal } from '../types';
+import { ImageCredit, Meal } from '../types';
 import MealRatingModal from './MealRatingModal';
 import { RECIPE_BASE_PORTIONS, scaleIngredient, formatPortions } from '../lib/portions';
 
@@ -9,7 +9,7 @@ interface MealModalProps {
   meal: Meal;
   currentRating?: number;
   onRate?: (rating: number, notes: string) => Promise<void>;
-  onGenerateImage?: (mealName: string) => Promise<string | null>;
+  onGenerateImage?: (mealName: string) => Promise<{ url: string; credit: ImageCredit | null }>;
   /** Portionen der Familie (Standard für die Mengenanzeige) */
   defaultPortions?: number;
   onClose: () => void;
@@ -43,6 +43,7 @@ export default function MealModal({
   const [generating, setGenerating] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState(meal.imageUrl);
+  const [imageCredit, setImageCredit] = useState(meal.imageCredit ?? null);
   const isWeekend = meal.type === 'wochenende';
 
   const handleGenerateImage = async () => {
@@ -50,8 +51,9 @@ export default function MealModal({
     setGenerating(true);
     setImageError(null);
     try {
-      const url = await onGenerateImage(meal.meal);
-      if (url) setImageUrl(url);
+      const image = await onGenerateImage(meal.meal);
+      setImageUrl(image.url);
+      setImageCredit(image.credit);
     } catch (e) {
       setImageError((e as Error).message || 'Das Bild konnte nicht erstellt werden.');
     } finally {
@@ -132,6 +134,16 @@ export default function MealModal({
                 </button>
               )}
             </div>
+          )}
+          {imageUrl && imageCredit && (
+            <a
+              href={imageCredit.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="absolute bottom-3 left-3 max-w-[55%] truncate px-2 py-1 rounded-md text-[11px] bg-black/60 text-white hover:bg-black/70"
+            >
+              Foto: {imageCredit.name} / Pexels
+            </a>
           )}
           {imageUrl && onGenerateImage && (
             <button

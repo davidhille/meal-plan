@@ -1,5 +1,5 @@
 import {
-  Profile, FamilyMember, MealRating, MealPlan, PlanMeal, Routine, ShoppingItem, ShoppingLabel, Favorite, MealType,
+  Profile, FamilyMember, MealRating, MealPlan, PlanMeal, Routine, ShoppingItem, ShoppingLabel, Favorite, MealType, ImageCredit,
   ShopState, ShopProvider, ProductResult,
 } from '../types';
 
@@ -289,9 +289,17 @@ export async function setFavoriteTurnus(id: string, weeks: number | null): Promi
 
 /** Bild über den Server erzeugen (Cloudflare Workers AI). force = neues Bild statt vorhandenem.
  *  Wirft mit verständlicher Meldung, z. B. wenn das Tageskontingent aufgebraucht ist. */
-export async function generateMealImage(mealName: string, force = false): Promise<string> {
-  const result = await request<{ imageUrl: string }>('POST', '/meal-images/generate', { mealName, force });
-  return result.imageUrl;
+export async function generateMealImage(
+  mealName: string,
+  force = false
+): Promise<{ url: string; credit: ImageCredit | null }> {
+  const r = await request<{ imageUrl: string; source?: string; creditName?: string; creditUrl?: string }>(
+    'POST',
+    '/meal-images/generate',
+    { mealName, force }
+  );
+  const credit = r.source === 'pexels' && r.creditName && r.creditUrl ? { name: r.creditName, url: r.creditUrl } : null;
+  return { url: r.imageUrl, credit };
 }
 
 // ---------- Einkaufsliste ----------

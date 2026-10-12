@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Trash2, CalendarPlus, RefreshCw, Loader2 } from 'lucide-react';
-import { Meal, MealPlan, MealType, PlanMeal } from '../types';
+import { ImageCredit, Meal, MealPlan, MealType, PlanMeal } from '../types';
 import { generateMealImage } from '../lib/api';
 import { formatShortDate } from '../lib/dateUtils';
 import DayCard from './DayCard';
@@ -36,6 +36,10 @@ function planMealToMeal(pm: PlanMeal): Meal {
     ingredients: pm.ingredients,
     instructions: pm.instructions,
     imageUrl: pm.image_url,
+    imageCredit:
+      pm.image_source === 'pexels' && pm.image_credit_name && pm.image_credit_url
+        ? { name: pm.image_credit_name, url: pm.image_credit_url }
+        : null,
     durationMin: pm.duration_min ?? null,
   };
 }
@@ -59,8 +63,8 @@ export default function MealPlanView({
   const [deleting, setDeleting] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [regeneratingPlan, setRegeneratingPlan] = useState(false);
-  // Neu erzeugte Bilder sofort anzeigen (Gerichtname → URL)
-  const [imageOverrides, setImageOverrides] = useState<Record<string, string>>({});
+  // Neu erzeugte Bilder sofort anzeigen (Gerichtname → Bild)
+  const [imageOverrides, setImageOverrides] = useState<Record<string, { url: string; credit: ImageCredit | null }>>({});
 
   const displayItems = (planMeals ?? []).filter((pm) => !pm.rejected);
 
@@ -106,7 +110,11 @@ export default function MealPlanView({
         )}
         {displayItems.map((pm) => {
           const meal = planMealToMeal(pm);
-          if (imageOverrides[pm.meal_name]) meal.imageUrl = imageOverrides[pm.meal_name];
+          const override = imageOverrides[pm.meal_name];
+          if (override) {
+            meal.imageUrl = override.url;
+            meal.imageCredit = override.credit;
+          }
           return (
             <DayCard
               key={pm.id}
@@ -192,12 +200,10 @@ export default function MealPlanView({
               : undefined
           }
           onGenerateImage={async (mealName) => {
-            const url = await generateMealImage(mealName, !!selectedMeal.imageUrl);
-            if (url) {
-              setImageOverrides((prev) => ({ ...prev, [mealName]: url }));
-              setSelectedMeal((prev) => (prev ? { ...prev, imageUrl: url } : prev));
-            }
-            return url;
+            const image = await generateMealImage(mealName, !!selectedMeal.imageUrl);
+            setImageOverrides((prev) => ({ ...prev, [mealName]: image }));
+            setSelectedMeal((prev) => (prev ? { ...prev, imageUrl: image.url, imageCredit: image.credit } : prev));
+            return image;
           }}
           onClose={() => setSelectedMeal(null)}
         />
