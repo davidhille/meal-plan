@@ -35,7 +35,8 @@ Die App hat drei Hauptbereiche, die über einen Tab-Switcher erreichbar sind.
   - Fleisch landet standardmäßig beim „Metzger", alles andere bei „Knuspr"
   - Vorrat (Salz, Pfeffer, Öl, Gewürze, Brühe …) kommt nicht auf die Liste, sondern unter „Basics & Vorrat" – gelb markiert, wenn der Plan ihn braucht
 - Ersatzgerichte (nach Ablehnung) fließen automatisch ein
-- Abhaken, Liste wechseln, eigene Listen (Aldi, Rewe, DM …) mit Farbe, eigene Artikel („Klopapier"), Basics bei Bedarf auf eine Liste setzen
+- Abhaken, Liste wechseln, eigene Listen (Aldi, Rewe, DM …) mit Farbe – antippen zum Umbenennen –, eigene Artikel („Klopapier"), Basics bei Bedarf auf eine Liste setzen
+- **Eigener Vorrat:** Kisten-Symbol an einer Zutat → „haben wir immer da", landet künftig nicht mehr auf der Liste (Tabelle `pantry_items`); unter „Basics & Vorrat" wieder entfernbar
 - **Gemerkte Zuordnungen:** Wird eine Zutat einmal auf eine andere Liste gesetzt oder mit einem Amazon-Produkt verknüpft, gilt das auch für künftige Pläne
 - „Kopieren" kopiert alle offenen Einträge einer Liste als Text
 - **Shops** (Profil → Einkaufen & Shops, Code aus der Juli-Version übernommen, `worker/shops.ts`):
@@ -67,7 +68,7 @@ Die App hat drei Hauptbereiche, die über einen Tab-Switcher erreichbar sind.
   - Diabetes, glutenfrei, laktoseintolerant, Nussallergie, vegetarisch, vegan, koscher, halal
 
 #### Familienmitglieder
-- Name, Typ (Erwachsener/Kind), Alter
+- Name, Typ (Erwachsener/Kind), Alter – nachträglich bearbeitbar
 - Gemochte Speisen (`favorite_foods`) — beeinflusst die automatische Auswahl positiv
 - Unbeliebte Speisen (`disliked_foods`) — führt zu Abzug bei der Bewertung
 - Hinzufügen und Löschen möglich

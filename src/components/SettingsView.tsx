@@ -13,6 +13,7 @@ interface SettingsViewProps {
   routines: Routine[];
   onUpdateProfile: (goal: string, conditions: string[]) => Promise<void>;
   onAddFamilyMember: (member: Omit<FamilyMember, 'id' | 'profile_id' | 'created_at'>) => Promise<void>;
+  onUpdateFamilyMember: (id: string, member: Omit<FamilyMember, 'id' | 'profile_id' | 'created_at'>) => Promise<void>;
   onDeleteFamilyMember: (id: string) => Promise<void>;
   onCreateRoutine: (
     name: string,
@@ -31,12 +32,14 @@ export default function SettingsView({
   routines,
   onUpdateProfile,
   onAddFamilyMember,
+  onUpdateFamilyMember,
   onDeleteFamilyMember,
   onCreateRoutine,
   onDeleteRoutine,
   onCreatePlan,
 }: SettingsViewProps) {
   const [showFamilyModal, setShowFamilyModal] = useState(false);
+  const [editingMember, setEditingMember] = useState<FamilyMember | null>(null);
   const [showPrefsModal, setShowPrefsModal] = useState(false);
   const [showRoutineModal, setShowRoutineModal] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
@@ -193,7 +196,7 @@ export default function SettingsView({
                   key={member.id}
                   className="bg-white rounded-2xl shadow-card border border-gray-200/70 px-4 py-3 flex items-start gap-3"
                 >
-                  <div className="flex-1 min-w-0">
+                  <button onClick={() => setEditingMember(member)} className="flex-1 min-w-0 text-left" title="Bearbeiten">
                     <p className="text-sm font-semibold text-gray-900">
                       {member.name}
                       {member.type === 'child' && member.age && (
@@ -213,7 +216,14 @@ export default function SettingsView({
                         Mag nicht: {member.disliked_foods.join(', ')}
                       </p>
                     )}
-                  </div>
+                  </button>
+                  <button
+                    onClick={() => setEditingMember(member)}
+                    aria-label="Bearbeiten"
+                    className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
+                  >
+                    <Edit2 size={14} />
+                  </button>
                   <button
                     onClick={() => onDeleteFamilyMember(member.id)}
                     className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
@@ -240,13 +250,19 @@ export default function SettingsView({
       </div>
 
       {/* Modals */}
-      {showFamilyModal && (
+      {(showFamilyModal || editingMember) && (
         <FamilyMemberModal
+          member={editingMember ?? undefined}
           onSave={async (member) => {
-            await onAddFamilyMember(member);
+            if (editingMember) await onUpdateFamilyMember(editingMember.id, member);
+            else await onAddFamilyMember(member);
             setShowFamilyModal(false);
+            setEditingMember(null);
           }}
-          onClose={() => setShowFamilyModal(false)}
+          onClose={() => {
+            setShowFamilyModal(false);
+            setEditingMember(null);
+          }}
         />
       )}
 

@@ -115,6 +115,7 @@ async function md5Hex(value: string): Promise<string> {
     const hash = await crypto.subtle.digest("MD5", new TextEncoder().encode(value));
     return [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, "0")).join("");
   } catch {
+    // @ts-ignore – node:crypto ist über nodejs_compat verfügbar
     const nodeCrypto: any = await import("node:crypto");
     return nodeCrypto.createHash("md5").update(value, "utf8").digest("hex");
   }

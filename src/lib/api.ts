@@ -86,6 +86,18 @@ export async function addFamilyMember(
   }
 }
 
+export async function updateFamilyMember(
+  id: string,
+  member: Omit<FamilyMember, 'id' | 'profile_id' | 'created_at'>
+): Promise<FamilyMember | null> {
+  try {
+    return await request<FamilyMember>('PUT', `/family/${id}`, member);
+  } catch (error) {
+    console.error('Error updating family member:', error);
+    return null;
+  }
+}
+
 export async function deleteFamilyMember(id: string): Promise<boolean> {
   try {
     await request('DELETE', `/family/${id}`);
@@ -290,6 +302,8 @@ export interface ShoppingData {
   labels: ShoppingLabel[];
   items: ShoppingItem[];
   pantryNeeded: string[];
+  /** Eigene Vorrats-Zutaten („In Basics legen“) */
+  customPantry: string[];
   portions: number;
   standardLabel: string;
 }
@@ -353,6 +367,36 @@ export async function createLabel(name: string, color: string): Promise<Shopping
   } catch (error) {
     console.error('Error creating label:', error);
     return null;
+  }
+}
+
+export async function updateLabel(labelId: string, name: string, color: string): Promise<ShoppingLabel[] | null> {
+  try {
+    return await request<ShoppingLabel[]>('PUT', `/labels/${enc(labelId)}`, { name, color });
+  } catch (error) {
+    console.error('Error updating label:', error);
+    return null;
+  }
+}
+
+/** Zutat dauerhaft in den Vorrat legen – taucht dann nicht mehr auf der Liste auf */
+export async function addToPantry(name: string): Promise<boolean> {
+  try {
+    await request('POST', '/pantry', { name });
+    return true;
+  } catch (error) {
+    console.error('Error adding to pantry:', error);
+    return false;
+  }
+}
+
+export async function removeFromPantry(name: string): Promise<boolean> {
+  try {
+    await request('DELETE', `/pantry/${enc(name)}`);
+    return true;
+  } catch (error) {
+    console.error('Error removing from pantry:', error);
+    return false;
   }
 }
 

@@ -10,6 +10,9 @@ import {
   addToKnusprCart,
   createLabel,
   deleteLabel,
+  updateLabel,
+  addToPantry,
+  removeFromPantry,
 } from '../lib/api';
 import ShoppingSection from './ShoppingSection';
 import ProductSearchModal from './ProductSearchModal';
@@ -26,6 +29,9 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [labels, setLabels] = useState<ShoppingLabel[]>([...DEFAULT_LABELS]);
   const [pantryNeeded, setPantryNeeded] = useState<string[]>([]);
+  const [customPantry, setCustomPantry] = useState<string[]>([]);
+  const [editingLabelId, setEditingLabelId] = useState<string | null>(null);
+  const [newPantryName, setNewPantryName] = useState('');
   const [showBasics, setShowBasics] = useState(false);
   const [basicPickerTarget, setBasicPickerTarget] = useState<string | null>(null);
   const [showAddLabel, setShowAddLabel] = useState(false);
@@ -49,6 +55,7 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
       setItems(data.items);
       setLabels(data.labels);
       setPantryNeeded(data.pantryNeeded);
+      setCustomPantry(data.customPantry);
       setStandardLabel(data.standardLabel);
     }
     setLoading(false);
@@ -103,10 +110,32 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
 
   const addLabel = async () => {
     if (!newLabelName.trim()) return;
-    const next = await createLabel(newLabelName.trim(), newLabelColor);
+    const next = editingLabelId
+      ? await updateLabel(editingLabelId, newLabelName.trim(), newLabelColor)
+      : await createLabel(newLabelName.trim(), newLabelColor);
     if (next) setLabels(next);
     setNewLabelName('');
+    setEditingLabelId(null);
     setShowAddLabel(false);
+  };
+
+  const startEditLabel = (label: ShoppingLabel) => {
+    setEditingLabelId(label.id);
+    setNewLabelName(label.name);
+    setNewLabelColor(label.color);
+    setShowAddLabel(true);
+  };
+
+  // --- Vorrat ---
+
+  const moveToPantry = async (item: ShoppingItem) => {
+    setItems((prev) => prev.filter((i) => i.id !== item.id));
+    if (await addToPantry(item.baseName)) await load();
+  };
+
+  const takeFromPantry = async (name: string) => {
+    setCustomPantry((prev) => prev.filter((n) => n !== name));
+    if (await removeFromPantry(name)) await load();
   };
 
   const removeLabel = async (labelId: string) => {
@@ -236,6 +265,7 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
             onFindProduct={setProductItem}
             onAddToCart={() => handleAddToCart(label.id)}
             onRemove={removeItem}
+            onMoveToPantry={moveToPantry}
           />
         ))}
 
@@ -243,9 +273,13 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
         {showAddLabel ? (
           <div className="bg-white rounded-2xl shadow-card border border-gray-200/70 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
-              <span className="text-sm font-semibold text-gray-800">Neue Liste</span>
+              <span className="text-sm font-semibold text-gray-800">{editingLabelId ? 'Liste bearbeiten' : 'Neue Liste'}</span>
               <button
-                onClick={() => setShowAddLabel(false)}
+                onClick={() => {
+                  setShowAddLabel(false);
+                  setEditingLabelId(null);
+                  setNewLabelName('');
+                }}
                 className="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100"
               >
                 <X size={14} />
@@ -278,7 +312,7 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
                 disabled={!newLabelName.trim()}
                 className="w-full py-2 rounded-lg text-sm font-medium bg-green-500 text-white hover:bg-green-600 disabled:bg-gray-200 disabled:text-gray-400 transition-all"
               >
-                Liste hinzufügen
+                {editingLabelId ? 'Speichern' : 'Liste hinzufügen'}
               </button>
             </div>
           </div>
@@ -302,8 +336,10 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
                   key={l.id}
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
                 >
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: l.color }} />
-                  {l.name}
+                  <button onClick={() => startEditLabel(l)} title="Liste bearbeiten" className="inline-flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: l.color }} />
+                    {l.name}
+                  </button>
                   <button
                     onClick={() => removeLabel(l.id)}
                     title="Liste löschen (Artikel wandern zu Knuspr)"
@@ -386,6 +422,55 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
                 {availableBasics.length === 0 && (
                   <p className="text-xs text-gray-400">Alle Basics sind bereits auf einer Liste.</p>
                 )}
+              </div>
+
+              {/* Eigener Vorrat */}
+              <div className="mt-4 pt-3 border-t border-gray-100">
+                <p className="text-xs font-semibold text-gray-600 mb-2">Haben wir immer da</p>
+                {customPantry.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {customPantry.map((name) => (
+                      <span key={name} className="inline-flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full bg-sand text-xs text-amber-900">
+                        {name}
+                        <button
+                          onClick={() => takeFromPantry(name)}
+                          title="Wieder auf die Einkaufsliste"
+                          className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-amber-100"
+                        >
+                          <X size={10} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400 mb-3">
+                    Tippe bei einer Zutat auf das Kisten-Symbol, damit sie nicht mehr auf der Liste landet.
+                  </p>
+                )}
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const name = newPantryName.trim();
+                    if (!name) return;
+                    setNewPantryName('');
+                    if (await addToPantry(name)) await load();
+                  }}
+                  className="flex gap-2"
+                >
+                  <input
+                    value={newPantryName}
+                    onChange={(e) => setNewPantryName(e.target.value)}
+                    placeholder="z. B. Reis, Nudeln, Eier"
+                    className="flex-1 h-9 px-3 rounded-xl border border-gray-200 text-xs"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!newPantryName.trim()}
+                    className="px-3 h-9 rounded-xl text-xs font-semibold bg-gray-100 text-gray-700 disabled:text-gray-300"
+                  >
+                    Hinzufügen
+                  </button>
+                </form>
               </div>
             </div>
           )}

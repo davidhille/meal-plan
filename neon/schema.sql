@@ -186,3 +186,12 @@ CREATE TABLE IF NOT EXISTS product_links (
   updated_at timestamptz DEFAULT now(),
   PRIMARY KEY (profile_id, name_key, provider)
 );
+
+-- Ab Version „Eigener Vorrat" (wird vom Worker auch automatisch angelegt)
+CREATE TABLE IF NOT EXISTS pantry_items (
+  profile_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  name_key text NOT NULL,
+  name text NOT NULL,
+  created_at timestamptz DEFAULT now(),
+  PRIMARY KEY (profile_id, name_key)
+);

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Copy, Check, ShoppingCart, ChevronDown, X, Tag, ExternalLink, Link2, Loader2 } from 'lucide-react';
+import { Copy, Check, ShoppingCart, ChevronDown, X, Tag, ExternalLink, Link2, Loader2, Package } from 'lucide-react';
 import { ShoppingItem, ShoppingLabel } from '../types';
 import { buildAmazonSearchUrl } from '../lib/amazon';
 
@@ -14,6 +14,8 @@ interface ShoppingSectionProps {
   /** Knuspr: verknüpfte offene Artikel in den Warenkorb */
   onAddToCart?: () => Promise<void>;
   onRemove?: (item: ShoppingItem) => void;
+  /** Plan-Zutat dauerhaft in den Vorrat legen */
+  onMoveToPantry?: (item: ShoppingItem) => void;
 }
 
 export default function ShoppingSection({
@@ -25,6 +27,7 @@ export default function ShoppingSection({
   onFindProduct,
   onAddToCart,
   onRemove,
+  onMoveToPantry,
 }: ShoppingSectionProps) {
   const [copied, setCopied] = useState(false);
   const [cartBusy, setCartBusy] = useState(false);
@@ -177,6 +180,16 @@ export default function ShoppingSection({
                   <Tag size={13} />
                   <ChevronDown size={10} />
                 </button>
+
+                {onMoveToPantry && item.id.startsWith('p:') && !item.checked && (
+                  <button
+                    onClick={() => onMoveToPantry(item)}
+                    title="Haben wir immer da – in den Vorrat legen"
+                    className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-amber-700 hover:bg-sand"
+                  >
+                    <Package size={13} />
+                  </button>
+                )}
 
                 {onRemove && item.id.startsWith('x:') && !item.isBasic && (
                   <button

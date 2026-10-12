@@ -104,7 +104,7 @@ function splitCombined(text: string): string[] {
 }
 
 /** Schlüssel für das Zusammenfassen: ohne Klammern, Singular/Plural grob vereinheitlicht */
-function mergeKey(name: string): string {
+export function mergeKey(name: string): string {
   return name
     .toLowerCase()
     .replace(/\(.*?\)/g, " ")
@@ -154,7 +154,8 @@ export interface BuildResult {
   pantryNeeded: string[];
 }
 
-export function buildPlanItems(mealIngredients: string[][], portions: number): BuildResult {
+/** extraPantry: eigene Vorrats-Zutaten der Familie (als mergeKey) */
+export function buildPlanItems(mealIngredients: string[][], portions: number, extraPantry: Set<string> = new Set()): BuildResult {
   const factor = portions / RECIPE_BASE_PORTIONS;
   const agg = new Map<string, { name: string; unit: string; qty: number | null; count: number }>();
   const pantry = new Set<string>();
@@ -164,7 +165,7 @@ export function buildPlanItems(mealIngredients: string[][], portions: number): B
       for (const part of splitCombined(raw)) {
         const p = parse(part.replace(/^optional:\s*/i, ""));
         if (!p.name) continue;
-        if (isPantry(p.name)) {
+        if (isPantry(p.name) || extraPantry.has(mergeKey(p.name))) {
           pantry.add(cap(p.name.replace(/\(.*?\)/g, "").trim()));
           continue;
         }

@@ -5,7 +5,7 @@
 
 import { neon } from "@neondatabase/serverless";
 import { pickMeal, pickReplacement, preferredTypeFor, scoreMeal, MEAL_DATABASE, type Recipe, type ScoringContext } from "./meals";
-import { buildPlanItems, familyPortions } from "./shopping";
+import { buildPlanItems, familyPortions, mergeKey } from "./shopping";
 import { generateImage, fillMissingImages, serveImage, IMAGE_URL_SQL, type AiEnv } from "./images";
 import { generateRecipes } from "./aiRecipes";
 import {
@@ -77,6 +77,12 @@ async function migrate(sql: Sql) {
     image_url text,
     updated_at timestamptz DEFAULT now(),
     PRIMARY KEY (profile_id, name_key, provider))`;
+  await sql`CREATE TABLE IF NOT EXISTS pantry_items (
+    profile_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    name_key text NOT NULL,
+    name text NOT NULL,
+    created_at timestamptz DEFAULT now(),
+    PRIMARY KEY (profile_id, name_key))`;
   await sql`ALTER TABLE meal_images ADD COLUMN IF NOT EXISTS image_data bytea`;
   await sql`ALTER TABLE meal_images ADD COLUMN IF NOT EXISTS content_type text`;
   await sql`ALTER TABLE meal_images ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now()`;
@@ -139,7 +145,7 @@ async function getLabels(sql: Sql, profileId: string) {
 
 /** Komplette Einkaufsliste eines Plans: berechnete Zutaten + gespeicherter Zustand + eigene Artikel */
 async function getShopping(sql: Sql, profileId: string, planId: string) {
-  const [labels, meals, members, states, extras, prefs, links, settingsRows] = await Promise.all([
+  const [labels, meals, members, states, extras, prefs, links, settingsRows, pantry] = await Promise.all([
     getLabels(sql, profileId),
     sql`SELECT ingredients FROM plan_meals WHERE plan_id = ${planId} AND NOT rejected`,
     sql`SELECT type, age FROM family_members WHERE profile_id = ${profileId}`,
@@ -148,10 +154,15 @@ async function getShopping(sql: Sql, profileId: string, planId: string) {
     sql`SELECT name_key, label FROM ingredient_prefs WHERE profile_id = ${profileId}`,
     sql`SELECT name_key, provider, product_id, product_name, image_url FROM product_links WHERE profile_id = ${profileId}`,
     sql`SELECT standard_label, metzger_auto FROM profiles WHERE id = ${profileId}`,
+    sql`SELECT name_key, name FROM pantry_items WHERE profile_id = ${profileId} ORDER BY name`,
   ]);
   const labelIds = new Set(labels.map((l) => l.id));
   const portions = familyPortions(members as { type: string; age: number | null }[]);
-  const built = buildPlanItems(meals.map((m) => m.ingredients as string[]), portions);
+  const built = buildPlanItems(
+    meals.map((m) => m.ingredients as string[]),
+    portions,
+    new Set(pantry.map((r) => r.name_key as string))
+  );
   const stateBy = new Map(states.map((r) => [r.item_key, r]));
   const prefBy = new Map(prefs.map((r) => [r.name_key, r]));
   const validLabel = (l: string | null | undefined, fallback: string) => (l && labelIds.has(l) ? l : fallback);
@@ -196,7 +207,14 @@ async function getShopping(sql: Sql, profileId: string, planId: string) {
       };
     }),
   ];
-  return { labels, items, pantryNeeded: built.pantryNeeded, portions, standardLabel: standard };
+  return {
+    labels,
+    items,
+    pantryNeeded: built.pantryNeeded,
+    customPantry: pantry.map((r) => r.name as string),
+    portions,
+    standardLabel: standard,
+  };
 }
 
 // ---------- Shops: Hilfsfunktionen ----------
@@ -527,6 +545,13 @@ export async function handleApi(
         RETURNING *`;
       return json(rows[0]);
     }
+    if (parts[0] === "family" && id && request.method === "PUT") {
+      const p = await getProfile(sql);
+      const rows = await sql`UPDATE family_members SET name = ${body.name}, type = ${body.type}, age = ${body.age ?? null},
+        favorite_foods = ${body.favorite_foods ?? []}, disliked_foods = ${body.disliked_foods ?? []}
+        WHERE id = ${id} AND profile_id = ${p.id} RETURNING *`;
+      return rows[0] ? json(rows[0]) : json({ error: "Nicht gefunden" }, 404);
+    }
     if (parts[0] === "family" && id && request.method === "DELETE") {
       await sql`DELETE FROM family_members WHERE id = ${id}`;
       return json({ ok: true });
@@ -797,6 +822,21 @@ export async function handleApi(
       return json({ error: "Unbekannte Shop-Aktion" }, 404);
     }
 
+    // ---------- Eigener Vorrat (Zutaten, die nie auf die Liste sollen) ----------
+    if (route === "POST /pantry") {
+      const p = await getProfile(sql);
+      const name = String(body.name ?? "").replace(/\(.*?\)/g, "").trim();
+      if (!name) return json({ error: "Name fehlt" }, 400);
+      await sql`INSERT INTO pantry_items (profile_id, name_key, name) VALUES (${p.id}, ${mergeKey(name)}, ${name})
+        ON CONFLICT DO NOTHING`;
+      return json({ ok: true });
+    }
+    if (parts[0] === "pantry" && id && request.method === "DELETE") {
+      const p = await getProfile(sql);
+      await sql`DELETE FROM pantry_items WHERE profile_id = ${p.id} AND name_key = ${mergeKey(decodeURIComponent(id))}`;
+      return json({ ok: true });
+    }
+
     // ---------- Einkaufs-Labels ----------
     if (route === "GET /labels") {
       const p = await getProfile(sql);
@@ -811,6 +851,15 @@ export async function handleApi(
         VALUES (${p.id}, ${labelId}, ${name}, ${body.color || "#3b82f6"},
                 (SELECT COALESCE(MAX(sort), 0) + 1 FROM shopping_labels WHERE profile_id = ${p.id}))
         ON CONFLICT (profile_id, id) DO UPDATE SET name = EXCLUDED.name, color = EXCLUDED.color`;
+      return json(await getLabels(sql, p.id));
+    }
+    if (parts[0] === "labels" && id && request.method === "PUT") {
+      const p = await getProfile(sql);
+      const name = String(body.name ?? "").trim();
+      if (!name) return json({ error: "Name fehlt" }, 400);
+      // Shop- und Standard-Listen behalten ihren Namen
+      await sql`UPDATE shopping_labels SET name = ${name}, color = ${body.color || "#3b82f6"}
+        WHERE profile_id = ${p.id} AND id = ${id} AND provider IS NULL AND id <> 'metzger'`;
       return json(await getLabels(sql, p.id));
     }
     if (parts[0] === "labels" && id && request.method === "DELETE") {

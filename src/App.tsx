@@ -6,6 +6,7 @@ import {
   getFamilyMembers,
   addFamilyMember,
   deleteFamilyMember,
+  updateFamilyMember,
   getMealRatings,
   addMealRating,
   getRoutines,
@@ -128,6 +129,14 @@ export default function App() {
     if (newMember) {
       setFamilyMembers([...familyMembers, newMember]);
     }
+  };
+
+  const handleUpdateFamilyMember = async (
+    id: string,
+    member: Omit<FamilyMember, 'id' | 'profile_id' | 'created_at'>
+  ) => {
+    const updated = await updateFamilyMember(id, member);
+    if (updated) setFamilyMembers((prev) => prev.map((m) => (m.id === id ? updated : m)));
   };
 
   const handleDeleteFamilyMember = async (id: string) => {
@@ -306,6 +315,7 @@ export default function App() {
               routines={routines}
               onUpdateProfile={handleUpdateProfile}
               onAddFamilyMember={handleAddFamilyMember}
+              onUpdateFamilyMember={handleUpdateFamilyMember}
               onDeleteFamilyMember={handleDeleteFamilyMember}
               onCreateRoutine={handleCreateRoutine}
               onDeleteRoutine={handleDeleteRoutine}
