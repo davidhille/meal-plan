@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings, Plus, Trash2, Edit2, Calendar } from 'lucide-react';
+import { Settings, Plus, Trash2, Edit2, Calendar, HeartPulse, Repeat, Users, Info } from 'lucide-react';
 import { FamilyMember, Profile, Routine } from '../types';
 import FamilyMemberModal from './FamilyMemberModal';
 import PreferencesModal from './PreferencesModal';
@@ -7,6 +7,7 @@ import RoutineModal from './RoutineModal';
 import ShopSettings from './ShopSettings';
 import LabelSettings from './LabelSettings';
 import FilterSettings from './FilterSettings';
+import CollapsibleCard from './CollapsibleCard';
 import PlanCreationModal from './PlanCreationModal';
 
 interface SettingsViewProps {
@@ -100,32 +101,34 @@ export default function SettingsView({
           </button>
         </div>
 
-        {/* Health Preferences Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <button
-            onClick={() => setShowPrefsModal(true)}
-            className="w-full text-left px-4 py-4 hover:bg-gray-50 transition-colors"
-          >
-            <span className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-gray-900">Gesundheit & Ernährung</span>
-              <Edit2 size={14} className="text-gray-500" aria-hidden="true" />
-            </span>
+        {/* Gesundheit & Ernährung */}
+        <CollapsibleCard
+          storageKey="gesundheit"
+          title="Gesundheit & Ernährung"
+          icon={<HeartPulse size={16} />}
+          summary={[goalLabels[profile.health_goal] || profile.health_goal, ...profile.health_conditions.map((c) => conditionLabels[c] || c)].join(' · ')}
+          action={
+            <button
+              onClick={() => setShowPrefsModal(true)}
+              aria-label="Gesundheit & Ernährung bearbeiten"
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200"
+            >
+              <Edit2 size={14} />
+            </button>
+          }
+        >
+          <button onClick={() => setShowPrefsModal(true)} className="w-full text-left px-4 pb-4 hover:bg-gray-50 transition-colors">
             <div className="space-y-2">
               <div>
                 <p className="text-xs text-gray-500 mb-0.5">Gesundheitsziel</p>
-                <p className="text-sm text-gray-700 font-medium">
-                  {goalLabels[profile.health_goal] || profile.health_goal}
-                </p>
+                <p className="text-sm text-gray-700 font-medium">{goalLabels[profile.health_goal] || profile.health_goal}</p>
               </div>
               {profile.health_conditions.length > 0 && (
                 <div>
                   <p className="text-xs text-gray-500 mb-1">Krankheiten & Einschränkungen</p>
                   <div className="flex flex-wrap gap-1">
                     {profile.health_conditions.map((cond) => (
-                      <span
-                        key={cond}
-                        className="text-xs bg-orange-50 text-orange-700 px-2 py-1 rounded border border-orange-200"
-                      >
+                      <span key={cond} className="text-xs bg-orange-50 text-orange-700 px-2 py-1 rounded border border-orange-200">
                         {conditionLabels[cond] || cond}
                       </span>
                     ))}
@@ -134,7 +137,7 @@ export default function SettingsView({
               )}
             </div>
           </button>
-        </div>
+        </CollapsibleCard>
 
         {/* Einkaufen & Shops */}
         <ShopSettings />
@@ -144,10 +147,24 @@ export default function SettingsView({
         <FilterSettings />
 
         {/* Routines Section */}
-        <div>
-          <h2 className="text-sm font-semibold text-gray-900 mb-3">Automatische Routinen</h2>
+        <CollapsibleCard
+          storageKey="routinen"
+          title="Automatische Routinen"
+          icon={<Repeat size={16} />}
+          summary={routines.length ? routines.map((r) => r.name).join(', ') : 'Keine Routinen'}
+          action={
+            <button
+              onClick={() => setShowRoutineModal(true)}
+              aria-label="Routine anlegen"
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-green-700 text-white hover:bg-green-800"
+            >
+              <Plus size={16} />
+            </button>
+          }
+        >
+          <div className="px-3 pb-3">
           {routines.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-6 text-center">
+            <div className="px-4 py-6 text-center">
               <p className="text-sm text-gray-500">Keine Routinen eingestellt</p>
               <p className="text-xs text-gray-500 mt-1">Mit „Routine anlegen“ entsteht jede Woche automatisch ein neuer Plan.</p>
             </div>
@@ -156,7 +173,7 @@ export default function SettingsView({
               {routines.map((routine) => (
                 <div
                   key={routine.id}
-                  className="bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-3 flex items-start gap-3"
+                  className="bg-gray-50 rounded-xl border border-gray-100 px-4 py-3 flex items-start gap-3"
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900">{routine.name}</p>
@@ -193,12 +210,16 @@ export default function SettingsView({
               ))}
             </div>
           )}
-        </div>
+          </div>
+        </CollapsibleCard>
 
         {/* Family Members Section */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-900">Familienmitglieder ({familyMembers.length})</h2>
+        <CollapsibleCard
+          storageKey="familie"
+          title={`Familienmitglieder (${familyMembers.length})`}
+          icon={<Users size={16} />}
+          summary={familyMembers.length ? familyMembers.map((m) => m.name).join(', ') : 'Noch niemand eingetragen'}
+          action={
             <button
               onClick={() => setShowFamilyModal(true)}
               aria-label="Familienmitglied hinzufügen"
@@ -206,10 +227,11 @@ export default function SettingsView({
             >
               <Plus size={16} />
             </button>
-          </div>
-
+          }
+        >
+          <div className="px-3 pb-3">
           {familyMembers.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-6 text-center">
+            <div className="px-4 py-6 text-center">
               <p className="text-sm text-gray-500">Keine Familienmitglieder hinzugefügt</p>
               <p className="text-xs text-gray-500 mt-1">Tippe auf +, damit Portionen und Vorlieben passen.</p>
             </div>
@@ -218,7 +240,7 @@ export default function SettingsView({
               {familyMembers.map((member) => (
                 <div
                   key={member.id}
-                  className="bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-3 flex items-start gap-3"
+                  className="bg-gray-50 rounded-xl border border-gray-100 px-4 py-3 flex items-start gap-3"
                 >
                   <button onClick={() => setEditingMember(member)} className="flex-1 min-w-0 text-left" title="Bearbeiten">
                     <p className="text-sm font-semibold text-gray-900">
@@ -270,19 +292,19 @@ export default function SettingsView({
               ))}
             </div>
           )}
-        </div>
+          </div>
+        </CollapsibleCard>
 
         {/* Info Card */}
-        <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-xs text-amber-900">
-          <p className="font-medium mb-1">Wie werden deine Einstellungen genutzt?</p>
-          <ul className="list-disc pl-4 space-y-0.5 text-amber-800">
+        <CollapsibleCard storageKey="info" title="Wie werden deine Einstellungen genutzt?" icon={<Info size={16} />}>
+          <ul className="list-disc pl-8 pr-4 pb-4 space-y-0.5 text-xs text-gray-600">
             <li>Portionen richten sich nach Alter der Familienmitglieder</li>
             <li>Gerichte, die jemand gern isst, kommen öfter</li>
             <li>Unpassendes bei Allergien & Einschränkungen fällt weg</li>
             <li>Gut bewertete Gerichte kommen öfter</li>
             <li>Routinen erstellen automatisch neue Pläne</li>
           </ul>
-        </div>
+        </CollapsibleCard>
       </div>
 
       {/* Modals */}

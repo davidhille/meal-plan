@@ -3,6 +3,7 @@ import { ListChecks, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { DEFAULT_LABELS, LABEL_COLORS, ShoppingLabel } from '../types';
 import { createLabel, deleteLabel, getLabels, updateLabel } from '../lib/api';
 import ConfirmDialog from './ConfirmDialog';
+import CollapsibleCard from './CollapsibleCard';
 
 /** Eigene Listen gehören nicht zu einem Shop und sind keine Standard-Liste */
 const isCustom = (l: ShoppingLabel) => !l.provider && !DEFAULT_LABELS.some((d) => d.id === l.id);
@@ -44,11 +45,12 @@ export default function LabelSettings() {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="px-4 pt-4 pb-2 flex items-center gap-2">
-        <ListChecks size={16} className="text-gray-500" />
-        <h2 className="text-sm font-semibold text-gray-800">Einkaufslisten</h2>
-      </div>
+    <CollapsibleCard
+      storageKey="einkaufslisten"
+      title="Einkaufslisten"
+      icon={<ListChecks size={16} />}
+      summary={labels ? labels.map((l) => l.name).join(', ') : undefined}
+    >
       <p className="px-4 pb-3 text-xs text-gray-500">
         Jede Liste ist ein eigener Abschnitt in der Einkaufsliste, z. B. für Aldi oder die Drogerie.
       </p>
@@ -170,6 +172,6 @@ export default function LabelSettings() {
           onClose={() => setToDelete(null)}
         />
       )}
-    </div>
+    </CollapsibleCard>
   );
 }

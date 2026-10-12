@@ -3,6 +3,7 @@ import { Filter, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { RecipeFilter } from '../types';
 import { deleteRecipeFilter, getRecipeFilters, saveRecipeFilter } from '../lib/api';
 import ConfirmDialog from './ConfirmDialog';
+import CollapsibleCard from './CollapsibleCard';
 
 const SCOPES: { id: RecipeFilter['scope']; label: string }[] = [
   { id: 'gerichte', label: 'Hauptgerichte' },
@@ -86,11 +87,12 @@ export default function FilterSettings() {
   const unusedSuggestions = SUGGESTIONS.filter((s) => !filters?.some((f) => f.name.toLowerCase() === s.name.toLowerCase()));
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="px-4 pt-4 pb-2 flex items-center gap-2">
-        <Filter size={16} className="text-gray-500" />
-        <h2 className="text-sm font-semibold text-gray-800">Filter für die Rezepte</h2>
-      </div>
+    <CollapsibleCard
+      storageKey="rezeptfilter"
+      title="Filter für die Rezepte"
+      icon={<Filter size={16} />}
+      summary={filters ? (filters.length ? filters.map((f) => f.name).join(', ') : 'Noch keine eigenen Filter') : undefined}
+    >
       <p className="px-4 pb-3 text-xs text-gray-500">
         Eigene Filter erscheinen in der Rezept-Übersicht neben „Vegetarisch“ &amp; Co. Ein Rezept passt, wenn einer der Begriffe im
         Namen oder in den Zutaten vorkommt.
@@ -251,6 +253,6 @@ export default function FilterSettings() {
           onClose={() => setToDelete(null)}
         />
       )}
-    </div>
+    </CollapsibleCard>
   );
 }
