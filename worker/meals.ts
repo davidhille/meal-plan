@@ -208,6 +208,10 @@ export interface ScoringContext {
   existingPlanMeals?: string[];
   /** Favoriten ohne Turnus bekommen einen Bonus */
   favoriteNames?: string[];
+  /** In den letzten Wochen schon geplant → Abzug für mehr Abwechslung */
+  recentNames?: string[];
+  /** Frisch erzeugte KI-Rezepte → Bonus, damit sie auch eingeplant werden */
+  newNames?: string[];
 }
 
 const MEAT_RE = /hackfleisch|hähnchen|speck|fleisch|rippchen|lachs|schwein|rind|lamm|filet|schnitzel|braten|burger/i;
@@ -236,8 +240,50 @@ function expandTerm(term: string): string[] {
   return [t];
 }
 
+/** Trifft eine Abneigung (inkl. Oberbegriffe wie „Fisch“) dieses Gericht? */
+export function dislikeMatches(meal: Recipe, term: string): boolean {
+  const text = [meal.name, ...meal.ingredients].join(" | ").toLowerCase();
+  return expandTerm(term).some((t) => text.includes(t));
+}
+
 export function containsGluten(meal: Recipe): boolean {
-  return meal.ingredients.some((i) => GLUTEN_RE.test(i)) || GLUTEN_RE.test(meal.name);
+  return violates(meal, GLUTEN_RE, /glutenfrei/i);
+}
+
+// ---------- Gesundheitsbedingungen (Muster übernommen aus der Juli-Version, verfeinert) ----------
+// Best-Effort-Heuristik auf Zutatentexten – keine zertifizierte Allergie-Absicherung.
+
+const LACTOSE_RE =
+  /(?<!kokos|hafer|soja|mandel|reis|cashew)milch|sahne|käse|butter(?!schmalz)|joghurt|quark|schmand|crème fraîche|creme fraiche|mascarpone|parmesan|mozzarella|ricotta|feta|gorgonzola|cheddar|gouda|emmentaler/i;
+const NUT_RE =
+  /nuss|nüsse|mandel|haselnuss|walnuss|cashew|pistazie|erdnuss|pekannuss|macadamia|pinienkern|nutella|marzipan/i;
+const ANIMAL_RE = new RegExp(
+  `${LACTOSE_RE.source}|butterschmalz|\\bei(er)?\\b|eigelb|eiweiß|honig|gelatine|fisch|lachs|thunfisch|garnele`,
+  "i"
+);
+const PORK_RE = /schwein|speck|schinken|salami|bacon|pancetta|chorizo|mett|wurst/i;
+const SHELLFISH_RE = /garnele|shrimp|muschel|auster|krabbe|hummer|meeresfrüchte|tintenfisch|calamari/i;
+const ALCOHOL_RE = /wein(?!essig|blatt|traube)|bier|\brum\b|likör|sekt|alkohol|cognac|brandy/i;
+const SUGAR_RE = /zucker|honig|sirup|weißbrot|marmelade|nutella/i;
+
+/** Trifft das Muster eine Zutat, die nicht ausdrücklich „…frei“ ist? */
+function violates(meal: Recipe, pattern: RegExp, freeMarker?: RegExp): boolean {
+  if (pattern.test(meal.name) && !(freeMarker && freeMarker.test(meal.name))) return true;
+  return meal.ingredients.some((i) => pattern.test(i) && !(freeMarker && freeMarker.test(i)));
+}
+
+/** Harte Ausschlüsse nach Profil-Einstellungen (Diabetes ist nur ein Abzug, siehe scoreMeal) */
+export function violatesHealthConditions(meal: Recipe, conditions: string[]): boolean {
+  const has = (c: string) => conditions.includes(c);
+  const meaty = meal.type === "fleisch" || meal.ingredients.some((i) => MEAT_RE.test(i));
+  if ((has("vegetarian") || has("vegan")) && meaty) return true;
+  if (has("vegan") && violates(meal, ANIMAL_RE, /vegan/i)) return true;
+  if (has("gluten_free") && containsGluten(meal)) return true;
+  if (has("lactose_intolerant") && violates(meal, LACTOSE_RE, /laktosefrei|vegan/i)) return true;
+  if (has("nut_allergy") && violates(meal, NUT_RE)) return true;
+  if (has("kosher") && (violates(meal, PORK_RE) || violates(meal, SHELLFISH_RE))) return true;
+  if (has("halal") && (violates(meal, PORK_RE) || violates(meal, ALCOHOL_RE))) return true;
+  return false;
 }
 
 export function scoreMeal(meal: Recipe, ctx: ScoringContext): number {
@@ -246,6 +292,8 @@ export function scoreMeal(meal: Recipe, ctx: ScoringContext): number {
   if (ctx.existingPlanMeals?.includes(meal.name)) score -= 20;
   if (ctx.mealRatings[meal.name]) score += ctx.mealRatings[meal.name] * 10;
   if (ctx.favoriteNames?.includes(meal.name)) score += 20;
+  if (ctx.recentNames?.includes(meal.name)) score -= 25;
+  if (ctx.newNames?.includes(meal.name)) score += 15;
 
   const text = [meal.name, ...meal.ingredients].join(" | ").toLowerCase();
   const matches = (term: string) => expandTerm(term).some((t) => text.includes(t));
@@ -258,10 +306,8 @@ export function scoreMeal(meal: Recipe, ctx: ScoringContext): number {
     }
   }
 
-  const veg = ctx.healthConditions.includes("vegetarian");
-  const vegan = ctx.healthConditions.includes("vegan");
-  if ((veg || vegan) && (meal.type === "fleisch" || meal.ingredients.some((i) => MEAT_RE.test(i)))) return -1;
-  if (ctx.healthConditions.includes("gluten_free") && containsGluten(meal)) return -1;
+  if (violatesHealthConditions(meal, ctx.healthConditions)) return -1;
+  if (ctx.healthConditions.includes("diabetes") && violates(meal, SUGAR_RE)) score -= 15;
 
   if (ctx.healthGoal === "weight_loss") {
     if (meal.type === "vegetarisch") score += 10;

@@ -84,6 +84,21 @@ Die App hat drei Hauptbereiche, die über einen Tab-Switcher erreichbar sind.
 
 ---
 
+## 2a. KI-Rezepte
+
+- **Modell:** Llama 3.3 70B über Cloudflare Workers AI im JSON-Modus (`worker/aiRecipes.ts`), Prompt-Idee aus der Juli-Version
+- **Rezept-Pool:** feste Liste im Code (31) + `recipes`-Tabelle (wächst mit jedem Plan) + Favoriten
+- **Bei jeder Planung:** pro benötigtem Typ mindestens 1 neues Rezept; fehlen gültige Kandidaten (z. B. vegan, glutenfrei), entsprechend mehr (max. 6, parallel erzeugt)
+- **„Neu generieren“** auf einer Gerichtkarte erzeugt ein frisches KI-Rezept für diesen Tag; „Ablehnen“ nimmt das beste vorhandene und erzeugt nur notfalls ein neues
+- **Vorgaben im Prompt:** Typ/Zeitrahmen, Küchenrichtung (für Abwechslung), Familie mit Kinderalter, Gesundheitsbedingungen, Abneigungen, Vorlieben, Ziel, keine Wiederholungen; Mengen immer für 4 Portionen im Format „Menge Einheit Zutat“
+- **Nachprüfung:** Jedes KI-Rezept läuft durch unsere Filter (Gesundheitsbedingungen, Abneigungen inkl. Oberbegriffen) – die KI hält sich nicht immer an Vorgaben
+- **Abwechslung:** Gerichte der letzten 3 Wochen bekommen einen Abzug, frische KI-Rezepte einen Bonus
+- **Kosten:** ca. 150–200 Neurons pro Rezept (Free-Plan: 10.000/Tag, geteilt mit den Bildern)
+
+## Gesundheitsbedingungen (alle 8 aktiv)
+
+`worker/meals.ts` → `violatesHealthConditions()`: vegetarisch, vegan, glutenfrei, laktosefrei, Nussallergie, koscher, halal schließen hart aus; Diabetes gibt einen Abzug bei Zucker. Zutaten mit „…frei“ (z. B. „laktosefreier Joghurt“, „glutenfreie Nudeln“) gelten als erlaubt, Kokos-/Hafermilch zählt nicht als Milch. **Heuristik, keine zertifizierte Allergie-Absicherung.**
+
 ## 2. Automatische Essensplanung (Server)
 
 Die Logik liegt in `worker/meals.ts` und wird von `worker/api.ts` genutzt (Routen `POST /api/plans`, `POST /api/plan-meals/:id/reject`). Abschnitte 2.1–2.3 beschreiben die fachliche Logik (ursprünglich Supabase Edge Functions).

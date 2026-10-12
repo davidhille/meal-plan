@@ -143,3 +143,16 @@ CREATE TABLE IF NOT EXISTS favorites (
   created_at timestamptz DEFAULT now(),
   UNIQUE (profile_id, meal_name)
 );
+
+-- Ab Version „KI-Rezepte" (wird vom Worker auch automatisch angelegt)
+-- Geteilter, wachsender Rezept-Pool (zusätzlich zur festen Liste im Code)
+CREATE TABLE IF NOT EXISTS recipes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL UNIQUE,
+  type text NOT NULL CHECK (type IN ('vegetarisch', 'fleisch', 'wochenende')),
+  ingredients text[] NOT NULL,
+  instructions text NOT NULL,       -- Schritte, durch Zeilenumbruch getrennt
+  duration_min integer,
+  source text NOT NULL DEFAULT 'ai',
+  created_at timestamptz DEFAULT now()
+);

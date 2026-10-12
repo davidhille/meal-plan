@@ -4,9 +4,10 @@
 //   APP_PASSWORD  – Familien-Passwort für die App (Secret, optional; leer = kein Schutz)
 
 import { neon } from "@neondatabase/serverless";
-import { pickMeal, pickReplacement, preferredTypeFor, MEAL_DATABASE, type Recipe, type ScoringContext } from "./meals";
+import { pickMeal, pickReplacement, preferredTypeFor, scoreMeal, MEAL_DATABASE, type Recipe, type ScoringContext } from "./meals";
 import { buildPlanItems, familyPortions } from "./shopping";
 import { generateImage, fillMissingImages, serveImage, IMAGE_URL_SQL, type AiEnv } from "./images";
+import { generateRecipes } from "./aiRecipes";
 
 export interface Env extends AiEnv {
   DATABASE_URL: string;
@@ -28,6 +29,15 @@ let schemaReady: Promise<unknown> | null = null;
 async function migrate(sql: Sql) {
   await sql`ALTER TABLE routines ADD COLUMN IF NOT EXISTS last_run_at timestamptz`;
   await sql`ALTER TABLE plan_meals ADD COLUMN IF NOT EXISTS duration_min integer`;
+  await sql`CREATE TABLE IF NOT EXISTS recipes (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    name text NOT NULL UNIQUE,
+    type text NOT NULL CHECK (type IN ('vegetarisch', 'fleisch', 'wochenende')),
+    ingredients text[] NOT NULL,
+    instructions text NOT NULL,
+    duration_min integer,
+    source text NOT NULL DEFAULT 'ai',
+    created_at timestamptz DEFAULT now())`;
   await sql`CREATE TABLE IF NOT EXISTS favorites (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     profile_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -172,13 +182,44 @@ function favoriteToRecipe(f: Record<string, any>): Recipe {
   };
 }
 
-/** Alle Rezepte, aus denen geplant wird: feste Liste + Favoriten (die nicht in der Liste stehen) */
+/** Alle Rezepte, aus denen geplant wird: feste Liste + KI-Rezepte + Favoriten */
 async function loadPool(sql: Sql, profileId: string): Promise<{ pool: Recipe[]; favorites: Record<string, any>[] }> {
-  const favorites = await loadFavorites(sql, profileId);
-  const names = new Set(MEAL_DATABASE.map((m) => m.name));
+  const [favorites, dbRecipes] = await Promise.all([
+    loadFavorites(sql, profileId),
+    sql`SELECT name, type, ingredients, instructions, duration_min FROM recipes`,
+  ]);
   const pool: Recipe[] = [...MEAL_DATABASE];
+  const names = new Set(pool.map((m) => m.name));
+  for (const r of dbRecipes) {
+    if (names.has(r.name)) continue;
+    pool.push({ name: r.name, type: r.type, ingredients: r.ingredients, instructions: r.instructions, durationMin: r.duration_min });
+    names.add(r.name);
+  }
   for (const f of favorites) if (!names.has(f.meal_name)) pool.push(favoriteToRecipe(f));
   return { pool, favorites };
+}
+
+/** Gerichte, die in den 3 Wochen vor `startDate` schon geplant waren */
+async function recentMealNames(sql: Sql, profileId: string, startDate: string): Promise<string[]> {
+  const rows = await sql`SELECT DISTINCT pm.meal_name FROM plan_meals pm JOIN meal_plans mp ON mp.id = pm.plan_id
+    WHERE mp.profile_id = ${profileId} AND NOT pm.rejected
+      AND pm.meal_date >= ${startDate}::date - 21 AND pm.meal_date < ${startDate}::date`;
+  return rows.map((r) => r.meal_name as string);
+}
+
+/** Wie viele frische KI-Rezepte braucht dieser Plan, und welche Typen? */
+function aiTypesNeeded(dates: string[], skip: Set<string>, pool: Recipe[], ctx: ScoringContext): Recipe["type"][] {
+  const need: Record<Recipe["type"], number> = { vegetarisch: 0, fleisch: 0, wochenende: 0 };
+  for (const d of dates) if (!skip.has(d)) need[preferredTypeFor(d)]++;
+  const types: Recipe["type"][] = [];
+  for (const t of Object.keys(need) as Recipe["type"][]) {
+    if (!need[t]) continue;
+    const fresh = pool.filter((m) => m.type === t && !ctx.recentNames?.includes(m.name) && scoreMeal(m, ctx) >= 0).length;
+    const deficit = Math.max(0, need[t] - fresh);
+    // Fehlende auffüllen + etwas Abwechslung: pro Typ mindestens 1 neues Rezept
+    for (let i = 0; i < Math.max(deficit, 1); i++) types.push(t);
+  }
+  return types.slice(0, 6);
 }
 
 function addDaysIso(date: string, days: number) {
@@ -188,10 +229,11 @@ function addDaysIso(date: string, days: number) {
 }
 
 /** Plan für [startDate, endDate] erzeugen und speichern */
-async function createPlan(sql: Sql, profileId: string, startDate: string, endDate: string) {
+async function createPlan(env: Env, sql: Sql, profileId: string, startDate: string, endDate: string) {
   const ctx = await loadContext(sql, profileId);
   const { pool, favorites } = await loadPool(sql, profileId);
   ctx.favoriteNames = favorites.filter((f) => !f.turnus_weeks).map((f) => f.meal_name);
+  ctx.recentNames = await recentMealNames(sql, profileId, startDate);
 
   const dates: string[] = [];
   for (let d = startDate; d <= endDate; d = addDaysIso(d, 1)) dates.push(d);
@@ -214,7 +256,14 @@ async function createPlan(sql: Sql, profileId: string, startDate: string, endDat
     used.add(f.meal_name);
   }
 
-  // 2) Restliche Tage normal planen
+  // 2) Frische KI-Rezepte für Abwechslung und fehlende Kandidaten (z. B. bei vegan/glutenfrei)
+  const assignedDates = new Set(assigned.keys());
+  const types = aiTypesNeeded(dates, assignedDates, pool, ctx);
+  const fresh = await generateRecipes(env, sql, types, ctx, pool.map((m) => m.name));
+  pool.push(...fresh);
+  ctx.newNames = fresh.map((r) => r.name);
+
+  // 3) Restliche Tage planen
   const meals: { date: string; recipe: Recipe }[] = [];
   for (const date of dates) {
     const fixed = assigned.get(date);
@@ -276,7 +325,14 @@ async function replaceMeal(env: Env, sql: Sql, profileId: string, planMealId: st
   const existing = await sql`SELECT meal_name FROM plan_meals WHERE plan_id = ${old.plan_id}`;
   const exclude = new Set<string>([...existing.map((r) => r.meal_name as string), old.meal_name]);
 
-  const best = pickReplacement(old.meal_date, ctx, pool, exclude);
+  ctx.recentNames = await recentMealNames(sql, profileId, old.meal_date);
+  const dayType = preferredTypeFor(old.meal_date);
+  let best: Recipe | null = null;
+  // „Neu generieren“: am liebsten ein ganz neues KI-Rezept
+  if (!reject) best = (await generateRecipes(env, sql, [dayType], ctx, pool.map((m) => m.name)))[0] ?? null;
+  best ??= pickReplacement(old.meal_date, ctx, pool, exclude);
+  // Pool erschöpft (z. B. vegan) → KI als Rettung
+  if (!best && reject) best = (await generateRecipes(env, sql, [dayType], ctx, pool.map((m) => m.name)))[0] ?? null;
   if (!best) return null;
 
   if (!reject) await sql`DELETE FROM plan_meals WHERE id = ${planMealId}`;
@@ -417,7 +473,7 @@ export async function handleApi(
       const { startDate, endDate } = body;
       if (!startDate || !endDate) return json({ error: "startDate und endDate fehlen" }, 400);
       const p = await getProfile(sql);
-      const plan = await createPlan(sql, p.id, startDate, endDate);
+      const plan = await createPlan(env, sql, p.id, startDate, endDate);
       waitUntil(fillMissingImages(env, sql, 7, plan.id));
       return json(plan);
     }
@@ -463,7 +519,7 @@ export async function handleApi(
       await sql`UPDATE favorites SET last_planned = NULL WHERE profile_id = ${p.id}
         AND last_planned BETWEEN ${rows[0].start_date}::date AND ${rows[0].end_date}::date`;
       await sql`DELETE FROM meal_plans WHERE id = ${id}`;
-      const plan = await createPlan(sql, p.id, rows[0].start_date, rows[0].end_date);
+      const plan = await createPlan(env, sql, p.id, rows[0].start_date, rows[0].end_date);
       waitUntil(fillMissingImages(env, sql, 7, plan.id));
       return json(plan);
     }
@@ -649,7 +705,7 @@ export async function runRoutines(env: Env) {
 
     const start = addDaysIso(now.date, 1);
     const end = addDaysIso(start, Math.max(1, r.duration_days) - 1);
-    await createPlan(sql, r.profile_id, start, end);
+    await createPlan(env, sql, r.profile_id, start, end);
     console.log(`Routine "${r.name}" ausgeführt: Plan ${start} bis ${end}`);
   }
 
