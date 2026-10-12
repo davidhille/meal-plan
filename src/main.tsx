@@ -8,3 +8,12 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>
 );
+
+// Service Worker – macht die App auf dem Handy installierbar (nicht im Entwicklungsmodus)
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // ohne Service Worker läuft die App ganz normal im Browser
+    });
+  });
+}
