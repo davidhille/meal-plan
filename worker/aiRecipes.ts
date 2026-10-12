@@ -3,7 +3,7 @@
 // mit Nachprüfung durch unsere eigenen Filter – die KI hält sich nicht immer an Vorgaben.
 import type { neon } from "@neondatabase/serverless";
 import type { AiEnv } from "./images";
-import { type Recipe, violatesHealthConditions, dislikeMatches } from "./meals";
+import { type Recipe, violatesHealthConditions, dislikeMatches, isSimilarDish } from "./meals";
 
 type Sql = ReturnType<typeof neon>;
 
@@ -162,6 +162,8 @@ export async function generateRecipes(
   const valid: Recipe[] = [];
   for (const r of results) {
     if (!r || seen.has(r.name.toLowerCase())) continue;
+    // Nur eine Variante von etwas, das es schon gibt („Indische Quinoa-Pfanne“ neben „Mediterrane Quinoa-Pfanne“)
+    if ([...avoidNames, ...valid.map((v) => v.name)].some((n) => isSimilarDish(r.name, n))) continue;
     // Nachprüfen: Gesundheitsbedingungen und Abneigungen hart
     if (violatesHealthConditions(r, ctx.healthConditions)) continue;
     if (ctx.familyMembers.some((m) => (m.disliked_foods ?? []).some((d) => dislikeMatches(r, d)))) continue;

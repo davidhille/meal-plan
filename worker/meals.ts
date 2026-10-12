@@ -301,7 +301,7 @@ export function scoreMeal(meal: Recipe, ctx: ScoringContext): number {
   if (ctx.mealRatings[meal.name]) score += ctx.mealRatings[meal.name] * 10;
   if (ctx.favoriteNames?.includes(meal.name)) score += 20;
   if (ctx.recentNames?.includes(meal.name)) score -= 25;
-  if (ctx.newNames?.includes(meal.name)) score += 15;
+  if (ctx.newNames?.includes(meal.name)) score += 5;
 
   const text = [meal.name, ...meal.ingredients].join(" | ").toLowerCase();
   const matches = (term: string) => expandTerm(term).some((t) => text.includes(t));
@@ -328,6 +328,53 @@ export function scoreMeal(meal: Recipe, ctx: ScoringContext): number {
   return Math.max(0, score);
 }
 
+// ---------- Ähnliche Gerichte erkennen ----------
+// „Mediterrane Quinoa-Pfanne“ und „Skandinavische Quinoa-Pfanne“ sind für die Familie dasselbe.
+
+const NAME_STOPWORDS = new Set([
+  "mit", "und", "in", "im", "aus", "dem", "der", "die", "das", "den", "vom", "von", "an", "auf", "nach", "art", "à", "la",
+  "zu", "zum", "zur", "oder", "ein", "eine",
+]);
+/** Beschreibende Wörter, die nichts über das eigentliche Gericht sagen */
+const NAME_DESCRIPTOR_RE =
+  /^(asiatisch|mediterran|skandinavisch|indisch|italienisch|französisch|griechisch|orientalisch|mexikanisch|thailändisch|spanisch|deutsch|klassisch|bunt|schnell|cremig|einfach|herzhaft|würzig|leicht|selbstgemacht|knusprig|krossen?|frisch|mild|gefüllt|überbacken|hausgemacht|lecker|fein|sommerlich|winterlich|herbstlich|rustikal|traditionell|original)/;
+
+/** Kennwörter eines Gerichts (ohne Füllwörter und Herkunftsangaben), z. B. {quinoa, pfanne} */
+export function dishKeywords(name: string): Set<string> {
+  return new Set(
+    name
+      .toLowerCase()
+      .replace(/\(.*?\)/g, " ")
+      .split(/[^a-zäöüß]+/)
+      .filter((w) => w.length > 2 && !NAME_STOPWORDS.has(w) && !NAME_DESCRIPTOR_RE.test(w))
+      .map((w) => w.replace(/(en|er|es|e|n|s)$/, ""))
+  );
+}
+
+/** Hauptgericht ohne Beilagen: „Kassler mit Sauerkraut und Püree“ → „Kassler“ */
+const mainDish = (name: string) => name.split(/\s(?:mit|und|&|in|an|auf)\s/i)[0];
+
+/** Gleiches Hauptgericht in anderer Variante? (gleiche Kennwörter oder mehr als die Hälfte gemeinsam) */
+export function isSimilarDish(a: string, b: string): boolean {
+  const ka = dishKeywords(mainDish(a));
+  const kb = dishKeywords(mainDish(b));
+  if (ka.size === 0 || kb.size === 0) return false;
+  let shared = 0;
+  for (const w of ka) if (kb.has(w)) shared++;
+  if (shared === ka.size && shared === kb.size) return true;
+  return shared >= 2 && shared / (ka.size + kb.size - shared) > 0.5;
+}
+
+/** Wie viele Kennwörter teilt ein Gericht mit den zuletzt geplanten? (Grundlage für Abwechslung) */
+function overlapWithRecent(name: string, recent: string[]): number {
+  const k = dishKeywords(name);
+  let n = 0;
+  for (const r of recent) for (const w of dishKeywords(r)) if (k.has(w) && !GENERIC_DISH_WORDS.has(w)) n++;
+  return n;
+}
+/** Wörter, die sich ruhig öfter wiederholen dürfen */
+const GENERIC_DISH_WORDS = new Set(["gemüs", "kartoffel", "reis", "soß", "sauc", "salat", "ofen", "brot", "kräuter", "tomat", "zwiebel"]);
+
 /** Sa/So → wochenende, gerade Wochentage → fleisch, ungerade → vegetarisch */
 export function preferredTypeFor(dateStr: string): Recipe["type"] {
   const dow = new Date(dateStr + "T00:00:00Z").getUTCDay();
@@ -342,10 +389,12 @@ export function pickMeal(
   pool: Recipe[] = MEAL_DATABASE
 ): Recipe | null {
   const preferred = preferredTypeFor(dateStr);
-  // Etwas Zufall, damit nicht jeder Plan dieselben Spitzenreiter bekommt
+  // Etwas Zufall, damit nicht jeder Plan dieselben Spitzenreiter bekommt; Gerichte, die den
+  // letzten Tagen ähneln (z. B. die dritte Quinoa-Pfanne), rutschen nach hinten
+  const recent = [...used].slice(-6);
   const all = pool.map((meal) => ({ meal, score: scoreMeal(meal, ctx) }))
     .filter((s) => s.score >= 0)
-    .map((s) => ({ ...s, rank: s.score + Math.random() * 15 }))
+    .map((s) => ({ ...s, rank: s.score + Math.random() * 15 - 15 * overlapWithRecent(s.meal.name, recent) }))
     .sort((a, b) => b.rank - a.rank);
   const fresh = all.filter((s) => !used.has(s.meal.name));
   // Sind alle schon dran gewesen: das Gericht wiederholen, das am längsten zurückliegt
