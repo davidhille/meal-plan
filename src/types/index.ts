@@ -15,6 +15,17 @@ export interface CatalogRecipe {
   origin: 'basis' | 'ki' | 'import' | 'favorit';
 }
 
+/** Eigener Filter für die Rezept-Übersicht (in den Einstellungen angelegt) */
+export interface RecipeFilter {
+  id: string;
+  name: string;
+  scope: 'gerichte' | 'nachtische' | 'beide';
+  /** Treffer, wenn einer der Begriffe im Namen oder in den Zutaten vorkommt */
+  keywords: string[];
+  /** Höchstens so viele Minuten Zubereitung */
+  maxMinutes: number | null;
+}
+
 export interface RecipeCatalog {
   recipes: CatalogRecipe[];
   /** Ausgeblendete bzw. abgelehnte Gerichte */

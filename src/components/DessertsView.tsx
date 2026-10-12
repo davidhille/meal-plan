@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CakeSlice, Clock, Loader2, Search, X } from 'lucide-react';
-import { Dessert, DessertCategory, Meal, PlanMeal } from '../types';
+import { Dessert, DessertCategory, Meal, PlanMeal, RecipeFilter } from '../types';
+import { matchesRecipeFilter } from '../lib/recipeFilters';
+import CustomFilterChips from './CustomFilterChips';
 import { DESSERT_CREDIT as CREDIT, dessertPreview as preview } from '../lib/desserts';
 import MealModal from './MealModal';
 import DayAssignSheet from './DayAssignSheet';
@@ -11,6 +13,8 @@ interface DessertsViewProps {
   onAssign?: (pm: PlanMeal, dessert: Dessert) => Promise<void>;
   /** Auswahlmodus (Nachtisch zum Gericht): Das Rezept bekommt einen Button „Zum Gericht hinzufügen“ */
   onPick?: (dessert: Dessert) => Promise<void>;
+  /** Eigene Filter aus den Einstellungen */
+  customFilters?: RecipeFilter[];
 }
 
 const CATEGORIES: { id: DessertCategory | 'alle'; label: string }[] = [
@@ -49,9 +53,11 @@ function toMeal(d: Dessert): Meal {
   };
 }
 
-export default function DessertsView({ planMeals = [], onAssign, onPick }: DessertsViewProps) {
+export default function DessertsView({ planMeals = [], onAssign, onPick, customFilters = [] }: DessertsViewProps) {
   const [desserts, setDesserts] = useState<Dessert[] | null>(null);
   const [category, setCategory] = useState<DessertCategory | 'alle'>('alle');
+  const [customId, setCustomId] = useState<string | null>(null);
+  const custom = customFilters.find((f) => f.id === customId) ?? null;
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<Dessert | null>(null);
   const [assign, setAssign] = useState<Dessert | null>(null);
@@ -74,9 +80,10 @@ export default function DessertsView({ planMeals = [], onAssign, onPick }: Desse
     return desserts.filter(
       (d) =>
         (category === 'alle' || d.category === category) &&
+        (!custom || matchesRecipeFilter(custom, d)) &&
         (!q || normalize(d.name).includes(q) || d.ingredients.some((i) => normalize(i).includes(q)))
     );
-  }, [desserts, category, query]);
+  }, [desserts, category, query, custom]);
 
   if (!desserts) {
     return (
@@ -125,6 +132,7 @@ export default function DessertsView({ planMeals = [], onAssign, onPick }: Desse
             </button>
           ))}
         </div>
+        <CustomFilterChips filters={customFilters} activeId={customId} onChange={setCustomId} />
 
         <p className="text-xs text-gray-500 px-1" aria-live="polite">
           {visible.length === desserts.length ? `${desserts.length} Nachtische` : `${visible.length} von ${desserts.length} Nachtischen`}

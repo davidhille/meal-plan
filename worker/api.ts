@@ -35,7 +35,7 @@ let schemaReady: Promise<unknown> | null = null;
 // Bei jeder Schema-Änderung unten hochzählen. Der Stand steht als Kommentar an der Tabelle `profiles`,
 // damit ein aktueller Worker beim Kaltstart gar keine DDL ausführt: ALTER TABLE sperrt die Tabelle
 // auch dann, wenn die Spalte schon existiert, und kann so alle Anfragen blockieren.
-const SCHEMA_VERSION = "schema:2026101204";
+const SCHEMA_VERSION = "schema:2026101205";
 
 async function migrate(sql: Sql) {
   const current = await sql`SELECT obj_description('public.profiles'::regclass, 'pg_class') AS v`;
@@ -50,6 +50,15 @@ async function runMigrations(sql: Sql) {
   await sql`ALTER TABLE plan_meals ADD COLUMN IF NOT EXISTS duration_min integer`;
   // Nachtisch zum Gericht: { name, ingredients, instructions, durationMin, imageUrl, yield } aus der Sammlung im Frontend
   await sql`ALTER TABLE plan_meals ADD COLUMN IF NOT EXISTS dessert jsonb`;
+  // Eigene Filter für die Rezept-Übersicht (Suchbegriffe und/oder maximale Zubereitungszeit)
+  await sql`CREATE TABLE IF NOT EXISTS recipe_filters (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    profile_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    name text NOT NULL,
+    scope text NOT NULL DEFAULT 'beide' CHECK (scope IN ('gerichte', 'nachtische', 'beide')),
+    keywords text[] NOT NULL DEFAULT '{}',
+    max_minutes integer,
+    created_at timestamptz DEFAULT now())`;
   await sql`CREATE TABLE IF NOT EXISTS recipes (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     name text NOT NULL UNIQUE,
@@ -581,6 +590,24 @@ async function replaceWithRecipe(env: Env, sql: Sql, profileId: string, planMeal
   return replacement;
 }
 
+async function listRecipeFilters(sql: Sql, profileId: string) {
+  return sql`SELECT id, name, scope, keywords, max_minutes AS "maxMinutes" FROM recipe_filters
+    WHERE profile_id = ${profileId} ORDER BY created_at`;
+}
+
+/** Eigenen Filter prüfen: Name plus Suchbegriffe und/oder maximale Zeit */
+function parseRecipeFilter(raw: Record<string, unknown>) {
+  const name = String(raw.name ?? "").trim().slice(0, 40);
+  const scope = ["gerichte", "nachtische", "beide"].includes(raw.scope as string) ? (raw.scope as string) : "beide";
+  const keywords = (Array.isArray(raw.keywords) ? raw.keywords : [])
+    .map((k) => String(k).trim().slice(0, 40))
+    .filter(Boolean)
+    .slice(0, 20);
+  const maxMinutes = Number(raw.maxMinutes) > 0 ? Math.min(Math.round(Number(raw.maxMinutes)), 1440) : null;
+  if (!name || (!keywords.length && !maxMinutes)) return null;
+  return { name, scope, keywords, maxMinutes };
+}
+
 async function latestPlan(sql: Sql, profileId: string) {
   const rows = await sql.query(
     `SELECT ${PLAN_COLS} FROM meal_plans WHERE profile_id = $1 AND status = 'active' ORDER BY created_at DESC LIMIT 1`,
@@ -1053,6 +1080,30 @@ export async function handleApi(
       const p = await getProfile(sql);
       await sql`DELETE FROM pantry_items WHERE profile_id = ${p.id} AND name_key = ${mergeKey(decodeURIComponent(id))}`;
       return json({ ok: true });
+    }
+
+    // ---------- Eigene Rezept-Filter ----------
+    if (route === "GET /recipe-filters") {
+      const p = await getProfile(sql);
+      return json(await listRecipeFilters(sql, p.id));
+    }
+    if (route === "POST /recipe-filters" || (parts[0] === "recipe-filters" && id && request.method === "PUT")) {
+      const p = await getProfile(sql);
+      const f = parseRecipeFilter(body);
+      if (!f) return json({ error: "Name und Suchbegriffe oder Zeit angeben" }, 400);
+      if (request.method === "POST") {
+        await sql`INSERT INTO recipe_filters (profile_id, name, scope, keywords, max_minutes)
+          VALUES (${p.id}, ${f.name}, ${f.scope}, ${f.keywords}, ${f.maxMinutes})`;
+      } else {
+        await sql`UPDATE recipe_filters SET name = ${f.name}, scope = ${f.scope}, keywords = ${f.keywords}, max_minutes = ${f.maxMinutes}
+          WHERE id = ${id} AND profile_id = ${p.id}`;
+      }
+      return json(await listRecipeFilters(sql, p.id));
+    }
+    if (parts[0] === "recipe-filters" && id && request.method === "DELETE") {
+      const p = await getProfile(sql);
+      await sql`DELETE FROM recipe_filters WHERE id = ${id} AND profile_id = ${p.id}`;
+      return json(await listRecipeFilters(sql, p.id));
     }
 
     // ---------- Einkaufs-Labels ----------
