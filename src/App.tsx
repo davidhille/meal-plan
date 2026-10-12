@@ -31,6 +31,7 @@ import { familyPortions } from './lib/portions';
 import PlanCreationModal from './components/PlanCreationModal';
 import Header from './components/Header';
 import TabSwitcher from './components/TabSwitcher';
+import DessertsView from './components/DessertsView';
 import WeekSelector from './components/WeekSelector';
 import { getWeeksInRange, isDateInWeek } from './lib/dateUtils';
 import FavoritesView from './components/FavoritesView';
@@ -317,6 +318,8 @@ export default function App() {
             week={showWeeks && selectedWeek ? { from: selectedWeek.weekStart, to: selectedWeek.weekEnd } : undefined}
             onCreatePlan={() => setShowPlanModal(true)}
           />
+        ) : activeTab === 'nachtisch' ? (
+          <DessertsView plan={currentPlan} />
         ) : activeTab === 'favoriten' ? (
           <FavoritesView
             favorites={favorites}

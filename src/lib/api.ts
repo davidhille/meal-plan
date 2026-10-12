@@ -365,6 +365,11 @@ export async function addShoppingItem(
   }
 }
 
+/** Mehrere eigene Artikel auf einmal (z. B. alle Zutaten eines Nachtischs); wirft bei Fehlern */
+export async function addShoppingItems(planId: string, names: string[], label = 'knuspr'): Promise<void> {
+  await request<ShoppingData>('POST', `/plans/${planId}/shopping`, { names, label });
+}
+
 export async function removeShoppingItem(planId: string, itemId: string): Promise<boolean> {
   try {
     await request('DELETE', `/plans/${planId}/shopping/${enc(itemId)}`);
@@ -514,25 +519,4 @@ export async function saveImportedRecipe(
 ): Promise<Favorite[]> {
   const result = await request<{ favorites: Favorite[] }>('POST', '/recipes', { ...recipe, favorite });
   return result.favorites;
-}
-
-/** Nachtische von TheMealDB als JSON-Datei herunterladen (zum Übersetzen außerhalb der App) */
-export async function downloadMealDbExport(): Promise<number> {
-  const res = await fetch('/api/mealdb-export', { headers: { 'X-App-Password': getPassword() } });
-  if (res.status === 401) throw new Error('Passwort wurde nicht akzeptiert – bitte neu anmelden.');
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || `Fehler ${res.status}`);
-  }
-  const blob = await res.blob();
-  const count = JSON.parse(await blob.text()).count as number;
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'mealdb-nachtische.json';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-  return count;
 }

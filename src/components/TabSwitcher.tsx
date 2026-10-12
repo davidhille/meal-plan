@@ -1,5 +1,5 @@
 import { ViewTab } from '../types';
-import { Settings, Heart } from 'lucide-react';
+import { Settings, Heart, CakeSlice } from 'lucide-react';
 
 interface TabSwitcherProps {
   activeTab: ViewTab;
@@ -10,6 +10,7 @@ export default function TabSwitcher({ activeTab, onTabChange }: TabSwitcherProps
   const tabs: { id: ViewTab; label: string; icon?: React.ReactNode; title?: string }[] = [
     { id: 'speiseplan', label: 'Speiseplan' },
     { id: 'einkaufsliste', label: 'Einkaufsliste' },
+    { id: 'nachtisch', label: '', icon: <CakeSlice size={18} />, title: 'Nachtisch' },
     { id: 'favoriten', label: '', icon: <Heart size={18} />, title: 'Favoriten' },
     { id: 'einstellungen', label: '', icon: <Settings size={18} />, title: 'Einstellungen' },
   ];

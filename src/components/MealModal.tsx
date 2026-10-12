@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useDialog } from '../lib/useDialog';
-import { X, Clock, ShoppingBasket, BookOpen, Star, ImageIcon, Loader2, Minus, Plus, Users } from 'lucide-react';
+import { X, Clock, ShoppingBasket, BookOpen, Star, ImageIcon, Loader2, Minus, Plus, Users, ListPlus } from 'lucide-react';
 import { ImageCredit, Meal } from '../types';
 import MealRatingModal from './MealRatingModal';
 import { RECIPE_BASE_PORTIONS, scaleIngredient, formatPortions } from '../lib/portions';
@@ -12,6 +12,10 @@ interface MealModalProps {
   onGenerateImage?: (mealName: string) => Promise<{ url: string; credit: ImageCredit | null }>;
   /** Portionen der Familie (Standard für die Mengenanzeige) */
   defaultPortions?: number;
+  /** Feste Menge statt Portionsrechner (z. B. „1 Kuchen (12 Stücke)“) */
+  yieldLabel?: string;
+  /** Zutaten auf die Einkaufsliste setzen; liefert die Meldung für den Nutzer */
+  onAddToShopping?: () => Promise<string>;
   onClose: () => void;
 }
 
@@ -31,10 +35,14 @@ export default function MealModal({
   onRate,
   onGenerateImage,
   defaultPortions = RECIPE_BASE_PORTIONS,
+  yieldLabel,
+  onAddToShopping,
   onClose,
 }: MealModalProps) {
   const [portions, setPortions] = useState(defaultPortions);
-  const factor = portions / RECIPE_BASE_PORTIONS;
+  const factor = yieldLabel ? 1 : portions / RECIPE_BASE_PORTIONS;
+  const [adding, setAdding] = useState(false);
+  const [shoppingMsg, setShoppingMsg] = useState<string | null>(null);
   const steps = toSteps(meal.instructions);
 
   const dialogRef = useDialog(onClose);
@@ -45,6 +53,19 @@ export default function MealModal({
   const [imageUrl, setImageUrl] = useState(meal.imageUrl);
   const [imageCredit, setImageCredit] = useState(meal.imageCredit ?? null);
   const isWeekend = meal.type === 'wochenende';
+
+  const handleAddToShopping = async () => {
+    if (!onAddToShopping || adding) return;
+    setAdding(true);
+    setShoppingMsg(null);
+    try {
+      setShoppingMsg(await onAddToShopping());
+    } catch (e) {
+      setShoppingMsg((e as Error).message || 'Das hat nicht geklappt.');
+    } finally {
+      setAdding(false);
+    }
+  };
 
   const handleGenerateImage = async () => {
     if (!onGenerateImage || generating) return;
@@ -217,6 +238,12 @@ export default function MealModal({
         <div className="px-4 py-4" role="tabpanel">
           {activeTab === 'zutaten' ? (
             <>
+            {yieldLabel ? (
+              <p className="flex items-center gap-2 mb-3 px-3 py-2.5 rounded-xl bg-gray-50 text-sm text-gray-600">
+                <Users size={14} className="text-gray-500" />
+                Ergibt {yieldLabel}
+              </p>
+            ) : (
             <div className="flex items-center justify-between mb-3 px-3 py-2 rounded-xl bg-gray-50">
               <span className="flex items-center gap-2 text-sm text-gray-600">
                 <Users size={14} className="text-gray-500" />
@@ -242,6 +269,7 @@ export default function MealModal({
                 </button>
               </div>
             </div>
+            )}
             <ul className="space-y-2">
               {meal.ingredients.map((ingredient, idx) => (
                 <li key={idx} className="flex items-start gap-3 py-2.5 border-b border-gray-100 last:border-0">
@@ -276,6 +304,24 @@ export default function MealModal({
           )}
         </div>
         </div>
+
+        {onAddToShopping && (
+          <div className="px-4 py-4 border-t border-gray-100 bg-gray-50">
+            <button
+              onClick={handleAddToShopping}
+              disabled={adding}
+              className="w-full px-4 py-2 rounded-lg text-sm font-medium text-white bg-green-700 hover:bg-green-800 disabled:bg-green-300 transition-colors flex items-center justify-center gap-2"
+            >
+              {adding ? <Loader2 size={14} className="animate-spin" /> : <ListPlus size={14} />}
+              Zutaten auf die Einkaufsliste
+            </button>
+            {shoppingMsg && (
+              <p role="status" className="mt-2 text-xs text-center text-gray-600">
+                {shoppingMsg}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Rating Button */}
         {onRate && (
