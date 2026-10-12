@@ -89,6 +89,16 @@ export interface ShoppingItem {
   /** Preis pro Packung beim Verknüpfen (Momentaufnahme) */
   productPrice?: number;
   productAmount?: string;
+  /** Verknüpfte Produkte in allen Shops (für den Preisvergleich) */
+  links?: Partial<Record<ShopProvider, ProductLink>>;
+}
+
+export interface ProductLink {
+  productId: string;
+  productName: string;
+  productImage?: string;
+  productPrice?: number;
+  productAmount?: string;
 }
 
 /** Mindestbestellwert und Liefergebühr eines Shops */

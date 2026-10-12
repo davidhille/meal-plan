@@ -226,6 +226,22 @@ async function getShopping(sql: Sql, profileId: string, planId: string, range?: 
   const meatLabel = settings.metzger_auto !== false && labelIds.has("metzger") ? "metzger" : standard;
   const providerOf = new Map(labels.map((l) => [l.id as string, l.provider as string | null]));
   const linkBy = new Map(links.map((r) => [`${r.name_key}|${r.provider}`, r]));
+  const linkInfo = (link: Record<string, any>) => ({
+    productId: link.product_id as string,
+    productName: link.product_name as string,
+    productImage: (link.image_url as string | null) ?? undefined,
+    productPrice: link.price != null ? Number(link.price) : undefined,
+    productAmount: (link.amount as string | null) ?? undefined,
+  });
+  // Verknüpfungen in allen Shops (für den Preisvergleich)
+  const linksFor = (name: string) => {
+    const out: Record<string, ReturnType<typeof linkInfo>> = {};
+    for (const prov of ["knuspr", "picnic"]) {
+      const l = linkBy.get(`${prefKey(name)}|${prov}`);
+      if (l) out[prov] = linkInfo(l);
+    }
+    return Object.keys(out).length ? { links: out } : {};
+  };
   const productFor = (name: string, label: string) => {
     const provider = providerOf.get(label);
     const link = provider ? linkBy.get(`${prefKey(name)}|${provider}`) : undefined;
@@ -253,6 +269,7 @@ async function getShopping(sql: Sql, profileId: string, planId: string, range?: 
         checked: !!st?.checked,
         isBasic: false,
         ...productFor(i.baseName, label),
+        ...linksFor(i.baseName),
       };
     }),
     ...extras.map((x) => {
@@ -265,6 +282,7 @@ async function getShopping(sql: Sql, profileId: string, planId: string, range?: 
         checked: x.checked,
         isBasic: x.is_basic,
         ...productFor(x.name, label),
+        ...linksFor(x.name),
       };
     }),
   ];
