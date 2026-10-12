@@ -91,7 +91,9 @@ Erstellt für einen Zeitraum einen individuellen Speiseplan.
    - Familien-Favoriten: +15 pro Treffer
    - Unbeliebte Speisen: −30 pro Treffer
    - Kinderfreundlichkeit: Bonus für einfache Fleischgerichte bei kleinen Kindern
-   - Vegetarisch/Vegan-Bedingungen: Fleischgerichte werden ausgeschlossen
+   - Vegetarisch/Vegan-Bedingungen: Gerichte mit Fleisch oder Fisch werden ausgeschlossen
+   - Glutenfrei: Gerichte mit glutenhaltigen Zutaten (Nudeln, Brot, Mehl, Teig, Sojasoße …) werden ausgeschlossen
+   - Abneigungen verstehen Oberbegriffe (z. B. „Fisch“ trifft Lachs, „Pilze“ trifft Champignons)
    - Gewichtsabnahme: Bonus für vegetarische Gerichte, Abzug für Sahne/Butter/Käse
    - Muskelaufbau: Bonus für Fleischgerichte und proteinreiche Zutaten
 4. Tagesabhängige Typ-Auswahl:

@@ -14,6 +14,7 @@ import {
   deleteRoutine,
   createMealPlan,
   getPlanMeals,
+  getLatestPlan,
   rejectMeal,
   getPassword,
   UnauthorizedError,
@@ -69,6 +70,8 @@ export default function App() {
       setMealRatings(ratings);
       const routinesList = await getRoutines(prof.id);
       setRoutines(routinesList);
+      const latest = await getLatestPlan();
+      if (latest) setCurrentPlan(latest);
     }
     setLoading(false);
   };

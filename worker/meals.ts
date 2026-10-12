@@ -29,7 +29,7 @@ export const MEAL_DATABASE: Recipe[] = [
   },
   {
     name: "Lachsfilet mit Brokkoli & Kartoffeln",
-    type: "vegetarisch",
+    type: "fleisch",
     ingredients: ["4 Lachsfilets", "1 Brokkoli", "800g Kartoffeln", "2 EL Butter", "1 Zitrone", "Dill", "Salz, Pfeffer", "2 EL Crème fraîche"],
     instructions: "Kartoffeln schälen und kochen. Brokkoli in Röschen teilen und 8 Min dämpfen. Lachsfilets mit Salz und Pfeffer würzen und in Butter von jeder Seite 3-4 Min braten. Mit Zitronensaft beträufeln. Kartoffeln stampfen und mit Crème fraîche und Dill verfeinern. Alles zusammen servieren.",
   },
@@ -202,7 +202,35 @@ export interface ScoringContext {
   existingPlanMeals?: string[];
 }
 
-const MEAT_RE = /hackfleisch|hähnchen|speck|fleisch|rippchen|lachs|schwein/i;
+const MEAT_RE = /hackfleisch|hähnchen|speck|fleisch|rippchen|lachs|schwein|rind|lamm|filet|schnitzel|braten|burger/i;
+
+// Zutaten mit Gluten (Weizen, Dinkel, Roggen, Gerste …)
+const GLUTEN_RE =
+  /spaghetti|nudel|pasta|penne|tortellini|gnocchi|spätzle|mehl|brot|bun|tortilla|wrap|couscous|bulgur|teig|pizza|ramen|weizen|dinkel|roggen|gerste|paniermehl|semmel|sojasoße|sojasauce|worcester/i;
+
+// Oberbegriffe für „mag nicht“ / „mag gern“ → konkrete Zutaten
+const FOOD_GROUPS: Record<string, string[]> = {
+  fisch: ["fisch", "lachs", "thunfisch", "forelle", "kabeljau", "seelachs", "dorsch", "hering", "makrele", "zander", "sardine"],
+  meeresfrüchte: ["garnele", "shrimp", "muschel", "tintenfisch", "calamari", "krabbe"],
+  pilze: ["pilz", "champignon", "pfifferling", "steinpilz"],
+  nüsse: ["nuss", "nüsse", "walnuss", "haselnuss", "mandel", "cashew", "erdnuss", "pistazie"],
+  fleisch: ["fleisch", "hack", "hähnchen", "huhn", "rind", "schwein", "lamm", "speck", "wurst"],
+  käse: ["käse", "parmesan", "mozzarella", "feta", "gorgonzola", "cheddar", "gouda", "emmentaler"],
+  nudeln: ["nudel", "spaghetti", "penne", "pasta", "tortellini", "spätzle"],
+};
+
+function expandTerm(term: string): string[] {
+  const t = term.trim().toLowerCase();
+  if (!t) return [];
+  for (const [group, words] of Object.entries(FOOD_GROUPS)) {
+    if (t === group || t === group.replace(/e$/, "") || t + "e" === group) return words;
+  }
+  return [t];
+}
+
+export function containsGluten(meal: Recipe): boolean {
+  return meal.ingredients.some((i) => GLUTEN_RE.test(i)) || GLUTEN_RE.test(meal.name);
+}
 
 export function scoreMeal(meal: Recipe, ctx: ScoringContext): number {
   let score = 50;
@@ -210,10 +238,8 @@ export function scoreMeal(meal: Recipe, ctx: ScoringContext): number {
   if (ctx.existingPlanMeals?.includes(meal.name)) score -= 20;
   if (ctx.mealRatings[meal.name]) score += ctx.mealRatings[meal.name] * 10;
 
-  const matches = (term: string) => {
-    const t = term.toLowerCase();
-    return meal.name.toLowerCase().includes(t) || meal.ingredients.some((i) => i.toLowerCase().includes(t));
-  };
+  const text = [meal.name, ...meal.ingredients].join(" | ").toLowerCase();
+  const matches = (term: string) => expandTerm(term).some((t) => text.includes(t));
 
   for (const member of ctx.familyMembers) {
     for (const fav of member.favorite_foods || []) if (matches(fav)) score += 15;
@@ -225,8 +251,8 @@ export function scoreMeal(meal: Recipe, ctx: ScoringContext): number {
 
   const veg = ctx.healthConditions.includes("vegetarian");
   const vegan = ctx.healthConditions.includes("vegan");
-  if ((veg || vegan) && meal.type === "fleisch") return -1;
-  if ((veg || vegan) && meal.type === "wochenende" && meal.ingredients.some((i) => MEAT_RE.test(i))) return -1;
+  if ((veg || vegan) && (meal.type === "fleisch" || meal.ingredients.some((i) => MEAT_RE.test(i)))) return -1;
+  if (ctx.healthConditions.includes("gluten_free") && containsGluten(meal)) return -1;
 
   if (ctx.healthGoal === "weight_loss") {
     if (meal.type === "vegetarisch") score += 10;

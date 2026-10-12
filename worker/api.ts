@@ -159,6 +159,16 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       return json(plan);
     }
 
+    // Neuester aktiver Plan (für das Laden nach einem Reload)
+    if (route === "GET /plans/latest") {
+      const p = await getProfile(sql);
+      const rows = await sql.query(
+        `SELECT ${PLAN_COLS} FROM meal_plans WHERE profile_id = $1 AND status = 'active' ORDER BY created_at DESC LIMIT 1`,
+        [p.id]
+      );
+      return json(rows[0] ?? null);
+    }
+
     if (parts[0] === "plans" && id && parts[2] === "meals" && request.method === "GET") {
       return json(await sql.query(`SELECT ${PLAN_MEAL_COLS} FROM plan_meals WHERE plan_id = $1 ORDER BY meal_date`, [id]));
     }

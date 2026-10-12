@@ -170,6 +170,15 @@ export async function createMealPlan(
   }
 }
 
+export async function getLatestPlan(): Promise<MealPlan | null> {
+  try {
+    return await request<MealPlan | null>('GET', '/plans/latest');
+  } catch (error) {
+    console.error('Error fetching latest plan:', error);
+    return null;
+  }
+}
+
 export async function getPlanMeals(planId: string): Promise<PlanMeal[]> {
   try {
     return await request<PlanMeal[]>('GET', `/plans/${planId}/meals`);
