@@ -21,8 +21,11 @@ const PANTRY_WORDS = new Set([
   "oregano", "thymian", "rosmarin", "paprikapulver", "cayenne", "cayennepfeffer", "kreuzkümmel", "kurkuma",
   "muskat", "muskatnuss", "chiliflocken", "lorbeer", "lorbeerblatt", "lorbeerblätter", "knoblauchpulver",
   "zimt", "currypulver", "gemüsebrühe", "brühe", "tomatenmark", "dill", "schnittlauch",
+  "garam", "masala", "chilipulver", "chili-pulver", "ingwerpulver", "koriandersamen", "gemahlener", "kardamom",
+  "nelken", "piment", "majoran", "basilikum", "kräuter", "provence", "italienische", "gewürzmischung", "vanillezucker",
+  "backpulver", "natron", "speisestärke", "balsamico", "zitronensaft", "honig", "ahornsirup",
   // Füllwörter in Gewürz-Angaben
-  "schwarzer", "schwarz", "gemahlen", "gemahlener", "getrocknet", "getrockneter", "getrocknete", "edelsüß",
+  "schwarzer", "schwarz", "gemahlen", "gemahlener", "getrocknet", "getrockneter", "getrocknete", "getrocknetes", "edelsüß",
   "rosenscharf", "prise", "etwas", "nach", "geschmack", "frisch", "gemahlenes",
 ]);
 // „frisch" steht oben nur, damit es bei z. B. „frisch gemahlener Pfeffer" nicht stört –

@@ -17,9 +17,25 @@ export function imageUrl(mealName: string, version: string | number) {
 /** SQL-Ausdruck (Alias mi = meal_images): URL nur, wenn ein Bild gespeichert ist */
 export const IMAGE_URL_SQL = `CASE WHEN mi.image_data IS NOT NULL THEN mi.image_url END`;
 
-function prompt(mealName: string) {
+/** Hauptzutaten ohne Mengenangaben, damit das Bild zum Rezept passt */
+function mainIngredients(ingredients: string[]): string {
+  return ingredients
+    .map((i) =>
+      i
+        .replace(/^[\d.,/½¼¾]+\s*(kg|g|ml|l|el|tl|dosen?|gläser|glas|bund|pck\.?|stück|prisen?|zehen?|scheiben)?\.?\s*/i, "")
+        .replace(/\(.*?\)/g, "")
+        .trim()
+    )
+    .filter((i) => i && !/^(salz|pfeffer|öl|olivenöl|wasser)\b/i.test(i))
+    .slice(0, 6)
+    .join(", ");
+}
+
+function prompt(mealName: string, type?: string, ingredients?: string[]) {
+  const veg = type === "vegetarisch" ? "a vegetarian dish with no meat, no chicken and no fish, " : "";
+  const main = ingredients?.length ? `main ingredients: ${mainIngredients(ingredients)}, ` : "";
   return (
-    `Professional food photography of "${mealName}", a German home-cooked family dish, ` +
+    `Professional food photography of "${mealName}", ${veg}a German home-cooked family dish, ${main}` +
     `served on a white ceramic plate on a rustic wooden table, natural warm daylight, ` +
     `top-down angle, appetizing, realistic, high detail, no text, no people`
   );
@@ -32,7 +48,13 @@ export async function generateImage(env: AiEnv, sql: Sql, mealName: string): Pro
     return null;
   }
   try {
-    const result = (await env.AI.run(MODEL, { prompt: prompt(mealName), steps: 6 })) as { image?: string };
+    // Typ und Zutaten nachschlagen, damit z. B. vegetarische Gerichte kein Fleisch im Bild bekommen
+    const info = await sql`SELECT meal_type, ingredients FROM plan_meals WHERE meal_name = ${mealName}
+      ORDER BY created_at DESC LIMIT 1`;
+    const result = (await env.AI.run(MODEL, {
+      prompt: prompt(mealName, info[0]?.meal_type, info[0]?.ingredients),
+      steps: 6,
+    })) as { image?: string };
     if (!result?.image) return null;
     const rows = await sql`
       INSERT INTO meal_images (meal_name, image_url, image_data, content_type, updated_at)

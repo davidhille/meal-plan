@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { X, Clock, ShoppingBasket, BookOpen, Star, ImageIcon, Loader2, Minus, Plus, Users } from 'lucide-react';
 import { Meal } from '../types';
 import MealRatingModal from './MealRatingModal';
@@ -35,6 +35,13 @@ export default function MealModal({
   const [portions, setPortions] = useState(defaultPortions);
   const factor = portions / RECIPE_BASE_PORTIONS;
   const steps = toSteps(meal.instructions);
+
+  // Escape schließt das Rezept
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
   const [activeTab, setActiveTab] = useState<ModalTab>('zutaten');
   const [showRating, setShowRating] = useState(false);
   const [generating, setGenerating] = useState(false);
