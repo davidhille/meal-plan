@@ -211,12 +211,15 @@ export default function ShoppingListView({ plan, week, onCreatePlan }: ShoppingL
     );
   }
 
-  const onListBasics = new Set(items.filter((i) => i.isBasic).map((i) => lc(i.name)));
+  // Grob vereinheitlichen, damit „Zwiebel“ und „Zwiebeln“ als dasselbe gelten
+  const stem = (s: string) => lc(s).replace(/\(.*?\)/g, '').trim().replace(/(en|n|e|s)$/, '');
+  // Alles, was schon auf einer Liste steht (aus dem Plan oder als Basic), unten nicht noch einmal anbieten
+  const onList = new Set(items.filter((i) => !i.checked || i.isBasic).map((i) => stem(i.baseName)));
   const neededSet = new Set(pantryNeeded.map(lc));
   const availableBasics = [
     ...pantryNeeded.filter((b) => !BASICS_ITEMS.some((x) => lc(x) === lc(b))),
     ...BASICS_ITEMS,
-  ].filter((b) => !onListBasics.has(lc(b)));
+  ].filter((b) => !onList.has(stem(b)));
   // Benötigte Basics zuerst
   availableBasics.sort((a, b) => Number(neededSet.has(lc(b))) - Number(neededSet.has(lc(a))));
 
