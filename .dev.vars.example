@@ -1,0 +1,3 @@
+# Kopieren nach .dev.vars (wird nicht committet) – nur für lokale Tests mit wrangler
+DATABASE_URL=postgresql://USER:PASSWORT@ep-xxxx.eu-central-1.aws.neon.tech/neondb?sslmode=require
+APP_PASSWORD=familie
