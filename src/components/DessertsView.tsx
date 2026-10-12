@@ -8,8 +8,8 @@ import MealModal from './MealModal';
 interface DessertsViewProps {
   /** Aktiver Plan – dorthin kommen die Zutaten auf die Einkaufsliste */
   plan?: MealPlan | null;
-  /** Auswahlmodus (Nachtisch zum Gericht): Antippen wählt den Nachtisch statt das Rezept zu öffnen */
-  onPick?: (dessert: Dessert) => void;
+  /** Auswahlmodus (Nachtisch zum Gericht): Das Rezept bekommt einen Button „Zum Gericht hinzufügen“ */
+  onPick?: (dessert: Dessert) => Promise<void>;
 }
 
 const CATEGORIES: { id: DessertCategory | 'alle'; label: string }[] = [
@@ -143,7 +143,7 @@ export default function DessertsView({ plan = null, onPick }: DessertsViewProps)
             {visible.map((d) => (
               <li key={d.name}>
                 <button
-                  onClick={() => (onPick ? onPick(d) : setSelected(d))}
+                  onClick={() => setSelected(d)}
                   className="w-full h-full text-left bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
                 >
                   <div className="relative aspect-[4/3] bg-gray-100">
@@ -178,7 +178,9 @@ export default function DessertsView({ plan = null, onPick }: DessertsViewProps)
         <MealModal
           meal={toMeal(selected)}
           yieldLabel={selected.yield}
-          onAddToShopping={() => addToShopping(selected)}
+          onAddToShopping={onPick ? undefined : () => addToShopping(selected)}
+          onChoose={onPick ? () => onPick(selected) : undefined}
+          chooseLabel="Zum Gericht hinzufügen"
           onClose={() => setSelected(null)}
         />
       )}
