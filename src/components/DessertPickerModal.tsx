@@ -14,15 +14,18 @@ interface DessertPickerModalProps {
   onClose: () => void;
 }
 
-/** Nachtisch für ein Gericht auswählen: Antippen hängt ihn direkt an */
+/** Nachtisch für ein Gericht auswählen: Rezept ansehen, dann „Zum Gericht hinzufügen“ */
 export default function DessertPickerModal({ dayLabel, mealName, current, onSave, onClose }: DessertPickerModalProps) {
   const dialogRef = useDialog(onClose);
   const [saving, setSaving] = useState(false);
+  // Beim Auswählen zeigt die Rezeptansicht den Ladezustand, das Overlay nur beim Entfernen
+  const [removing, setRemoving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const save = async (dessert: Dessert | null) => {
     if (saving) return;
     setSaving(true);
+    setRemoving(!dessert);
     setError(null);
     try {
       await onSave(dessert);
@@ -30,6 +33,8 @@ export default function DessertPickerModal({ dayLabel, mealName, current, onSave
     } catch (e) {
       setError((e as Error).message || 'Das hat nicht geklappt.');
       setSaving(false);
+      // Die Rezeptansicht zeigt den Fehler selbst an
+      if (dessert) throw e;
     }
   };
 
@@ -84,7 +89,7 @@ export default function DessertPickerModal({ dayLabel, mealName, current, onSave
           <DessertsView onPick={save} />
         </div>
 
-        {saving && (
+        {removing && saving && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/60" role="status" aria-label="Wird gespeichert">
             <Loader2 size={24} className="animate-spin text-gray-500" />
           </div>

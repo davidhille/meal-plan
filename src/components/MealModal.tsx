@@ -16,6 +16,9 @@ interface MealModalProps {
   yieldLabel?: string;
   /** Zutaten auf die Einkaufsliste setzen; liefert die Meldung für den Nutzer */
   onAddToShopping?: () => Promise<string>;
+  /** Auswahl-Button unten (z. B. Nachtisch zum Gericht hinzufügen); wirft bei Fehlern */
+  onChoose?: () => Promise<void>;
+  chooseLabel?: string;
   onClose: () => void;
 }
 
@@ -37,6 +40,8 @@ export default function MealModal({
   defaultPortions = RECIPE_BASE_PORTIONS,
   yieldLabel,
   onAddToShopping,
+  onChoose,
+  chooseLabel = 'Auswählen',
   onClose,
 }: MealModalProps) {
   const [portions, setPortions] = useState(defaultPortions);
@@ -53,6 +58,20 @@ export default function MealModal({
   const [imageUrl, setImageUrl] = useState(meal.imageUrl);
   const [imageCredit, setImageCredit] = useState(meal.imageCredit ?? null);
   const isWeekend = meal.type === 'wochenende';
+
+  const [choosing, setChoosing] = useState(false);
+  const [chooseError, setChooseError] = useState<string | null>(null);
+  const handleChoose = async () => {
+    if (!onChoose || choosing) return;
+    setChoosing(true);
+    setChooseError(null);
+    try {
+      await onChoose();
+    } catch (e) {
+      setChooseError((e as Error).message || 'Das hat nicht geklappt.');
+      setChoosing(false);
+    }
+  };
 
   const handleAddToShopping = async () => {
     if (!onAddToShopping || adding) return;
@@ -304,6 +323,24 @@ export default function MealModal({
           )}
         </div>
         </div>
+
+        {onChoose && (
+          <div className="px-4 py-4 border-t border-gray-100 bg-gray-50">
+            <button
+              onClick={handleChoose}
+              disabled={choosing}
+              className="w-full px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-green-700 hover:bg-green-800 disabled:bg-green-300 transition-colors flex items-center justify-center gap-2"
+            >
+              {choosing ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+              {chooseLabel}
+            </button>
+            {chooseError && (
+              <p role="alert" className="mt-2 text-xs text-center text-red-600">
+                {chooseError}
+              </p>
+            )}
+          </div>
+        )}
 
         {onAddToShopping && (
           <div className="px-4 py-4 border-t border-gray-100 bg-gray-50">
