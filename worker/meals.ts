@@ -280,6 +280,11 @@ function violates(meal: Recipe, pattern: RegExp, freeMarker?: RegExp): boolean {
   return meal.ingredients.some((i) => pattern.test(i) && !(freeMarker && freeMarker.test(i)));
 }
 
+/** Enthält das Rezept Fleisch oder Fisch? */
+export function looksMeaty(meal: Recipe): boolean {
+  return MEAT_RE.test(meal.name) || meal.ingredients.some((i) => MEAT_RE.test(i));
+}
+
 /** Harte Ausschlüsse nach Profil-Einstellungen (Diabetes ist nur ein Abzug, siehe scoreMeal) */
 export function violatesHealthConditions(meal: Recipe, conditions: string[]): boolean {
   const has = (c: string) => conditions.includes(c);

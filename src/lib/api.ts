@@ -1,5 +1,5 @@
 import {
-  Profile, FamilyMember, MealRating, MealPlan, PlanMeal, Routine, ShoppingItem, ShoppingLabel, Favorite,
+  Profile, FamilyMember, MealRating, MealPlan, PlanMeal, Routine, ShoppingItem, ShoppingLabel, Favorite, MealType,
   ShopState, ShopProvider, ProductResult,
 } from '../types';
 
@@ -481,4 +481,31 @@ export async function saveProductLink(name: string, provider: ShopProvider, prod
 
 export function addToKnusprCart(productIds: string[]): Promise<{ added: number; failed: string[] }> {
   return shopRequest('POST', '/shops/knuspr/cart', { productIds });
+}
+
+// ---------- Eigene Rezepte (Import per Link) ----------
+
+export interface ImportedRecipe {
+  name: string;
+  type: MealType;
+  ingredients: string[];
+  instructions: string;
+  durationMin?: number | null;
+  sourceUrl: string;
+  sourcePortions: number | null;
+}
+
+/** Rezeptseite abrufen und auslesen (noch nicht gespeichert). Wirft mit Klartext-Meldung. */
+export async function previewRecipeImport(url: string): Promise<ImportedRecipe> {
+  const result = await request<{ recipe: ImportedRecipe }>('POST', '/recipes/import', { url });
+  return result.recipe;
+}
+
+/** Rezept in den Rezept-Pool speichern, optional zusätzlich als Favorit */
+export async function saveImportedRecipe(
+  recipe: Omit<ImportedRecipe, 'sourcePortions'>,
+  favorite: boolean
+): Promise<Favorite[]> {
+  const result = await request<{ favorites: Favorite[] }>('POST', '/recipes', { ...recipe, favorite });
+  return result.favorites;
 }

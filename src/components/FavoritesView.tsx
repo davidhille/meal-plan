@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Heart, Clock, Trash2, Repeat } from 'lucide-react';
+import { Heart, Clock, Trash2, Repeat, Link2 } from 'lucide-react';
 import { Favorite, Meal } from '../types';
 import MealModal from './MealModal';
+import RecipeImportModal from './RecipeImportModal';
 
 interface FavoritesViewProps {
   favorites: Favorite[];
@@ -9,6 +10,8 @@ interface FavoritesViewProps {
   defaultPortions?: number;
   onSetTurnus: (id: string, weeks: number | null) => Promise<void>;
   onRemove: (id: string) => Promise<void>;
+  /** Nach einem Rezept-Import (neue Favoritenliste) */
+  onFavoritesChange: (favorites: Favorite[]) => void;
 }
 
 const TURNUS_OPTIONS: { weeks: number | null; label: string }[] = [
@@ -37,13 +40,47 @@ function toMeal(f: Favorite): Meal {
   };
 }
 
-export default function FavoritesView({ favorites, ratings, defaultPortions, onSetTurnus, onRemove }: FavoritesViewProps) {
+export default function FavoritesView({ favorites, ratings, defaultPortions, onSetTurnus, onRemove, onFavoritesChange }: FavoritesViewProps) {
   const [selected, setSelected] = useState<Favorite | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [showImport, setShowImport] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const importButton = (
+    <button
+      onClick={() => setShowImport(true)}
+      className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 hover:text-gray-800 transition-colors"
+    >
+      <Link2 size={16} aria-hidden="true" />
+      Rezept aus dem Web importieren
+    </button>
+  );
+
+  const importOverlay = (
+    <>
+      {showImport && (
+        <RecipeImportModal
+          onSaved={(next, name) => {
+            onFavoritesChange(next);
+            setShowImport(false);
+            setNotice(`„${name}“ ist jetzt im Rezept-Pool.`);
+            setTimeout(() => setNotice(null), 5000);
+          }}
+          onClose={() => setShowImport(false)}
+        />
+      )}
+      {notice && (
+        <div role="status" className="fixed bottom-6 inset-x-4 z-40 max-w-md mx-auto px-4 py-3 rounded-2xl bg-gray-800 text-white text-sm shadow-lg">
+          {notice}
+        </div>
+      )}
+    </>
+  );
 
   if (favorites.length === 0) {
     return (
+      <>
       <div className="px-5 py-12 flex flex-col items-center text-center gap-3">
         <div className="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center">
           <Heart size={28} className="text-rose-400" />
@@ -52,7 +89,10 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
         <p className="text-sm text-gray-500 max-w-xs">
           Tippe im Speiseplan bei einem Gericht auf das Herz. Hier kannst du dann festlegen, wie oft es wiederkommen soll.
         </p>
+        <div className="w-full max-w-sm mt-4">{importButton}</div>
       </div>
+      {importOverlay}
+      </>
     );
   }
 
@@ -68,6 +108,7 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
   return (
     <>
       <div className="px-4 py-4 space-y-3">
+        {importButton}
         <p className="text-xs text-gray-500 px-1">Eure Lieblingsgerichte – mit Turnus kommen sie automatisch wieder in den Plan.</p>
         {favorites.map((f) => (
           <article
@@ -146,6 +187,7 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
           onClose={() => setSelected(null)}
         />
       )}
+      {importOverlay}
     </>
   );
 }
