@@ -73,19 +73,19 @@ export default function SettingsView({
 
   return (
     <>
-      <div className="px-4 py-4 space-y-4">
+      <div className="px-4 pb-4 space-y-4">
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => setShowPlanModal(true)}
-            className="bg-green-500 text-white rounded-xl px-4 py-3 font-medium text-sm hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
+            className="bg-green-500 text-white rounded-full h-11 px-4 font-semibold text-sm hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
           >
             <Calendar size={16} />
             Plan erstellen
           </button>
           <button
             onClick={() => setShowRoutineModal(true)}
-            className="bg-blue-500 text-white rounded-xl px-4 py-3 font-medium text-sm hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+            className="bg-white text-gray-700 border border-gray-200 rounded-full h-11 px-4 font-semibold text-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
           >
             <Plus size={16} />
             Routine
@@ -93,7 +93,7 @@ export default function SettingsView({
         </div>
 
         {/* Health Preferences Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-card border border-gray-200/70 overflow-hidden">
           <button
             onClick={() => setShowPrefsModal(true)}
             className="w-full text-left px-4 py-4 hover:bg-gray-50 transition-colors"
@@ -129,7 +129,7 @@ export default function SettingsView({
         <div>
           <h3 className="text-sm font-semibold text-gray-900 mb-3">Automatische Routinen</h3>
           {routines.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-6 text-center">
+            <div className="bg-white rounded-2xl shadow-card border border-gray-200/70 px-4 py-6 text-center">
               <p className="text-sm text-gray-500">Keine Routinen eingestellt</p>
               <p className="text-xs text-gray-400 mt-1">Tippe + um Routinen hinzuzufügen</p>
             </div>
@@ -138,7 +138,7 @@ export default function SettingsView({
               {routines.map((routine) => (
                 <div
                   key={routine.id}
-                  className="bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-3 flex items-start gap-3"
+                  className="bg-white rounded-2xl shadow-card border border-gray-200/70 px-4 py-3 flex items-start gap-3"
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900">{routine.name}</p>
@@ -178,7 +178,7 @@ export default function SettingsView({
           </div>
 
           {familyMembers.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-6 text-center">
+            <div className="bg-white rounded-2xl shadow-card border border-gray-200/70 px-4 py-6 text-center">
               <p className="text-sm text-gray-500">Keine Familienmitglieder hinzugefügt</p>
               <p className="text-xs text-gray-400 mt-1">Tippe + um Mitglieder hinzuzufügen</p>
             </div>
@@ -187,7 +187,7 @@ export default function SettingsView({
               {familyMembers.map((member) => (
                 <div
                   key={member.id}
-                  className="bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-3 flex items-start gap-3"
+                  className="bg-white rounded-2xl shadow-card border border-gray-200/70 px-4 py-3 flex items-start gap-3"
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900">
@@ -223,9 +223,9 @@ export default function SettingsView({
         </div>
 
         {/* Info Card */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-xs text-blue-700">
+        <div className="bg-sand border border-amber-100 rounded-xl px-4 py-3 text-xs text-amber-900">
           <p className="font-medium mb-1">Wie werden deine Einstellungen genutzt?</p>
-          <ul className="list-disc list-inside space-y-0.5 text-blue-600">
+          <ul className="list-disc list-inside space-y-0.5 text-amber-800">
             <li>Meal-Auswahl berücksichtigt Alter und Vorlieben</li>
             <li>Gerichte mit gemochtem Essen werden bevorzugt</li>
             <li>Allergien & Krankheiten sind ausgeschlossen</li>

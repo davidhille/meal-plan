@@ -50,7 +50,7 @@ export default function PreferencesModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-50 bg-gray-900/40 flex items-end sm:items-center justify-center">
       <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
@@ -108,7 +108,7 @@ export default function PreferencesModal({
           </div>
 
           {conditions.size > 0 && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 flex gap-2 text-xs text-blue-700">
+            <div className="bg-sand border border-amber-100 rounded-lg px-3 py-2 flex gap-2 text-xs text-amber-900">
               <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
               <p>Diese Einschränkungen werden bei der Meal-Auswahl berücksichtigt.</p>
             </div>

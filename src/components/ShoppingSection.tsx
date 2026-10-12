@@ -65,7 +65,7 @@ export default function ShoppingSection({
   const otherLabels = allLabels.filter((l) => l.id !== label.id);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-card border border-gray-200/70 overflow-hidden">
       {/* Section Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
         <div className="flex items-center gap-2">

@@ -140,7 +140,7 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
         <p className="text-xs text-gray-400">Die Einkaufsliste entsteht automatisch aus deinem Speiseplan.</p>
         <button
           onClick={onCreatePlan}
-          className="mt-2 px-4 py-2 rounded-lg text-sm font-medium bg-green-500 text-white hover:bg-green-600"
+          className="mt-3 px-6 h-11 rounded-full text-sm font-semibold bg-green-500 text-white hover:bg-green-600"
         >
           Plan erstellen
         </button>
@@ -174,7 +174,7 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
 
   return (
     <>
-      <div className="px-4 py-4 space-y-4">
+      <div className="px-4 pb-4 space-y-4">
         {/* Eigenen Artikel hinzufügen */}
         <form
           onSubmit={async (e) => {
@@ -221,7 +221,7 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
 
         {/* Eigenes Label */}
         {showAddLabel ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-card border border-gray-200/70 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
               <span className="text-sm font-semibold text-gray-800">Neue Liste</span>
               <button
@@ -238,7 +238,7 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
                 onChange={(e) => setNewLabelName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && addLabel()}
                 placeholder="z. B. Aldi, Rewe, DM …"
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-green-400"
                 autoFocus
               />
               <div className="flex flex-wrap gap-2">
@@ -256,7 +256,7 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
               <button
                 onClick={addLabel}
                 disabled={!newLabelName.trim()}
-                className="w-full py-2 rounded-lg text-sm font-medium bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-200 disabled:text-gray-400 transition-all"
+                className="w-full py-2 rounded-lg text-sm font-medium bg-green-500 text-white hover:bg-green-600 disabled:bg-gray-200 disabled:text-gray-400 transition-all"
               >
                 Liste hinzufügen
               </button>
@@ -297,7 +297,7 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
         )}
 
         {/* Basics & Vorrat */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-card border border-gray-200/70 overflow-hidden">
           <button
             onClick={() => setShowBasics(!showBasics)}
             className="w-full flex items-center justify-between px-4 py-3 border-b border-gray-50"

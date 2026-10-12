@@ -1,6 +1,6 @@
 export type MealType = 'vegetarisch' | 'fleisch' | 'wochenende';
 
-export type ViewTab = 'speiseplan' | 'einkaufsliste' | 'einstellungen';
+export type ViewTab = 'speiseplan' | 'einkaufsliste' | 'favoriten' | 'einstellungen';
 
 export type FamilyMemberType = 'adult' | 'child';
 
@@ -19,6 +19,8 @@ export interface Meal {
   ingredients: string[];
   instructions: string;
   imageUrl?: string;
+  /** Zubereitungszeit in Minuten (falls bekannt) */
+  durationMin?: number | null;
 }
 
 export interface ShoppingItem {
@@ -109,6 +111,7 @@ export interface PlanMeal {
   image_url?: string;
   rejected: boolean;
   created_at: string;
+  duration_min?: number | null;
 }
 
 export interface Routine {

@@ -33,7 +33,7 @@ export default function FamilyMemberModal({ member, onSave, onClose }: FamilyMem
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-50 bg-gray-900/40 flex items-end sm:items-center justify-center">
       <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
