@@ -6,7 +6,7 @@
 import { neon } from "@neondatabase/serverless";
 import { pickMeal, pickReplacement, preferredTypeFor, scoreMeal, MEAL_DATABASE, type Recipe, type ScoringContext } from "./meals";
 import { buildPlanItems, familyPortions, mergeKey } from "./shopping";
-import { generateImage, fillMissingImages, serveImage, IMAGE_URL_SQL, type AiEnv } from "./images";
+import { generateImage, fillMissingImages, serveImage, IMAGE_URL_SQL, IMAGE_CREDIT_SQL, type AiEnv } from "./images";
 import { generateRecipes } from "./aiRecipes";
 import { importRecipeFromUrl, ImportError } from "./recipeImport";
 import {
@@ -35,7 +35,7 @@ let schemaReady: Promise<unknown> | null = null;
 // Bei jeder Schema-Änderung unten hochzählen. Der Stand steht als Kommentar an der Tabelle `profiles`,
 // damit ein aktueller Worker beim Kaltstart gar keine DDL ausführt: ALTER TABLE sperrt die Tabelle
 // auch dann, wenn die Spalte schon existiert, und kann so alle Anfragen blockieren.
-const SCHEMA_VERSION = "schema:2026101201";
+const SCHEMA_VERSION = "schema:2026101202";
 
 async function migrate(sql: Sql) {
   const current = await sql`SELECT obj_description('public.profiles'::regclass, 'pg_class') AS v`;
@@ -101,6 +101,9 @@ async function runMigrations(sql: Sql) {
   await sql`ALTER TABLE meal_images ADD COLUMN IF NOT EXISTS image_data bytea`;
   await sql`ALTER TABLE meal_images ADD COLUMN IF NOT EXISTS content_type text`;
   await sql`ALTER TABLE meal_images ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now()`;
+  await sql`ALTER TABLE meal_images ADD COLUMN IF NOT EXISTS source text`;
+  await sql`ALTER TABLE meal_images ADD COLUMN IF NOT EXISTS credit_name text`;
+  await sql`ALTER TABLE meal_images ADD COLUMN IF NOT EXISTS credit_url text`;
   await sql`CREATE TABLE IF NOT EXISTS shopping_labels (
     profile_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     id text NOT NULL,
@@ -642,7 +645,7 @@ export async function handleApi(
       return json(
         await sql.query(
           `SELECT pm.id, pm.plan_id, pm.meal_date::text AS meal_date, pm.meal_name, pm.meal_type, pm.ingredients,
-                  pm.instructions, pm.rejected, ${IMAGE_URL_SQL} AS image_url, pm.duration_min, pm.created_at
+                  pm.instructions, pm.rejected, ${IMAGE_URL_SQL} AS image_url, ${IMAGE_CREDIT_SQL}, pm.duration_min, pm.created_at
            FROM plan_meals pm LEFT JOIN meal_images mi ON mi.meal_name = pm.meal_name
            WHERE pm.plan_id = $1 ORDER BY pm.meal_date`,
           [id]
@@ -953,7 +956,8 @@ export async function handleApi(
       }
       const res = await generateImage(env, sql, name);
       if ("error" in res) return json({ error: res.error, quota: !!res.quota }, res.quota ? 429 : 502);
-      return json({ imageUrl: res.url });
+      const credit = await sql`SELECT source, credit_name, credit_url FROM meal_images WHERE meal_name = ${name}`;
+      return json({ imageUrl: res.url, source: res.source, creditName: credit[0]?.credit_name, creditUrl: credit[0]?.credit_url });
     }
 
     return json({ error: `Unbekannte Route: ${route}` }, 404);
