@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Package, X, Loader2, ShoppingCart } from 'lucide-react';
-import { MealPlan, ShoppingItem, ShoppingLabel, DEFAULT_LABELS, LABEL_COLORS, BASICS_ITEMS, ProductResult } from '../types';
+import { MealPlan, PlanMeal, ShoppingItem, ShoppingLabel, DEFAULT_LABELS, LABEL_COLORS, BASICS_ITEMS, ProductResult } from '../types';
+import { PlanWeek, currentWeekIndex, formatShortDate, toIso } from '../lib/dateUtils';
+import ShoppingRangePicker from './ShoppingRangePicker';
 import {
   getShopping,
   updateShoppingItem,
@@ -20,14 +22,44 @@ import ProductSearchModal from './ProductSearchModal';
 
 interface ShoppingListViewProps {
   plan: MealPlan | null;
-  /** Gewählte Kalenderwoche (nur bei Plänen über mehrere Wochen) */
-  week?: WeekRange;
+  /** Kalenderwochen des Plans – bei mehreren wählt man, für welche eingekauft wird */
+  weeks: PlanWeek[];
+  planMeals: PlanMeal[];
   onCreatePlan: () => void;
 }
 
 const lc = (s: string) => s.trim().toLowerCase();
 
-export default function ShoppingListView({ plan, week, onCreatePlan }: ShoppingListViewProps) {
+/** Gewählte Wochen pro Plan merken (Indizes in `weeks`) */
+function loadRange(planId: string | undefined, weeks: PlanWeek[]): [number, number] {
+  const now = currentWeekIndex(weeks);
+  try {
+    const saved = planId ? JSON.parse(localStorage.getItem(`einkauf-${planId}`) || 'null') : null;
+    if (Array.isArray(saved)) {
+      const s = weeks.findIndex((w) => w.key === saved[0]);
+      const e = weeks.findIndex((w) => w.key === saved[1]);
+      // Vergangene Wochen nicht als Vorauswahl behalten
+      if (s >= 0 && e >= s && e >= now) return [Math.max(s, now), e];
+    }
+  } catch {
+    // ohne gespeicherte Auswahl starten
+  }
+  return [now, now];
+}
+
+export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan }: ShoppingListViewProps) {
+  const [[startIdx, endIdx], setRange] = useState<[number, number]>(() => loadRange(plan?.id, weeks));
+  const multiWeek = weeks.length > 1;
+  const week: WeekRange | undefined =
+    multiWeek && weeks[startIdx] && weeks[endIdx] ? { from: weeks[startIdx].weekStart, to: weeks[endIdx].weekEnd } : undefined;
+  const changeRange = (s: number, e: number) => {
+    setRange([s, e]);
+    try {
+      if (plan) localStorage.setItem(`einkauf-${plan.id}`, JSON.stringify([weeks[s].key, weeks[e].key]));
+    } catch {
+      // Auswahl gilt dann nur bis zum Neuladen
+    }
+  };
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [labels, setLabels] = useState<ShoppingLabel[]>([...DEFAULT_LABELS]);
@@ -63,7 +95,7 @@ export default function ShoppingListView({ plan, week, onCreatePlan }: ShoppingL
     }
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [planId, week?.from]);
+  }, [planId, week?.from, week?.to]);
 
   useEffect(() => {
     load();
@@ -230,9 +262,35 @@ export default function ShoppingListView({ plan, week, onCreatePlan }: ShoppingL
     return acc;
   }, {});
 
+  // Welche Gerichte die Liste abdeckt
+  const today = toIso(new Date());
+  const inRange = planMeals.filter((m) => !m.rejected && (!week || (m.meal_date >= week.from && m.meal_date <= week.to)));
+  const past = inRange.filter((m) => m.meal_date < today).length;
+  const firstDay = inRange[0]?.meal_date;
+  const lastDay = inRange[inRange.length - 1]?.meal_date;
+  const summary =
+    inRange.length === 0
+      ? 'In diesem Zeitraum sind keine Gerichte geplant.'
+      : `Zutaten für ${inRange.length} ${inRange.length === 1 ? 'Gericht' : 'Gerichte'}` +
+        (firstDay && lastDay ? ` · ${formatShortDate(firstDay)} – ${formatShortDate(lastDay)}` : '') +
+        (past ? ` · davon ${past} schon vorbei` : '');
+
   return (
     <>
       <div className="px-4 py-4 space-y-4">
+        {multiWeek ? (
+          <ShoppingRangePicker
+            weeks={weeks}
+            currentIndex={currentWeekIndex(weeks)}
+            start={startIdx}
+            end={endIdx}
+            onChange={changeRange}
+            summary={summary}
+          />
+        ) : (
+          <p className="px-1 text-xs text-gray-600">{summary}</p>
+        )}
+
         {/* Eigenen Artikel hinzufügen */}
         <form
           onSubmit={async (e) => {

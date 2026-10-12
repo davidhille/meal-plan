@@ -170,7 +170,9 @@ async function getShopping(sql: Sql, profileId: string, planId: string, range?: 
   const from = range?.from ?? "0001-01-01";
   const to = range?.to ?? "9999-12-31";
   // Pro Woche eigene Häkchen: Schlüssel bekommt das Wochen-Startdatum vorangestellt
-  const keyPrefix = range ? `${range.from}:` : "";
+  // Mehrere Wochen zusammen haben eigene Häkchen (andere Mengen als die einzelnen Wochen)
+  const multiWeek = range && (Date.parse(range.to) - Date.parse(range.from)) / 86400000 > 7;
+  const keyPrefix = range ? (multiWeek ? `${range.from}..${range.to}:` : `${range.from}:`) : "";
   const [labels, meals, members, states, extras, prefs, links, settingsRows, pantry] = await Promise.all([
     getLabels(sql, profileId),
     sql`SELECT ingredients, dessert FROM plan_meals WHERE plan_id = ${planId} AND NOT rejected

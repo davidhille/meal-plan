@@ -52,3 +52,11 @@ export function isDateInWeek(dateStr: string, week: PlanWeek): boolean {
 export function formatShortDate(iso: string): string {
   return new Date(`${iso}T12:00:00`).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
 }
+
+/** Index der Woche, in der heute liegt (vor dem Plan: erste, danach: letzte Woche) */
+export function currentWeekIndex(weeks: PlanWeek[], today = toIso(new Date())): number {
+  if (weeks.length === 0) return 0;
+  const i = weeks.findIndex((w) => today >= w.weekStart && today <= w.weekEnd);
+  if (i >= 0) return i;
+  return today < weeks[0].weekStart ? 0 : weeks.length - 1;
+}
