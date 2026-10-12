@@ -102,8 +102,10 @@ async function dishInfo(sql: Sql, mealName: string): Promise<{ type?: string; in
 export type PhotoSource = "pexels" | "pixabay" | "openverse";
 export const PHOTO_SOURCES: PhotoSource[] = ["pexels", "pixabay", "openverse"];
 
+export type ImageSource = "ai" | "mealdb" | PhotoSource;
+
 export type ImageResult =
-  | { url: string; source: "ai" | PhotoSource }
+  | { url: string; source: ImageSource }
   | { error: string; quota?: boolean };
 
 /** Tageskontingent von Workers AI aufgebraucht? (Fehler 4006 „daily free allocation“) */
@@ -232,6 +234,32 @@ const PROVIDERS: { id: PhotoSource; enabled: (env: AiEnv) => boolean; search: (e
   },
 ];
 
+/**
+ * Originalfoto aus der Rezeptsammlung (TheMealDB) laden. Nicht, wenn das Gericht es schon hat –
+ * dann soll „Neues Bild“ wirklich ein anderes liefern.
+ */
+async function libraryPhoto(sql: Sql, mealName: string) {
+  const url = MEAL_DATABASE.find((m) => m.name === mealName)?.imageUrl;
+  if (!url) return null;
+  const current = await sql`SELECT source FROM meal_images WHERE meal_name = ${mealName} AND image_data IS NOT NULL`;
+  if (current[0]?.source === "mealdb") return null;
+  try {
+    const img = await fetch(url, { headers: UA });
+    const type = img.headers.get("content-type") || "";
+    if (!img.ok || !type.startsWith("image/")) return null;
+    return {
+      source: "mealdb" as const,
+      base64: toBase64(await img.arrayBuffer()),
+      contentType: type,
+      creditName: "TheMealDB",
+      creditUrl: "https://www.themealdb.com/",
+    };
+  } catch (err) {
+    console.warn(`Originalfoto für ${mealName} nicht geladen:`, err);
+    return null;
+  }
+}
+
 /** Passendes Foto suchen (Anbieter der Reihe nach, nur Treffer, die wirklich zum Gericht passen) und laden */
 async function stockPhoto(env: AiEnv, mealName: string) {
   for (const provider of PROVIDERS.filter((p) => p.enabled(env))) {
@@ -261,7 +289,7 @@ function toBase64(buf: ArrayBuffer): string {
 async function storeImage(
   sql: Sql,
   mealName: string,
-  img: { base64: string; contentType?: string; source: "ai" | PhotoSource; creditName?: string; creditUrl?: string }
+  img: { base64: string; contentType?: string; source: ImageSource; creditName?: string; creditUrl?: string }
 ): Promise<string> {
   const rows = await sql`
     INSERT INTO meal_images (meal_name, image_url, image_data, content_type, source, credit_name, credit_url, updated_at)
@@ -277,10 +305,15 @@ async function storeImage(
 }
 
 /**
- * Bild erzeugen und speichern: erst KI, sonst ein Foto aus einer freien Bilddatenbank.
+ * Bild erzeugen und speichern: Originalfoto aus der Rezeptsammlung, sonst KI,
+ * sonst ein Foto aus einer freien Bilddatenbank.
  * aiOnly = nur KI (zum späteren Ersetzen der Ersatzfotos).
  */
 export async function generateImage(env: AiEnv, sql: Sql, mealName: string, aiOnly = false): Promise<ImageResult> {
+  if (!aiOnly) {
+    const original = await libraryPhoto(sql, mealName);
+    if (original) return { url: await storeImage(sql, mealName, original), source: "mealdb" };
+  }
   let aiError: { error: string; quota?: boolean } = { error: "Die Bild-KI ist nicht eingerichtet." };
   if (aiAvailable(env)) {
     const ai = await aiImage(env, sql, mealName);

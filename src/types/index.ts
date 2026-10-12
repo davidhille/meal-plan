@@ -120,7 +120,7 @@ export interface PlanMeal {
   ingredients: string[];
   instructions: string;
   image_url?: string;
-  image_source?: 'ai' | 'pexels' | 'pixabay' | 'openverse' | null;
+  image_source?: 'ai' | 'mealdb' | 'pexels' | 'pixabay' | 'openverse' | null;
   image_credit_name?: string | null;
   image_credit_url?: string | null;
   rejected: boolean;

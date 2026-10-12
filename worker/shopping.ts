@@ -31,7 +31,7 @@ const PANTRY_WORDS = new Set([
 // „frisch" steht oben nur, damit es bei z. B. „frisch gemahlener Pfeffer" nicht stört –
 // frische Kräuter/Zutaten bleiben trotzdem auf der Liste (siehe isPantry).
 
-const MEAT_RE = /(hack|hähnchen|huhn|hühn|pute|kalb|kassler|leberkäse|rinder|rind\b|schwein|\blamm|speck|schnitzel|braten|rippe|rippchen|wurst|würst|kotelett|gulasch|bacon)/i;
+const MEAT_RE = /(hack|hähnchen|huhn|hühn|pute|kalb|kassler|leberkäse|rinder|rind\b|schwein|\blamm|speck|schnitzel|braten|rippe|rippchen|wurst|würst|kotelett|gulasch|bacon|chorizo|salami)/i;
 const NOT_MEAT_RE = /brühe|fond|bouillon/i;
 
 const QTY_RE = /^(\d+\/\d+|\d+(?:[.,]\d+)?|[½¼¾])\s*(.*)$/;
