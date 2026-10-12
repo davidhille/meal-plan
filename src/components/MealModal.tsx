@@ -45,7 +45,8 @@ export default function MealModal({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex flex-col bg-white">
+      <div className="fixed inset-0 z-50 flex justify-center bg-black/40 sm:p-6">
+      <div className="flex flex-col w-full max-w-2xl h-full bg-white sm:rounded-2xl overflow-hidden shadow-xl">
         {/* Modal Header */}
         <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100 bg-white">
           <button
@@ -71,8 +72,10 @@ export default function MealModal({
           )}
         </div>
 
-        {/* Hero Image */}
-        <div className="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden">
+        {/* Scrollbereich: Bild, Badge, Reiter, Inhalt */}
+        <div className="flex-1 overflow-y-auto">
+        {/* Hero Image (in der Höhe begrenzt) */}
+        <div className={`relative w-full bg-gray-100 overflow-hidden ${imageUrl ? 'aspect-[16/9] max-h-[35vh]' : 'h-36'}`}>
           {imageUrl ? (
             <img
               src={imageUrl}
@@ -137,7 +140,7 @@ export default function MealModal({
         )}
 
         {/* Tabs */}
-        <div className="flex px-4 mt-4 border-b border-gray-100 bg-white">
+        <div className="sticky top-0 z-10 flex px-4 mt-4 border-b border-gray-100 bg-white">
           <button
             onClick={() => setActiveTab('zutaten')}
             className={`flex items-center gap-1.5 py-3 mr-6 text-sm font-medium transition-colors border-b-2 ${
@@ -163,7 +166,7 @@ export default function MealModal({
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto px-4 py-4">
+        <div className="px-4 py-4">
           {activeTab === 'zutaten' ? (
             <>
             <div className="flex items-center justify-between mb-3 px-3 py-2 rounded-xl bg-gray-50">
@@ -211,6 +214,7 @@ export default function MealModal({
             </div>
           )}
         </div>
+        </div>
 
         {/* Rating Button */}
         {onRate && (
@@ -224,6 +228,7 @@ export default function MealModal({
             </button>
           </div>
         )}
+      </div>
       </div>
 
       {showRating && onRate && (
