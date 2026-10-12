@@ -86,6 +86,15 @@ export interface ShoppingItem {
   productId?: string;
   productName?: string;
   productImage?: string;
+  /** Preis pro Packung beim Verknüpfen (Momentaufnahme) */
+  productPrice?: number;
+  productAmount?: string;
+}
+
+/** Mindestbestellwert und Liefergebühr eines Shops */
+export interface ShopRule {
+  minOrder: number;
+  deliveryFee: number;
 }
 
 export interface ShoppingLabel {
@@ -226,6 +235,7 @@ export interface ShopState {
   metzgerAuto: boolean;
   activeShops: ShopProvider[];
   connections: Partial<Record<ShopProvider, { email: string; since: string }>>;
+  rules: Record<ShopProvider, ShopRule>;
 }
 
 /** Artikel im Knuspr-Warenkorb */
@@ -233,6 +243,8 @@ export interface CartItem {
   productId: string;
   orderFieldId?: string;
   name: string;
+  /** Preis der Zeile (Menge × Stückpreis) */
+  lineTotal?: number;
   quantity: number;
   price?: string;
   imageUrl?: string;

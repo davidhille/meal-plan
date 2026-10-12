@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Package, X, Loader2, ShoppingCart } from 'lucide-react';
-import { CartItem, MealPlan, PlanMeal, ShoppingItem, ShoppingLabel, DEFAULT_LABELS, BASICS_ITEMS, ProductResult } from '../types';
+import { MealPlan, ShopProvider, ShopRule, PlanMeal, ShoppingItem, ShoppingLabel, DEFAULT_LABELS, BASICS_ITEMS, ProductResult } from '../types';
 import { PlanWeek, currentWeekIndex, formatShortDate, toIso } from '../lib/dateUtils';
 import ShoppingRangePicker from './ShoppingRangePicker';
 import {
@@ -15,6 +15,7 @@ import {
   clearKnusprCart,
   addToKnusprCart,
   type WeekRange,
+  type CartSummary,
   addToPantry,
   removeFromPantry,
 } from '../lib/api';
@@ -73,7 +74,8 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
   const [newItemName, setNewItemName] = useState('');
   const [productItem, setProductItem] = useState<ShoppingItem | null>(null);
   // Knuspr-Warenkorb: undefined = noch nicht geladen, null = nicht lesbar
-  const [cart, setCart] = useState<CartItem[] | null | undefined>(undefined);
+  const [cart, setCart] = useState<CartSummary | null | undefined>(undefined);
+  const [shopRules, setShopRules] = useState<Partial<Record<ShopProvider, ShopRule>>>({});
   const [cartLoading, setCartLoading] = useState(false);
   const [cartPreviewLabel, setCartPreviewLabel] = useState<string | null>(null);
   const [standardLabel, setStandardLabel] = useState('knuspr');
@@ -93,6 +95,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
       setPantryNeeded(data.pantryNeeded);
       setCustomPantry(data.customPantry);
       setStandardLabel(data.standardLabel);
+      if (data.shopRules) setShopRules(data.shopRules);
     }
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -207,7 +210,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
     if (hasKnusprLinks && cart === undefined && !cartLoading) refreshCart();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasKnusprLinks]);
-  const inCart = new Set((cart ?? []).map((c) => c.productId));
+  const inCart = new Set((cart?.items ?? []).map((c) => c.productId));
 
   const openCartPreview = (labelId: string) => {
     setCartPreviewLabel(labelId);
@@ -514,7 +517,9 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
       {cartPreviewLabel && (
         <CartPreviewSheet
           items={items.filter((i) => i.label === cartPreviewLabel && i.productId && !i.checked)}
-          cart={cart ?? null}
+          cart={cart?.items ?? null}
+          cartTotal={cart?.total ?? null}
+          rule={shopRules.knuspr}
           cartLoading={cartLoading || cart === undefined}
           onTransfer={transferToCart}
           onSetQuantity={setCartQuantity}

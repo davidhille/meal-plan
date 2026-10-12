@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Loader2, ShoppingBag, Check, Unplug } from 'lucide-react';
-import { ShopProvider, ShopState } from '../types';
+import { ShopProvider, ShopRule, ShopState } from '../types';
 import CollapsibleCard from './CollapsibleCard';
-import { getShopState, saveShopSettings, connectShop, verifyPicnic, disconnectShop } from '../lib/api';
+import { getShopState, saveShopSettings, saveShopRule, connectShop, verifyPicnic, disconnectShop } from '../lib/api';
 
 const SHOPS: { id: ShopProvider; name: string; color: string; hint: string }[] = [
   {
@@ -18,6 +18,45 @@ const SHOPS: { id: ShopProvider; name: string; color: string; hint: string }[] =
     hint: 'Produkte suchen und verknüpfen. Beim Verbinden schickt Picnic evtl. einen SMS-Code.',
   },
 ];
+
+/** Mindestbestellwert und Liefergebühr – gespeichert beim Verlassen des Feldes */
+function ShopRuleFields({ name, rule, onSave }: { name: string; rule: ShopRule; onSave: (r: ShopRule) => void }) {
+  const [minOrder, setMinOrder] = useState(String(rule.minOrder));
+  const [fee, setFee] = useState(String(rule.deliveryFee));
+  const commit = () => {
+    const m = Number(minOrder.replace(',', '.'));
+    const f = Number(fee.replace(',', '.') || '0');
+    if (!Number.isFinite(m) || !Number.isFinite(f) || m < 0 || f < 0) return;
+    if (m !== rule.minOrder || f !== rule.deliveryFee) onSave({ minOrder: m, deliveryFee: f });
+  };
+  const field = 'mt-1 w-full h-9 px-2 rounded-lg border border-gray-200 text-sm bg-white';
+  return (
+    <div className="mt-2 grid grid-cols-2 gap-2 pl-5">
+      <label className="block">
+        <span className="text-[11px] font-semibold text-gray-500">Mindestbestellwert (€)</span>
+        <input
+          inputMode="decimal"
+          value={minOrder}
+          onChange={(e) => setMinOrder(e.target.value)}
+          onBlur={commit}
+          aria-label={`Mindestbestellwert bei ${name} in Euro`}
+          className={field}
+        />
+      </label>
+      <label className="block">
+        <span className="text-[11px] font-semibold text-gray-500">Liefergebühr (€)</span>
+        <input
+          inputMode="decimal"
+          value={fee}
+          onChange={(e) => setFee(e.target.value)}
+          onBlur={commit}
+          aria-label={`Liefergebühr bei ${name} in Euro`}
+          className={field}
+        />
+      </label>
+    </div>
+  );
+}
 
 type ConnectForm = { email: string; password: string; code: string; pending?: { tempAuthKey: string; deviceId: string } };
 
@@ -221,6 +260,13 @@ export default function ShopSettings() {
                     {form.pending ? 'Code bestätigen' : 'Verbinden'}
                   </button>
                 </form>
+              )}
+              {active && state.rules?.[shop.id] && (
+                <ShopRuleFields
+                  name={shop.name}
+                  rule={state.rules[shop.id]}
+                  onSave={(r) => act(`rule-${shop.id}`, () => saveShopRule(shop.id, r.minOrder, r.deliveryFee))}
+                />
               )}
             </li>
           );

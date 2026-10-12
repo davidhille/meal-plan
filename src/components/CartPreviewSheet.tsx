@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { X, Loader2, Check, ShoppingCart, ImageOff, Minus, Plus, Trash2 } from 'lucide-react';
 import { useDialog } from '../lib/useDialog';
-import { CartItem, ShoppingItem } from '../types';
+import { CartItem, ShopRule, ShoppingItem } from '../types';
 import ConfirmDialog from './ConfirmDialog';
 
 interface CartPreviewSheetProps {
@@ -9,6 +9,10 @@ interface CartPreviewSheetProps {
   items: ShoppingItem[];
   /** Aktueller Knuspr-Warenkorb (null = konnte nicht geladen werden) */
   cart: CartItem[] | null;
+  /** Summe des Warenkorbs laut Knuspr (null = unbekannt) */
+  cartTotal?: number | null;
+  /** Mindestbestellwert und Liefergebühr */
+  rule?: ShopRule;
   cartLoading: boolean;
   /** Ausgewählte Produkte mit Menge übertragen; liefert die Meldung */
   onTransfer: (items: { productId: string; quantity: number }[]) => Promise<string>;
@@ -17,6 +21,52 @@ interface CartPreviewSheetProps {
   /** Warenkorb leeren; wirft bei Fehlern */
   onClearCart: () => Promise<void>;
   onClose: () => void;
+}
+
+const euro = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+
+/** Fortschritt bis zum Mindestbestellwert */
+function MinOrderBar({ current, added, unknown, rule }: { current: number; added: number; unknown: number; rule: ShopRule }) {
+  const total = current + added;
+  const missing = Math.max(0, rule.minOrder - total);
+  const pct = rule.minOrder > 0 ? Math.min(100, (total / rule.minOrder) * 100) : 100;
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-baseline justify-between gap-2 text-xs">
+        <span className="text-gray-600">
+          {added > 0 ? (
+            <>
+              {euro(current)} + ca. {euro(added)} = <strong className="text-gray-900">ca. {euro(total)}</strong>
+            </>
+          ) : (
+            <>
+              Im Warenkorb: <strong className="text-gray-900">{euro(current)}</strong>
+            </>
+          )}
+        </span>
+        <span className="text-gray-500 whitespace-nowrap">Mindestens {euro(rule.minOrder)}</span>
+      </div>
+      <div
+        className="h-2 rounded-full bg-gray-100 overflow-hidden"
+        role="progressbar"
+        aria-label="Fortschritt bis zum Mindestbestellwert"
+        aria-valuemin={0}
+        aria-valuemax={rule.minOrder}
+        aria-valuenow={Math.round(total * 100) / 100}
+      >
+        <div className={`h-full rounded-full ${missing ? 'bg-amber-500' : 'bg-green-600'}`} style={{ width: `${pct}%` }} />
+      </div>
+      <p className={`text-xs font-medium ${missing ? 'text-amber-800' : 'text-green-800'}`}>
+        {missing ? `Noch ${euro(missing)} bis zum Mindestbestellwert` : '✓ Mindestbestellwert erreicht'}
+        {rule.deliveryFee > 0 && <span className="font-normal text-gray-600"> · Liefergebühr {euro(rule.deliveryFee)}</span>}
+      </p>
+      {unknown > 0 && (
+        <p className="text-[11px] text-gray-500">
+          Für {unknown} {unknown === 1 ? 'Produkt' : 'Produkte'} ist kein Preis bekannt – nochmal im Produkt-Dialog auswählen, dann wird er gemerkt.
+        </p>
+      )}
+    </div>
+  );
 }
 
 function Stepper({
@@ -61,6 +111,8 @@ function Stepper({
 export default function CartPreviewSheet({
   items,
   cart,
+  cartTotal = null,
+  rule,
   cartLoading,
   onTransfer,
   onSetQuantity,
@@ -98,6 +150,9 @@ export default function CartPreviewSheet({
 
   const chosen = items.filter((i) => selected.has(i.id));
   const totalPieces = chosen.reduce((sum, i) => sum + (qty[i.id] ?? 1), 0);
+  const addedPrice = chosen.reduce((sum, i) => sum + (i.productPrice ?? 0) * (qty[i.id] ?? 1), 0);
+  const unknownPrices = chosen.filter((i) => i.productPrice == null).length;
+  const currentTotal = cartTotal ?? (cart ?? []).reduce((sum, c) => sum + (c.lineTotal ?? 0), 0);
 
   const transfer = async () => {
     if (!chosen.length || busy) return;
@@ -184,6 +239,12 @@ export default function CartPreviewSheet({
                     <span className="flex-1 min-w-0">
                       <span className="block text-sm text-gray-800 truncate">{name}</span>
                       <span className="block text-[11px] text-gray-500 truncate">für: {i.name}</span>
+                      {i.productPrice != null && (
+                        <span className="block text-[11px] text-gray-600">
+                          ca. {euro(i.productPrice)}
+                          {i.productAmount ? ` · ${i.productAmount}` : ''}
+                        </span>
+                      )}
                       {already && (
                         <span className="block text-[11px] font-medium text-amber-700">Schon im Warenkorb ({already.quantity}×)</span>
                       )}
@@ -232,7 +293,12 @@ export default function CartPreviewSheet({
                   <li key={c.productId} className={`flex items-center gap-2 px-4 py-2 ${cartBusyId === c.productId ? 'opacity-60' : ''}`}>
                     <span className="flex-1 min-w-0">
                       <span className="block text-sm text-gray-800 truncate">{c.name}</span>
-                      {c.price && <span className="block text-[11px] text-gray-500">{c.price}</span>}
+                      {(c.lineTotal != null || c.price) && (
+                        <span className="block text-[11px] text-gray-500">
+                          {c.lineTotal != null ? euro(c.lineTotal) : c.price}
+                          {c.quantity > 1 && c.price ? ` (${c.quantity} × ${c.price})` : ''}
+                        </span>
+                      )}
                     </span>
                     {cartBusyId === c.productId && <Loader2 size={14} className="animate-spin text-gray-400" />}
                     <Stepper
@@ -263,6 +329,9 @@ export default function CartPreviewSheet({
         </div>
 
         <div className="px-4 py-3 border-t border-gray-100 space-y-2">
+          {rule && cart !== null && !cartLoading && (
+            <MinOrderBar current={currentTotal} added={addedPrice} unknown={unknownPrices} rule={rule} />
+          )}
           {message && (
             <p role="status" className="text-xs text-center text-gray-700">
               {message}
