@@ -352,8 +352,13 @@ function aiTypesNeeded(dates: string[], skip: Set<string>, pool: Recipe[], ctx: 
     if (!need[t]) continue;
     const fresh = pool.filter((m) => m.type === t && !ctx.recentNames?.includes(m.name) && scoreMeal(m, ctx) >= 0).length;
     const deficit = Math.max(0, need[t] - fresh);
-    // Fehlende auffüllen + etwas Abwechslung: pro Typ mindestens 1 neues Rezept
-    for (let i = 0; i < Math.max(deficit, 1); i++) types.push(t);
+    for (let i = 0; i < deficit; i++) types.push(t);
+  }
+  // Die Grundsammlung reicht meist: dann nur ein neues KI-Rezept als Überraschung
+  // (spart das Tageskontingent von Workers AI für die Bilder)
+  if (types.length === 0) {
+    const present = (Object.keys(need) as Recipe["type"][]).filter((t) => need[t] > 0);
+    if (present.length) types.push(present[Math.floor(Math.random() * present.length)]);
   }
   return types.slice(0, 6);
 }
@@ -946,9 +951,9 @@ export async function handleApi(
         const existing = await sql`SELECT image_url FROM meal_images WHERE meal_name = ${name} AND image_data IS NOT NULL`;
         if (existing[0]) return json({ imageUrl: existing[0].image_url });
       }
-      const url = await generateImage(env, sql, name);
-      if (!url) return json({ error: "Bild konnte nicht erzeugt werden" }, 502);
-      return json({ imageUrl: url });
+      const res = await generateImage(env, sql, name);
+      if ("error" in res) return json({ error: res.error, quota: !!res.quota }, res.quota ? 429 : 502);
+      return json({ imageUrl: res.url });
     }
 
     return json({ error: `Unbekannte Route: ${route}` }, 404);

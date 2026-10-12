@@ -41,15 +41,19 @@ export default function MealModal({
   const [activeTab, setActiveTab] = useState<ModalTab>('zutaten');
   const [showRating, setShowRating] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState(meal.imageUrl);
   const isWeekend = meal.type === 'wochenende';
 
   const handleGenerateImage = async () => {
     if (!onGenerateImage || generating) return;
     setGenerating(true);
+    setImageError(null);
     try {
       const url = await onGenerateImage(meal.meal);
       if (url) setImageUrl(url);
+    } catch (e) {
+      setImageError((e as Error).message || 'Das Bild konnte nicht erstellt werden.');
     } finally {
       setGenerating(false);
     }
@@ -149,6 +153,12 @@ export default function MealModal({
             </button>
           )}
         </div>
+
+        {imageError && (
+          <p role="alert" className="mx-4 mt-3 text-xs text-red-600">
+            {imageError}
+          </p>
+        )}
 
         {/* Weekend Badge */}
         {isWeekend && (

@@ -1,5 +1,6 @@
 // Rezeptbilder: Erzeugung mit Cloudflare Workers AI (FLUX.1 schnell), Speicherung in Neon.
 import type { neon } from "@neondatabase/serverless";
+import { MEAL_DATABASE } from "./meals";
 
 type Sql = ReturnType<typeof neon>;
 
@@ -27,35 +28,90 @@ function mainIngredients(ingredients: string[]): string {
         .trim()
     )
     .filter((i) => i && !/^(salz|pfeffer|öl|olivenöl|wasser)\b/i.test(i))
-    .slice(0, 6)
+    .slice(0, 8)
     .join(", ");
 }
 
-function prompt(mealName: string, type?: string, ingredients?: string[]) {
-  const veg = type === "vegetarisch" ? "a vegetarian dish with no meat, no chicken and no fish, " : "";
-  const main = ingredients?.length ? `main ingredients: ${mainIngredients(ingredients)}, ` : "";
+// Kleines, günstiges Sprachmodell: übersetzt das deutsche Gericht in eine englische Bildbeschreibung.
+// FLUX kennt „Käsespätzle“ oder „Rouladen“ kaum – „egg noodles with melted cheese and crispy onions“ schon.
+const DESCRIBE_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast";
+
+async function describeDish(env: AiEnv, mealName: string, type?: string, ingredients?: string[]): Promise<string | null> {
+  try {
+    const raw = (await env.AI!.run(DESCRIBE_MODEL, {
+      messages: [
+        {
+          role: "system",
+          content:
+            "You write one short English sentence (max 45 words) describing exactly what a finished, plated home-cooked dish looks like: " +
+            "the visible components, their colors and textures, and how they are arranged on the plate. " +
+            "Only describe what is in the recipe. No brand names, no people, no text. Answer with the sentence only.",
+        },
+        {
+          role: "user",
+          content:
+            `Dish (German name): ${mealName}\n` +
+            (type === "vegetarisch" ? "Vegetarian: no meat, no fish.\n" : "") +
+            (ingredients?.length ? `Ingredients (German): ${mainIngredients(ingredients)}` : ""),
+        },
+      ],
+      max_tokens: 120,
+      temperature: 0.3,
+    })) as { response?: string };
+    const text = (raw?.response ?? "").replace(/^["']|["']$/g, "").trim();
+    return text.length > 15 ? text : null;
+  } catch (err) {
+    console.warn("Bildbeschreibung fehlgeschlagen:", err);
+    return null;
+  }
+}
+
+function prompt(mealName: string, description: string | null, type?: string, ingredients?: string[]) {
+  const veg = type === "vegetarisch" ? "Vegetarian, no meat, no fish. " : "";
+  const subject = description
+    ? description
+    : `"${mealName}"${ingredients?.length ? ` made with ${mainIngredients(ingredients)}` : ""}`;
   return (
-    `Professional food photography of "${mealName}", ${veg}a German home-cooked family dish, ${main}` +
-    `served on a white ceramic plate on a rustic wooden table, natural warm daylight, ` +
-    `top-down angle, appetizing, realistic, high detail, no text, no people`
+    `Realistic food photograph of a homemade family dinner: ${subject} ${veg}` +
+    `Served on a simple ceramic plate on a wooden kitchen table, soft natural daylight, 45-degree angle, ` +
+    `close-up, shallow depth of field, appetizing, true-to-life colors, no text, no people, no hands`
   );
 }
 
-/** Bild erzeugen und speichern. Gibt die URL zurück oder null bei Fehler (z. B. Tageskontingent aufgebraucht). */
-export async function generateImage(env: AiEnv, sql: Sql, mealName: string): Promise<string | null> {
+/** Typ und Zutaten zum Gericht: aus dem Plan, sonst aus dem Rezept-Pool oder den Favoriten */
+async function dishInfo(sql: Sql, mealName: string): Promise<{ type?: string; ingredients?: string[] }> {
+  const rows = await sql`
+    SELECT meal_type AS type, ingredients FROM plan_meals WHERE meal_name = ${mealName}
+    UNION ALL SELECT type, ingredients FROM recipes WHERE name = ${mealName}
+    UNION ALL SELECT meal_type, ingredients FROM favorites WHERE meal_name = ${mealName}
+    LIMIT 1`;
+  const r = rows[0] as { type?: string; ingredients?: string[] } | undefined;
+  if (r) return r;
+  const builtIn = MEAL_DATABASE.find((m) => m.name === mealName);
+  return builtIn ? { type: builtIn.type, ingredients: builtIn.ingredients } : {};
+}
+
+export type ImageResult = { url: string } | { error: string; quota?: boolean };
+
+/** Tageskontingent von Workers AI aufgebraucht? (Fehler 4006 „daily free allocation“) */
+function isQuotaError(err: unknown) {
+  return /4006|daily free allocation|neurons/i.test(String((err as Error)?.message ?? err));
+}
+
+/** Bild erzeugen und speichern. Liefert die URL oder eine verständliche Fehlermeldung. */
+export async function generateImage(env: AiEnv, sql: Sql, mealName: string): Promise<ImageResult> {
   if (!env.AI) {
     console.error("Workers AI nicht verfügbar (Binding AI fehlt)");
-    return null;
+    return { error: "Die Bild-KI ist nicht eingerichtet." };
   }
   try {
-    // Typ und Zutaten nachschlagen, damit z. B. vegetarische Gerichte kein Fleisch im Bild bekommen
-    const info = await sql`SELECT meal_type, ingredients FROM plan_meals WHERE meal_name = ${mealName}
-      ORDER BY created_at DESC LIMIT 1`;
+    const info = await dishInfo(sql, mealName);
+    const description = await describeDish(env, mealName, info.type, info.ingredients);
     const result = (await env.AI.run(MODEL, {
-      prompt: prompt(mealName, info[0]?.meal_type, info[0]?.ingredients),
-      steps: 6,
+      prompt: prompt(mealName, description, info.type, info.ingredients),
+      steps: 8,
     })) as { image?: string };
-    if (!result?.image) return null;
+    if (!result?.image) return { error: "Die Bild-KI hat kein Bild geliefert." };
     const rows = await sql`
       INSERT INTO meal_images (meal_name, image_url, image_data, content_type, updated_at)
       VALUES (${mealName}, '', decode(${result.image}, 'base64'), 'image/jpeg', now())
@@ -64,10 +120,13 @@ export async function generateImage(env: AiEnv, sql: Sql, mealName: string): Pro
       RETURNING extract(epoch FROM updated_at)::bigint AS v`;
     const url = imageUrl(mealName, rows[0].v);
     await sql`UPDATE meal_images SET image_url = ${url} WHERE meal_name = ${mealName}`;
-    return url;
+    return { url };
   } catch (err) {
     console.error(`Bild für "${mealName}" fehlgeschlagen:`, err);
-    return null;
+    if (isQuotaError(err)) {
+      return { error: "Das tägliche Gratis-Kontingent der Bild-KI ist aufgebraucht. Morgen früh geht es wieder.", quota: true };
+    }
+    return { error: "Das Bild konnte nicht erstellt werden." };
   }
 }
 
@@ -82,8 +141,8 @@ export async function fillMissingImages(env: AiEnv, sql: Sql, limit = 5, planId?
         LEFT JOIN meal_images mi ON mi.meal_name = pm.meal_name
         WHERE NOT pm.rejected AND mi.image_data IS NULL LIMIT ${limit}`;
   for (const r of rows) {
-    const ok = await generateImage(env, sql, r.meal_name);
-    if (!ok) break; // z. B. Kontingent erschöpft → beim nächsten Lauf weiter
+    const res = await generateImage(env, sql, r.meal_name);
+    if ("error" in res) break; // z. B. Kontingent erschöpft → beim nächsten Lauf weiter
   }
 }
 
