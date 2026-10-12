@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useDialog } from '../lib/useDialog';
 import { X, Clock, ShoppingBasket, BookOpen, Star, ImageIcon, Loader2, Minus, Plus, Users } from 'lucide-react';
 import { Meal } from '../types';
 import MealRatingModal from './MealRatingModal';
@@ -36,12 +37,7 @@ export default function MealModal({
   const factor = portions / RECIPE_BASE_PORTIONS;
   const steps = toSteps(meal.instructions);
 
-  // Escape schließt das Rezept
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  const dialogRef = useDialog(onClose);
   const [activeTab, setActiveTab] = useState<ModalTab>('zutaten');
   const [showRating, setShowRating] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -62,24 +58,31 @@ export default function MealModal({
   return (
     <>
       <div className="fixed inset-0 z-50 flex justify-center bg-black/40 sm:p-6">
-      <div className="flex flex-col w-full max-w-2xl h-full bg-white sm:rounded-2xl overflow-hidden shadow-xl">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="meal-dialog-title"
+        tabIndex={-1}
+        className="outline-none flex flex-col w-full max-w-2xl h-full bg-white sm:rounded-2xl overflow-hidden shadow-xl">
         {/* Modal Header */}
         <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100 bg-white">
           <button
             onClick={onClose}
+            aria-label="Schließen"
             className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors flex-shrink-0"
           >
             <X size={16} />
           </button>
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-gray-400 uppercase tracking-wider">
+            <p className="text-xs text-gray-500 uppercase tracking-wider">
               {meal.day}
               {meal.durationMin ? ` · ${meal.durationMin} Min` : ''}
             </p>
-            <h2 className="text-base font-semibold text-gray-900 leading-tight truncate">{meal.meal}</h2>
+            <h2 id="meal-dialog-title" className="text-base font-semibold text-gray-900 leading-tight truncate">{meal.meal}</h2>
           </div>
           {currentRating > 0 && (
-            <div className="flex items-center gap-1 flex-shrink-0">
+            <div className="flex items-center gap-1 flex-shrink-0" role="img" aria-label={`Bewertet mit ${currentRating} von 5 Sternen`}>
               {[...Array(5)].map((_, i) => (
                 <Star
                   key={i}
@@ -104,17 +107,17 @@ export default function MealModal({
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-gray-50 to-gray-100">
               <ImageIcon size={32} className="text-gray-300" />
-              <p className="text-xs text-gray-400">Kein Bild vorhanden</p>
+              <p className="text-xs text-gray-500">Kein Bild vorhanden</p>
               {onGenerateImage && (
                 <button
                   onClick={handleGenerateImage}
                   disabled={generating}
-                  className="mt-1 flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-blue-500 text-white hover:bg-blue-600 disabled:bg-blue-300 transition-all active:scale-95"
+                  className="mt-1 flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-green-700 text-white hover:bg-green-800 disabled:bg-green-300 transition-all active:scale-95"
                 >
                   {generating ? (
                     <>
                       <Loader2 size={14} className="animate-spin" />
-                      Bild wird erstellt...
+                      Bild wird erstellt …
                     </>
                   ) : (
                     <>
@@ -135,7 +138,7 @@ export default function MealModal({
               {generating ? (
                 <>
                   <Loader2 size={12} className="animate-spin" />
-                  Neu...
+                  Neu …
                 </>
               ) : (
                 <>
@@ -150,33 +153,37 @@ export default function MealModal({
         {/* Weekend Badge */}
         {isWeekend && (
           <div className="mx-4 mt-4 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-center gap-3">
-            <Clock size={18} className="text-blue-500 flex-shrink-0" />
+            <Clock size={18} className="text-blue-600 flex-shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-blue-700">Wochenende: Mehr Zeit einplanen</p>
-              <p className="text-xs text-blue-500 mt-0.5">Dieses Gericht braucht etwas mehr Vorbereitung</p>
+              <p className="text-sm font-semibold text-blue-800">Wochenende: mehr Zeit einplanen</p>
+              <p className="text-xs text-blue-700 mt-0.5">Dieses Gericht braucht etwas mehr Vorbereitung</p>
             </div>
           </div>
         )}
 
         {/* Tabs */}
-        <div className="sticky top-0 z-10 flex px-4 mt-4 border-b border-gray-100 bg-white">
+        <div role="tablist" aria-label="Rezept" className="sticky top-0 z-10 flex px-4 mt-4 border-b border-gray-100 bg-white">
           <button
+            role="tab"
+            aria-selected={activeTab === 'zutaten'}
             onClick={() => setActiveTab('zutaten')}
             className={`flex items-center gap-1.5 py-3 mr-6 text-sm font-medium transition-colors border-b-2 ${
               activeTab === 'zutaten'
-                ? 'border-green-500 text-green-600'
-                : 'border-transparent text-gray-400'
+                ? 'border-green-500 text-green-700'
+                : 'border-transparent text-gray-500'
             }`}
           >
             <ShoppingBasket size={14} />
             Zutaten
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === 'zubereitung'}
             onClick={() => setActiveTab('zubereitung')}
             className={`flex items-center gap-1.5 py-3 text-sm font-medium transition-colors border-b-2 ${
               activeTab === 'zubereitung'
-                ? 'border-green-500 text-green-600'
-                : 'border-transparent text-gray-400'
+                ? 'border-green-500 text-green-700'
+                : 'border-transparent text-gray-500'
             }`}
           >
             <BookOpen size={14} />
@@ -185,12 +192,12 @@ export default function MealModal({
         </div>
 
         {/* Tab Content */}
-        <div className="px-4 py-4">
+        <div className="px-4 py-4" role="tabpanel">
           {activeTab === 'zutaten' ? (
             <>
             <div className="flex items-center justify-between mb-3 px-3 py-2 rounded-xl bg-gray-50">
               <span className="flex items-center gap-2 text-sm text-gray-600">
-                <Users size={14} className="text-gray-400" />
+                <Users size={14} className="text-gray-500" />
                 Portionen
               </span>
               <div className="flex items-center gap-3">
@@ -201,7 +208,9 @@ export default function MealModal({
                 >
                   <Minus size={14} />
                 </button>
-                <span className="w-8 text-center text-sm font-semibold text-gray-900">{formatPortions(portions)}</span>
+                <span className="w-8 text-center text-sm font-semibold text-gray-900" aria-live="polite">
+                  {formatPortions(portions)}
+                </span>
                 <button
                   onClick={() => setPortions((p) => Math.min(20, p + 0.5))}
                   aria-label="Mehr Portionen"
@@ -213,16 +222,14 @@ export default function MealModal({
             </div>
             <ul className="space-y-2">
               {meal.ingredients.map((ingredient, idx) => (
-                <li key={idx} className="flex items-start gap-3 py-2.5 border-b border-gray-50 last:border-0">
-                  <span className="w-5 h-5 rounded-full bg-green-100 text-green-600 text-xs font-semibold flex items-center justify-center flex-shrink-0 mt-0.5">
-                    {idx + 1}
-                  </span>
+                <li key={idx} className="flex items-start gap-3 py-2.5 border-b border-gray-100 last:border-0">
+                  <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0 mt-2" />
                   <span className="text-sm text-gray-700">{scaleIngredient(ingredient, factor)}</span>
                 </li>
               ))}
             </ul>
             {factor !== 1 && (
-              <p className="mt-3 text-xs text-gray-400">
+              <p className="mt-3 text-xs text-gray-500">
                 Mengen umgerechnet vom Originalrezept für {RECIPE_BASE_PORTIONS} Portionen.
               </p>
             )}
@@ -233,7 +240,7 @@ export default function MealModal({
                 <ol className="space-y-3">
                   {steps.map((step, idx) => (
                     <li key={idx} className="flex gap-3">
-                      <span className="w-6 h-6 rounded-full bg-green-100 text-green-600 text-xs font-semibold flex items-center justify-center flex-shrink-0">
+                      <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-semibold flex items-center justify-center flex-shrink-0">
                         {idx + 1}
                       </span>
                       <p className="text-sm text-gray-700 leading-relaxed">{step}</p>

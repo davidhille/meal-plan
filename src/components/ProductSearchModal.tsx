@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { X, Search, Loader2, Check, ImageOff } from 'lucide-react';
 import { ProductResult, ShoppingLabel } from '../types';
 import { searchShop } from '../lib/api';
+import { useDialog } from '../lib/useDialog';
 
 interface ProductSearchModalProps {
   ingredientName: string;
@@ -27,6 +28,7 @@ export default function ProductSearchModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const dialogRef = useDialog(onClose);
 
   const run = async (q: string) => {
     if (!q.trim()) return;
@@ -50,13 +52,19 @@ export default function ProductSearchModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-gray-900/40" onClick={onClose} />
-      <div className="relative w-full sm:max-w-md max-h-[88vh] bg-gray-50 rounded-t-3xl sm:rounded-3xl shadow-xl flex flex-col overflow-hidden">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="product-dialog-title"
+        tabIndex={-1}
+        className="outline-none relative w-full sm:max-w-md max-h-[88vh] bg-gray-50 rounded-t-3xl sm:rounded-3xl shadow-xl flex flex-col overflow-hidden">
         <div className="flex items-start gap-3 px-5 pt-5 pb-3">
           <div className="flex-1 min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: label.color }}>
               {label.name}
             </p>
-            <h2 className="text-lg font-bold text-gray-800 leading-snug">Produkt für „{ingredientName}“</h2>
+            <h2 id="product-dialog-title" className="text-lg font-bold text-gray-800 leading-snug">Produkt für „{ingredientName}“</h2>
           </div>
           <button
             onClick={onClose}
@@ -77,12 +85,14 @@ export default function ProductSearchModal({
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            aria-label="Suchbegriff"
+            type="search"
             className="flex-1 h-10 px-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
           />
           <button
             type="submit"
             aria-label="Suchen"
-            className="w-10 h-10 flex items-center justify-center rounded-xl bg-green-500 text-white"
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-green-700 text-white"
           >
             <Search size={16} />
           </button>
@@ -90,13 +100,13 @@ export default function ProductSearchModal({
 
         <div className="flex-1 overflow-y-auto px-5 pb-6 space-y-2">
           {loading && (
-            <div className="py-10 flex justify-center">
+            <div className="py-10 flex justify-center" role="status" aria-label="Suche läuft">
               <Loader2 size={20} className="animate-spin text-gray-300" />
             </div>
           )}
-          {!loading && error && <p className="py-6 text-sm text-center text-red-500">{error}</p>}
+          {!loading && error && <p role="alert" className="py-6 text-sm text-center text-red-600">{error}</p>}
           {!loading && !error && results.length === 0 && (
-            <p className="py-6 text-sm text-center text-gray-400">Keine Produkte gefunden.</p>
+            <p className="py-6 text-sm text-center text-gray-500">Keine Produkte gefunden.</p>
           )}
           {!loading &&
             results.map((p) => {
@@ -129,7 +139,7 @@ export default function ProductSearchModal({
                     <p className="text-xs text-gray-500 mt-0.5">{[p.amount, p.price].filter(Boolean).join(' · ')}</p>
                   </div>
                   {savingId === p.productId ? (
-                    <Loader2 size={16} className="animate-spin text-gray-400" />
+                    <Loader2 size={16} className="animate-spin text-gray-500" />
                   ) : active ? (
                     <Check size={18} className="text-green-500" />
                   ) : null}

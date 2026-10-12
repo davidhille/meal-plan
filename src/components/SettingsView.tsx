@@ -43,6 +43,8 @@ export default function SettingsView({
   const [showPrefsModal, setShowPrefsModal] = useState(false);
   const [showRoutineModal, setShowRoutineModal] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
+  // Löschen erst nach zweitem Tipp ("Löschen?")
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const goalLabels: Record<string, string> = {
     balanced: 'Ausgewogene Ernährung',
@@ -68,9 +70,9 @@ export default function SettingsView({
     return (
       <div className="px-4 py-8 flex flex-col items-center justify-center gap-3 text-center">
         <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
-          <Settings size={20} className="text-gray-400" />
+          <Settings size={20} className="text-gray-500" />
         </div>
-        <p className="text-sm text-gray-500">Profil wird geladen...</p>
+        <p className="text-sm text-gray-500">Profil wird geladen …</p>
       </div>
     );
   }
@@ -82,17 +84,17 @@ export default function SettingsView({
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => setShowPlanModal(true)}
-            className="bg-green-500 text-white rounded-xl px-4 py-3 font-medium text-sm hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
+            className="bg-green-700 text-white rounded-xl px-4 py-3 font-medium text-sm hover:bg-green-800 transition-colors flex items-center justify-center gap-2"
           >
             <Calendar size={16} />
             Plan erstellen
           </button>
           <button
             onClick={() => setShowRoutineModal(true)}
-            className="bg-blue-500 text-white rounded-xl px-4 py-3 font-medium text-sm hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+            className="bg-white text-gray-700 border border-gray-200 rounded-xl px-4 py-3 font-medium text-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
           >
             <Plus size={16} />
-            Routine
+            Routine anlegen
           </button>
         </div>
 
@@ -102,7 +104,10 @@ export default function SettingsView({
             onClick={() => setShowPrefsModal(true)}
             className="w-full text-left px-4 py-4 hover:bg-gray-50 transition-colors"
           >
-            <p className="text-sm font-semibold text-gray-900 mb-2">Gesundheit & Ernährung</p>
+            <span className="flex items-center justify-between mb-2">
+              <span className="text-sm font-semibold text-gray-900">Gesundheit & Ernährung</span>
+              <Edit2 size={14} className="text-gray-500" aria-hidden="true" />
+            </span>
             <div className="space-y-2">
               <div>
                 <p className="text-xs text-gray-500 mb-0.5">Gesundheitsziel</p>
@@ -134,11 +139,11 @@ export default function SettingsView({
 
         {/* Routines Section */}
         <div>
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Automatische Routinen</h3>
+          <h2 className="text-sm font-semibold text-gray-900 mb-3">Automatische Routinen</h2>
           {routines.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-6 text-center">
               <p className="text-sm text-gray-500">Keine Routinen eingestellt</p>
-              <p className="text-xs text-gray-400 mt-1">Tippe + um Routinen hinzuzufügen</p>
+              <p className="text-xs text-gray-500 mt-1">Mit „Routine anlegen“ entsteht jede Woche automatisch ein neuer Plan.</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -154,18 +159,30 @@ export default function SettingsView({
                         ? `Jeden ${routine.day_of_week !== null ? dayNames[routine.day_of_week] : 'Tag'} um ${routine.time}`
                         : `Am 1. jedes Monats um ${routine.time}`}
                     </p>
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-gray-500 mt-1">
                       {routine.duration_days} Tage Planung ab dem Folgetag
                       {routine.last_run_at &&
                         ` · zuletzt ${new Date(routine.last_run_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}`}
                     </p>
                   </div>
-                  <button
-                    onClick={() => onDeleteRoutine(routine.id)}
-                    className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  {confirmDeleteId === routine.id ? (
+                    <button
+                      autoFocus
+                      onClick={() => onDeleteRoutine(routine.id)}
+                      onBlur={() => setConfirmDeleteId(null)}
+                      className="flex-shrink-0 px-3 h-8 rounded-lg text-xs font-semibold text-white bg-red-600"
+                    >
+                      Löschen?
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmDeleteId(routine.id)}
+                      aria-label={`Routine ${routine.name} löschen`}
+                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -175,10 +192,11 @@ export default function SettingsView({
         {/* Family Members Section */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-gray-900">Familienmitglieder ({familyMembers.length})</h3>
+            <h2 className="text-sm font-semibold text-gray-900">Familienmitglieder ({familyMembers.length})</h2>
             <button
               onClick={() => setShowFamilyModal(true)}
-              className="w-8 h-8 flex items-center justify-center rounded-lg bg-green-500 text-white hover:bg-green-600 transition-colors"
+              aria-label="Familienmitglied hinzufügen"
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-green-700 text-white hover:bg-green-800 transition-colors"
             >
               <Plus size={16} />
             </button>
@@ -187,7 +205,7 @@ export default function SettingsView({
           {familyMembers.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-6 text-center">
               <p className="text-sm text-gray-500">Keine Familienmitglieder hinzugefügt</p>
-              <p className="text-xs text-gray-400 mt-1">Tippe + um Mitglieder hinzuzufügen</p>
+              <p className="text-xs text-gray-500 mt-1">Tippe auf +, damit Portionen und Vorlieben passen.</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -200,15 +218,15 @@ export default function SettingsView({
                     <p className="text-sm font-semibold text-gray-900">
                       {member.name}
                       {member.type === 'child' && member.age && (
-                        <span className="text-xs text-gray-400 ml-2">{member.age} Jahre</span>
+                        <span className="text-xs text-gray-500 ml-2">{member.age} Jahre</span>
                       )}
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">
                       {member.type === 'adult' ? 'Erwachsener' : 'Kind'}
                     </p>
                     {member.favorite_foods.length > 0 && (
-                      <p className="text-xs text-green-600 mt-1">
-                        Mag: {member.favorite_foods.join(', ')}
+                      <p className="text-xs text-green-700 mt-1">
+                        Isst gern: {member.favorite_foods.join(', ')}
                       </p>
                     )}
                     {member.disliked_foods.length > 0 && (
@@ -219,17 +237,29 @@ export default function SettingsView({
                   </button>
                   <button
                     onClick={() => setEditingMember(member)}
-                    aria-label="Bearbeiten"
+                    aria-label={`${member.name} bearbeiten`}
                     className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
                   >
                     <Edit2 size={14} />
                   </button>
-                  <button
-                    onClick={() => onDeleteFamilyMember(member.id)}
-                    className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  {confirmDeleteId === member.id ? (
+                    <button
+                      autoFocus
+                      onClick={() => onDeleteFamilyMember(member.id)}
+                      onBlur={() => setConfirmDeleteId(null)}
+                      className="flex-shrink-0 px-3 h-8 rounded-lg text-xs font-semibold text-white bg-red-600"
+                    >
+                      Löschen?
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmDeleteId(member.id)}
+                      aria-label={`${member.name} löschen`}
+                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -239,11 +269,11 @@ export default function SettingsView({
         {/* Info Card */}
         <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-xs text-amber-900">
           <p className="font-medium mb-1">Wie werden deine Einstellungen genutzt?</p>
-          <ul className="list-disc list-inside space-y-0.5 text-amber-800">
-            <li>Meal-Auswahl berücksichtigt Alter und Vorlieben</li>
-            <li>Gerichte mit gemochtem Essen werden bevorzugt</li>
-            <li>Allergien & Krankheiten sind ausgeschlossen</li>
-            <li>Bewertungen beeinflussen zukünftige Auswahl</li>
+          <ul className="list-disc pl-4 space-y-0.5 text-amber-800">
+            <li>Portionen richten sich nach Alter der Familienmitglieder</li>
+            <li>Gerichte, die jemand gern isst, kommen öfter</li>
+            <li>Unpassendes bei Allergien & Einschränkungen fällt weg</li>
+            <li>Gut bewertete Gerichte kommen öfter</li>
             <li>Routinen erstellen automatisch neue Pläne</li>
           </ul>
         </div>

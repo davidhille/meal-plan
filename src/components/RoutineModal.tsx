@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { X, Plus, Trash2 } from 'lucide-react';
-import { Routine } from '../types';
+import { X } from 'lucide-react';
+import { useDialog } from '../lib/useDialog';
 
 interface RoutineModalProps {
   onSave: (
@@ -20,6 +20,7 @@ export default function RoutineModal({ onSave, onClose }: RoutineModalProps) {
   const [time, setTime] = useState('09:00');
   const [durationDays, setDurationDays] = useState(7);
   const [loading, setLoading] = useState(false);
+  const dialogRef = useDialog(() => !loading && onClose());
 
   const dayNames = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
 
@@ -41,12 +42,19 @@ export default function RoutineModal({ onSave, onClose }: RoutineModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 bg-gray-900/40 flex items-end sm:items-center justify-center">
-      <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="routinemodal-title"
+        tabIndex={-1}
+        className="outline-none bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
-          <h2 className="text-base font-semibold text-gray-900">Routine erstellen</h2>
+          <h2 id="routinemodal-title" className="text-base font-semibold text-gray-900">Routine erstellen</h2>
           <button
             onClick={onClose}
+            aria-label="Schließen"
             disabled={loading}
             className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 disabled:opacity-50"
           >
@@ -58,27 +66,29 @@ export default function RoutineModal({ onSave, onClose }: RoutineModalProps) {
         <div className="overflow-y-auto flex-1 px-4 py-4 space-y-4">
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Name</label>
+            <label htmlFor="routine-name" className="block text-sm font-medium text-gray-700 mb-1.5">Name</label>
             <input
+              id="routine-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="z.B. Wöchentlicher Plan"
+              placeholder="z. B. Wöchentlicher Plan"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
             />
           </div>
 
           {/* Frequency */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Häufigkeit</label>
-            <div className="flex gap-2">
+            <p id="routine-freq" className="block text-sm font-medium text-gray-700 mb-2">Häufigkeit</p>
+            <div className="flex gap-2" role="group" aria-labelledby="routine-freq">
               {(['weekly', 'monthly'] as const).map((f) => (
                 <button
                   key={f}
+                  aria-pressed={frequency === f}
                   onClick={() => setFrequency(f)}
                   className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
                     frequency === f
-                      ? 'bg-green-500 text-white'
+                      ? 'bg-green-700 text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
@@ -91,8 +101,9 @@ export default function RoutineModal({ onSave, onClose }: RoutineModalProps) {
           {/* Day of Week (for weekly) */}
           {frequency === 'weekly' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Tag</label>
+              <label htmlFor="routine-day" className="block text-sm font-medium text-gray-700 mb-2">Wochentag</label>
               <select
+                id="routine-day"
                 value={dayOfWeek}
                 onChange={(e) => setDayOfWeek(parseInt(e.target.value))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
@@ -112,8 +123,9 @@ export default function RoutineModal({ onSave, onClose }: RoutineModalProps) {
 
           {/* Time */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Uhrzeit</label>
+            <label htmlFor="routine-time" className="block text-sm font-medium text-gray-700 mb-1.5">Uhrzeit</label>
             <input
+              id="routine-time"
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
@@ -123,17 +135,18 @@ export default function RoutineModal({ onSave, onClose }: RoutineModalProps) {
 
           {/* Duration */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Planungsdauer (Tage)
-            </label>
-            <div className="flex gap-2">
+            <p id="routine-duration" className="block text-sm font-medium text-gray-700 mb-1.5">
+              Plan für
+            </p>
+            <div className="flex gap-2" role="group" aria-labelledby="routine-duration">
               {[7, 14, 30].map((days) => (
                 <button
                   key={days}
+                  aria-pressed={durationDays === days}
                   onClick={() => setDurationDays(days)}
                   className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
                     durationDays === days
-                      ? 'bg-green-500 text-white'
+                      ? 'bg-green-700 text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
@@ -156,7 +169,8 @@ export default function RoutineModal({ onSave, onClose }: RoutineModalProps) {
           <div className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 text-xs text-amber-900">
             <p className="font-medium mb-1">Automatische Erstellung</p>
             <p>
-              Der Plan wird automatisch {frequency === 'weekly' ? `jeden ${dayNames[dayOfWeek]}` : 'monatlich'} um {time} Uhr erstellt.
+              {frequency === 'weekly' ? `Jeden ${dayNames[dayOfWeek]}` : 'Am 1. jedes Monats'} um {time} Uhr entsteht
+              automatisch ein Plan für die {durationDays} Tage danach.
             </p>
           </div>
         </div>
@@ -166,16 +180,16 @@ export default function RoutineModal({ onSave, onClose }: RoutineModalProps) {
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+            className="flex-1 h-11 px-4 rounded-xl text-sm font-semibold text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
           >
             Abbrechen
           </button>
           <button
             onClick={handleSave}
             disabled={loading || !name.trim()}
-            className="flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 h-11 px-4 rounded-xl text-sm font-semibold text-white bg-green-700 hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Wird gespeichert...' : 'Speichern'}
+            {loading ? 'Wird gespeichert …' : 'Speichern'}
           </button>
         </div>
       </div>

@@ -50,7 +50,7 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
         </div>
         <p className="text-lg font-semibold text-gray-800 mt-2">Noch keine Favoriten</p>
         <p className="text-sm text-gray-500 max-w-xs">
-          Tippe im Speiseplan bei einem Gericht auf „Merken“. Hier kannst du dann festlegen, wie oft es wiederkommen soll.
+          Tippe im Speiseplan bei einem Gericht auf das Herz. Hier kannst du dann festlegen, wie oft es wiederkommen soll.
         </p>
       </div>
     );
@@ -68,7 +68,7 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
   return (
     <>
       <div className="px-4 py-4 space-y-3">
-        <p className="text-xs text-gray-400 px-1">Eure Lieblingsgerichte – mit Turnus kommen sie automatisch wieder in den Plan.</p>
+        <p className="text-xs text-gray-500 px-1">Eure Lieblingsgerichte – mit Turnus kommen sie automatisch wieder in den Plan.</p>
         {favorites.map((f) => (
           <article
             key={f.id}
@@ -78,7 +78,7 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
           >
             <div className="flex items-start gap-3">
               <button onClick={() => setSelected(f)} className="flex-1 min-w-0 text-left">
-                <h3 className="text-sm leading-snug font-semibold text-gray-800">{f.meal_name}</h3>
+                <h2 className="text-sm leading-snug font-semibold text-gray-800">{f.meal_name}</h2>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-gray-500">
                   {f.duration_min ? (
                     <span className="flex items-center gap-1">
@@ -90,6 +90,7 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
               </button>
               {confirmId === f.id ? (
                 <button
+                  autoFocus
                   onClick={() => run(f.id, () => onRemove(f.id))}
                   onBlur={() => setConfirmId(null)}
                   className="px-3 h-8 rounded-lg text-xs font-semibold text-white bg-red-500"
@@ -99,8 +100,8 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
               ) : (
                 <button
                   onClick={() => setConfirmId(f.id)}
-                  aria-label="Favorit entfernen"
-                  className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50"
+                  aria-label={`${f.meal_name} aus Favoriten entfernen`}
+                  className="w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:text-red-600 hover:bg-red-50"
                 >
                   <Trash2 size={15} />
                 </button>
@@ -111,16 +112,17 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
               <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2">
                 <Repeat size={11} /> Turnus
               </p>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1.5" role="group" aria-label={`Turnus für ${f.meal_name}`}>
                 {TURNUS_OPTIONS.map((o) => {
                   const active = (f.turnus_weeks ?? null) === o.weeks;
                   return (
                     <button
                       key={o.label}
+                      aria-pressed={active}
                       onClick={() => !active && run(f.id, () => onSetTurnus(f.id, o.weeks))}
                       disabled={busyId === f.id}
                       className={`px-3 h-8 rounded-lg text-xs font-semibold transition-colors ${
-                        active ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        active ? 'bg-green-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
                       {o.label}
@@ -129,7 +131,7 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
                 })}
               </div>
               {!f.turnus_weeks && (
-                <p className="text-xs text-gray-400 mt-2">Ohne Turnus wird das Gericht bei der Planung bevorzugt.</p>
+                <p className="text-xs text-gray-500 mt-2">Ohne Turnus wird das Gericht bei der Planung bevorzugt.</p>
               )}
             </div>
           </article>

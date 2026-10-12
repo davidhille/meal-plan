@@ -15,7 +15,7 @@ export default function TabSwitcher({ activeTab, onTabChange }: TabSwitcherProps
   ];
 
   return (
-    <div className="bg-white border-b border-gray-100 px-4 pt-1">
+    <nav className="bg-white border-b border-gray-100 px-4 pt-1" aria-label="Bereiche">
       <div className="flex">
         {tabs.map((tab) => (
           <button
@@ -23,16 +23,17 @@ export default function TabSwitcher({ activeTab, onTabChange }: TabSwitcherProps
             onClick={() => onTabChange(tab.id)}
             title={tab.title}
             aria-label={tab.title || tab.label}
+            aria-current={activeTab === tab.id ? 'page' : undefined}
             className={`${tab.icon ? 'w-14 flex-none' : 'flex-1'} py-3 text-sm font-medium transition-all duration-200 border-b-2 flex items-center justify-center gap-1.5 ${
               activeTab === tab.id
-                ? 'border-green-500 text-green-600'
-                : 'border-transparent text-gray-400 hover:text-gray-600'
+                ? 'border-green-500 text-green-700'
+                : 'border-transparent text-gray-500 hover:text-gray-600'
             }`}
           >
             {tab.icon || tab.label}
           </button>
         ))}
       </div>
-    </div>
+    </nav>
   );
 }
