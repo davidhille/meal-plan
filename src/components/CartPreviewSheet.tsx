@@ -209,7 +209,7 @@ export default function CartPreviewSheet({
           <h3 className="px-4 pt-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Hinzufügen</h3>
           <p className="px-4 pb-1 text-xs text-gray-500">Abgehakt wird übertragen. Was schon im Warenkorb liegt, ist abgewählt.</p>
           {items.length === 0 ? (
-            <p className="px-4 py-3 text-sm text-gray-500">Alle verknüpften Artikel sind erledigt.</p>
+            <p className="px-4 py-3 text-sm text-gray-500">Auf dieser Liste steht gerade nichts mit Knuspr-Produkt.</p>
           ) : (
             <ul className="divide-y divide-gray-100">
               {items.map((i) => {
