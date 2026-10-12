@@ -515,3 +515,24 @@ export async function saveImportedRecipe(
   const result = await request<{ favorites: Favorite[] }>('POST', '/recipes', { ...recipe, favorite });
   return result.favorites;
 }
+
+/** Rezepte von TheMealDB als JSON-Datei herunterladen (zum Übersetzen außerhalb der App) */
+export async function downloadMealDbExport(): Promise<number> {
+  const res = await fetch('/api/mealdb-export', { headers: { 'X-App-Password': getPassword() } });
+  if (res.status === 401) throw new Error('Passwort wurde nicht akzeptiert – bitte neu anmelden.');
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `Fehler ${res.status}`);
+  }
+  const blob = await res.blob();
+  const count = JSON.parse(await blob.text()).count as number;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'mealdb-export.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return count;
+}
