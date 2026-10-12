@@ -2,6 +2,7 @@
 import { VEGETARISCH } from "./recipes/vegetarisch";
 import { FLEISCH } from "./recipes/fleisch";
 import { WOCHENENDE } from "./recipes/wochenende";
+import { MEALDB } from "./recipes/mealdb";
 
 export interface Recipe {
   name: string;
@@ -9,6 +10,8 @@ export interface Recipe {
   ingredients: string[];
   instructions: string;
   durationMin?: number | null;
+  /** Originalfoto des Gerichts (z. B. aus TheMealDB), wird statt eines KI-Bilds genommen */
+  imageUrl?: string;
 }
 
 /** Ursprüngliche Rezepte (Juli-Version) */
@@ -203,7 +206,7 @@ const CLASSIC_RECIPES: Recipe[] = [
 ];
 
 /** Feste Grundsammlung: Klassiker + große Basis (worker/recipes/*), dazu kommen KI-Rezepte aus der DB */
-export const MEAL_DATABASE: Recipe[] = [...CLASSIC_RECIPES, ...VEGETARISCH, ...FLEISCH, ...WOCHENENDE];
+export const MEAL_DATABASE: Recipe[] = [...CLASSIC_RECIPES, ...VEGETARISCH, ...FLEISCH, ...WOCHENENDE, ...MEALDB];
 
 export interface ScoringContext {
   familyMembers: { type: string; age: number | null; favorite_foods: string[] | null; disliked_foods: string[] | null }[];
@@ -222,7 +225,7 @@ export interface ScoringContext {
 }
 
 const MEAT_RE =
-  /hackfleisch|hähnchen|huhn|hühner|pute|kalb|speck|schinken|wurst|würstchen|leberkäse|guanciale|kassler|fleisch|rippchen|schwein|\brind|\blamm|filet|schnitzel|braten|burger|lachs|fisch|kabeljau|thunfisch|garnele/i;
+  /hackfleisch|hähnchen|huhn|hühner|pute|kalb|speck|schinken|wurst|würstchen|leberkäse|guanciale|kassler|fleisch|rippchen|schwein|\brind|\blamm|filet|schnitzel|(?<!ge)braten|burger|lachs|fisch|kabeljau|thunfisch|garnele|chorizo|salami|sardine|sardelle|barsch|forelle|dorade|makrele|hering|tintenfisch|muschel|scampi|krabbe|shrimp/i;
 
 // Zutaten mit Gluten (Weizen, Dinkel, Roggen, Gerste …)
 const GLUTEN_RE =
