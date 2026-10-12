@@ -32,7 +32,20 @@ const ROUTINE_COLS = `id, profile_id, name, frequency, day_of_week, to_char(time
 
 let schemaReady: Promise<unknown> | null = null;
 
+// Bei jeder Schema-Änderung unten hochzählen. Der Stand steht als Kommentar an der Tabelle `profiles`,
+// damit ein aktueller Worker beim Kaltstart gar keine DDL ausführt: ALTER TABLE sperrt die Tabelle
+// auch dann, wenn die Spalte schon existiert, und kann so alle Anfragen blockieren.
+const SCHEMA_VERSION = "schema:2026101201";
+
 async function migrate(sql: Sql) {
+  const current = await sql`SELECT obj_description('public.profiles'::regclass, 'pg_class') AS v`;
+  if (current[0]?.v === SCHEMA_VERSION) return;
+  await runMigrations(sql);
+  // Nur eine Abkürzung für den nächsten Kaltstart – darf die Anfrage nicht scheitern lassen
+  await sql.query(`COMMENT ON TABLE profiles IS '${SCHEMA_VERSION}'`).catch((e) => console.warn("Schema-Stand nicht gespeichert", e));
+}
+
+async function runMigrations(sql: Sql) {
   await sql`ALTER TABLE routines ADD COLUMN IF NOT EXISTS last_run_at timestamptz`;
   await sql`ALTER TABLE plan_meals ADD COLUMN IF NOT EXISTS duration_min integer`;
   await sql`CREATE TABLE IF NOT EXISTS recipes (
