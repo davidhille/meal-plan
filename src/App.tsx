@@ -42,12 +42,22 @@ import MealPlanView from './components/MealPlanView';
 import ShoppingListView from './components/ShoppingListView';
 import SettingsView from './components/SettingsView';
 
+const VIEW_TABS: ViewTab[] = ['speiseplan', 'einkaufsliste', 'rezepte', 'favoriten', 'einstellungen'];
+
 export default function App() {
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [imagePolls, setImagePolls] = useState(0);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [selectedWeekKey, setSelectedWeekKey] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<ViewTab>('speiseplan');
+  // Aktiver Bereich steht im URL-Hash (#einkaufsliste) – so bleibt man beim Neuladen, wo man war
+  const [activeTab, setActiveTab] = useState<ViewTab>(() => {
+    const hash = window.location.hash.slice(1);
+    return (VIEW_TABS as string[]).includes(hash) ? (hash as ViewTab) : 'speiseplan';
+  });
+  useEffect(() => {
+    const url = activeTab === 'speiseplan' ? window.location.pathname + window.location.search : `#${activeTab}`;
+    window.history.replaceState(null, '', url);
+  }, [activeTab]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [routines, setRoutines] = useState<Routine[]>([]);
