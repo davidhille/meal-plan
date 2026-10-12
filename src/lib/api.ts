@@ -492,9 +492,6 @@ export function saveShopSettings(standardLabel: string, metzgerAuto: boolean): P
   return shopRequest<ShopState>('PUT', '/shops/settings', { standardLabel, metzgerAuto });
 }
 
-export function enableAmazon(): Promise<ShopState> {
-  return shopRequest<ShopState>('POST', '/shops/amazon/enable');
-}
 
 export function disconnectShop(provider: ShopProvider): Promise<ShopState> {
   return shopRequest<ShopState>('DELETE', `/shops/${provider}`);

@@ -35,7 +35,7 @@ let schemaReady: Promise<unknown> | null = null;
 // Bei jeder Schema-Änderung unten hochzählen. Der Stand steht als Kommentar an der Tabelle `profiles`,
 // damit ein aktueller Worker beim Kaltstart gar keine DDL ausführt: ALTER TABLE sperrt die Tabelle
 // auch dann, wenn die Spalte schon existiert, und kann so alle Anfragen blockieren.
-const SCHEMA_VERSION = "schema:2026101205";
+const SCHEMA_VERSION = "schema:2026101206";
 
 async function migrate(sql: Sql) {
   const current = await sql`SELECT obj_description('public.profiles'::regclass, 'pg_class') AS v`;
@@ -146,6 +146,12 @@ async function runMigrations(sql: Sql) {
     checked boolean NOT NULL DEFAULT false,
     is_basic boolean NOT NULL DEFAULT false,
     created_at timestamptz DEFAULT now())`;
+  // Amazon-Anbindung entfernt: Liste löschen, Artikel zurück auf die Standard-Liste
+  await sql`UPDATE ingredient_prefs SET label = NULL WHERE label = 'amazon'`;
+  await sql`UPDATE shopping_item_state SET label = NULL WHERE label = 'amazon'`;
+  await sql`UPDATE shopping_extras SET label = 'knuspr' WHERE label = 'amazon'`;
+  await sql`DELETE FROM product_links WHERE provider = 'amazon'`;
+  await sql`DELETE FROM shopping_labels WHERE provider = 'amazon'`;
 }
 
 const DEFAULT_LABELS = [
@@ -155,7 +161,6 @@ const DEFAULT_LABELS = [
 
 /** Online-Shops, die sich in den Einstellungen aktivieren lassen (Label-ID = Provider) */
 const SHOP_LABELS: Record<string, { name: string; color: string }> = {
-  amazon: { name: "Amazon", color: "#f59e0b" },
   knuspr: { name: "Knuspr", color: "#22c55e" },
   picnic: { name: "Picnic", color: "#e11d48" },
 };
@@ -991,12 +996,6 @@ export async function handleApi(
       }
 
       if (!provider || !SHOP_LABELS[provider]) return json({ error: "Unbekannter Shop" }, 404);
-
-      // Amazon braucht kein Konto – nur die Liste ein-/ausschalten
-      if (provider === "amazon" && action === "enable" && request.method === "POST") {
-        await enableShopLabel(sql, p.id, "amazon");
-        return json(await getShopState(sql, p.id));
-      }
 
       if (action === "connect" && request.method === "POST") {
         const email = String(body.email ?? "").trim();
