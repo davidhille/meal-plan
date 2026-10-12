@@ -3,6 +3,8 @@ import { Plus, Package, X, Loader2, ShoppingCart } from 'lucide-react';
 import { MealPlan, ProductLink, ShopProvider, ShopRule, PlanMeal, ShoppingItem, ShoppingLabel, DEFAULT_LABELS, BASICS_ITEMS, ProductResult } from '../types';
 import { PlanWeek, currentWeekIndex, formatShortDate, toIso } from '../lib/dateUtils';
 import ShoppingRangePicker from './ShoppingRangePicker';
+import PriceComparisonCard from './PriceComparisonCard';
+import { compareShops } from '../lib/priceCompare';
 import { parseEuro } from '../lib/unitPrice';
 import {
   getShopping,
@@ -12,6 +14,7 @@ import {
   saveProductLink,
   removeProductLink,
   getKnusprCart,
+  refreshShopPrices,
   setKnusprCartQuantity,
   clearKnusprCart,
   addToKnusprCart,
@@ -323,6 +326,32 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
         (firstDay && lastDay ? ` · ${formatShortDate(firstDay)} – ${formatShortDate(lastDay)}` : '') +
         (past ? ` · davon ${past} schon vorbei` : '');
 
+  // Stufe 3: ganze Liste zwischen den verbundenen Shops vergleichen
+  const priceComparison = compareShops(items, labels, shopRules);
+
+  const moveAllTo = async (labelId: string) => {
+    const toMove = priceComparison?.comparable.filter((i) => i.label !== labelId) ?? [];
+    for (const i of toMove) await changeLabel(i.id, labelId);
+    await load();
+    return toMove.length;
+  };
+
+  const refreshPrices = async () => {
+    const names = [...new Set(items.filter((i) => !i.checked && i.links).map((i) => i.baseName))];
+    const shopsToAsk = (['knuspr', 'picnic'] as ShopProvider[]).filter((p) => labels.some((l) => l.provider === p));
+    let updated = 0;
+    const missing = new Set<string>();
+    for (const p of shopsToAsk) {
+      const r = await refreshShopPrices(p, names);
+      updated += r.updated;
+      r.missing.forEach((m) => missing.add(m));
+    }
+    await load();
+    return missing.size
+      ? `${updated} Preise aktualisiert, ${missing.size} Produkte nicht mehr gefunden.`
+      : `${updated} Preise aktualisiert.`;
+  };
+
   return (
     <>
       <div className="px-4 py-4 space-y-4">
@@ -337,6 +366,10 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
           />
         ) : (
           <p className="px-1 text-xs text-gray-600">{summary}</p>
+        )}
+
+        {priceComparison && (
+          <PriceComparisonCard comparison={priceComparison} onMoveAll={moveAllTo} onRefresh={refreshPrices} />
         )}
 
         {/* Eigenen Artikel hinzufügen */}

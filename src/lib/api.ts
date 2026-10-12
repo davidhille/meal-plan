@@ -560,6 +560,11 @@ export function getKnusprCart(): Promise<CartSummary> {
   return shopRequest<CartSummary>('GET', '/shops/knuspr/cart');
 }
 
+/** Preise der verknüpften Produkte frisch beim Shop abfragen (höchstens 40 Zutaten) */
+export function refreshShopPrices(provider: ShopProvider, names: string[]): Promise<{ updated: number; missing: string[] }> {
+  return shopRequest('POST', `/shops/${provider}/prices`, { names });
+}
+
 /** Mindestbestellwert und Liefergebühr eines Shops speichern */
 export function saveShopRule(provider: ShopProvider, minOrder: number, deliveryFee: number): Promise<ShopState> {
   return shopRequest<ShopState>('PUT', `/shops/${provider}/rules`, { minOrder, deliveryFee });

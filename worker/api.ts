@@ -1118,6 +1118,40 @@ export async function handleApi(
         return json({ results });
       }
 
+      // Preise der verknüpften Produkte frisch abfragen (für den Listen-Vergleich)
+      if (action === "prices" && request.method === "POST") {
+        const conn = await loadConnection(env, sql, p.id, provider);
+        if (!conn) return json({ error: "not_connected" }, 409);
+        const names: string[] = (Array.isArray(body.names) ? body.names : []).map((n: unknown) => String(n).trim()).filter(Boolean).slice(0, 40);
+        const links = await sql`SELECT name_key, product_id, product_name FROM product_links
+          WHERE profile_id = ${p.id} AND provider = ${provider} AND name_key = ANY(${names.map(prefKey)})`;
+        const cookie = provider === "knuspr" ? await knusprLogin(conn.email, conn.secret) : "";
+        const search = (q: string) =>
+          provider === "knuspr" ? knusprSearch(cookie, q) : picnicSearch(conn.secret, conn.deviceId ?? "", q);
+        let updated = 0;
+        const missing: string[] = [];
+        // Nacheinander in kleinen Gruppen, damit der Shop nicht blockiert
+        for (let i = 0; i < links.length; i += 4) {
+          await Promise.all(
+            links.slice(i, i + 4).map(async (l) => {
+              try {
+                const hit = (await search(String(l.product_name ?? l.name_key))).find((r) => r.productId === l.product_id);
+                if (!hit) {
+                  missing.push(String(l.product_name ?? l.name_key));
+                  return;
+                }
+                await sql`UPDATE product_links SET price = ${parsePrice(hit.price)}, amount = ${hit.amount ?? null}, updated_at = now()
+                  WHERE profile_id = ${p.id} AND provider = ${provider} AND name_key = ${l.name_key}`;
+                updated++;
+              } catch {
+                missing.push(String(l.product_name ?? l.name_key));
+              }
+            })
+          );
+        }
+        return json({ updated, missing });
+      }
+
       // Was liegt schon im Knuspr-Warenkorb?
       if (provider === "knuspr" && action === "cart" && request.method === "GET") {
         const conn = await loadConnection(env, sql, p.id, "knuspr");
