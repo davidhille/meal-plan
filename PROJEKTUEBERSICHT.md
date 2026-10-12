@@ -21,7 +21,8 @@ Die App hat drei Hauptbereiche, die über einen Tab-Switcher erreichbar sind.
   - Zutatenliste
   - Zubereitungsanleitung
   - Sterne-Bewertung (1–5)
-- Gerichte können **abgelehnt** werden — ein passender Ersatz wird automatisch ausgewählt, gespeichert und in der Ansicht ersetzt
+- Pro Gericht: **Merken** (Favorit), **Ablehnen** (kommt nie wieder, Ersatz wird eingesetzt) und **Neu generieren** (nur austauschen)
+- **Komplett neuen Plan generieren** ersetzt den Plan für denselben Zeitraum
 - Bilder werden automatisch erzeugt (siehe Abschnitt 3) und lassen sich im Detail-Fenster neu generieren
 - Der zuletzt erstellte Plan wird beim Öffnen geladen; über „Plan löschen“ (mit Bestätigung) lässt er sich entfernen
 - **Portionen:** Alle Rezepte sind für 4 Portionen geschrieben. Im Detail-Fenster werden die Mengen auf die Familie umgerechnet (Erwachsene 1, Kinder bis 6 Jahre ½, 7–12 Jahre ¾, ab 13 Jahre 1 Portion) und lassen sich per +/− anpassen
@@ -40,7 +41,15 @@ Die App hat drei Hauptbereiche, die über einen Tab-Switcher erreichbar sind.
 - Amazon-Integration: Zutat anklicken → Amazon-Suchvorschläge → Produkt verknüpfen → „Warenkorb" öffnet alle offenen verknüpften Artikel
 - **Persistierung:** komplett in Neon (Tabellen `shopping_labels`, `shopping_item_state`, `shopping_extras`, `ingredient_prefs`) – auf allen Geräten gleich
 
-### 1.3 Einstellungen (Tab: „einstellungen")
+### 1.3 Favoriten (Tab: „favoriten")
+
+- Gemerkte Gerichte mit eigenem Rezept (auch wenn es nicht in der festen Liste steht)
+- **Turnus:** kein Turnus / jede Woche / alle 2, 3 oder 4 Wochen
+  - Mit Turnus: wird bei jeder Planung fest eingeplant, sobald es wieder „dran“ ist (bevorzugt an einem passenden Tag)
+  - Ohne Turnus: bekommt bei der Planung einen Bonus
+- `favorites.last_planned` merkt sich, wann das Gericht zuletzt im Plan stand
+
+### 1.4 Einstellungen / Profil (Tab: „einstellungen")
 
 #### Gesundheitsprofil
 - Gesundheitsziel (`health_goal`):

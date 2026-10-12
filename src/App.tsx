@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ViewTab, Profile, FamilyMember, Routine, MealPlan, PlanMeal } from './types';
+import { ViewTab, Profile, FamilyMember, Routine, MealPlan, PlanMeal, Favorite } from './types';
 import {
   getOrCreateProfile,
   updateProfile,
@@ -15,6 +15,12 @@ import {
   getPlanMeals,
   getLatestPlan,
   deletePlan,
+  regenerateMeal,
+  regeneratePlan,
+  getFavorites,
+  addFavorite,
+  removeFavorite,
+  setFavoriteTurnus,
   rejectMeal,
   getPassword,
   UnauthorizedError,
@@ -37,6 +43,7 @@ function formatDay(d: string) {
 export default function App() {
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [imagePolls, setImagePolls] = useState(0);
+  const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [activeTab, setActiveTab] = useState<ViewTab>('speiseplan');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
@@ -80,6 +87,7 @@ export default function App() {
       setRoutines(routinesList);
       const latest = await getLatestPlan();
       if (latest) setCurrentPlan(latest);
+      setFavorites(await getFavorites());
     }
     setLoading(false);
   };
@@ -183,17 +191,42 @@ export default function App() {
     }
   };
 
+  /** Ersatzgericht an die Stelle des alten setzen (nach Datum sortiert) */
+  const swapMeal = (oldId: string, replacement: PlanMeal) =>
+    setPlanMeals((prev) =>
+      [...prev.filter((m) => m.id !== oldId), replacement].sort((a, b) => a.meal_date.localeCompare(b.meal_date))
+    );
+
   const handleRejectMeal = async (planMealId: string, mealName: string) => {
     if (!profile) return;
-    // Optimistically mark as rejected
-    setPlanMeals(planMeals.map((m) => (m.id === planMealId ? { ...m, rejected: true } : m)));
-    // Call edge function to reject + auto-replace in background
     const replacement = await rejectMeal(profile.id, planMealId, mealName);
-    if (replacement) {
-      // Add the replacement meal to the list
-      setPlanMeals((prev) => [...prev.filter((m) => m.id !== planMealId), replacement]);
+    if (replacement) swapMeal(planMealId, replacement);
+    else setPlanMeals((prev) => prev.map((m) => (m.id === planMealId ? { ...m, rejected: true } : m)));
+  };
+
+  const handleRegenerateMeal = async (planMealId: string) => {
+    const replacement = await regenerateMeal(planMealId);
+    if (replacement) swapMeal(planMealId, replacement);
+  };
+
+  const handleRegeneratePlan = async () => {
+    if (!currentPlan) return;
+    const plan = await regeneratePlan(currentPlan.id);
+    if (plan) {
+      setPlanMeals([]);
+      setCurrentPlan(plan);
+      setFavorites(await getFavorites());
     }
   };
+
+  const favoriteNames = new Set(favorites.map((f) => f.meal_name));
+
+  const handleToggleFavorite = async (pm: PlanMeal) => {
+    const existing = favorites.find((f) => f.meal_name === pm.meal_name);
+    const next = existing ? await removeFavorite(existing.id) : await addFavorite(pm.id);
+    if (next) setFavorites(next);
+  };
+
 
 
   if (locked) {
@@ -226,6 +259,10 @@ export default function App() {
               ratings={mealRatings}
               onRate={handleRateMeal}
               onReject={currentPlan ? handleRejectMeal : undefined}
+              onRegenerate={currentPlan ? handleRegenerateMeal : undefined}
+              onRegeneratePlan={currentPlan ? handleRegeneratePlan : undefined}
+              favoriteNames={favoriteNames}
+              onToggleFavorite={handleToggleFavorite}
               plan={currentPlan}
               onDeletePlan={currentPlan ? handleDeletePlan : undefined}
               defaultPortions={familyPortions(familyMembers)}
@@ -246,7 +283,19 @@ export default function App() {
         ) : activeTab === 'favoriten' ? (
           <>
             <PageHeader title="Favoriten" subtitle="Eure Lieblingsgerichte – wiederholbar im Turnus." />
-            <FavoritesView />
+            <FavoritesView
+              favorites={favorites}
+              ratings={mealRatings}
+              defaultPortions={familyPortions(familyMembers)}
+              onSetTurnus={async (id, weeks) => {
+                const next = await setFavoriteTurnus(id, weeks);
+                if (next) setFavorites(next);
+              }}
+              onRemove={async (id) => {
+                const next = await removeFavorite(id);
+                if (next) setFavorites(next);
+              }}
+            />
           </>
         ) : (
           <>

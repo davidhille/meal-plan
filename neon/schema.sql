@@ -126,3 +126,20 @@ CREATE TABLE IF NOT EXISTS shopping_extras (
   is_basic boolean NOT NULL DEFAULT false,
   created_at timestamptz DEFAULT now()
 );
+
+-- Ab Version „Favoriten mit Turnus" (werden vom Worker auch automatisch angelegt)
+ALTER TABLE plan_meals ADD COLUMN IF NOT EXISTS duration_min integer;
+
+CREATE TABLE IF NOT EXISTS favorites (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  profile_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  meal_name text NOT NULL,
+  meal_type text NOT NULL,
+  ingredients text[] NOT NULL DEFAULT '{}',
+  instructions text,
+  duration_min integer,
+  turnus_weeks integer,          -- NULL = kein Turnus (nur Bonus bei der Planung)
+  last_planned date,             -- für die Turnus-Berechnung
+  created_at timestamptz DEFAULT now(),
+  UNIQUE (profile_id, meal_name)
+);

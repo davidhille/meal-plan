@@ -4,7 +4,7 @@
 //   APP_PASSWORD  – Familien-Passwort für die App (Secret, optional; leer = kein Schutz)
 
 import { neon } from "@neondatabase/serverless";
-import { pickMeal, MEAL_DATABASE, scoreMeal, preferredTypeFor, type ScoringContext } from "./meals";
+import { pickMeal, pickReplacement, preferredTypeFor, MEAL_DATABASE, type Recipe, type ScoringContext } from "./meals";
 import { buildPlanItems, familyPortions } from "./shopping";
 import { generateImage, fillMissingImages, serveImage, IMAGE_URL_SQL, type AiEnv } from "./images";
 
@@ -20,13 +20,26 @@ const json = (data: unknown, status = 200) =>
 
 // Spaltenlisten mit Datum als Text (YYYY-MM-DD), damit das Frontend Strings bekommt
 const PLAN_COLS = `id, profile_id, start_date::text AS start_date, end_date::text AS end_date, status, created_at`;
-const PLAN_MEAL_COLS = `id, plan_id, meal_date::text AS meal_date, meal_name, meal_type, ingredients, instructions, rejected, image_url, created_at`;
+const PLAN_MEAL_COLS = `id, plan_id, meal_date::text AS meal_date, meal_name, meal_type, ingredients, instructions, rejected, image_url, duration_min, created_at`;
 const ROUTINE_COLS = `id, profile_id, name, frequency, day_of_week, to_char(time, 'HH24:MI') AS time, duration_days, active, last_run_at, created_at`;
 
 let schemaReady: Promise<unknown> | null = null;
 
 async function migrate(sql: Sql) {
   await sql`ALTER TABLE routines ADD COLUMN IF NOT EXISTS last_run_at timestamptz`;
+  await sql`ALTER TABLE plan_meals ADD COLUMN IF NOT EXISTS duration_min integer`;
+  await sql`CREATE TABLE IF NOT EXISTS favorites (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    profile_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    meal_name text NOT NULL,
+    meal_type text NOT NULL,
+    ingredients text[] NOT NULL DEFAULT '{}',
+    instructions text,
+    duration_min integer,
+    turnus_weeks integer,
+    last_planned date,
+    created_at timestamptz DEFAULT now(),
+    UNIQUE (profile_id, meal_name))`;
   await sql`ALTER TABLE meal_images ADD COLUMN IF NOT EXISTS image_data bytea`;
   await sql`ALTER TABLE meal_images ADD COLUMN IF NOT EXISTS content_type text`;
   await sql`ALTER TABLE meal_images ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now()`;
@@ -142,16 +155,71 @@ function ensureSchema(sql: Sql) {
   return schemaReady;
 }
 
+const FAVORITE_COLS = `id, meal_name, meal_type, ingredients, instructions, duration_min, turnus_weeks,
+  last_planned::text AS last_planned, created_at`;
+
+async function loadFavorites(sql: Sql, profileId: string) {
+  return sql.query(`SELECT ${FAVORITE_COLS} FROM favorites WHERE profile_id = $1 ORDER BY created_at`, [profileId]);
+}
+
+function favoriteToRecipe(f: Record<string, any>): Recipe {
+  return {
+    name: f.meal_name,
+    type: f.meal_type,
+    ingredients: f.ingredients ?? [],
+    instructions: f.instructions ?? "",
+    durationMin: f.duration_min ?? null,
+  };
+}
+
+/** Alle Rezepte, aus denen geplant wird: feste Liste + Favoriten (die nicht in der Liste stehen) */
+async function loadPool(sql: Sql, profileId: string): Promise<{ pool: Recipe[]; favorites: Record<string, any>[] }> {
+  const favorites = await loadFavorites(sql, profileId);
+  const names = new Set(MEAL_DATABASE.map((m) => m.name));
+  const pool: Recipe[] = [...MEAL_DATABASE];
+  for (const f of favorites) if (!names.has(f.meal_name)) pool.push(favoriteToRecipe(f));
+  return { pool, favorites };
+}
+
+function addDaysIso(date: string, days: number) {
+  const d = new Date(date + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 /** Plan für [startDate, endDate] erzeugen und speichern */
 async function createPlan(sql: Sql, profileId: string, startDate: string, endDate: string) {
   const ctx = await loadContext(sql, profileId);
+  const { pool, favorites } = await loadPool(sql, profileId);
+  ctx.favoriteNames = favorites.filter((f) => !f.turnus_weeks).map((f) => f.meal_name);
+
+  const dates: string[] = [];
+  for (let d = startDate; d <= endDate; d = addDaysIso(d, 1)) dates.push(d);
+
+  // 1) Fällige Turnus-Favoriten fest einplanen (am liebsten an einem passenden Tag)
+  const assigned = new Map<string, Recipe>();
   const used = new Set<string>();
-  const meals: { date: string; name: string; type: string; ingredients: string[]; instructions: string }[] = [];
-  const end = new Date(endDate + "T00:00:00Z");
-  for (let d = new Date(startDate + "T00:00:00Z"); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
-    const date = d.toISOString().slice(0, 10);
-    const m = pickMeal(date, ctx, used);
-    if (m) meals.push({ date, ...m });
+  const due = favorites
+    .filter((f) => f.turnus_weeks > 0 && !ctx.rejectedMeals.includes(f.meal_name))
+    .filter((f) => !f.last_planned || addDaysIso(f.last_planned, f.turnus_weeks * 7) <= endDate)
+    .sort((a, b) => String(a.last_planned ?? "").localeCompare(String(b.last_planned ?? "")));
+  for (const f of due) {
+    const free = dates.filter((d) => !assigned.has(d));
+    if (free.length === 0) break;
+    const earliest = f.last_planned ? addDaysIso(f.last_planned, f.turnus_weeks * 7) : startDate;
+    const candidates = free.filter((d) => d >= earliest);
+    const day = candidates.find((d) => preferredTypeFor(d) === f.meal_type) ?? candidates[0];
+    if (!day) continue;
+    assigned.set(day, favoriteToRecipe(f));
+    used.add(f.meal_name);
+  }
+
+  // 2) Restliche Tage normal planen
+  const meals: { date: string; recipe: Recipe }[] = [];
+  for (const date of dates) {
+    const fixed = assigned.get(date);
+    const recipe = fixed ?? pickMeal(date, ctx, used, pool);
+    if (recipe) meals.push({ date, recipe });
   }
 
   const planRows = await sql.query(
@@ -161,20 +229,68 @@ async function createPlan(sql: Sql, profileId: string, startDate: string, endDat
   const plan = planRows[0];
   if (meals.length) {
     await sql.query(
-      `INSERT INTO plan_meals (plan_id, meal_date, meal_name, meal_type, ingredients, instructions)
-       SELECT $1, d::date, n, t, string_to_array(i, E'\\x1f'), ins
-       FROM unnest($2::text[], $3::text[], $4::text[], $5::text[], $6::text[]) AS x(d, n, t, i, ins)`,
+      `INSERT INTO plan_meals (plan_id, meal_date, meal_name, meal_type, ingredients, instructions, duration_min)
+       SELECT $1, d::date, n, t, string_to_array(i, E'\\x1f'), ins, NULLIF(dur, 0)
+       FROM unnest($2::text[], $3::text[], $4::text[], $5::text[], $6::text[], $7::int[]) AS x(d, n, t, i, ins, dur)`,
       [
         plan.id,
         meals.map((m) => m.date),
-        meals.map((m) => m.name),
-        meals.map((m) => m.type),
-        meals.map((m) => m.ingredients.join("\x1f")),
-        meals.map((m) => m.instructions),
+        meals.map((m) => m.recipe.name),
+        meals.map((m) => m.recipe.type),
+        meals.map((m) => m.recipe.ingredients.join("\x1f")),
+        meals.map((m) => m.recipe.instructions),
+        meals.map((m) => m.recipe.durationMin ?? 0),
       ]
     );
+    await markFavoritesPlanned(sql, profileId, plan.id);
   }
   return plan;
+}
+
+/** Turnus-Zähler: letztes geplantes Datum je Favorit aktualisieren */
+async function markFavoritesPlanned(sql: Sql, profileId: string, planId: string) {
+  await sql`UPDATE favorites f SET last_planned = x.d
+    FROM (SELECT meal_name, max(meal_date) AS d FROM plan_meals WHERE plan_id = ${planId} AND NOT rejected GROUP BY meal_name) x
+    WHERE f.profile_id = ${profileId} AND f.meal_name = x.meal_name
+      AND (f.last_planned IS NULL OR f.last_planned < x.d)`;
+}
+
+/**
+ * Gericht austauschen. reject=true: kommt auf die Ausschlussliste (Ablehnen),
+ * reject=false: nur austauschen (Neu generieren).
+ */
+async function replaceMeal(env: Env, sql: Sql, profileId: string, planMealId: string, reject: boolean,
+  waitUntil: (p: Promise<unknown>) => void) {
+  const rows = await sql.query(`SELECT ${PLAN_MEAL_COLS} FROM plan_meals WHERE id = $1`, [planMealId]);
+  const old = rows[0];
+  if (!old) return null;
+
+  if (reject) {
+    await sql`UPDATE plan_meals SET rejected = true WHERE id = ${planMealId}`;
+    await sql`INSERT INTO rejected_meals (profile_id, meal_name) VALUES (${profileId}, ${old.meal_name})`;
+  }
+
+  const ctx = await loadContext(sql, profileId);
+  const { pool, favorites } = await loadPool(sql, profileId);
+  ctx.favoriteNames = favorites.filter((f) => !f.turnus_weeks).map((f) => f.meal_name);
+  const existing = await sql`SELECT meal_name FROM plan_meals WHERE plan_id = ${old.plan_id}`;
+  const exclude = new Set<string>([...existing.map((r) => r.meal_name as string), old.meal_name]);
+
+  const best = pickReplacement(old.meal_date, ctx, pool, exclude);
+  if (!best) return null;
+
+  if (!reject) await sql`DELETE FROM plan_meals WHERE id = ${planMealId}`;
+  const inserted = await sql.query(
+    `INSERT INTO plan_meals (plan_id, meal_date, meal_name, meal_type, ingredients, instructions, duration_min, rejected)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, false) RETURNING ${PLAN_MEAL_COLS}`,
+    [old.plan_id, old.meal_date, best.name, best.type, best.ingredients, best.instructions, best.durationMin ?? null]
+  );
+  const replacement = inserted[0];
+  await markFavoritesPlanned(sql, profileId, old.plan_id);
+  const img = await sql`SELECT image_url FROM meal_images WHERE meal_name = ${best.name} AND image_data IS NOT NULL`;
+  if (img[0]) replacement.image_url = img[0].image_url;
+  else waitUntil(generateImage(env, sql, best.name));
+  return replacement;
 }
 
 async function latestPlan(sql: Sql, profileId: string) {
@@ -322,7 +438,7 @@ export async function handleApi(
       return json(
         await sql.query(
           `SELECT pm.id, pm.plan_id, pm.meal_date::text AS meal_date, pm.meal_name, pm.meal_type, pm.ingredients,
-                  pm.instructions, pm.rejected, ${IMAGE_URL_SQL} AS image_url, pm.created_at
+                  pm.instructions, pm.rejected, ${IMAGE_URL_SQL} AS image_url, pm.duration_min, pm.created_at
            FROM plan_meals pm LEFT JOIN meal_images mi ON mi.meal_name = pm.meal_name
            WHERE pm.plan_id = $1 ORDER BY pm.meal_date`,
           [id]
@@ -330,37 +446,53 @@ export async function handleApi(
       );
     }
 
-    // Gericht ablehnen + automatisch ersetzen
-    if (parts[0] === "plan-meals" && id && parts[2] === "reject" && request.method === "POST") {
+    // Gericht ablehnen (kommt nicht wieder) bzw. neu generieren (nur austauschen)
+    if (parts[0] === "plan-meals" && id && (parts[2] === "reject" || parts[2] === "regenerate") && request.method === "POST") {
       const p = await getProfile(sql);
-      const rows = await sql.query(`SELECT ${PLAN_MEAL_COLS} FROM plan_meals WHERE id = $1`, [id]);
-      const old = rows[0];
-      if (!old) return json({ error: "Gericht nicht gefunden" }, 404);
-
-      await sql`UPDATE plan_meals SET rejected = true WHERE id = ${id}`;
-      await sql`INSERT INTO rejected_meals (profile_id, meal_name) VALUES (${p.id}, ${old.meal_name})`;
-
-      const ctx = await loadContext(sql, p.id);
-      const existing = await sql`SELECT meal_name FROM plan_meals WHERE plan_id = ${old.plan_id}`;
-      ctx.existingPlanMeals = existing.map((r) => r.meal_name);
-
-      const preferred = preferredTypeFor(old.meal_date);
-      const scored = MEAL_DATABASE.map((meal) => ({ meal, score: scoreMeal(meal, ctx) }))
-        .filter((s) => s.score >= 0)
-        .sort((a, b) => b.score - a.score);
-      const best = (scored.find((s) => s.meal.type === preferred) ?? scored[0])?.meal;
-      if (!best) return json({ error: "Kein passender Ersatz gefunden" }, 404);
-
-      const inserted = await sql.query(
-        `INSERT INTO plan_meals (plan_id, meal_date, meal_name, meal_type, ingredients, instructions, rejected)
-         VALUES ($1, $2, $3, $4, $5, $6, false) RETURNING ${PLAN_MEAL_COLS}`,
-        [old.plan_id, old.meal_date, best.name, best.type, best.ingredients, best.instructions]
-      );
-      const replacement = inserted[0];
-      const img = await sql`SELECT image_url FROM meal_images WHERE meal_name = ${best.name} AND image_data IS NOT NULL`;
-      if (img[0]) replacement.image_url = img[0].image_url;
-      else waitUntil(generateImage(env, sql, best.name));
+      const replacement = await replaceMeal(env, sql, p.id, id, parts[2] === "reject", waitUntil);
+      if (!replacement) return json({ error: "Kein passender Ersatz gefunden" }, 404);
       return json({ replacement });
+    }
+
+    // Kompletten Plan neu generieren (gleicher Zeitraum, alter Plan wird ersetzt)
+    if (parts[0] === "plans" && id && parts[2] === "regenerate" && request.method === "POST") {
+      const p = await getProfile(sql);
+      const rows = await sql.query(`SELECT ${PLAN_COLS} FROM meal_plans WHERE id = $1 AND profile_id = $2`, [id, p.id]);
+      if (!rows[0]) return json({ error: "Plan nicht gefunden" }, 404);
+      // Turnus-Zähler nicht durch den alten Plan blockieren lassen
+      await sql`UPDATE favorites SET last_planned = NULL WHERE profile_id = ${p.id}
+        AND last_planned BETWEEN ${rows[0].start_date}::date AND ${rows[0].end_date}::date`;
+      await sql`DELETE FROM meal_plans WHERE id = ${id}`;
+      const plan = await createPlan(sql, p.id, rows[0].start_date, rows[0].end_date);
+      waitUntil(fillMissingImages(env, sql, 7, plan.id));
+      return json(plan);
+    }
+
+    // ---------- Favoriten ----------
+    if (route === "GET /favorites") {
+      const p = await getProfile(sql);
+      return json(await loadFavorites(sql, p.id));
+    }
+    if (route === "POST /favorites") {
+      const p = await getProfile(sql);
+      const rows = await sql.query(`SELECT ${PLAN_MEAL_COLS} FROM plan_meals WHERE id = $1`, [body.planMealId]);
+      const pm = rows[0];
+      if (!pm) return json({ error: "Gericht nicht gefunden" }, 404);
+      await sql`INSERT INTO favorites (profile_id, meal_name, meal_type, ingredients, instructions, duration_min, last_planned)
+        VALUES (${p.id}, ${pm.meal_name}, ${pm.meal_type}, ${pm.ingredients}, ${pm.instructions}, ${pm.duration_min}, ${pm.meal_date}::date)
+        ON CONFLICT (profile_id, meal_name) DO NOTHING`;
+      return json(await loadFavorites(sql, p.id));
+    }
+    if (parts[0] === "favorites" && id && request.method === "PATCH") {
+      const p = await getProfile(sql);
+      const weeks = Number(body.turnus_weeks) || null;
+      await sql`UPDATE favorites SET turnus_weeks = ${weeks} WHERE id = ${id} AND profile_id = ${p.id}`;
+      return json(await loadFavorites(sql, p.id));
+    }
+    if (parts[0] === "favorites" && id && request.method === "DELETE") {
+      const p = await getProfile(sql);
+      await sql`DELETE FROM favorites WHERE id = ${id} AND profile_id = ${p.id}`;
+      return json(await loadFavorites(sql, p.id));
     }
 
     // ---------- Einkaufsliste ----------
@@ -491,12 +623,6 @@ function berlinNow() {
   return { date: `${parts.year}-${parts.month}-${parts.day}`, time: `${parts.hour === "24" ? "00" : parts.hour}:${parts.minute}`, weekday, day: Number(parts.day) };
 }
 
-function addDays(date: string, days: number) {
-  const d = new Date(date + "T00:00:00Z");
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
 /** Fällige Routinen ausführen: Plan ab morgen über duration_days Tage */
 export async function runRoutines(env: Env) {
   if (!env.DATABASE_URL) return;
@@ -521,8 +647,8 @@ export async function runRoutines(env: Env) {
       RETURNING id`;
     if (!claimed.length) continue;
 
-    const start = addDays(now.date, 1);
-    const end = addDays(start, Math.max(1, r.duration_days) - 1);
+    const start = addDaysIso(now.date, 1);
+    const end = addDaysIso(start, Math.max(1, r.duration_days) - 1);
     await createPlan(sql, r.profile_id, start, end);
     console.log(`Routine "${r.name}" ausgeführt: Plan ${start} bis ${end}`);
   }

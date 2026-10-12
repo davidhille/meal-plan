@@ -134,3 +134,16 @@ export interface RejectedMeal {
   reason?: string;
   created_at: string;
 }
+
+export interface Favorite {
+  id: string;
+  meal_name: string;
+  meal_type: MealType;
+  ingredients: string[];
+  instructions: string | null;
+  duration_min: number | null;
+  /** null = kein Turnus, sonst alle n Wochen automatisch einplanen */
+  turnus_weeks: number | null;
+  last_planned: string | null;
+  created_at: string;
+}

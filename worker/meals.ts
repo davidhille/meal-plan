@@ -1,6 +1,12 @@
 // Rezeptdatenbank + Auswahl-Logik (übernommen aus den Supabase Edge Functions)
 
-export interface Recipe { name: string; type: "vegetarisch" | "fleisch" | "wochenende"; ingredients: string[]; instructions: string }
+export interface Recipe {
+  name: string;
+  type: "vegetarisch" | "fleisch" | "wochenende";
+  ingredients: string[];
+  instructions: string;
+  durationMin?: number | null;
+}
 
 export const MEAL_DATABASE: Recipe[] = [
   {
@@ -200,6 +206,8 @@ export interface ScoringContext {
   healthGoal: string;
   /** Gerichte, die schon im Plan sind (nur beim Ersetzen: −20) */
   existingPlanMeals?: string[];
+  /** Favoriten ohne Turnus bekommen einen Bonus */
+  favoriteNames?: string[];
 }
 
 const MEAT_RE = /hackfleisch|hähnchen|speck|fleisch|rippchen|lachs|schwein|rind|lamm|filet|schnitzel|braten|burger/i;
@@ -237,6 +245,7 @@ export function scoreMeal(meal: Recipe, ctx: ScoringContext): number {
   if (ctx.rejectedMeals.includes(meal.name)) return -1;
   if (ctx.existingPlanMeals?.includes(meal.name)) score -= 20;
   if (ctx.mealRatings[meal.name]) score += ctx.mealRatings[meal.name] * 10;
+  if (ctx.favoriteNames?.includes(meal.name)) score += 20;
 
   const text = [meal.name, ...meal.ingredients].join(" | ").toLowerCase();
   const matches = (term: string) => expandTerm(term).some((t) => text.includes(t));
@@ -272,9 +281,14 @@ export function preferredTypeFor(dateStr: string): Recipe["type"] {
   return dow % 2 === 0 ? "fleisch" : "vegetarisch";
 }
 
-export function pickMeal(dateStr: string, ctx: ScoringContext, used: Set<string>): Recipe | null {
+export function pickMeal(
+  dateStr: string,
+  ctx: ScoringContext,
+  used: Set<string>,
+  pool: Recipe[] = MEAL_DATABASE
+): Recipe | null {
   const preferred = preferredTypeFor(dateStr);
-  const all = MEAL_DATABASE.map((meal) => ({ meal, score: scoreMeal(meal, ctx) }))
+  const all = pool.map((meal) => ({ meal, score: scoreMeal(meal, ctx) }))
     .filter((s) => s.score >= 0)
     .sort((a, b) => b.score - a.score);
   const fresh = all.filter((s) => !used.has(s.meal.name));
@@ -282,4 +296,20 @@ export function pickMeal(dateStr: string, ctx: ScoringContext, used: Set<string>
   if (!choice) return null;
   used.add(choice.meal.name);
   return choice.meal;
+}
+
+/** Bestes Ersatzgericht für einen Tag (schließt Gerichte aus `exclude` aus) */
+export function pickReplacement(
+  dateStr: string,
+  ctx: ScoringContext,
+  pool: Recipe[],
+  exclude: Set<string>
+): Recipe | null {
+  const preferred = preferredTypeFor(dateStr);
+  const scored = pool
+    .filter((m) => !exclude.has(m.name))
+    .map((meal) => ({ meal, score: scoreMeal(meal, ctx) }))
+    .filter((s) => s.score >= 0)
+    .sort((a, b) => b.score - a.score);
+  return (scored.find((s) => s.meal.type === preferred) ?? scored[0])?.meal ?? null;
 }

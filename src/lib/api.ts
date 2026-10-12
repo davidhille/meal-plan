@@ -1,4 +1,4 @@
-import { Profile, FamilyMember, MealRating, MealPlan, PlanMeal, Routine, ShoppingItem, ShoppingLabel } from '../types';
+import { Profile, FamilyMember, MealRating, MealPlan, PlanMeal, Routine, ShoppingItem, ShoppingLabel, Favorite } from '../types';
 
 // Alle Daten laufen über die Cloudflare-Functions unter /api (→ Neon).
 // Das Familien-Passwort wird im Browser gemerkt und bei jeder Anfrage mitgeschickt.
@@ -207,6 +207,65 @@ export async function rejectMeal(
     return result.replacement;
   } catch (error) {
     console.error('Error rejecting meal:', error);
+    return null;
+  }
+}
+
+/** Gericht nur austauschen (ohne es auszuschließen) */
+export async function regenerateMeal(planMealId: string): Promise<PlanMeal | null> {
+  try {
+    const result = await request<{ replacement: PlanMeal }>('POST', `/plan-meals/${planMealId}/regenerate`);
+    return result.replacement;
+  } catch (error) {
+    console.error('Error regenerating meal:', error);
+    return null;
+  }
+}
+
+/** Kompletten Plan für denselben Zeitraum neu erstellen (ersetzt den alten) */
+export async function regeneratePlan(planId: string): Promise<MealPlan | null> {
+  try {
+    return await request<MealPlan>('POST', `/plans/${planId}/regenerate`);
+  } catch (error) {
+    console.error('Error regenerating plan:', error);
+    return null;
+  }
+}
+
+// ---------- Favoriten ----------
+
+export async function getFavorites(): Promise<Favorite[]> {
+  try {
+    return await request<Favorite[]>('GET', '/favorites');
+  } catch (error) {
+    console.error('Error fetching favorites:', error);
+    return [];
+  }
+}
+
+export async function addFavorite(planMealId: string): Promise<Favorite[] | null> {
+  try {
+    return await request<Favorite[]>('POST', '/favorites', { planMealId });
+  } catch (error) {
+    console.error('Error adding favorite:', error);
+    return null;
+  }
+}
+
+export async function removeFavorite(id: string): Promise<Favorite[] | null> {
+  try {
+    return await request<Favorite[]>('DELETE', `/favorites/${id}`);
+  } catch (error) {
+    console.error('Error removing favorite:', error);
+    return null;
+  }
+}
+
+export async function setFavoriteTurnus(id: string, weeks: number | null): Promise<Favorite[] | null> {
+  try {
+    return await request<Favorite[]>('PATCH', `/favorites/${id}`, { turnus_weeks: weeks });
+  } catch (error) {
+    console.error('Error updating favorite:', error);
     return null;
   }
 }
