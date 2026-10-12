@@ -10,7 +10,7 @@ import { generateImage, fillMissingImages, serveImage, IMAGE_URL_SQL, IMAGE_CRED
 import { generateRecipes } from "./aiRecipes";
 import { importRecipeFromUrl, ImportError } from "./recipeImport";
 import {
-  encrypt, decrypt, ShopError, knusprLogin, knusprSearch, knusprAddToCart, knusprGetCart, knusprRemoveFromCart, knusprSetQuantity, picnicLogin, picnicVerify, picnicSearch,
+  encrypt, decrypt, ShopError, knusprLogin, knusprSearch, knusprAddToCart, knusprGetCart, knusprGetCartSummary, knusprRemoveFromCart, knusprSetQuantity, picnicLogin, picnicVerify, picnicSearch,
   type ShopEnv,
 } from "./shops";
 
@@ -35,7 +35,7 @@ let schemaReady: Promise<unknown> | null = null;
 // Bei jeder Schema-Änderung unten hochzählen. Der Stand steht als Kommentar an der Tabelle `profiles`,
 // damit ein aktueller Worker beim Kaltstart gar keine DDL ausführt: ALTER TABLE sperrt die Tabelle
 // auch dann, wenn die Spalte schon existiert, und kann so alle Anfragen blockieren.
-const SCHEMA_VERSION = "schema:2026101206";
+const SCHEMA_VERSION = "schema:2026101207";
 
 async function migrate(sql: Sql) {
   const current = await sql`SELECT obj_description('public.profiles'::regclass, 'pg_class') AS v`;
@@ -152,6 +152,15 @@ async function runMigrations(sql: Sql) {
   await sql`UPDATE shopping_extras SET label = 'knuspr' WHERE label = 'amazon'`;
   await sql`DELETE FROM product_links WHERE provider = 'amazon'`;
   await sql`DELETE FROM shopping_labels WHERE provider = 'amazon'`;
+  // Preisvergleich: Preis/Packung der verknüpften Produkte, Mindestbestellwert und Liefergebühr je Shop
+  await sql`ALTER TABLE product_links ADD COLUMN IF NOT EXISTS price numeric`;
+  await sql`ALTER TABLE product_links ADD COLUMN IF NOT EXISTS amount text`;
+  await sql`CREATE TABLE IF NOT EXISTS shop_rules (
+    profile_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    provider text NOT NULL,
+    min_order numeric NOT NULL,
+    delivery_fee numeric NOT NULL DEFAULT 0,
+    PRIMARY KEY (profile_id, provider))`;
 }
 
 const DEFAULT_LABELS = [
@@ -195,10 +204,11 @@ async function getShopping(sql: Sql, profileId: string, planId: string, range?: 
     sql`SELECT item_key, checked, label FROM shopping_item_state WHERE plan_id = ${planId}`,
     sql`SELECT id, name, label, checked, is_basic FROM shopping_extras WHERE plan_id = ${planId} ORDER BY created_at`,
     sql`SELECT name_key, label FROM ingredient_prefs WHERE profile_id = ${profileId}`,
-    sql`SELECT name_key, provider, product_id, product_name, image_url FROM product_links WHERE profile_id = ${profileId}`,
+    sql`SELECT name_key, provider, product_id, product_name, image_url, price, amount FROM product_links WHERE profile_id = ${profileId}`,
     sql`SELECT standard_label, metzger_auto FROM profiles WHERE id = ${profileId}`,
     sql`SELECT name_key, name FROM pantry_items WHERE profile_id = ${profileId} ORDER BY name`,
   ]);
+  const shopRules = await getShopRules(sql, profileId);
   const labelIds = new Set(labels.map((l) => l.id));
   const portions = familyPortions(members as { type: string; age: number | null }[]);
   const built = buildPlanItems(
@@ -220,7 +230,13 @@ async function getShopping(sql: Sql, profileId: string, planId: string, range?: 
     const provider = providerOf.get(label);
     const link = provider ? linkBy.get(`${prefKey(name)}|${provider}`) : undefined;
     return link
-      ? { productId: link.product_id as string, productName: link.product_name as string, productImage: link.image_url as string | undefined }
+      ? {
+          productId: link.product_id as string,
+          productName: link.product_name as string,
+          productImage: link.image_url as string | undefined,
+          productPrice: link.price != null ? Number(link.price) : undefined,
+          productAmount: (link.amount as string | null) ?? undefined,
+        }
       : {};
   };
 
@@ -256,6 +272,7 @@ async function getShopping(sql: Sql, profileId: string, planId: string, range?: 
     labels,
     items,
     pantryNeeded: built.pantryNeeded,
+    shopRules,
     customPantry: pantry.map((r) => r.name as string),
     portions,
     standardLabel: standard,
@@ -297,11 +314,34 @@ async function loadConnection(env: Env, sql: Sql, profileId: string, provider: s
 }
 
 /** Zustand für die Einstellungen: Standard-Liste, Metzger-Automatik, aktive Shops, Verbindungen */
+/** Mindestbestellwert und Liefergebühr je Shop (änderbar in den Einstellungen) */
+const DEFAULT_SHOP_RULES: Record<string, { minOrder: number; deliveryFee: number }> = {
+  knuspr: { minOrder: 79, deliveryFee: 0 },
+  picnic: { minOrder: 45, deliveryFee: 0 },
+};
+
+async function getShopRules(sql: Sql, profileId: string) {
+  const rows = await sql`SELECT provider, min_order, delivery_fee FROM shop_rules WHERE profile_id = ${profileId}`;
+  const rules = structuredClone(DEFAULT_SHOP_RULES);
+  for (const r of rows) {
+    if (rules[r.provider]) rules[r.provider] = { minOrder: Number(r.min_order), deliveryFee: Number(r.delivery_fee) };
+  }
+  return rules;
+}
+
+/** „1,99 €“, „1.99 EUR“ oder 1.99 → 1.99 */
+function parsePrice(raw: unknown): number | null {
+  if (typeof raw === "number") return Number.isFinite(raw) ? raw : null;
+  const m = String(raw ?? "").replace(/\s/g, "").match(/(\d+(?:[.,]\d{1,2})?)/);
+  return m ? Number(m[1].replace(",", ".")) : null;
+}
+
 async function getShopState(sql: Sql, profileId: string) {
-  const [labels, settings, conns] = await Promise.all([
+  const [labels, settings, conns, rules] = await Promise.all([
     getLabels(sql, profileId),
     sql`SELECT standard_label, metzger_auto FROM profiles WHERE id = ${profileId}`,
     sql`SELECT provider, email, updated_at FROM shop_connections WHERE profile_id = ${profileId}`,
+    getShopRules(sql, profileId),
   ]);
   const ids = new Set(labels.map((l) => l.id));
   return {
@@ -310,6 +350,7 @@ async function getShopState(sql: Sql, profileId: string) {
     metzgerAuto: settings[0]?.metzger_auto !== false,
     activeShops: labels.filter((l) => l.provider).map((l) => l.provider),
     connections: Object.fromEntries(conns.map((c) => [c.provider, { email: c.email, since: c.updated_at }])),
+    rules,
   };
 }
 
@@ -964,10 +1005,12 @@ export async function handleApi(
       const p = await getProfile(sql);
       const name = String(body.name ?? "").trim();
       if (!name || !body.provider || !body.productId) return json({ error: "Angaben fehlen" }, 400);
-      await sql`INSERT INTO product_links (profile_id, name_key, provider, product_id, product_name, image_url)
-        VALUES (${p.id}, ${prefKey(name)}, ${body.provider}, ${String(body.productId)}, ${body.productName ?? null}, ${body.imageUrl ?? null})
+      await sql`INSERT INTO product_links (profile_id, name_key, provider, product_id, product_name, image_url, price, amount)
+        VALUES (${p.id}, ${prefKey(name)}, ${body.provider}, ${String(body.productId)}, ${body.productName ?? null}, ${body.imageUrl ?? null},
+                ${parsePrice(body.price)}, ${body.amount ? String(body.amount).slice(0, 60) : null})
         ON CONFLICT (profile_id, name_key, provider) DO UPDATE SET product_id = EXCLUDED.product_id,
-          product_name = EXCLUDED.product_name, image_url = EXCLUDED.image_url, updated_at = now()`;
+          product_name = EXCLUDED.product_name, image_url = EXCLUDED.image_url,
+          price = EXCLUDED.price, amount = EXCLUDED.amount, updated_at = now()`;
       return json({ ok: true });
     }
 
@@ -996,6 +1039,19 @@ export async function handleApi(
       }
 
       if (!provider || !SHOP_LABELS[provider]) return json({ error: "Unbekannter Shop" }, 404);
+
+      // Mindestbestellwert und Liefergebühr eines Shops
+      if (action === "rules" && request.method === "PUT") {
+        const minOrder = parsePrice(body.minOrder);
+        const deliveryFee = parsePrice(body.deliveryFee) ?? 0;
+        if (minOrder == null || minOrder < 0 || minOrder > 1000 || deliveryFee < 0 || deliveryFee > 100) {
+          return json({ error: "Bitte gültige Beträge angeben" }, 400);
+        }
+        await sql`INSERT INTO shop_rules (profile_id, provider, min_order, delivery_fee)
+          VALUES (${p.id}, ${provider}, ${minOrder}, ${deliveryFee})
+          ON CONFLICT (profile_id, provider) DO UPDATE SET min_order = EXCLUDED.min_order, delivery_fee = EXCLUDED.delivery_fee`;
+        return json(await getShopState(sql, p.id));
+      }
 
       if (action === "connect" && request.method === "POST") {
         const email = String(body.email ?? "").trim();
@@ -1048,7 +1104,7 @@ export async function handleApi(
       if (provider === "knuspr" && action === "cart" && request.method === "GET") {
         const conn = await loadConnection(env, sql, p.id, "knuspr");
         if (!conn) return json({ error: "not_connected" }, 409);
-        return json({ items: await knusprGetCart(await knusprLogin(conn.email, conn.secret)) });
+        return json(await knusprGetCartSummary(await knusprLogin(conn.email, conn.secret)));
       }
 
       // Alle offenen, verknüpften Artikel einer Liste in den Knuspr-Warenkorb legen
@@ -1074,7 +1130,7 @@ export async function handleApi(
         const item = (await knusprGetCart(cookie)).find((c) => c.productId === String(body.productId));
         if (!item) return json({ error: "Artikel liegt nicht (mehr) im Warenkorb" }, 404);
         await knusprSetQuantity(cookie, item, Math.min(Math.max(Math.round(Number(body.quantity) || 0), 0), 50));
-        return json({ items: await knusprGetCart(cookie) });
+        return json(await knusprGetCartSummary(cookie));
       }
 
       // Knuspr-Warenkorb leeren
@@ -1087,9 +1143,9 @@ export async function handleApi(
         for (const item of items) {
           if (!item.orderFieldId || !(await knusprRemoveFromCart(cookie, item.orderFieldId))) failed++;
         }
-        const rest = await knusprGetCart(cookie);
-        if (failed && rest.length) return json({ error: `${rest.length} Artikel konnten nicht entfernt werden.`, items: rest }, 502);
-        return json({ items: rest });
+        const rest = await knusprGetCartSummary(cookie);
+        if (failed && rest.items.length) return json({ error: `${rest.items.length} Artikel konnten nicht entfernt werden.` }, 502);
+        return json(rest);
       }
 
       return json({ error: "Unbekannte Shop-Aktion" }, 404);

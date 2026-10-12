@@ -98,21 +98,34 @@ export interface CartItem {
   name: string;
   quantity: number;
   price?: string;
+  /** Preis der Zeile (Menge × Stückpreis) */
+  lineTotal?: number;
   imageUrl?: string;
 }
 
-/** Aktueller Knuspr-Warenkorb (Antwortformat defensiv lesen – die API ist nicht offiziell dokumentiert) */
-export async function knusprGetCart(cookie: string): Promise<CartItem[]> {
+/** Zahl aus Preisangaben wie 1.99, "1,99" oder { full: 1.99 } */
+function num(v: any): number | null {
+  if (v == null) return null;
+  if (typeof v === "object") return num(v.full ?? v.amount ?? v.value);
+  const n = typeof v === "number" ? v : Number(String(v).replace(",", ".").replace(/[^\d.]/g, ""));
+  return Number.isFinite(n) && String(v).trim() !== "" ? n : null;
+}
+
+/** Aktueller Knuspr-Warenkorb mit Summe (Antwortformat defensiv lesen – die API ist nicht offiziell dokumentiert) */
+export async function knusprGetCartSummary(cookie: string): Promise<{ items: CartItem[]; total: number | null }> {
   const res = await fetch(`${KNUSPR}/services/frontend-service/v2/cart`, {
     headers: { Cookie: cookie, "User-Agent": BROWSER_UA },
   });
   if (!res.ok) throw new ShopError(`Knuspr-Warenkorb nicht lesbar (${res.status})`);
   const data = (await res.json()) as any;
-  const raw = data?.data?.items ?? data?.items ?? [];
+  const root = data?.data ?? data;
+  const raw = root?.items ?? [];
   const list: any[] = Array.isArray(raw) ? raw : Object.values(raw);
-  return list
+  const items = list
     .map((p) => {
-      const price = p.price?.full ?? p.price?.amount ?? p.totalPrice?.full ?? p.price;
+      const quantity = Number(p.quantity ?? p.amount ?? 1) || 1;
+      const unit = num(p.price);
+      const lineTotal = num(p.totalPrice) ?? (unit != null ? unit * quantity : null);
       const currency = p.price?.currency ?? p.totalPrice?.currency ?? "€";
       const img = p.imgPath ?? p.image ?? p.imageUrl;
       const orderFieldId = p.orderFieldId ?? p.orderFieldID ?? p.cartItemId;
@@ -120,12 +133,20 @@ export async function knusprGetCart(cookie: string): Promise<CartItem[]> {
         productId: String(p.productId ?? p.id ?? ""),
         orderFieldId: orderFieldId != null ? String(orderFieldId) : undefined,
         name: String(p.productName ?? p.name ?? ""),
-        quantity: Number(p.quantity ?? p.amount ?? 1) || 1,
-        price: typeof price === "number" || typeof price === "string" ? `${price} ${currency}` : undefined,
+        quantity,
+        price: unit != null ? `${unit.toFixed(2).replace(".", ",")} ${currency === "EUR" ? "€" : currency}` : undefined,
+        lineTotal: lineTotal ?? undefined,
         imageUrl: typeof img === "string" ? (img.startsWith("http") ? img : `${KNUSPR_CDN}${img}`) : undefined,
       };
     })
     .filter((i) => i.productId);
+  const summed = items.every((i) => i.lineTotal != null) ? items.reduce((s, i) => s + (i.lineTotal ?? 0), 0) : null;
+  const total = num(root?.totalPrice) ?? summed;
+  return { items, total: total != null ? Math.round(total * 100) / 100 : null };
+}
+
+export async function knusprGetCart(cookie: string): Promise<CartItem[]> {
+  return (await knusprGetCartSummary(cookie)).items;
 }
 
 /** Eine Zeile aus dem Knuspr-Warenkorb entfernen */

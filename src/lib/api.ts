@@ -1,6 +1,6 @@
 import {
   Profile, FamilyMember, MealRating, MealPlan, PlanMeal, Routine, ShoppingItem, ShoppingLabel, Favorite, MealType, ImageCredit,
-  ShopState, ShopProvider, ProductResult, CartItem, PlanDessert, RecipeCatalog, RecipeFilter,
+  ShopState, ShopProvider, ProductResult, CartItem, ShopRule, PlanDessert, RecipeCatalog, RecipeFilter,
 } from '../types';
 
 // Alle Daten laufen über die Cloudflare-Functions unter /api (→ Neon).
@@ -334,6 +334,14 @@ export interface ShoppingData {
   customPantry: string[];
   portions: number;
   standardLabel: string;
+  /** Mindestbestellwert und Liefergebühr je Shop */
+  shopRules?: Record<ShopProvider, ShopRule>;
+}
+
+/** Warenkorb mit Summe (total = null, wenn Knuspr keine Preise liefert) */
+export interface CartSummary {
+  items: CartItem[];
+  total: number | null;
 }
 
 const enc = encodeURIComponent;
@@ -523,6 +531,8 @@ export async function saveProductLink(name: string, provider: ShopProvider, prod
       productId: product.productId,
       productName: product.name,
       imageUrl: product.imageUrl,
+      price: product.price,
+      amount: product.amount,
     });
     return true;
   } catch (error) {
@@ -536,21 +546,23 @@ export function addToKnusprCart(items: { productId: string; quantity: number }[]
 }
 
 /** Menge im Knuspr-Warenkorb ändern (0 = entfernen); liefert den neuen Warenkorb */
-export async function setKnusprCartQuantity(productId: string, quantity: number): Promise<CartItem[]> {
-  const result = await shopRequest<{ items: CartItem[] }>('PATCH', '/shops/knuspr/cart', { productId, quantity });
-  return result.items;
+export function setKnusprCartQuantity(productId: string, quantity: number): Promise<CartSummary> {
+  return shopRequest<CartSummary>('PATCH', '/shops/knuspr/cart', { productId, quantity });
 }
 
 /** Knuspr-Warenkorb leeren; liefert, was übrig bleibt (normalerweise nichts) */
-export async function clearKnusprCart(): Promise<CartItem[]> {
-  const result = await shopRequest<{ items: CartItem[] }>('DELETE', '/shops/knuspr/cart');
-  return result.items;
+export function clearKnusprCart(): Promise<CartSummary> {
+  return shopRequest<CartSummary>('DELETE', '/shops/knuspr/cart');
 }
 
 /** Inhalt des Knuspr-Warenkorbs; wirft bei Fehlern (z. B. not_connected) */
-export async function getKnusprCart(): Promise<CartItem[]> {
-  const result = await shopRequest<{ items: CartItem[] }>('GET', '/shops/knuspr/cart');
-  return result.items;
+export function getKnusprCart(): Promise<CartSummary> {
+  return shopRequest<CartSummary>('GET', '/shops/knuspr/cart');
+}
+
+/** Mindestbestellwert und Liefergebühr eines Shops speichern */
+export function saveShopRule(provider: ShopProvider, minOrder: number, deliveryFee: number): Promise<ShopState> {
+  return shopRequest<ShopState>('PUT', `/shops/${provider}/rules`, { minOrder, deliveryFee });
 }
 
 /** Verknüpftes Produkt einer Zutat wieder lösen */
