@@ -105,15 +105,16 @@ export default function ShoppingSection({
           )}
         </button>
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          {provider === 'knuspr' && onOpenCart && linkedOpen.length > 0 && (
+          {/* Warenkorb immer erreichbar – auch wenn gerade nichts Verknüpftes auf der Liste steht */}
+          {provider === 'knuspr' && onOpenCart && (
             <button
               onClick={onOpenCart}
-              aria-label={`Warenkorb (${linkedOpen.length} verknüpfte Artikel)`}
+              aria-label={linkedOpen.length ? `Warenkorb (${linkedOpen.length} verknüpfte Artikel)` : 'Warenkorb ansehen'}
               title="Knuspr-Warenkorb"
               className="flex items-center gap-1.5 px-3 h-8 rounded-lg text-xs font-semibold bg-green-700 text-white hover:bg-green-800"
             >
               <ShoppingCart size={13} />
-              {linkedOpen.length}
+              {linkedOpen.length > 0 && linkedOpen.length}
             </button>
           )}
           <button
