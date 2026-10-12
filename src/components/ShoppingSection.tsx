@@ -70,7 +70,7 @@ export default function ShoppingSection({
       <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-100">
         <div className="flex items-center gap-2 min-w-0">
           <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: label.color }} />
-          <h3 className="text-sm font-semibold text-gray-800 truncate">{label.name}</h3>
+          <h2 className="text-sm font-semibold text-gray-800 truncate">{label.name}</h2>
           {open.length > 0 && (
             <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-0.5 rounded-full">{open.length}</span>
           )}
@@ -87,7 +87,7 @@ export default function ShoppingSection({
                 }
               }}
               disabled={cartBusy}
-              className="flex items-center gap-1.5 px-3 h-8 rounded-lg text-xs font-semibold bg-green-500 text-white hover:bg-green-600 disabled:bg-green-300"
+              className="flex items-center gap-1.5 px-3 h-8 rounded-lg text-xs font-semibold bg-green-700 text-white hover:bg-green-800 disabled:bg-green-300"
             >
               {cartBusy ? <Loader2 size={13} className="animate-spin" /> : <ShoppingCart size={13} />}
               Warenkorb ({linkedOpen.length})
@@ -112,17 +112,17 @@ export default function ShoppingSection({
       </div>
 
       {items.length === 0 ? (
-        <div className="px-4 py-6 text-center text-sm text-gray-400">Keine Einträge</div>
+        <div className="px-4 py-6 text-center text-sm text-gray-500">Keine Einträge</div>
       ) : (
         <ul className="divide-y divide-gray-100">
           {items.map((item) => {
-            const nameClass = `text-sm leading-snug ${item.checked ? 'line-through text-gray-300' : 'text-gray-700'}`;
+            const nameClass = `text-sm leading-snug ${item.checked ? 'line-through text-gray-500' : 'text-gray-700'}`;
             const nameContent = (
               <>
                 {item.name}
-                {item.isBasic && !item.checked && <span className="ml-1.5 text-[11px] text-gray-400">Vorrat</span>}
+                {item.isBasic && !item.checked && <span className="ml-1.5 text-[11px] text-gray-500">Vorrat</span>}
                 {item.productName && !item.checked && (
-                  <span className="block text-[11px] text-gray-400 truncate">→ {item.productName}</span>
+                  <span className="block text-[11px] text-gray-500 truncate">→ {item.productName}</span>
                 )}
               </>
             );
@@ -130,9 +130,11 @@ export default function ShoppingSection({
               <li key={item.id} className="relative flex items-center gap-3 px-4 py-3">
                 <button
                   onClick={() => onToggle(item.id)}
-                  aria-label={item.checked ? 'Als offen markieren' : 'Abhaken'}
+                  role="checkbox"
+                  aria-checked={item.checked}
+                  aria-label={item.name}
                   className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center border-2 transition-colors ${
-                    item.checked ? 'bg-green-500 border-green-500' : 'bg-white border-gray-300'
+                    item.checked ? 'bg-green-600 border-green-500' : 'bg-white border-gray-300'
                   }`}
                 >
                   {item.checked && <Check size={14} className="text-white" strokeWidth={3} />}
@@ -151,10 +153,10 @@ export default function ShoppingSection({
                     className={`flex-1 min-w-0 ${nameClass} hover:text-amber-700`}
                   >
                     {nameContent}
-                    <ExternalLink size={11} className="inline ml-1 -mt-0.5 text-gray-400" />
+                    <ExternalLink size={11} className="inline ml-1 -mt-0.5 text-gray-500" />
                   </a>
                 ) : !item.checked && (provider === 'knuspr' || provider === 'picnic') && onFindProduct ? (
-                  <button onClick={() => onFindProduct(item)} className={`flex-1 min-w-0 text-left ${nameClass} hover:text-green-700`}>
+                  <button onClick={() => onFindProduct(item)} className={`flex-1 min-w-0 text-left ${nameClass} hover:text-green-800`}>
                     {nameContent}
                   </button>
                 ) : (
@@ -165,7 +167,8 @@ export default function ShoppingSection({
                   <button
                     onClick={() => onFindProduct(item)}
                     title="Produkt auswählen"
-                    className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-lg text-gray-400 hover:text-green-600 hover:bg-green-50"
+                    aria-label={`${item.baseName}: Produkt auswählen`}
+                    className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-lg text-gray-500 hover:text-green-700 hover:bg-green-50"
                   >
                     <Link2 size={14} />
                   </button>
@@ -176,6 +179,9 @@ export default function ShoppingSection({
                   className="flex-shrink-0 h-7 px-1.5 rounded-lg flex items-center gap-0.5 hover:bg-gray-100"
                   style={{ color: label.color }}
                   title="Liste ändern"
+                  aria-label={`${item.baseName}: Liste ändern`}
+                  aria-haspopup="menu"
+                  aria-expanded={openPickerId === item.id}
                 >
                   <Tag size={13} />
                   <ChevronDown size={10} />
@@ -185,6 +191,7 @@ export default function ShoppingSection({
                   <button
                     onClick={() => onMoveToPantry(item)}
                     title="Haben wir immer da – in den Vorrat legen"
+                    aria-label={`${item.baseName}: haben wir immer da`}
                     className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-amber-700 hover:bg-amber-50"
                   >
                     <Package size={13} />
@@ -195,7 +202,8 @@ export default function ShoppingSection({
                   <button
                     onClick={() => onRemove(item)}
                     title="Entfernen"
-                    className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50"
+                    aria-label={`${item.name} entfernen`}
+                    className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-600 hover:bg-red-50"
                   >
                     <X size={13} />
                   </button>
@@ -204,11 +212,13 @@ export default function ShoppingSection({
                 {openPickerId === item.id && (
                   <div
                     ref={pickerRef}
+                    role="menu"
                     className="absolute right-4 top-full -mt-1 z-30 bg-white rounded-xl shadow-lg border border-gray-200 py-1 w-44"
                   >
                     {otherLabels.map((l) => (
                       <button
                         key={l.id}
+                        role="menuitem"
                         onClick={() => {
                           onLabelChange(item.id, l.id);
                           setOpenPickerId(null);

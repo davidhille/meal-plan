@@ -243,8 +243,8 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-sm text-gray-500">Wird geladen...</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center" role="status">
+        <p className="text-sm text-gray-500">Wird geladen …</p>
       </div>
     );
   }

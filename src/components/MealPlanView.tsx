@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Trash2, CalendarPlus, RefreshCw, Loader2 } from 'lucide-react';
 import { Meal, MealPlan, MealType, PlanMeal } from '../types';
 import { generateMealImage } from '../lib/api';
+import { formatShortDate } from '../lib/dateUtils';
 import DayCard from './DayCard';
 import MealModal from './MealModal';
 
@@ -22,11 +23,6 @@ interface MealPlanViewProps {
 
 const dayNames = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
 const dayShort = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-
-function formatDate(d: string) {
-  const [y, m, day] = d.split('-');
-  return `${day}.${m}.${y.slice(2)}`;
-}
 
 function planMealToMeal(pm: PlanMeal): Meal {
   const dow = new Date(pm.meal_date + 'T12:00:00').getDay();
@@ -71,14 +67,14 @@ export default function MealPlanView({
   if (!plan) {
     return (
       <div className="px-4 py-12 flex flex-col items-center text-center gap-3">
-        <CalendarPlus size={32} className="text-gray-300" />
-        <p className="text-sm text-gray-500">Noch kein Speiseplan vorhanden.</p>
-        <p className="text-xs text-gray-400">
+        <CalendarPlus size={32} className="text-gray-300" aria-hidden="true" />
+        <p className="text-base font-semibold text-gray-800">Noch kein Speiseplan</p>
+        <p className="text-sm text-gray-500 max-w-xs">
           Erstelle einen Plan – er berücksichtigt eure Familie, Vorlieben und Bewertungen.
         </p>
         <button
           onClick={onCreatePlan}
-          className="mt-2 px-4 py-2 rounded-lg text-sm font-medium bg-green-500 text-white hover:bg-green-600"
+          className="mt-2 px-6 h-11 rounded-xl text-sm font-semibold bg-green-700 text-white hover:bg-green-800"
         >
           Plan erstellen
         </button>
@@ -101,9 +97,9 @@ export default function MealPlanView({
         {plan && (
           <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-white border border-gray-100 text-sm">
             <span className="text-gray-600">
-              Plan {formatDate(plan.start_date)} – {formatDate(plan.end_date)}
+              {formatShortDate(plan.start_date)} – {formatShortDate(plan.end_date)}
             </span>
-            <button onClick={onCreatePlan} className="text-xs font-medium text-green-600 hover:text-green-700">
+            <button onClick={onCreatePlan} className="text-xs font-medium text-green-700 hover:text-green-800">
               Neuer Zeitraum
             </button>
           </div>
@@ -127,8 +123,8 @@ export default function MealPlanView({
         })}
 
         {displayItems.length === 0 && (
-          <div className="text-center py-8 text-gray-400 text-sm">
-            Alle Gerichte wurden abgelehnt. Erstelle einen neuen Plan.
+          <div className="text-center py-8 text-gray-500 text-sm">
+            Alle Gerichte dieser Woche wurden abgelehnt. Erstelle einen neuen Plan.
           </div>
         )}
 
@@ -145,7 +141,7 @@ export default function MealPlanView({
                 }
               }}
               disabled={regeneratingPlan}
-              className="w-full py-3 flex items-center justify-center gap-2 rounded-xl bg-green-500 text-white text-sm font-medium hover:bg-green-600 disabled:bg-green-300 transition-colors"
+              className="w-full py-3 flex items-center justify-center gap-2 rounded-xl bg-green-700 text-white text-sm font-medium hover:bg-green-800 disabled:bg-green-300 transition-colors"
             >
               {regeneratingPlan ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
               {regeneratingPlan ? 'Wird neu geplant …' : 'Komplett neuen Plan generieren'}
@@ -173,7 +169,7 @@ export default function MealPlanView({
               ) : (
                 <button
                   onClick={() => setConfirmDelete(true)}
-                  className="flex-1 py-2.5 flex items-center justify-center gap-2 rounded-xl border border-gray-100 bg-white text-sm font-medium text-red-500 hover:bg-red-50"
+                  className="flex-1 py-2.5 flex items-center justify-center gap-2 rounded-xl border border-gray-100 bg-white text-sm font-medium text-red-600 hover:bg-red-50"
                 >
                   <Trash2 size={15} />
                   Plan löschen

@@ -1,4 +1,4 @@
-import { PlanWeek } from '../lib/dateUtils';
+import { PlanWeek, formatShortDate } from '../lib/dateUtils';
 
 interface WeekSelectorProps {
   weeks: PlanWeek[];
@@ -10,22 +10,24 @@ export default function WeekSelector({ weeks, selectedWeekKey, onSelectWeek }: W
   if (weeks.length === 0) return null;
 
   return (
-    <div className="bg-white border-b border-gray-100">
+    <nav className="bg-white border-b border-gray-100" aria-label="Kalenderwoche">
       <div className="flex overflow-x-auto no-scrollbar gap-2 px-4 py-3">
         {weeks.map((week) => (
           <button
             key={week.key}
             onClick={() => onSelectWeek(week.key)}
+            aria-pressed={selectedWeekKey === week.key}
+            title={`${formatShortDate(week.weekStart)} – ${formatShortDate(week.weekEnd)}`}
             className={`flex-shrink-0 px-5 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
               selectedWeekKey === week.key
-                ? 'bg-green-500 text-white shadow-sm'
-                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                ? 'bg-green-700 text-white shadow-sm'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
             KW {week.kw}
           </button>
         ))}
       </div>
-    </div>
+    </nav>
   );
 }

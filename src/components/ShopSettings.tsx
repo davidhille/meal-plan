@@ -97,7 +97,7 @@ export default function ShopSettings() {
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="px-4 pt-4 pb-2 flex items-center gap-2">
         <ShoppingBag size={16} className="text-gray-500" />
-        <h3 className="text-sm font-semibold text-gray-800">Einkaufen & Shops</h3>
+        <h2 className="text-sm font-semibold text-gray-800">Einkaufen & Shops</h2>
       </div>
 
       {/* Standard-Liste + Metzger */}
@@ -149,10 +149,10 @@ export default function ShopSettings() {
                   <button
                     onClick={() => act(`off-${shop.id}`, () => disconnectShop(shop.id))}
                     disabled={busy !== null}
-                    className="flex items-center gap-1 px-3 h-8 rounded-lg text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-500"
+                    className="flex items-center gap-1 px-3 h-8 rounded-lg text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600"
                   >
                     {busy === `off-${shop.id}` ? <Loader2 size={12} className="animate-spin" /> : <Unplug size={12} />}
-                    {shop.needsLogin ? 'Trennen' : 'Aus'}
+                    {shop.needsLogin ? 'Trennen' : 'Ausschalten'}
                   </button>
                 ) : shop.needsLogin ? (
                   <button
@@ -161,7 +161,7 @@ export default function ShopSettings() {
                       setForm({ email: '', password: '', code: '' });
                       setError(null);
                     }}
-                    className="px-3 h-8 rounded-lg text-xs font-semibold bg-green-500 text-white hover:bg-green-600"
+                    className="px-3 h-8 rounded-lg text-xs font-semibold bg-green-700 text-white hover:bg-green-800"
                   >
                     {expanded ? 'Abbrechen' : 'Verbinden'}
                   </button>
@@ -169,9 +169,9 @@ export default function ShopSettings() {
                   <button
                     onClick={() => act('amazon', enableAmazon)}
                     disabled={busy !== null}
-                    className="px-3 h-8 rounded-lg text-xs font-semibold bg-green-500 text-white hover:bg-green-600"
+                    className="px-3 h-8 rounded-lg text-xs font-semibold bg-green-700 text-white hover:bg-green-800"
                   >
-                    {busy === 'amazon' ? <Loader2 size={12} className="animate-spin" /> : 'An'}
+                    {busy === 'amazon' ? <Loader2 size={12} className="animate-spin" /> : 'Einschalten'}
                   </button>
                 )}
               </div>
@@ -193,6 +193,7 @@ export default function ShopSettings() {
                         inputMode="numeric"
                         autoComplete="one-time-code"
                         placeholder="SMS-Code"
+                        aria-label="SMS-Code"
                         className="w-full h-10 px-3 rounded-xl border border-gray-200 text-sm"
                       />
                     </>
@@ -204,6 +205,7 @@ export default function ShopSettings() {
                         onChange={(e) => setForm({ ...form, email: e.target.value })}
                         autoComplete="username"
                         placeholder={`E-Mail bei ${shop.name}`}
+                        aria-label={`E-Mail bei ${shop.name}`}
                         className="w-full h-10 px-3 rounded-xl border border-gray-200 text-sm"
                       />
                       <input
@@ -212,9 +214,10 @@ export default function ShopSettings() {
                         onChange={(e) => setForm({ ...form, password: e.target.value })}
                         autoComplete="current-password"
                         placeholder="Passwort"
+                        aria-label={`Passwort bei ${shop.name}`}
                         className="w-full h-10 px-3 rounded-xl border border-gray-200 text-sm"
                       />
-                      <p className="text-[11px] text-gray-400">
+                      <p className="text-[11px] text-gray-500">
                         Wird verschlüsselt gespeichert und nur für die Suche{shop.id === 'knuspr' ? ' und den Warenkorb' : ''} genutzt.
                         Die Anbindung ist inoffiziell und kann jederzeit ausfallen.
                       </p>
@@ -223,7 +226,7 @@ export default function ShopSettings() {
                   <button
                     type="submit"
                     disabled={busy !== null || (form.pending ? !form.code : !form.email || !form.password)}
-                    className="w-full h-10 flex items-center justify-center gap-2 rounded-xl bg-green-500 text-white text-sm font-semibold disabled:bg-green-300"
+                    className="w-full h-10 flex items-center justify-center gap-2 rounded-xl bg-green-700 text-white text-sm font-semibold disabled:bg-green-300"
                   >
                     {busy === 'connect' ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                     {form.pending ? 'Code bestätigen' : 'Verbinden'}
@@ -235,7 +238,11 @@ export default function ShopSettings() {
         })}
       </ul>
 
-      {error && <p className="px-4 pb-4 text-xs text-red-500">{error}</p>}
+      {error && (
+        <p role="alert" className="px-4 pb-4 text-xs text-red-600">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

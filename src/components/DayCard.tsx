@@ -14,19 +14,19 @@ interface DayCardProps {
 
 const typeConfig: Record<MealType, { bar: string; label: string; icon: React.ReactNode }> = {
   vegetarisch: {
-    bar: 'bg-green-500',
+    bar: 'bg-green-600',
     label: 'Vegetarisch',
-    icon: <Leaf size={11} className="text-green-600" />,
+    icon: <Leaf size={11} className="text-green-700" aria-hidden="true" />,
   },
   fleisch: {
     bar: 'bg-orange-400',
     label: 'Fleisch',
-    icon: <Beef size={11} className="text-orange-500" />,
+    icon: <Beef size={11} className="text-orange-600" aria-hidden="true" />,
   },
   wochenende: {
     bar: 'bg-blue-500',
     label: 'Wochenende',
-    icon: <Sunset size={11} className="text-blue-500" />,
+    icon: <Sunset size={11} className="text-blue-600" aria-hidden="true" />,
   },
 };
 
@@ -55,7 +55,7 @@ export default function DayCard({
           {meal.imageUrl ? (
             <img
               src={meal.imageUrl}
-              alt={meal.meal}
+              alt=""
               loading="lazy"
               className="flex-shrink-0 w-14 h-14 rounded-lg object-cover border border-gray-100"
             />
@@ -65,23 +65,23 @@ export default function DayCard({
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">{meal.day}</p>
+            <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">{meal.day}</p>
             <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">{meal.meal}</p>
             <div className="flex items-center gap-2 mt-1.5">
               <span className="flex items-center gap-1">
                 {config.icon}
-                <span className="text-xs text-gray-400">{config.label}</span>
+                <span className="text-xs text-gray-500">{config.label}</span>
               </span>
               {meal.durationMin ? (
-                <span className="flex items-center gap-1 text-xs text-gray-400">
+                <span className="flex items-center gap-1 text-xs text-gray-500">
                   <Clock size={11} />
                   {meal.durationMin} Min
                 </span>
               ) : null}
-              {isFavorite && <Heart size={11} className="fill-rose-500 text-rose-500" />}
+              {isFavorite && <Heart size={11} className="fill-rose-500 text-rose-500" aria-label="Favorit" />}
               {rating ? (
-                <span className="ml-auto text-xs text-yellow-500 font-medium flex items-center gap-0.5">
-                  <Star size={11} className="fill-yellow-400" />
+                <span className="ml-auto text-xs text-amber-700 font-medium flex items-center gap-0.5" aria-label={`${rating} von 5 Sternen`}>
+                  <Star size={11} className="fill-yellow-400 text-yellow-500" aria-hidden="true" />
                   {rating}
                 </span>
               ) : null}
@@ -98,10 +98,11 @@ export default function DayCard({
               onClick={onToggleFavorite}
               disabled={busy}
               className={`flex-1 flex items-center justify-center transition-colors ${
-                isFavorite ? 'text-rose-500 hover:bg-rose-50' : 'text-gray-400 hover:bg-gray-50 hover:text-rose-500'
+                isFavorite ? 'text-rose-500 hover:bg-rose-50' : 'text-gray-500 hover:bg-gray-50 hover:text-rose-500'
               }`}
               title={isFavorite ? 'Aus Favoriten entfernen' : 'Merken'}
-              aria-label={isFavorite ? 'Aus Favoriten entfernen' : 'Merken'}
+              aria-label={`${meal.meal}: ${isFavorite ? 'aus Favoriten entfernen' : 'merken'}`}
+              aria-pressed={!!isFavorite}
             >
               <Heart size={15} className={isFavorite ? 'fill-rose-500' : ''} />
             </button>
@@ -110,9 +111,9 @@ export default function DayCard({
             <button
               onClick={onRegenerate}
               disabled={busy}
-              className="flex-1 flex items-center justify-center text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors"
+              className="flex-1 flex items-center justify-center text-gray-500 hover:bg-green-50 hover:text-green-700 transition-colors"
               title="Neu generieren – nur austauschen"
-              aria-label="Neu generieren"
+              aria-label={`${meal.meal}: austauschen`}
             >
               {busy ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
             </button>
@@ -121,9 +122,9 @@ export default function DayCard({
             <button
               onClick={onReject}
               disabled={busy}
-              className="flex-1 flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors"
+              className="flex-1 flex items-center justify-center text-red-600 hover:bg-red-50 transition-colors"
               title="Ablehnen – kommt nicht wieder"
-              aria-label="Ablehnen"
+              aria-label={`${meal.meal}: ablehnen, kommt nicht wieder`}
             >
               <X size={17} />
             </button>

@@ -190,12 +190,12 @@ export default function ShoppingListView({ plan, week, onCreatePlan }: ShoppingL
   if (!plan) {
     return (
       <div className="px-4 py-12 flex flex-col items-center text-center gap-3">
-        <ShoppingCart size={32} className="text-gray-300" />
-        <p className="text-sm text-gray-500">Noch kein Plan vorhanden.</p>
-        <p className="text-xs text-gray-400">Die Einkaufsliste entsteht automatisch aus deinem Speiseplan.</p>
+        <ShoppingCart size={32} className="text-gray-300" aria-hidden="true" />
+        <p className="text-base font-semibold text-gray-800">Noch keine Einkaufsliste</p>
+        <p className="text-sm text-gray-500 max-w-xs">Die Einkaufsliste entsteht automatisch aus deinem Speiseplan.</p>
         <button
           onClick={onCreatePlan}
-          className="mt-3 px-6 h-11 rounded-lg text-sm font-semibold bg-green-500 text-white hover:bg-green-600"
+          className="mt-3 px-6 h-11 rounded-lg text-sm font-semibold bg-green-700 text-white hover:bg-green-800"
         >
           Plan erstellen
         </button>
@@ -205,7 +205,7 @@ export default function ShoppingListView({ plan, week, onCreatePlan }: ShoppingL
 
   if (loading) {
     return (
-      <div className="px-4 py-12 flex justify-center">
+      <div className="px-4 py-12 flex justify-center" role="status" aria-label="Einkaufsliste wird geladen">
         <Loader2 size={20} className="animate-spin text-gray-300" />
       </div>
     );
@@ -248,13 +248,14 @@ export default function ShoppingListView({ plan, week, onCreatePlan }: ShoppingL
             value={newItemName}
             onChange={(e) => setNewItemName(e.target.value)}
             placeholder="Artikel hinzufügen, z. B. Klopapier"
+            aria-label="Eigenen Artikel hinzufügen"
             className="flex-1 px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
           />
           <button
             type="submit"
             disabled={!newItemName.trim()}
             aria-label="Hinzufügen"
-            className="w-10 flex items-center justify-center rounded-xl bg-green-500 text-white disabled:bg-gray-200 disabled:text-gray-400"
+            className="w-10 flex items-center justify-center rounded-xl bg-green-700 text-white disabled:bg-gray-200 disabled:text-gray-500"
           >
             <Plus size={16} />
           </button>
@@ -287,7 +288,8 @@ export default function ShoppingListView({ plan, week, onCreatePlan }: ShoppingL
                   setEditingLabelId(null);
                   setNewLabelName('');
                 }}
-                className="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100"
+                aria-label="Abbrechen"
+                className="w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100"
               >
                 <X size={14} />
               </button>
@@ -299,13 +301,17 @@ export default function ShoppingListView({ plan, week, onCreatePlan }: ShoppingL
                 onChange={(e) => setNewLabelName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && addLabel()}
                 placeholder="z. B. Aldi, Rewe, DM …"
+                aria-label="Name der Liste"
                 className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-green-400"
                 autoFocus
               />
-              <div className="flex flex-wrap gap-2">
-                {LABEL_COLORS.map((color) => (
+              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Farbe">
+                {LABEL_COLORS.map((color, i) => (
                   <button
                     key={color}
+                    role="radio"
+                    aria-checked={newLabelColor === color}
+                    aria-label={`Farbe ${i + 1}`}
                     onClick={() => setNewLabelColor(color)}
                     className={`w-7 h-7 rounded-full transition-all ${
                       newLabelColor === color ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : ''
@@ -317,7 +323,7 @@ export default function ShoppingListView({ plan, week, onCreatePlan }: ShoppingL
               <button
                 onClick={addLabel}
                 disabled={!newLabelName.trim()}
-                className="w-full py-2 rounded-lg text-sm font-medium bg-green-500 text-white hover:bg-green-600 disabled:bg-gray-200 disabled:text-gray-400 transition-all"
+                className="w-full py-2 rounded-lg text-sm font-medium bg-green-700 text-white hover:bg-green-800 disabled:bg-gray-200 disabled:text-gray-500 transition-all"
               >
                 {editingLabelId ? 'Speichern' : 'Liste hinzufügen'}
               </button>
@@ -326,7 +332,7 @@ export default function ShoppingListView({ plan, week, onCreatePlan }: ShoppingL
         ) : (
           <button
             onClick={() => setShowAddLabel(true)}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-gray-200 text-sm text-gray-400 hover:border-gray-300 hover:text-gray-500 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-gray-200 text-sm text-gray-500 hover:border-gray-300 hover:text-gray-500 transition-colors"
           >
             <Plus size={16} />
             Liste hinzufügen
@@ -343,14 +349,15 @@ export default function ShoppingListView({ plan, week, onCreatePlan }: ShoppingL
                   key={l.id}
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
                 >
-                  <button onClick={() => startEditLabel(l)} title="Liste bearbeiten" className="inline-flex items-center gap-1.5">
+                  <button onClick={() => startEditLabel(l)} title="Liste bearbeiten" aria-label={`Liste ${l.name} bearbeiten`} className="inline-flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full" style={{ backgroundColor: l.color }} />
                     {l.name}
                   </button>
                   <button
                     onClick={() => removeLabel(l.id)}
                     title="Liste löschen (Artikel wandern zu Knuspr)"
-                    className="w-4 h-4 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50"
+                    aria-label={`Liste ${l.name} löschen`}
+                    className="w-6 h-6 flex items-center justify-center rounded-full text-gray-500 hover:text-red-600 hover:bg-red-50"
                   >
                     <X size={10} />
                   </button>
@@ -363,10 +370,11 @@ export default function ShoppingListView({ plan, week, onCreatePlan }: ShoppingL
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <button
             onClick={() => setShowBasics(!showBasics)}
+            aria-expanded={showBasics}
             className="w-full flex items-center justify-between px-4 py-3 border-b border-gray-50"
           >
             <div className="flex items-center gap-2">
-              <Package size={15} className="text-gray-400" />
+              <Package size={15} className="text-gray-500" />
               <span className="text-sm font-semibold text-gray-600">Basics & Vorrat</span>
               {pantryNeeded.length > 0 && (
                 <span className="bg-amber-100 text-amber-700 text-xs font-medium px-2 py-0.5 rounded-full">
@@ -375,7 +383,8 @@ export default function ShoppingListView({ plan, week, onCreatePlan }: ShoppingL
               )}
             </div>
             <svg
-              className={`w-4 h-4 text-gray-400 transition-transform ${showBasics ? 'rotate-180' : ''}`}
+              aria-hidden="true"
+              className={`w-4 h-4 text-gray-500 transition-transform ${showBasics ? 'rotate-180' : ''}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -387,7 +396,7 @@ export default function ShoppingListView({ plan, week, onCreatePlan }: ShoppingL
 
           {showBasics && (
             <div className="px-4 py-3">
-              <p className="text-xs text-gray-400 mb-3">
+              <p className="text-xs text-gray-500 mb-3">
                 Vorrat steht nicht automatisch auf der Liste. Gelb markiert: wird diese Woche gebraucht. Tippen, um
                 es auf eine Liste zu setzen, falls es ausgeht.
               </p>
@@ -398,6 +407,8 @@ export default function ShoppingListView({ plan, week, onCreatePlan }: ShoppingL
                     <div key={basic} className="relative">
                       <button
                         onClick={() => setBasicPickerTarget(basicPickerTarget === basic ? null : basic)}
+                        aria-haspopup="menu"
+                        aria-expanded={basicPickerTarget === basic}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium active:scale-95 transition-all ${
                           needed
                             ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
@@ -427,7 +438,7 @@ export default function ShoppingListView({ plan, week, onCreatePlan }: ShoppingL
                   );
                 })}
                 {availableBasics.length === 0 && (
-                  <p className="text-xs text-gray-400">Alle Basics sind bereits auf einer Liste.</p>
+                  <p className="text-xs text-gray-500">Alle Basics sind bereits auf einer Liste.</p>
                 )}
               </div>
 
@@ -442,7 +453,8 @@ export default function ShoppingListView({ plan, week, onCreatePlan }: ShoppingL
                         <button
                           onClick={() => takeFromPantry(name)}
                           title="Wieder auf die Einkaufsliste"
-                          className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-amber-100"
+                          aria-label={`${name} wieder auf die Einkaufsliste`}
+                          className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-amber-100"
                         >
                           <X size={10} />
                         </button>
@@ -450,7 +462,7 @@ export default function ShoppingListView({ plan, week, onCreatePlan }: ShoppingL
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-400 mb-3">
+                  <p className="text-xs text-gray-500 mb-3">
                     Tippe bei einer Zutat auf das Kisten-Symbol, damit sie nicht mehr auf der Liste landet.
                   </p>
                 )}
@@ -468,6 +480,7 @@ export default function ShoppingListView({ plan, week, onCreatePlan }: ShoppingL
                     value={newPantryName}
                     onChange={(e) => setNewPantryName(e.target.value)}
                     placeholder="z. B. Reis, Nudeln, Eier"
+                    aria-label="Zutat, die immer da ist"
                     className="flex-1 h-9 px-3 rounded-xl border border-gray-200 text-xs"
                   />
                   <button
@@ -496,7 +509,7 @@ export default function ShoppingListView({ plan, week, onCreatePlan }: ShoppingL
       )}
 
       {notice && (
-        <div className="fixed bottom-24 inset-x-4 z-40 max-w-md mx-auto px-4 py-3 rounded-2xl bg-gray-800 text-white text-sm shadow-lg">
+        <div role="status" className="fixed bottom-24 inset-x-4 z-40 max-w-md mx-auto px-4 py-3 rounded-2xl bg-gray-800 text-white text-sm shadow-lg">
           {notice}
         </div>
       )}

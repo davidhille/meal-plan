@@ -9,7 +9,7 @@ export interface PlanWeek {
   weekEnd: string;
 }
 
-function toIso(d: Date): string {
+export function toIso(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${d.getFullYear()}-${m}-${day}`;
@@ -46,4 +46,9 @@ export function getWeeksInRange(startDate: string, endDate: string): PlanWeek[] 
 
 export function isDateInWeek(dateStr: string, week: PlanWeek): boolean {
   return dateStr >= week.weekStart && dateStr <= week.weekEnd;
+}
+
+/** "2026-10-13" → "Di, 13.10." */
+export function formatShortDate(iso: string): string {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
 }
