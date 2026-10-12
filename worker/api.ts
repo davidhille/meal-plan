@@ -35,7 +35,7 @@ let schemaReady: Promise<unknown> | null = null;
 // Bei jeder Schema-Änderung unten hochzählen. Der Stand steht als Kommentar an der Tabelle `profiles`,
 // damit ein aktueller Worker beim Kaltstart gar keine DDL ausführt: ALTER TABLE sperrt die Tabelle
 // auch dann, wenn die Spalte schon existiert, und kann so alle Anfragen blockieren.
-const SCHEMA_VERSION = "schema:2026101202";
+const SCHEMA_VERSION = "schema:2026101203";
 
 async function migrate(sql: Sql) {
   const current = await sql`SELECT obj_description('public.profiles'::regclass, 'pg_class') AS v`;
@@ -104,6 +104,8 @@ async function runMigrations(sql: Sql) {
   await sql`ALTER TABLE meal_images ADD COLUMN IF NOT EXISTS source text`;
   await sql`ALTER TABLE meal_images ADD COLUMN IF NOT EXISTS credit_name text`;
   await sql`ALTER TABLE meal_images ADD COLUMN IF NOT EXISTS credit_url text`;
+  // Einmalig (2026101203): Ersatzfotos der ersten, zu lockeren Suche verwerfen – werden neu gesucht
+  await sql`UPDATE meal_images SET image_data = NULL WHERE source IN ('pexels', 'pixabay', 'openverse')`;
   await sql`CREATE TABLE IF NOT EXISTS shopping_labels (
     profile_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     id text NOT NULL,

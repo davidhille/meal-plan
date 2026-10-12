@@ -2,7 +2,7 @@
 // oder klappt die KI nicht, ein passendes Foto aus einer freien Bilddatenbank
 // (Pexels/Pixabay mit Schlüssel, Openverse ohne Schlüssel). Speicherung in Neon.
 import type { neon } from "@neondatabase/serverless";
-import { MEAL_DATABASE, dishKeywords } from "./meals";
+import { MEAL_DATABASE } from "./meals";
 
 type Sql = ReturnType<typeof neon>;
 
@@ -139,15 +139,43 @@ async function aiImage(env: AiEnv, sql: Sql, mealName: string): Promise<{ base64
   }
 }
 
-/** Suchbegriffe vom genauen Namen zum Hauptgericht: „Käsespätzle mit Röstzwiebeln“ → …, „Käsespätzle“ */
+/** Hauptgericht ohne Beilagen: „Käsespätzle mit Röstzwiebeln“ → „Käsespätzle“ */
+const mainDish = (mealName: string) => mealName.split(/\s(?:mit|und|&|in|an|auf|vom|nach)\s/i)[0].trim();
+
+/** Suchbegriffe: genauer Name, dann Hauptgericht (keine Einzelwörter – die liefern nur Zutatenfotos) */
 function photoQueries(mealName: string): string[] {
-  const main = mealName.split(/\s(?:mit|und|&|in|an|auf)\s/i)[0];
-  const keywords = [...dishKeywords(main)].join(" ");
-  return [...new Set([mealName, main, keywords].map((q) => q.trim()).filter((q) => q.length > 2))];
+  return [...new Set([mealName.trim(), mainDish(mealName)].filter((q) => q.length > 2))];
+}
+
+const stem = (w: string) => w.toLowerCase().replace(/(en|er|es|e|n|s)$/, "");
+
+/**
+ * Das eigentliche Gericht ist das letzte Wort des Hauptgerichts: „Kartoffel-Gemüse-Frittata“ → frittata,
+ * „Ofen-Hähnchenschenkel“ → hähnchenschenkel, „Herzhafte Schinkennudeln von …“ → schinkennudel.
+ */
+export function dishHead(mealName: string): string {
+  const words = mainDish(mealName.split(/\s(?:von|à la|nach art)\s/i)[0])
+    .split(/[^a-zäöüß]+/i)
+    .filter((w) => w.length > 2);
+  return stem(words[words.length - 1] ?? "");
+}
+
+/** Passt ein Foto (Schlagworte/Titel) zum Gericht? Zusammengesetzte Wörter zählen: „nudeln“ passt zu „Schinkennudeln“. */
+export function photoMatches(mealName: string, photoText: string): boolean {
+  const head = dishHead(mealName);
+  if (head.length < 4) return false;
+  return photoText
+    .toLowerCase()
+    .split(/[^a-zäöüß]+/)
+    .filter((w) => w.length >= 4)
+    .map(stem)
+    .some((t) => t === head || (t.length >= 4 && head.endsWith(t)) || t.endsWith(head));
 }
 
 interface PhotoHit {
   imageUrl: string;
+  /** Schlagworte und Titel, um die Passung zu prüfen */
+  text: string;
   /** Anzeige, z. B. „Anna / Pixabay“ */
   creditName: string;
   creditUrl: string;
@@ -155,19 +183,19 @@ interface PhotoHit {
 
 const UA = { "User-Agent": "Familien-Speiseplaner/1.0 (private Familien-App)" };
 
-/** Ein Treffer je Anbieter und Suchbegriff (null = nichts gefunden; Fehler beenden die Suche bei diesem Anbieter) */
-const PROVIDERS: { id: PhotoSource; enabled: (env: AiEnv) => boolean; search: (env: AiEnv, q: string) => Promise<PhotoHit | null> }[] = [
+/** Kandidaten je Anbieter und Suchbegriff (Fehler beenden die Suche bei diesem Anbieter) */
+const PROVIDERS: { id: PhotoSource; enabled: (env: AiEnv) => boolean; search: (env: AiEnv, q: string) => Promise<PhotoHit[]> }[] = [
   {
     id: "pexels",
     enabled: (env) => !!env.PEXELS_API_KEY,
     search: async (env, q) => {
       const res = await fetch(
-        `https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}&locale=de-DE&per_page=5&orientation=landscape`,
+        `https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}&locale=de-DE&per_page=15&orientation=landscape`,
         { headers: { Authorization: env.PEXELS_API_KEY! } }
       );
       if (!res.ok) throw new Error(`Pexels HTTP ${res.status}`);
-      const p = ((await res.json()) as { photos?: { photographer: string; url: string; src: { large: string } }[] }).photos?.[0];
-      return p ? { imageUrl: p.src.large, creditName: `${p.photographer} / Pexels`, creditUrl: p.url } : null;
+      const photos = ((await res.json()) as { photos?: { alt?: string; photographer: string; url: string; src: { large: string } }[] }).photos ?? [];
+      return photos.map((p) => ({ imageUrl: p.src.large, text: `${p.alt ?? ""} ${p.url}`, creditName: `${p.photographer} / Pexels`, creditUrl: p.url }));
     },
   },
   {
@@ -176,11 +204,11 @@ const PROVIDERS: { id: PhotoSource; enabled: (env: AiEnv) => boolean; search: (e
     search: async (env, q) => {
       const res = await fetch(
         `https://pixabay.com/api/?key=${encodeURIComponent(env.PIXABAY_API_KEY!)}&q=${encodeURIComponent(q)}` +
-          `&lang=de&image_type=photo&category=food&orientation=horizontal&safesearch=true&per_page=5`
+          `&lang=de&image_type=photo&category=food&orientation=horizontal&safesearch=true&per_page=20`
       );
       if (!res.ok) throw new Error(`Pixabay HTTP ${res.status}`);
-      const h = ((await res.json()) as { hits?: { webformatURL: string; largeImageURL?: string; user: string; pageURL: string }[] }).hits?.[0];
-      return h ? { imageUrl: h.largeImageURL || h.webformatURL, creditName: `${h.user} / Pixabay`, creditUrl: h.pageURL } : null;
+      const hits = ((await res.json()) as { hits?: { webformatURL: string; largeImageURL?: string; tags: string; user: string; pageURL: string }[] }).hits ?? [];
+      return hits.map((h) => ({ imageUrl: h.largeImageURL || h.webformatURL, text: `${h.tags} ${h.pageURL}`, creditName: `${h.user} / Pixabay`, creditUrl: h.pageURL }));
     },
   },
   {
@@ -189,24 +217,27 @@ const PROVIDERS: { id: PhotoSource; enabled: (env: AiEnv) => boolean; search: (e
     enabled: () => true,
     search: async (_env, q) => {
       const res = await fetch(
-        `https://api.openverse.org/v1/images/?q=${encodeURIComponent(q)}&page_size=5&mature=false&aspect_ratio=wide`,
+        `https://api.openverse.org/v1/images/?q=${encodeURIComponent(q)}&page_size=20&mature=false&aspect_ratio=wide`,
         { headers: UA }
       );
       if (!res.ok) throw new Error(`Openverse HTTP ${res.status}`);
-      const r = ((await res.json()) as { results?: { url: string; creator?: string; foreign_landing_url: string; license: string }[] }).results?.[0];
-      return r
-        ? { imageUrl: r.url, creditName: `${r.creator || "Unbekannt"} / Openverse (CC ${r.license.toUpperCase()})`, creditUrl: r.foreign_landing_url }
-        : null;
+      const results = ((await res.json()) as { results?: { url: string; title?: string; tags?: { name: string }[]; creator?: string; foreign_landing_url: string; license: string }[] }).results ?? [];
+      return results.map((r) => ({
+        imageUrl: r.url,
+        text: `${r.title ?? ""} ${(r.tags ?? []).map((t) => t.name).join(" ")}`,
+        creditName: `${r.creator || "Unbekannt"} / Openverse (CC ${r.license.toUpperCase()})`,
+        creditUrl: r.foreign_landing_url,
+      }));
     },
   },
 ];
 
-/** Passendes Foto suchen (Anbieter der Reihe nach) und laden */
+/** Passendes Foto suchen (Anbieter der Reihe nach, nur Treffer, die wirklich zum Gericht passen) und laden */
 async function stockPhoto(env: AiEnv, mealName: string) {
   for (const provider of PROVIDERS.filter((p) => p.enabled(env))) {
     try {
       for (const q of photoQueries(mealName)) {
-        const hit = await provider.search(env, q);
+        const hit = (await provider.search(env, q)).find((h) => photoMatches(mealName, h.text));
         if (!hit) continue;
         const img = await fetch(hit.imageUrl, { headers: UA });
         const type = img.headers.get("content-type") || "";
