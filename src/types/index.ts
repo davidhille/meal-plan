@@ -1,6 +1,20 @@
 export type MealType = 'vegetarisch' | 'fleisch' | 'wochenende';
 
-export type ViewTab = 'speiseplan' | 'einkaufsliste' | 'favoriten' | 'einstellungen';
+export type ViewTab = 'speiseplan' | 'einkaufsliste' | 'nachtisch' | 'favoriten' | 'einstellungen';
+
+export type DessertCategory = 'kuchen' | 'gebaeck' | 'creme' | 'pfanne' | 'obst';
+
+/** Nachtisch aus der festen Sammlung (src/data/desserts.ts) */
+export interface Dessert {
+  name: string;
+  category: DessertCategory;
+  /** Ergibt z. B. „1 Kuchen (12 Stücke)“ – Mengen werden nicht umgerechnet */
+  yield: string;
+  durationMin: number;
+  ingredients: string[];
+  instructions: string;
+  imageUrl: string;
+}
 
 export type FamilyMemberType = 'adult' | 'child';
 

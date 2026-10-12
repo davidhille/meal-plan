@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Settings, Plus, Trash2, Edit2, Calendar, Download, Loader2 } from 'lucide-react';
-import { downloadMealDbExport } from '../lib/api';
+import { Settings, Plus, Trash2, Edit2, Calendar } from 'lucide-react';
 import { FamilyMember, Profile, Routine } from '../types';
 import FamilyMemberModal from './FamilyMemberModal';
 import PreferencesModal from './PreferencesModal';
@@ -46,8 +45,6 @@ export default function SettingsView({
   const [showPlanModal, setShowPlanModal] = useState(false);
   // Löschen erst nach zweitem Tipp ("Löschen?")
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [exporting, setExporting] = useState(false);
-  const [exportMsg, setExportMsg] = useState<string | null>(null);
 
   const goalLabels: Record<string, string> = {
     balanced: 'Ausgewogene Ernährung',
@@ -266,34 +263,6 @@ export default function SettingsView({
                 </div>
               ))}
             </div>
-          )}
-        </div>
-
-        {/* Nachtische von TheMealDB exportieren (einmalig, zum Übersetzen) */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-3">
-          <button
-            onClick={async () => {
-              setExporting(true);
-              setExportMsg(null);
-              try {
-                const n = await downloadMealDbExport();
-                setExportMsg(`${n} Nachtische heruntergeladen (mealdb-nachtische.json).`);
-              } catch (e) {
-                setExportMsg((e as Error).message);
-              } finally {
-                setExporting(false);
-              }
-            }}
-            disabled={exporting}
-            className="w-full flex items-center justify-center gap-2 h-10 rounded-lg text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 disabled:opacity-60"
-          >
-            {exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
-            {exporting ? 'Nachtische werden geladen …' : 'TheMealDB-Nachtische herunterladen'}
-          </button>
-          {exportMsg && (
-            <p role="status" className="mt-2 text-xs text-gray-600">
-              {exportMsg}
-            </p>
           )}
         </div>
 

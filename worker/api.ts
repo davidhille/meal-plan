@@ -9,7 +9,6 @@ import { buildPlanItems, familyPortions, mergeKey } from "./shopping";
 import { generateImage, fillMissingImages, serveImage, IMAGE_URL_SQL, IMAGE_CREDIT_SQL, type AiEnv } from "./images";
 import { generateRecipes } from "./aiRecipes";
 import { importRecipeFromUrl, ImportError } from "./recipeImport";
-import { exportMealDb } from "./mealdbExport";
 import {
   encrypt, decrypt, ShopError, knusprLogin, knusprSearch, knusprAddToCart, picnicLogin, picnicVerify, picnicSearch,
   type ShopEnv,
@@ -535,17 +534,6 @@ export async function handleApi(
 ): Promise<Response> {
   const path = new URL(request.url).pathname;
 
-  // Einmaliger Rezept-Export aus TheMealDB als Download (Passwort per ?pw=, da ein Link keinen Header mitschickt)
-  if (request.method === "GET" && path === "/api/mealdb-export") {
-    const pw = request.headers.get("X-App-Password") ?? new URL(request.url).searchParams.get("pw");
-    if (env.APP_PASSWORD && pw !== env.APP_PASSWORD) return json({ error: "unauthorized" }, 401);
-    try {
-      return await exportMealDb();
-    } catch (e) {
-      return json({ error: (e as Error).message }, 502);
-    }
-  }
-
   // Bilder sind öffentlich (ein <img> kann kein Passwort mitschicken)
   if (request.method === "GET" && path.startsWith("/api/images/") && env.DATABASE_URL) {
     const sql = neon(env.DATABASE_URL);
@@ -767,12 +755,15 @@ export async function handleApi(
       const range = qs.get("from") && qs.get("to") ? { from: qs.get("from")!, to: qs.get("to")! } : undefined;
       if (request.method === "GET" && !itemId) return json(await getShopping(sql, p.id, id, range));
 
-      // Eigenen Artikel / Basic hinzufügen
+      // Eigenen Artikel / Basic hinzufügen (oder mehrere auf einmal, z. B. Zutaten eines Nachtischs)
       if (request.method === "POST" && !itemId) {
-        const name = String(body.name ?? "").trim();
-        if (!name) return json({ error: "Name fehlt" }, 400);
+        const names = (Array.isArray(body.names) ? body.names : [body.name])
+          .map((n: unknown) => String(n ?? "").trim())
+          .filter(Boolean)
+          .slice(0, 50);
+        if (!names.length) return json({ error: "Name fehlt" }, 400);
         await sql`INSERT INTO shopping_extras (plan_id, name, label, is_basic)
-          VALUES (${id}, ${name}, ${body.label || "knuspr"}, ${!!body.isBasic})`;
+          SELECT ${id}, n, ${body.label || "knuspr"}, ${!!body.isBasic} FROM unnest(${names}::text[]) AS n`;
         return json(await getShopping(sql, p.id, id, range));
       }
 
