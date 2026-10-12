@@ -36,7 +36,7 @@ import Header from './components/Header';
 import TabSwitcher from './components/TabSwitcher';
 import RecipesView from './components/RecipesView';
 import WeekSelector from './components/WeekSelector';
-import { getWeeksInRange, isDateInWeek } from './lib/dateUtils';
+import { getWeeksInRange, isDateInWeek, currentWeekIndex } from './lib/dateUtils';
 import FavoritesView from './components/FavoritesView';
 import MealPlanView from './components/MealPlanView';
 import ShoppingListView from './components/ShoppingListView';
@@ -290,11 +290,13 @@ export default function App() {
 
   // KW-Auswahl (aus der Juli-Version): nur Wochen, die der Plan wirklich abdeckt
   const planWeeks = currentPlan ? getWeeksInRange(currentPlan.start_date, currentPlan.end_date) : [];
-  const selectedWeek = planWeeks.find((w) => w.key === selectedWeekKey) ?? planWeeks[0];
+  // Ohne eigene Auswahl die Woche zeigen, in der heute liegt
+  const selectedWeek = planWeeks.find((w) => w.key === selectedWeekKey) ?? planWeeks[currentWeekIndex(planWeeks)];
   const visiblePlanMeals = selectedWeek
     ? planMeals.filter((m) => isDateInWeek(m.meal_date, selectedWeek))
     : planMeals;
-  const showWeeks = planWeeks.length > 1 && (activeTab === 'speiseplan' || activeTab === 'einkaufsliste');
+  // Die Einkaufsliste hat eine eigene Wochenauswahl (mehrere Wochen kombinierbar)
+  const showWeeks = planWeeks.length > 1 && activeTab === 'speiseplan';
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -328,9 +330,10 @@ export default function App() {
           />
         ) : activeTab === 'einkaufsliste' ? (
           <ShoppingListView
-            key={`shopping-${currentPlan?.id || 'none'}-${selectedWeek?.key ?? 'all'}`}
+            key={`shopping-${currentPlan?.id || 'none'}`}
             plan={currentPlan}
-            week={showWeeks && selectedWeek ? { from: selectedWeek.weekStart, to: selectedWeek.weekEnd } : undefined}
+            weeks={planWeeks}
+            planMeals={planMeals}
             onCreatePlan={() => setShowPlanModal(true)}
           />
         ) : activeTab === 'rezepte' ? (
