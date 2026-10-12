@@ -145,9 +145,13 @@ export default function SettingsView({
                     <p className="text-xs text-gray-500 mt-0.5">
                       {routine.frequency === 'weekly'
                         ? `Jeden ${routine.day_of_week !== null ? dayNames[routine.day_of_week] : 'Tag'} um ${routine.time}`
-                        : `Monatlich um ${routine.time}`}
+                        : `Am 1. jedes Monats um ${routine.time}`}
                     </p>
-                    <p className="text-xs text-gray-400 mt-1">{routine.duration_days} Tage Planung</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {routine.duration_days} Tage Planung ab dem Folgetag
+                      {routine.last_run_at &&
+                        ` · zuletzt ${new Date(routine.last_run_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}`}
+                    </p>
                   </div>
                   <button
                     onClick={() => onDeleteRoutine(routine.id)}

@@ -1,19 +1,31 @@
 import { useState } from 'react';
-import { X, Clock, ShoppingBasket, BookOpen, Star, ImageIcon, Loader2 } from 'lucide-react';
+import { X, Clock, ShoppingBasket, BookOpen, Star, ImageIcon, Loader2, Minus, Plus, Users } from 'lucide-react';
 import { Meal } from '../types';
 import MealRatingModal from './MealRatingModal';
+import { RECIPE_BASE_PORTIONS, scaleIngredient, formatPortions } from '../lib/portions';
 
 interface MealModalProps {
   meal: Meal;
   currentRating?: number;
   onRate?: (rating: number, notes: string) => Promise<void>;
   onGenerateImage?: (mealName: string) => Promise<string | null>;
+  /** Portionen der Familie (Standard für die Mengenanzeige) */
+  defaultPortions?: number;
   onClose: () => void;
 }
 
 type ModalTab = 'zutaten' | 'zubereitung';
 
-export default function MealModal({ meal, currentRating = 0, onRate, onGenerateImage, onClose }: MealModalProps) {
+export default function MealModal({
+  meal,
+  currentRating = 0,
+  onRate,
+  onGenerateImage,
+  defaultPortions = RECIPE_BASE_PORTIONS,
+  onClose,
+}: MealModalProps) {
+  const [portions, setPortions] = useState(defaultPortions);
+  const factor = portions / RECIPE_BASE_PORTIONS;
   const [activeTab, setActiveTab] = useState<ModalTab>('zutaten');
   const [showRating, setShowRating] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -153,16 +165,46 @@ export default function MealModal({ meal, currentRating = 0, onRate, onGenerateI
         {/* Tab Content */}
         <div className="flex-1 overflow-y-auto px-4 py-4">
           {activeTab === 'zutaten' ? (
+            <>
+            <div className="flex items-center justify-between mb-3 px-3 py-2 rounded-xl bg-gray-50">
+              <span className="flex items-center gap-2 text-sm text-gray-600">
+                <Users size={14} className="text-gray-400" />
+                Portionen
+              </span>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setPortions((p) => Math.max(0.5, p - 0.5))}
+                  aria-label="Weniger Portionen"
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-600 active:scale-95"
+                >
+                  <Minus size={14} />
+                </button>
+                <span className="w-8 text-center text-sm font-semibold text-gray-900">{formatPortions(portions)}</span>
+                <button
+                  onClick={() => setPortions((p) => Math.min(20, p + 0.5))}
+                  aria-label="Mehr Portionen"
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-600 active:scale-95"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+            </div>
             <ul className="space-y-2">
               {meal.ingredients.map((ingredient, idx) => (
                 <li key={idx} className="flex items-start gap-3 py-2.5 border-b border-gray-50 last:border-0">
                   <span className="w-5 h-5 rounded-full bg-green-100 text-green-600 text-xs font-semibold flex items-center justify-center flex-shrink-0 mt-0.5">
                     {idx + 1}
                   </span>
-                  <span className="text-sm text-gray-700">{ingredient}</span>
+                  <span className="text-sm text-gray-700">{scaleIngredient(ingredient, factor)}</span>
                 </li>
               ))}
             </ul>
+            {factor !== 1 && (
+              <p className="mt-3 text-xs text-gray-400">
+                Mengen umgerechnet vom Originalrezept für {RECIPE_BASE_PORTIONS} Portionen.
+              </p>
+            )}
+            </>
           ) : (
             <div className="prose prose-sm max-w-none">
               <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{meal.instructions}</p>

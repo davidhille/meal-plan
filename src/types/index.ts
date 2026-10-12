@@ -126,6 +126,7 @@ export interface Routine {
   duration_days: number;
   active: boolean;
   created_at: string;
+  last_run_at?: string | null;
 }
 
 export interface RejectedMeal {

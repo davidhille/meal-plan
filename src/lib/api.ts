@@ -179,6 +179,15 @@ export async function getLatestPlan(): Promise<MealPlan | null> {
   }
 }
 
+export async function deletePlan(planId: string): Promise<{ ok: boolean; latest: MealPlan | null }> {
+  try {
+    return await request<{ ok: boolean; latest: MealPlan | null }>('DELETE', `/plans/${planId}`);
+  } catch (error) {
+    console.error('Error deleting plan:', error);
+    return { ok: false, latest: null };
+  }
+}
+
 export async function getPlanMeals(planId: string): Promise<PlanMeal[]> {
   try {
     return await request<PlanMeal[]>('GET', `/plans/${planId}/meals`);

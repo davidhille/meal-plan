@@ -15,11 +15,13 @@ import {
   createMealPlan,
   getPlanMeals,
   getLatestPlan,
+  deletePlan,
   rejectMeal,
   getPassword,
   UnauthorizedError,
 } from './lib/api';
 import PasswordGate from './components/PasswordGate';
+import { familyPortions } from './lib/portions';
 import Header from './components/Header';
 import WeekSelector from './components/WeekSelector';
 import TabSwitcher from './components/TabSwitcher';
@@ -152,6 +154,15 @@ export default function App() {
     }
   };
 
+  const handleDeletePlan = async () => {
+    if (!currentPlan) return;
+    const result = await deletePlan(currentPlan.id);
+    if (result.ok) {
+      setPlanMeals([]);
+      setCurrentPlan(result.latest);
+    }
+  };
+
   const handleRejectMeal = async (planMealId: string, mealName: string) => {
     if (!profile) return;
     // Optimistically mark as rejected
@@ -199,6 +210,9 @@ export default function App() {
             ratings={mealRatings}
             onRate={handleRateMeal}
             onReject={currentPlan ? handleRejectMeal : undefined}
+            plan={currentPlan}
+            onDeletePlan={currentPlan ? handleDeletePlan : undefined}
+            defaultPortions={familyPortions(familyMembers)}
           />
         ) : activeTab === 'einkaufsliste' ? (
           <ShoppingListView

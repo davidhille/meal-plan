@@ -24,6 +24,8 @@ Die App hat drei Hauptbereiche, die über einen Tab-Switcher erreichbar sind.
 - Gerichte können **abgelehnt** werden — ein passender Ersatz wird automatisch ausgewählt, gespeichert und in der Ansicht ersetzt
 - Bilder können pro Gericht generiert werden (auf Klick im Detail-Fenster)
 - Wochenumschalter oben, um zwischen Wochen zu wechseln
+- Der zuletzt erstellte Plan wird beim Öffnen geladen; über „Plan löschen“ (mit Bestätigung) lässt er sich entfernen
+- **Portionen:** Alle Rezepte sind für 4 Portionen geschrieben. Im Detail-Fenster werden die Mengen auf die Familie umgerechnet (Erwachsene 1, Kinder bis 6 Jahre ½, 7–12 Jahre ¾, ab 13 Jahre 1 Portion) und lassen sich per +/− anpassen
 
 ### 1.2 Einkaufsliste (Tab: „einkaufsliste")
 
@@ -59,7 +61,9 @@ Die App hat drei Hauptbereiche, die über einen Tab-Switcher erreichbar sind.
 - Hinzufügen und Löschen möglich
 
 #### Routinen
-- Wiederkehrende automatische Plan-Erstellung
+- Wiederkehrende automatische Plan-Erstellung – läuft per Cloudflare-Cron (alle 15 Min geprüft)
+- Wöchentlich am gewählten Wochentag bzw. monatlich am 1., sobald die Uhrzeit (deutsche Zeit) erreicht ist
+- Erzeugt einen Plan ab dem Folgetag über die eingestellte Dauer; pro Tag höchstens einmal (`last_run_at`)
 - Einstellbar:
   - Name (z. B. „Wochenplan")
   - Häufigkeit: wöchentlich oder monatlich
@@ -218,7 +222,8 @@ wrangler.jsonc                   # Cloudflare-Konfiguration
 - **Bilder werden nicht automatisch** bei der Planerstellung generiert, sondern nur auf manuellen Klick im Gericht-Detailfenster.
 - **Amazon-Suche** nutzt die öffentliche Amazon-Autovervollständigung ohne API-Key — instabil, kann von Amazon geblockt werden.
 - **Gerichtedatenbank** ist fest in den Edge Functions hinterlegt (~23 Rezepte), nicht in der Datenbank — Änderungen erfordern Code-Anpassungen.
-- **Routinen** können angelegt, aber nicht aktiv bearbeitet werden (kein Edit, nur Löschen). Die automatische Ausführung einer Routine (z. B. per Cron) ist nicht implementiert.
+- **Routinen** können angelegt, aber nicht bearbeitet werden (kein Edit, nur Löschen).
+- **Einkaufsliste** basiert noch auf statischen Beispieldaten, nicht auf dem erstellten Plan – Portionen wirken dort noch nicht.
 
 ---
 
@@ -227,7 +232,6 @@ wrangler.jsonc                   # Cloudflare-Konfiguration
 - Einkaufsliste in Neon persistieren (statt localStorage)
 - Bilder automatisch bei der Planerstellung generieren
 - Gerichtedatenbank in eine eigene Tabelle auslagern
-- Routinen per Cron/Scheduler automatisch ausführen lassen
 - Eigene Gerichte hinzufügen können
 - Nährwertberechnung pro Gericht und Tag
 - Einkaufsliste teilen (z. B. als Link oder mit anderen Haushaltsmitgliedern)

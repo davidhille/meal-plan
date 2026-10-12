@@ -19,7 +19,60 @@ const json = (data: unknown, status = 200) =>
 // Spaltenlisten mit Datum als Text (YYYY-MM-DD), damit das Frontend Strings bekommt
 const PLAN_COLS = `id, profile_id, start_date::text AS start_date, end_date::text AS end_date, status, created_at`;
 const PLAN_MEAL_COLS = `id, plan_id, meal_date::text AS meal_date, meal_name, meal_type, ingredients, instructions, rejected, image_url, created_at`;
-const ROUTINE_COLS = `id, profile_id, name, frequency, day_of_week, to_char(time, 'HH24:MI') AS time, duration_days, active, created_at`;
+const ROUTINE_COLS = `id, profile_id, name, frequency, day_of_week, to_char(time, 'HH24:MI') AS time, duration_days, active, last_run_at, created_at`;
+
+let schemaReady: Promise<unknown> | null = null;
+/** Kleine Schema-Ergänzungen automatisch nachziehen (idempotent) */
+function ensureSchema(sql: Sql) {
+  schemaReady ??= sql`ALTER TABLE routines ADD COLUMN IF NOT EXISTS last_run_at timestamptz`.catch((e) => {
+    schemaReady = null;
+    throw e;
+  });
+  return schemaReady;
+}
+
+/** Plan für [startDate, endDate] erzeugen und speichern */
+async function createPlan(sql: Sql, profileId: string, startDate: string, endDate: string) {
+  const ctx = await loadContext(sql, profileId);
+  const used = new Set<string>();
+  const meals: { date: string; name: string; type: string; ingredients: string[]; instructions: string }[] = [];
+  const end = new Date(endDate + "T00:00:00Z");
+  for (let d = new Date(startDate + "T00:00:00Z"); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+    const date = d.toISOString().slice(0, 10);
+    const m = pickMeal(date, ctx, used);
+    if (m) meals.push({ date, ...m });
+  }
+
+  const planRows = await sql.query(
+    `INSERT INTO meal_plans (profile_id, start_date, end_date, status) VALUES ($1, $2, $3, 'active') RETURNING ${PLAN_COLS}`,
+    [profileId, startDate, endDate]
+  );
+  const plan = planRows[0];
+  if (meals.length) {
+    await sql.query(
+      `INSERT INTO plan_meals (plan_id, meal_date, meal_name, meal_type, ingredients, instructions)
+       SELECT $1, d::date, n, t, string_to_array(i, E'\\x1f'), ins
+       FROM unnest($2::text[], $3::text[], $4::text[], $5::text[], $6::text[]) AS x(d, n, t, i, ins)`,
+      [
+        plan.id,
+        meals.map((m) => m.date),
+        meals.map((m) => m.name),
+        meals.map((m) => m.type),
+        meals.map((m) => m.ingredients.join("\x1f")),
+        meals.map((m) => m.instructions),
+      ]
+    );
+  }
+  return plan;
+}
+
+async function latestPlan(sql: Sql, profileId: string) {
+  const rows = await sql.query(
+    `SELECT ${PLAN_COLS} FROM meal_plans WHERE profile_id = $1 AND status = 'active' ORDER BY created_at DESC LIMIT 1`,
+    [profileId]
+  );
+  return rows[0] ?? null;
+}
 
 async function getProfile(sql: Sql) {
   const rows = await sql`SELECT * FROM profiles ORDER BY created_at LIMIT 1`;
@@ -52,6 +105,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
   if (!env.DATABASE_URL) return json({ error: "DATABASE_URL fehlt" }, 500);
 
   const sql = neon(env.DATABASE_URL);
+  await ensureSchema(sql);
   const parts = new URL(request.url).pathname.replace(/^\/api\/?/, "").split("/").filter(Boolean);
   const route = `${request.method} /${parts.join("/")}`;
   const body = ["POST", "PUT", "PATCH"].includes(request.method) ? await request.json<any>().catch(() => ({})) : {};
@@ -125,48 +179,19 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       const { startDate, endDate } = body;
       if (!startDate || !endDate) return json({ error: "startDate und endDate fehlen" }, 400);
       const p = await getProfile(sql);
-      const ctx = await loadContext(sql, p.id);
+      return json(await createPlan(sql, p.id, startDate, endDate));
+    }
 
-      const used = new Set<string>();
-      const meals: { date: string; name: string; type: string; ingredients: string[]; instructions: string }[] = [];
-      const end = new Date(endDate + "T00:00:00Z");
-      for (let d = new Date(startDate + "T00:00:00Z"); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
-        const date = d.toISOString().slice(0, 10);
-        const m = pickMeal(date, ctx, used);
-        if (m) meals.push({ date, ...m });
-      }
-
-      const planRows = await sql.query(
-        `INSERT INTO meal_plans (profile_id, start_date, end_date, status) VALUES ($1, $2, $3, 'active') RETURNING ${PLAN_COLS}`,
-        [p.id, startDate, endDate]
-      );
-      const plan = planRows[0];
-      if (meals.length) {
-        await sql.query(
-          `INSERT INTO plan_meals (plan_id, meal_date, meal_name, meal_type, ingredients, instructions)
-           SELECT $1, d::date, n, t, string_to_array(i, E'\\x1f'), ins
-           FROM unnest($2::text[], $3::text[], $4::text[], $5::text[], $6::text[]) AS x(d, n, t, i, ins)`,
-          [
-            plan.id,
-            meals.map((m) => m.date),
-            meals.map((m) => m.name),
-            meals.map((m) => m.type),
-            meals.map((m) => m.ingredients.join("\x1f")),
-            meals.map((m) => m.instructions),
-          ]
-        );
-      }
-      return json(plan);
+    if (parts[0] === "plans" && id && id !== "latest" && !parts[2] && request.method === "DELETE") {
+      const p = await getProfile(sql);
+      await sql`DELETE FROM meal_plans WHERE id = ${id} AND profile_id = ${p.id}`;
+      return json({ ok: true, latest: await latestPlan(sql, p.id) });
     }
 
     // Neuester aktiver Plan (für das Laden nach einem Reload)
     if (route === "GET /plans/latest") {
       const p = await getProfile(sql);
-      const rows = await sql.query(
-        `SELECT ${PLAN_COLS} FROM meal_plans WHERE profile_id = $1 AND status = 'active' ORDER BY created_at DESC LIMIT 1`,
-        [p.id]
-      );
-      return json(rows[0] ?? null);
+      return json(await latestPlan(sql, p.id));
     }
 
     if (parts[0] === "plans" && id && parts[2] === "meals" && request.method === "GET") {
@@ -221,5 +246,57 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
   } catch (err) {
     console.error(route, err);
     return json({ error: (err as Error).message }, 500);
+  }
+}
+
+// ---------- Routinen automatisch ausführen (Cloudflare Cron, alle 15 Min) ----------
+
+/** Aktuelles Datum/Uhrzeit in Deutschland */
+function berlinNow() {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Berlin",
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", weekday: "short", hour12: false,
+    }).formatToParts(new Date()).map((p) => [p.type, p.value])
+  );
+  const weekday = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(parts.weekday);
+  return { date: `${parts.year}-${parts.month}-${parts.day}`, time: `${parts.hour === "24" ? "00" : parts.hour}:${parts.minute}`, weekday, day: Number(parts.day) };
+}
+
+function addDays(date: string, days: number) {
+  const d = new Date(date + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Fällige Routinen ausführen: Plan ab morgen über duration_days Tage */
+export async function runRoutines(env: Env) {
+  if (!env.DATABASE_URL) return;
+  const sql = neon(env.DATABASE_URL);
+  await ensureSchema(sql);
+  const now = berlinNow();
+
+  const routines = await sql.query(
+    `SELECT id, profile_id, name, frequency, day_of_week, to_char(time, 'HH24:MI') AS time, duration_days,
+            to_char(last_run_at AT TIME ZONE 'Europe/Berlin', 'YYYY-MM-DD') AS last_run_date
+     FROM routines WHERE active = true`
+  );
+
+  for (const r of routines) {
+    const dueToday = r.frequency === "weekly" ? r.day_of_week === now.weekday : now.day === 1;
+    const timeReached = now.time >= (r.time || "00:00");
+    if (!dueToday || !timeReached || r.last_run_date === now.date) continue;
+
+    // Erst als ausgeführt markieren, damit parallele Läufe keinen doppelten Plan erzeugen
+    const claimed = await sql`UPDATE routines SET last_run_at = now()
+      WHERE id = ${r.id} AND (last_run_at IS NULL OR (last_run_at AT TIME ZONE 'Europe/Berlin')::date < ${now.date}::date)
+      RETURNING id`;
+    if (!claimed.length) continue;
+
+    const start = addDays(now.date, 1);
+    const end = addDays(start, Math.max(1, r.duration_days) - 1);
+    await createPlan(sql, r.profile_id, start, end);
+    console.log(`Routine "${r.name}" ausgeführt: Plan ${start} bis ${end}`);
   }
 }

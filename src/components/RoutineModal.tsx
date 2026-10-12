@@ -106,6 +106,10 @@ export default function RoutineModal({ onSave, onClose }: RoutineModalProps) {
             </div>
           )}
 
+          {frequency === 'monthly' && (
+            <p className="text-xs text-gray-500 -mt-2">Läuft am 1. jedes Monats.</p>
+          )}
+
           {/* Time */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Uhrzeit</label>
