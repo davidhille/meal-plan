@@ -231,6 +231,7 @@ export interface ShopState {
 /** Artikel im Knuspr-Warenkorb */
 export interface CartItem {
   productId: string;
+  orderFieldId?: string;
   name: string;
   quantity: number;
   price?: string;

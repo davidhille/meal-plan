@@ -534,8 +534,20 @@ export async function saveProductLink(name: string, provider: ShopProvider, prod
   }
 }
 
-export function addToKnusprCart(productIds: string[]): Promise<{ added: number; failed: string[] }> {
-  return shopRequest('POST', '/shops/knuspr/cart', { productIds });
+export function addToKnusprCart(items: { productId: string; quantity: number }[]): Promise<{ added: number; failed: string[] }> {
+  return shopRequest('POST', '/shops/knuspr/cart', { items });
+}
+
+/** Menge im Knuspr-Warenkorb ändern (0 = entfernen); liefert den neuen Warenkorb */
+export async function setKnusprCartQuantity(productId: string, quantity: number): Promise<CartItem[]> {
+  const result = await shopRequest<{ items: CartItem[] }>('PATCH', '/shops/knuspr/cart', { productId, quantity });
+  return result.items;
+}
+
+/** Knuspr-Warenkorb leeren; liefert, was übrig bleibt (normalerweise nichts) */
+export async function clearKnusprCart(): Promise<CartItem[]> {
+  const result = await shopRequest<{ items: CartItem[] }>('DELETE', '/shops/knuspr/cart');
+  return result.items;
 }
 
 /** Inhalt des Knuspr-Warenkorbs; wirft bei Fehlern (z. B. not_connected) */
