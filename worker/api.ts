@@ -9,7 +9,6 @@ import { buildPlanItems, familyPortions, mergeKey } from "./shopping";
 import { generateImage, fillMissingImages, serveImage, IMAGE_URL_SQL, IMAGE_CREDIT_SQL, type AiEnv } from "./images";
 import { generateRecipes } from "./aiRecipes";
 import { importRecipeFromUrl, ImportError } from "./recipeImport";
-import { exportMealDb } from "./mealdbExport";
 import {
   encrypt, decrypt, ShopError, knusprLogin, knusprSearch, knusprAddToCart, picnicLogin, picnicVerify, picnicSearch,
   type ShopEnv,
@@ -534,17 +533,6 @@ export async function handleApi(
   waitUntil: (p: Promise<unknown>) => void = () => {}
 ): Promise<Response> {
   const path = new URL(request.url).pathname;
-
-  // Einmaliger Rezept-Export aus TheMealDB als Download (Passwort per ?pw=, da ein Link keinen Header mitschickt)
-  if (request.method === "GET" && path === "/api/mealdb-export") {
-    const pw = request.headers.get("X-App-Password") ?? new URL(request.url).searchParams.get("pw");
-    if (env.APP_PASSWORD && pw !== env.APP_PASSWORD) return json({ error: "unauthorized" }, 401);
-    try {
-      return await exportMealDb();
-    } catch (e) {
-      return json({ error: (e as Error).message }, 502);
-    }
-  }
 
   // Bilder sind öffentlich (ein <img> kann kein Passwort mitschicken)
   if (request.method === "GET" && path.startsWith("/api/images/") && env.DATABASE_URL) {
