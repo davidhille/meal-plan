@@ -30,6 +30,7 @@ import SettingsView from './components/SettingsView';
 
 export default function App() {
   const [showPlanModal, setShowPlanModal] = useState(false);
+  const [imagePolls, setImagePolls] = useState(0);
   const [activeTab, setActiveTab] = useState<ViewTab>('speiseplan');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
@@ -77,8 +78,22 @@ export default function App() {
     setLoading(false);
   };
 
+  // Bilder entstehen nach dem Erstellen im Hintergrund → einige Male nachladen, bis alle da sind
+  useEffect(() => {
+    if (!currentPlan) return;
+    const missing = planMeals.some((m) => !m.rejected && !m.image_url);
+    if (!missing || imagePolls >= 8) return;
+    const t = setTimeout(async () => {
+      const meals = await getPlanMeals(currentPlan.id);
+      if (meals.length) setPlanMeals(meals);
+      setImagePolls((n) => n + 1);
+    }, 15000);
+    return () => clearTimeout(t);
+  }, [planMeals, currentPlan?.id, imagePolls]);
+
   const loadPlanMeals = async () => {
     if (!currentPlan) return;
+    setImagePolls(0);
     const meals = await getPlanMeals(currentPlan.id);
     setPlanMeals(meals);
   };

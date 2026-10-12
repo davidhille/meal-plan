@@ -211,32 +211,11 @@ export async function rejectMeal(
   }
 }
 
-export async function generateMealImage(
-  mealName: string,
-  planMealId?: string
-): Promise<string | null> {
+/** Bild über den Server erzeugen (Cloudflare Workers AI). force = neues Bild statt vorhandenem */
+export async function generateMealImage(mealName: string, force = false): Promise<string | null> {
   try {
-    // Cache zuerst prüfen
-    const cached = await request<{ imageUrl: string | null }>(
-      'GET',
-      `/meal-images?name=${encodeURIComponent(mealName)}`
-    );
-    if (cached.imageUrl) return cached.imageUrl;
-
-    // Bild im Browser über Puter.js erzeugen (kostenlos, kein API-Key)
-    const prompt = `Professional food photography of ${mealName}, German home-cooked dish, warm lighting, plated on white ceramic, top-down angle, appetizing, high quality`;
-    const imgElement = await puter.ai.txt2img(prompt, {
-      model: 'black-forest-labs/flux-schnell',
-    });
-    const imageUrl = imgElement.src;
-    if (!imageUrl) return null;
-
-    await request('PUT', '/meal-images', {
-      meal_name: mealName,
-      image_url: imageUrl,
-      plan_meal_id: planMealId,
-    });
-    return imageUrl;
+    const result = await request<{ imageUrl: string }>('POST', '/meal-images/generate', { mealName, force });
+    return result.imageUrl;
   } catch (error) {
     console.error('Error generating meal image:', error);
     return null;

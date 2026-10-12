@@ -1,6 +1,6 @@
 // Einstiegspunkt des Cloudflare Workers:
 // /api/* → API (Neon), alles andere → statische App aus dist/
-// Zeitgesteuert (alle 15 Min) → Routinen ausführen
+// Zeitgesteuert (alle 15 Min) → Routinen ausführen, fehlende Rezeptbilder erzeugen
 import { handleApi, runRoutines, type Env } from "./api";
 
 interface WorkerEnv extends Env {
@@ -8,10 +8,10 @@ interface WorkerEnv extends Env {
 }
 
 export default {
-  async fetch(request: Request, env: WorkerEnv): Promise<Response> {
+  async fetch(request: Request, env: WorkerEnv, ctx: ExecutionContext): Promise<Response> {
     const { pathname } = new URL(request.url);
     if (pathname === "/api" || pathname.startsWith("/api/")) {
-      return handleApi(request, env);
+      return handleApi(request, env, (p) => ctx.waitUntil(p));
     }
     return env.ASSETS.fetch(request);
   },

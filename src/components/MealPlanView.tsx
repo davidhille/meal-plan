@@ -69,6 +69,8 @@ export default function MealPlanView({
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // Neu erzeugte Bilder sofort anzeigen (Gerichtname → URL)
+  const [imageOverrides, setImageOverrides] = useState<Record<string, string>>({});
 
   const hasPlan = !!plan;
   const showReject = !!onReject && hasPlan;
@@ -139,6 +141,7 @@ export default function MealPlanView({
         )}
         {displayItems.map((pm) => {
           const meal: Meal = planMealToMeal(pm);
+          if (imageOverrides[pm.meal_name]) meal.imageUrl = imageOverrides[pm.meal_name];
           const ratingVal = ratings[pm.meal_name];
 
           return (
@@ -173,9 +176,10 @@ export default function MealPlanView({
               : undefined
           }
           onGenerateImage={async (mealName) => {
-            const url = await generateMealImage(mealName);
-            if (url && selectedMeal) {
-              setSelectedMeal({ ...selectedMeal, imageUrl: url });
+            const url = await generateMealImage(mealName, !!selectedMeal.imageUrl);
+            if (url) {
+              setImageOverrides((prev) => ({ ...prev, [mealName]: url }));
+              setSelectedMeal((prev) => (prev ? { ...prev, imageUrl: url } : prev));
             }
             return url;
           }}

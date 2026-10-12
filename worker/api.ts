@@ -6,8 +6,9 @@
 import { neon } from "@neondatabase/serverless";
 import { pickMeal, MEAL_DATABASE, scoreMeal, preferredTypeFor, type ScoringContext } from "./meals";
 import { buildPlanItems, familyPortions } from "./shopping";
+import { generateImage, fillMissingImages, serveImage, IMAGE_URL_SQL, type AiEnv } from "./images";
 
-export interface Env {
+export interface Env extends AiEnv {
   DATABASE_URL: string;
   APP_PASSWORD?: string;
 }
@@ -26,6 +27,9 @@ let schemaReady: Promise<unknown> | null = null;
 
 async function migrate(sql: Sql) {
   await sql`ALTER TABLE routines ADD COLUMN IF NOT EXISTS last_run_at timestamptz`;
+  await sql`ALTER TABLE meal_images ADD COLUMN IF NOT EXISTS image_data bytea`;
+  await sql`ALTER TABLE meal_images ADD COLUMN IF NOT EXISTS content_type text`;
+  await sql`ALTER TABLE meal_images ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now()`;
   await sql`CREATE TABLE IF NOT EXISTS shopping_labels (
     profile_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     id text NOT NULL,
@@ -205,7 +209,18 @@ async function loadContext(sql: Sql, profileId: string): Promise<ScoringContext>
   };
 }
 
-export async function handleApi(request: Request, env: Env): Promise<Response> {
+export async function handleApi(
+  request: Request,
+  env: Env,
+  waitUntil: (p: Promise<unknown>) => void = () => {}
+): Promise<Response> {
+  // Bilder sind öffentlich (ein <img> kann kein Passwort mitschicken)
+  const path = new URL(request.url).pathname;
+  if (request.method === "GET" && path.startsWith("/api/images/") && env.DATABASE_URL) {
+    const sql = neon(env.DATABASE_URL);
+    return serveImage(sql, decodeURIComponent(path.slice("/api/images/".length)));
+  }
+
   if (env.APP_PASSWORD && request.headers.get("X-App-Password") !== env.APP_PASSWORD) {
     return json({ error: "unauthorized" }, 401);
   }
@@ -286,7 +301,9 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       const { startDate, endDate } = body;
       if (!startDate || !endDate) return json({ error: "startDate und endDate fehlen" }, 400);
       const p = await getProfile(sql);
-      return json(await createPlan(sql, p.id, startDate, endDate));
+      const plan = await createPlan(sql, p.id, startDate, endDate);
+      waitUntil(fillMissingImages(env, sql, 7, plan.id));
+      return json(plan);
     }
 
     if (parts[0] === "plans" && id && id !== "latest" && !parts[2] && request.method === "DELETE") {
@@ -302,7 +319,15 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     }
 
     if (parts[0] === "plans" && id && parts[2] === "meals" && request.method === "GET") {
-      return json(await sql.query(`SELECT ${PLAN_MEAL_COLS} FROM plan_meals WHERE plan_id = $1 ORDER BY meal_date`, [id]));
+      return json(
+        await sql.query(
+          `SELECT pm.id, pm.plan_id, pm.meal_date::text AS meal_date, pm.meal_name, pm.meal_type, pm.ingredients,
+                  pm.instructions, pm.rejected, ${IMAGE_URL_SQL} AS image_url, pm.created_at
+           FROM plan_meals pm LEFT JOIN meal_images mi ON mi.meal_name = pm.meal_name
+           WHERE pm.plan_id = $1 ORDER BY pm.meal_date`,
+          [id]
+        )
+      );
     }
 
     // Gericht ablehnen + automatisch ersetzen
@@ -331,7 +356,11 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
          VALUES ($1, $2, $3, $4, $5, $6, false) RETURNING ${PLAN_MEAL_COLS}`,
         [old.plan_id, old.meal_date, best.name, best.type, best.ingredients, best.instructions]
       );
-      return json({ replacement: inserted[0] });
+      const replacement = inserted[0];
+      const img = await sql`SELECT image_url FROM meal_images WHERE meal_name = ${best.name} AND image_data IS NOT NULL`;
+      if (img[0]) replacement.image_url = img[0].image_url;
+      else waitUntil(generateImage(env, sql, best.name));
+      return json({ replacement });
     }
 
     // ---------- Einkaufsliste ----------
@@ -426,19 +455,18 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       return json(await getLabels(sql, p.id));
     }
 
-    // ---------- Bild-Cache ----------
-    if (route === "GET /meal-images") {
-      const name = new URL(request.url).searchParams.get("name") ?? "";
-      const rows = await sql`SELECT image_url FROM meal_images WHERE meal_name = ${name}`;
-      return json({ imageUrl: rows[0]?.image_url ?? null });
-    }
-    if (route === "PUT /meal-images") {
-      await sql`INSERT INTO meal_images (meal_name, image_url) VALUES (${body.meal_name}, ${body.image_url})
-        ON CONFLICT (meal_name) DO UPDATE SET image_url = EXCLUDED.image_url`;
-      if (body.plan_meal_id) {
-        await sql`UPDATE plan_meals SET image_url = ${body.image_url} WHERE id = ${body.plan_meal_id}`;
+    // ---------- Bilder ----------
+    // Bild (neu) erzeugen – für den Knopf im Rezept
+    if (route === "POST /meal-images/generate") {
+      const name = String(body.mealName ?? "").trim();
+      if (!name) return json({ error: "mealName fehlt" }, 400);
+      if (!body.force) {
+        const existing = await sql`SELECT image_url FROM meal_images WHERE meal_name = ${name} AND image_data IS NOT NULL`;
+        if (existing[0]) return json({ imageUrl: existing[0].image_url });
       }
-      return json({ ok: true });
+      const url = await generateImage(env, sql, name);
+      if (!url) return json({ error: "Bild konnte nicht erzeugt werden" }, 502);
+      return json({ imageUrl: url });
     }
 
     return json({ error: `Unbekannte Route: ${route}` }, 404);
@@ -498,4 +526,7 @@ export async function runRoutines(env: Env) {
     await createPlan(sql, r.profile_id, start, end);
     console.log(`Routine "${r.name}" ausgeführt: Plan ${start} bis ${end}`);
   }
+
+  // Fehlende Rezeptbilder nachziehen
+  await fillMissingImages(env, sql, 5);
 }

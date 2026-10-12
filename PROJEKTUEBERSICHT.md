@@ -22,7 +22,7 @@ Die App hat drei Hauptbereiche, die über einen Tab-Switcher erreichbar sind.
   - Zubereitungsanleitung
   - Sterne-Bewertung (1–5)
 - Gerichte können **abgelehnt** werden — ein passender Ersatz wird automatisch ausgewählt, gespeichert und in der Ansicht ersetzt
-- Bilder können pro Gericht generiert werden (auf Klick im Detail-Fenster)
+- Bilder werden automatisch erzeugt (siehe Abschnitt 3) und lassen sich im Detail-Fenster neu generieren
 - Der zuletzt erstellte Plan wird beim Öffnen geladen; über „Plan löschen“ (mit Bestätigung) lässt er sich entfernen
 - **Portionen:** Alle Rezepte sind für 4 Portionen geschrieben. Im Detail-Fenster werden die Mengen auf die Familie umgerechnet (Erwachsene 1, Kinder bis 6 Jahre ½, 7–12 Jahre ¾, ab 13 Jahre 1 Portion) und lassen sich per +/− anpassen
 
@@ -116,29 +116,19 @@ Lehnt ein Gericht ab und ersetzt es automatisch.
 4. Neue Bewertung mit angepasstem Scoring durchführen (vermeidet Dubletten im selben Plan)
 5. Ersatzgericht in die Datenbank einfügen und zurückgeben
 
-### 2.3 `generate-meal-image`
-Erzeugt ein Lebensmittel-Foto für ein Gericht.
-
-**Ablauf:**
-1. Prüfen, ob bereits ein Bild im Cache (`meal_images`) existiert
-2. Falls nicht: Bild-URL über Pollinations.ai generieren (kostenlos, kein API-Key)
-   - Prompt: „Professional food photography of [Gericht], German home-cooked dish, warm lighting, plated on white ceramic, top-down angle"
-   - Deterministischer Seed aus dem Gerichtsnamen
-3. Bild-URL in `meal_images` cachen
-4. Optional mit dem Gericht in `plan_meals` verknüpfen
+### 2.3 Bilder
+Siehe Abschnitt 3.
 
 ---
 
 ## 3. Bildgenerierung
 
-Zwei Wege sind angelegt, die aber **nicht automatisch** bei der Planerstellung laufen:
-
-| Weg | Ort | Technologie | Auslöser |
-|---|---|---|---|
-| Edge Function | Server | Pollinations.ai (kostenlos) | Aufruf der Funktion |
-| Browser-seitig | Client | Puter.js (`puter.ai.txt2img`, Flux-Schnell) | Klick im Gericht-Detailfenster |
-
-Beide Wege cachen das Ergebnis in der Tabelle `meal_images`.
+- **Modell:** FLUX.1 schnell über **Cloudflare Workers AI** (Binding `AI` in `wrangler.jsonc`, `worker/images.ts`)
+- **Kosten:** Im Cloudflare-Free-Plan sind 10.000 Neurons/Tag enthalten; ein Bild braucht grob 60 → ca. 150 Bilder/Tag. Ist das Kontingent aufgebraucht, wird es beim nächsten Lauf erneut versucht.
+- **Automatisch:** Nach „Plan erstellen“ und nach dem Ersetzen eines Gerichts im Hintergrund; zusätzlich füllt der 15-Minuten-Cron fehlende Bilder auf (max. 5 pro Lauf)
+- **Ein Bild pro Gericht:** gespeichert in Neon (`meal_images.image_data`, JPEG), ausgeliefert über `/api/images/<Gericht>` (ohne Passwort, mit langem Browser-Cache)
+- **Manuell:** Im Rezept „Bild generieren“ bzw. „Neues Bild“
+- Die App lädt die Plan-Ansicht nach dem Erstellen einige Male nach, bis alle Bilder da sind
 
 ---
 
@@ -203,6 +193,7 @@ worker/
 ├── index.ts                     # Einstieg: /api → API, sonst statische App
 ├── meals.ts                     # Rezeptdatenbank + Scoring
 ├── shopping.ts                  # Einkaufsliste aus Plan berechnen
+├── images.ts                    # Rezeptbilder (Workers AI → Neon)
 └── api.ts                       # Komplette API (Profil, Familie, Pläne, Bilder …)
 
 neon/schema.sql                  # Datenbank-Schema
@@ -213,7 +204,6 @@ wrangler.jsonc                   # Cloudflare-Konfiguration
 
 ## 7. Bekannte Lücken & Hinweise
 
-- **Bilder werden nicht automatisch** bei der Planerstellung generiert, sondern nur auf manuellen Klick im Gericht-Detailfenster.
 - **Amazon-Suche** nutzt die öffentliche Amazon-Autovervollständigung ohne API-Key — instabil, kann von Amazon geblockt werden.
 - **Gerichtedatenbank** ist fest in den Edge Functions hinterlegt (~23 Rezepte), nicht in der Datenbank — Änderungen erfordern Code-Anpassungen.
 - **Routinen** können angelegt, aber nicht bearbeitet werden (kein Edit, nur Löschen).
@@ -222,7 +212,6 @@ wrangler.jsonc                   # Cloudflare-Konfiguration
 
 ## 8. Potentielle Erweiterungen
 
-- Bilder automatisch bei der Planerstellung generieren
 - Gerichtedatenbank in eine eigene Tabelle auslagern
 - Eigene Gerichte hinzufügen können
 - Nährwertberechnung pro Gericht und Tag
