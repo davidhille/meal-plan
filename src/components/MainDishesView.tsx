@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChefHat, Clock, Loader2, Search, Trash2, X, RotateCcw, ChevronDown } from 'lucide-react';
-import { CatalogRecipe, Meal, MealType, PlanMeal, RecipeCatalog } from '../types';
+import { CatalogRecipe, Meal, MealType, PlanMeal, RecipeCatalog, RecipeFilter } from '../types';
+import { matchesRecipeFilter } from '../lib/recipeFilters';
+import CustomFilterChips from './CustomFilterChips';
 import { getRecipeCatalog, setRecipeHidden } from '../lib/api';
 import { RECIPE_BASE_PORTIONS } from '../lib/portions';
 import MealModal from './MealModal';
@@ -12,6 +14,8 @@ interface MainDishesViewProps {
   /** Gericht eines Tages durch das gewählte Rezept ersetzen */
   onReplace?: (pm: PlanMeal, recipe: CatalogRecipe) => Promise<void>;
   defaultPortions?: number;
+  /** Eigene Filter aus den Einstellungen */
+  customFilters?: RecipeFilter[];
 }
 
 const FILTERS: { id: MealType | 'alle'; label: string }[] = [
@@ -44,10 +48,17 @@ function toMeal(r: CatalogRecipe): Meal {
 }
 
 /** Übersicht aller Hauptgerichte: ansehen, in den Plan übernehmen, ausblenden */
-export default function MainDishesView({ planMeals, onReplace, defaultPortions = RECIPE_BASE_PORTIONS }: MainDishesViewProps) {
+export default function MainDishesView({
+  planMeals,
+  onReplace,
+  defaultPortions = RECIPE_BASE_PORTIONS,
+  customFilters = [],
+}: MainDishesViewProps) {
   const [catalog, setCatalog] = useState<RecipeCatalog | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [filter, setFilter] = useState<MealType | 'alle'>('alle');
+  const [customId, setCustomId] = useState<string | null>(null);
+  const custom = customFilters.find((f) => f.id === customId) ?? null;
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<CatalogRecipe | null>(null);
   const [assign, setAssign] = useState<CatalogRecipe | null>(null);
@@ -73,9 +84,10 @@ export default function MainDishesView({ planMeals, onReplace, defaultPortions =
     return catalog.recipes.filter(
       (r) =>
         (filter === 'alle' || r.type === filter) &&
+        (!custom || matchesRecipeFilter(custom, r)) &&
         (!q || normalize(r.name).includes(q) || r.ingredients.some((i) => normalize(i).includes(q)))
     );
-  }, [catalog, filter, query]);
+  }, [catalog, filter, query, custom]);
 
   if (loadError) {
     return <p className="px-4 py-12 text-sm text-center text-red-600">{loadError}</p>;
@@ -139,6 +151,7 @@ export default function MainDishesView({ planMeals, onReplace, defaultPortions =
             </button>
           ))}
         </div>
+        <CustomFilterChips filters={customFilters} activeId={customId} onChange={setCustomId} />
 
         <p className="text-xs text-gray-500 px-1" aria-live="polite">
           {visible.length === catalog.recipes.length

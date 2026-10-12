@@ -1,6 +1,6 @@
 import {
   Profile, FamilyMember, MealRating, MealPlan, PlanMeal, Routine, ShoppingItem, ShoppingLabel, Favorite, MealType, ImageCredit,
-  ShopState, ShopProvider, ProductResult, PlanDessert, RecipeCatalog,
+  ShopState, ShopProvider, ProductResult, PlanDessert, RecipeCatalog, RecipeFilter,
 } from '../types';
 
 // Alle Daten laufen über die Cloudflare-Functions unter /api (→ Neon).
@@ -400,6 +400,28 @@ export async function removeShoppingItem(planId: string, itemId: string): Promis
     console.error('Error removing shopping item:', error);
     return false;
   }
+}
+
+/** Alle Einkaufslisten (Labels); wirft bei Fehlern */
+export async function getLabels(): Promise<ShoppingLabel[]> {
+  return request<ShoppingLabel[]>('GET', '/labels');
+}
+
+// ---------- Eigene Rezept-Filter (werfen bei Fehlern) ----------
+
+export async function getRecipeFilters(): Promise<RecipeFilter[]> {
+  return request<RecipeFilter[]>('GET', '/recipe-filters');
+}
+
+export async function saveRecipeFilter(filter: Omit<RecipeFilter, 'id'> & { id?: string }): Promise<RecipeFilter[]> {
+  const { id, ...data } = filter;
+  return id
+    ? request<RecipeFilter[]>('PUT', `/recipe-filters/${enc(id)}`, data)
+    : request<RecipeFilter[]>('POST', '/recipe-filters', data);
+}
+
+export async function deleteRecipeFilter(id: string): Promise<RecipeFilter[]> {
+  return request<RecipeFilter[]>('DELETE', `/recipe-filters/${enc(id)}`);
 }
 
 export async function createLabel(name: string, color: string): Promise<ShoppingLabel[] | null> {

@@ -5,6 +5,8 @@ import FamilyMemberModal from './FamilyMemberModal';
 import PreferencesModal from './PreferencesModal';
 import RoutineModal from './RoutineModal';
 import ShopSettings from './ShopSettings';
+import LabelSettings from './LabelSettings';
+import FilterSettings from './FilterSettings';
 import PlanCreationModal from './PlanCreationModal';
 
 interface SettingsViewProps {
@@ -136,6 +138,10 @@ export default function SettingsView({
 
         {/* Einkaufen & Shops */}
         <ShopSettings />
+        <LabelSettings />
+
+        {/* Eigene Filter für die Rezept-Übersicht */}
+        <FilterSettings />
 
         {/* Routines Section */}
         <div>

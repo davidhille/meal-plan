@@ -1,5 +1,7 @@
-import { useState } from 'react';
-import { CatalogRecipe, Dessert, PlanMeal } from '../types';
+import { useEffect, useState } from 'react';
+import { CatalogRecipe, Dessert, PlanMeal, RecipeFilter } from '../types';
+import { getRecipeFilters } from '../lib/api';
+import { filtersFor } from '../lib/recipeFilters';
 import MainDishesView from './MainDishesView';
 import DessertsView from './DessertsView';
 
@@ -21,6 +23,14 @@ export default function RecipesView({ planMeals, onReplace, onAssignDessert, def
       return 'gerichte';
     }
   });
+
+  // Eigene Filter aus den Einstellungen (ohne sie geht es auch)
+  const [customFilters, setCustomFilters] = useState<RecipeFilter[]>([]);
+  useEffect(() => {
+    getRecipeFilters()
+      .then(setCustomFilters)
+      .catch(() => setCustomFilters([]));
+  }, []);
 
   const choose = (s: Section) => {
     setSection(s);
@@ -55,9 +65,14 @@ export default function RecipesView({ planMeals, onReplace, onAssignDessert, def
         </div>
       </div>
       {section === 'gerichte' ? (
-        <MainDishesView planMeals={planMeals} onReplace={onReplace} defaultPortions={defaultPortions} />
+        <MainDishesView
+          planMeals={planMeals}
+          onReplace={onReplace}
+          defaultPortions={defaultPortions}
+          customFilters={filtersFor(customFilters, 'gerichte')}
+        />
       ) : (
-        <DessertsView planMeals={planMeals} onAssign={onAssignDessert} />
+        <DessertsView planMeals={planMeals} onAssign={onAssignDessert} customFilters={filtersFor(customFilters, 'nachtische')} />
       )}
     </>
   );
