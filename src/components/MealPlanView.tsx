@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, CalendarPlus } from 'lucide-react';
 import { Meal, MealPlan, MealType, PlanMeal } from '../types';
 import { generateMealImage } from '../lib/api';
 import DayCard from './DayCard';
 import MealModal from './MealModal';
 
 interface MealPlanViewProps {
-  meals: Meal[];
+  onCreatePlan: () => void;
   planMeals?: PlanMeal[];
   ratings: Record<string, number>;
   onRate?: (mealName: string, rating: number, notes: string) => Promise<void>;
@@ -57,7 +57,7 @@ function planMealToMeal(pm: PlanMeal): Meal {
 }
 
 export default function MealPlanView({
-  meals,
+  onCreatePlan,
   planMeals,
   ratings,
   onRate,
@@ -70,18 +70,32 @@ export default function MealPlanView({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // When we have a plan, use plan meals; otherwise fall back to static data
-  const hasPlan = planMeals && planMeals.length > 0;
+  const hasPlan = !!plan;
   const showReject = !!onReject && hasPlan;
+  const displayItems = (planMeals ?? []).filter((pm) => !pm.rejected);
 
-  const displayItems = hasPlan
-    ? planMeals!.filter((pm) => !pm.rejected)
-    : meals;
+  if (!hasPlan) {
+    return (
+      <div className="px-4 py-12 flex flex-col items-center text-center gap-3">
+        <CalendarPlus size={32} className="text-gray-300" />
+        <p className="text-sm text-gray-500">Noch kein Speiseplan vorhanden.</p>
+        <p className="text-xs text-gray-400">
+          Erstelle einen Plan – er berücksichtigt eure Familie, Vorlieben und Bewertungen.
+        </p>
+        <button
+          onClick={onCreatePlan}
+          className="mt-2 px-4 py-2 rounded-lg text-sm font-medium bg-green-500 text-white hover:bg-green-600"
+        >
+          Plan erstellen
+        </button>
+      </div>
+    );
+  }
 
   return (
     <>
       <div className="px-4 py-4 space-y-3">
-        {hasPlan && plan && (
+        {plan && (
           <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-white border border-gray-100 text-sm">
             <span className="text-gray-600">
               Plan {formatDate(plan.start_date)} – {formatDate(plan.end_date)}
@@ -123,31 +137,23 @@ export default function MealPlanView({
               ))}
           </div>
         )}
-        {displayItems.map((item) => {
-          const pm = item as PlanMeal;
-          const isPlan = hasPlan;
-          const meal: Meal = isPlan ? planMealToMeal(pm) : (item as Meal);
-          const mealKey = isPlan ? pm.id : meal.meal;
-          const mealName = isPlan ? pm.meal_name : meal.meal;
-          const ratingVal = ratings[mealName];
+        {displayItems.map((pm) => {
+          const meal: Meal = planMealToMeal(pm);
+          const ratingVal = ratings[pm.meal_name];
 
           return (
             <DayCard
-              key={mealKey}
+              key={pm.id}
               meal={meal}
               rating={ratingVal}
               showReject={showReject}
-              onReject={
-                isPlan && onReject
-                  ? () => onReject(pm.id, pm.meal_name)
-                  : undefined
-              }
+              onReject={onReject ? () => onReject(pm.id, pm.meal_name) : undefined}
               onClick={() => setSelectedMeal(meal)}
             />
           );
         })}
 
-        {hasPlan && displayItems.length === 0 && (
+        {displayItems.length === 0 && (
           <div className="text-center py-8 text-gray-400 text-sm">
             Alle Gerichte wurden abgelehnt. Erstelle einen neuen Plan.
           </div>

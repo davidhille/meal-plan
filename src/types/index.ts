@@ -24,6 +24,8 @@ export interface Meal {
 export interface ShoppingItem {
   id: string;
   name: string;
+  /** Zutat ohne Menge (für Amazon-Suche und gemerkte Zuordnungen) */
+  baseName: string;
   checked: boolean;
   label: string;
   isBasic?: boolean;
@@ -57,13 +59,6 @@ export const BASICS_ITEMS: string[] = [
   'Cayennepfeffer', 'Kreuzkümmel', 'Kurkuma', 'Muskatnuss',
   'Petersilie', 'Dill', 'Chiliflocken', 'Worcestershiresoße',
 ];
-
-export interface WeekData {
-  weekNumber: number;
-  meals: Meal[];
-  knuspr: string[];
-  metzger: string[];
-}
 
 export interface FamilyMember {
   id: string;

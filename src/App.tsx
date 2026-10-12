@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { ViewTab, Profile, FamilyMember, Routine, MealPlan, PlanMeal } from './types';
-import { weeksData } from './data/mealData';
 import {
   getOrCreateProfile,
   updateProfile,
@@ -23,14 +22,14 @@ import {
 import PasswordGate from './components/PasswordGate';
 import { familyPortions } from './lib/portions';
 import Header from './components/Header';
-import WeekSelector from './components/WeekSelector';
+import PlanCreationModal from './components/PlanCreationModal';
 import TabSwitcher from './components/TabSwitcher';
 import MealPlanView from './components/MealPlanView';
 import ShoppingListView from './components/ShoppingListView';
 import SettingsView from './components/SettingsView';
 
 export default function App() {
-  const [selectedWeek, setSelectedWeek] = useState<number>(1);
+  const [showPlanModal, setShowPlanModal] = useState(false);
   const [activeTab, setActiveTab] = useState<ViewTab>('speiseplan');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
@@ -175,7 +174,6 @@ export default function App() {
     }
   };
 
-  const currentWeek = weeksData.find((w) => w.weekNumber === selectedWeek) ?? weeksData[0];
 
   if (locked) {
     return <PasswordGate failed={getPassword() !== ''} onSubmit={loadProfile} />;
@@ -194,9 +192,6 @@ export default function App() {
       {/* Sticky top bar */}
       <div className="sticky top-0 z-10 flex flex-col">
         <Header />
-        {activeTab !== 'einstellungen' && (
-          <WeekSelector selectedWeek={selectedWeek} onSelectWeek={setSelectedWeek} />
-        )}
         <TabSwitcher activeTab={activeTab} onTabChange={setActiveTab} />
       </div>
 
@@ -204,8 +199,8 @@ export default function App() {
       <main className="flex-1 pb-8">
         {activeTab === 'speiseplan' ? (
           <MealPlanView
-            key={`meals-${selectedWeek}-${currentPlan?.id || 'default'}`}
-            meals={currentWeek.meals}
+            key={`meals-${currentPlan?.id || 'none'}`}
+            onCreatePlan={() => setShowPlanModal(true)}
             planMeals={currentPlan ? planMeals : undefined}
             ratings={mealRatings}
             onRate={handleRateMeal}
@@ -216,10 +211,9 @@ export default function App() {
           />
         ) : activeTab === 'einkaufsliste' ? (
           <ShoppingListView
-            key={`shopping-${selectedWeek}`}
-            knuspr={currentWeek.knuspr}
-            metzger={currentWeek.metzger}
-            weekKey={String(selectedWeek)}
+            key={`shopping-${currentPlan?.id || 'none'}`}
+            plan={currentPlan}
+            onCreatePlan={() => setShowPlanModal(true)}
           />
         ) : (
           <SettingsView
@@ -235,6 +229,10 @@ export default function App() {
           />
         )}
       </main>
+
+      {showPlanModal && (
+        <PlanCreationModal onCreate={handleCreatePlan} onClose={() => setShowPlanModal(false)} />
+      )}
     </div>
   );
 }

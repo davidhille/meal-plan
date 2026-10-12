@@ -23,25 +23,22 @@ Die App hat drei Hauptbereiche, die über einen Tab-Switcher erreichbar sind.
   - Sterne-Bewertung (1–5)
 - Gerichte können **abgelehnt** werden — ein passender Ersatz wird automatisch ausgewählt, gespeichert und in der Ansicht ersetzt
 - Bilder können pro Gericht generiert werden (auf Klick im Detail-Fenster)
-- Wochenumschalter oben, um zwischen Wochen zu wechseln
 - Der zuletzt erstellte Plan wird beim Öffnen geladen; über „Plan löschen“ (mit Bestätigung) lässt er sich entfernen
 - **Portionen:** Alle Rezepte sind für 4 Portionen geschrieben. Im Detail-Fenster werden die Mengen auf die Familie umgerechnet (Erwachsene 1, Kinder bis 6 Jahre ½, 7–12 Jahre ¾, ab 13 Jahre 1 Portion) und lassen sich per +/− anpassen
 
 ### 1.2 Einkaufsliste (Tab: „einkaufsliste")
 
-- Zutaten werden automatisch aus dem Wochenplan übernommen
-- Vorgefertigte Labels (Einkaufsquellen):
-  - „Knuspr" (grün)
-  - „Metzger" (orange)
-- Eigene Labels lassen sich mit frei wählbarer Farbe hinzufügen (z. B. Aldi, Rewe, DM)
-- „Basics & Vorrat" — vordefinierte Grundzutaten (Salz, Pfeffer, Öl, Mehl, Gewürze …) können per Klick einer Einkaufsliste zugeordnet werden
-- Zutaten können abgehakt werden („erledigt")
-- Status wird pro Woche gespeichert
-- Amazon-Integration:
-  - Zutat anklicken → Amazon-Suchvorschläge (Autovervollständigung) werden angezeigt
-  - ASIN auswählen und speichern
-  - Mit einem Klick alle Artikel eines Labels in den Amazon-Warenkorb legen
-- **Persistierung:** Aktuell über den Browser-Speicher (localStorage), nicht in der Datenbank. Daten gehen verloren beim Browser- oder Gerätewechsel.
+- Wird automatisch aus dem aktuellen Plan berechnet (`worker/shopping.ts`):
+  - Zutaten aller nicht abgelehnten Gerichte, auf die Familienportionen umgerechnet
+  - Gleiche Zutaten werden zusammengefasst (z. B. 2× Zwiebel → „6 Zwiebeln"), Stückware wird aufgerundet
+  - Fleisch landet standardmäßig beim „Metzger", alles andere bei „Knuspr"
+  - Vorrat (Salz, Pfeffer, Öl, Gewürze, Brühe …) kommt nicht auf die Liste, sondern unter „Basics & Vorrat" – gelb markiert, wenn der Plan ihn braucht
+- Ersatzgerichte (nach Ablehnung) fließen automatisch ein
+- Abhaken, Liste wechseln, eigene Listen (Aldi, Rewe, DM …) mit Farbe, eigene Artikel („Klopapier"), Basics bei Bedarf auf eine Liste setzen
+- **Gemerkte Zuordnungen:** Wird eine Zutat einmal auf eine andere Liste gesetzt oder mit einem Amazon-Produkt verknüpft, gilt das auch für künftige Pläne
+- „Kopieren" kopiert alle offenen Einträge einer Liste als Text
+- Amazon-Integration: Zutat anklicken → Amazon-Suchvorschläge → Produkt verknüpfen → „Warenkorb" öffnet alle offenen verknüpften Artikel
+- **Persistierung:** komplett in Neon (Tabellen `shopping_labels`, `shopping_item_state`, `shopping_extras`, `ingredient_prefs`) – auf allen Geräten gleich
 
 ### 1.3 Einstellungen (Tab: „einstellungen")
 
@@ -183,14 +180,11 @@ src/
 ├── index.css                    # Globale Styles
 ├── types/
 │   └── index.ts                 # Alle TypeScript-Typen & Konstanten
-├── data/
-│   └── mealData.ts              # Statische Wochen-Daten (Fallback)
 ├── lib/
 │   ├── api.ts                   # API-Aufrufe an /api (Cloudflare → Neon)
 │   └── amazon.ts                # Amazon-Suche & Warenkorb-URL-Builder
 └── components/
     ├── Header.tsx               # Kopfzeile
-    ├── WeekSelector.tsx         # Wochenumschalter
     ├── TabSwitcher.tsx          # Tab-Navigation
     ├── MealPlanView.tsx         # Speiseplan-Ansicht
     ├── DayCard.tsx              # Tageskarte im Speiseplan
@@ -208,6 +202,7 @@ src/
 worker/
 ├── index.ts                     # Einstieg: /api → API, sonst statische App
 ├── meals.ts                     # Rezeptdatenbank + Scoring
+├── shopping.ts                  # Einkaufsliste aus Plan berechnen
 └── api.ts                       # Komplette API (Profil, Familie, Pläne, Bilder …)
 
 neon/schema.sql                  # Datenbank-Schema
@@ -218,18 +213,15 @@ wrangler.jsonc                   # Cloudflare-Konfiguration
 
 ## 7. Bekannte Lücken & Hinweise
 
-- **Einkaufsliste nutzt localStorage** statt Datenbank — Daten gehen verloren beim Browser- oder Gerätewechsel oder beim Leeren des Caches.
 - **Bilder werden nicht automatisch** bei der Planerstellung generiert, sondern nur auf manuellen Klick im Gericht-Detailfenster.
 - **Amazon-Suche** nutzt die öffentliche Amazon-Autovervollständigung ohne API-Key — instabil, kann von Amazon geblockt werden.
 - **Gerichtedatenbank** ist fest in den Edge Functions hinterlegt (~23 Rezepte), nicht in der Datenbank — Änderungen erfordern Code-Anpassungen.
 - **Routinen** können angelegt, aber nicht bearbeitet werden (kein Edit, nur Löschen).
-- **Einkaufsliste** basiert noch auf statischen Beispieldaten, nicht auf dem erstellten Plan – Portionen wirken dort noch nicht.
 
 ---
 
 ## 8. Potentielle Erweiterungen
 
-- Einkaufsliste in Neon persistieren (statt localStorage)
 - Bilder automatisch bei der Planerstellung generieren
 - Gerichtedatenbank in eine eigene Tabelle auslagern
 - Eigene Gerichte hinzufügen können

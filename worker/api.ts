@@ -5,6 +5,7 @@
 
 import { neon } from "@neondatabase/serverless";
 import { pickMeal, MEAL_DATABASE, scoreMeal, preferredTypeFor, type ScoringContext } from "./meals";
+import { buildPlanItems, familyPortions } from "./shopping";
 
 export interface Env {
   DATABASE_URL: string;
@@ -22,9 +23,115 @@ const PLAN_MEAL_COLS = `id, plan_id, meal_date::text AS meal_date, meal_name, me
 const ROUTINE_COLS = `id, profile_id, name, frequency, day_of_week, to_char(time, 'HH24:MI') AS time, duration_days, active, last_run_at, created_at`;
 
 let schemaReady: Promise<unknown> | null = null;
+
+async function migrate(sql: Sql) {
+  await sql`ALTER TABLE routines ADD COLUMN IF NOT EXISTS last_run_at timestamptz`;
+  await sql`CREATE TABLE IF NOT EXISTS shopping_labels (
+    profile_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    id text NOT NULL,
+    name text NOT NULL,
+    color text NOT NULL,
+    sort integer NOT NULL DEFAULT 0,
+    PRIMARY KEY (profile_id, id))`;
+  await sql`CREATE TABLE IF NOT EXISTS ingredient_prefs (
+    profile_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    name_key text NOT NULL,
+    label text,
+    asin text,
+    product_name text,
+    updated_at timestamptz DEFAULT now(),
+    PRIMARY KEY (profile_id, name_key))`;
+  await sql`CREATE TABLE IF NOT EXISTS shopping_item_state (
+    plan_id uuid NOT NULL REFERENCES meal_plans(id) ON DELETE CASCADE,
+    item_key text NOT NULL,
+    checked boolean NOT NULL DEFAULT false,
+    label text,
+    PRIMARY KEY (plan_id, item_key))`;
+  await sql`CREATE TABLE IF NOT EXISTS shopping_extras (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    plan_id uuid NOT NULL REFERENCES meal_plans(id) ON DELETE CASCADE,
+    name text NOT NULL,
+    label text NOT NULL,
+    checked boolean NOT NULL DEFAULT false,
+    is_basic boolean NOT NULL DEFAULT false,
+    created_at timestamptz DEFAULT now())`;
+}
+
+const DEFAULT_LABELS = [
+  { id: "knuspr", name: "Knuspr", color: "#22c55e" },
+  { id: "metzger", name: "Metzger", color: "#f97316" },
+];
+
+const prefKey = (name: string) => name.trim().toLowerCase();
+
+async function getLabels(sql: Sql, profileId: string) {
+  let rows = await sql`SELECT id, name, color FROM shopping_labels WHERE profile_id = ${profileId} ORDER BY sort, name`;
+  if (rows.length === 0) {
+    for (const [i, l] of DEFAULT_LABELS.entries()) {
+      await sql`INSERT INTO shopping_labels (profile_id, id, name, color, sort)
+        VALUES (${profileId}, ${l.id}, ${l.name}, ${l.color}, ${i}) ON CONFLICT DO NOTHING`;
+    }
+    rows = await sql`SELECT id, name, color FROM shopping_labels WHERE profile_id = ${profileId} ORDER BY sort, name`;
+  }
+  return rows;
+}
+
+/** Komplette Einkaufsliste eines Plans: berechnete Zutaten + gespeicherter Zustand + eigene Artikel */
+async function getShopping(sql: Sql, profileId: string, planId: string) {
+  const [labels, meals, members, states, extras, prefs] = await Promise.all([
+    getLabels(sql, profileId),
+    sql`SELECT ingredients FROM plan_meals WHERE plan_id = ${planId} AND NOT rejected`,
+    sql`SELECT type, age FROM family_members WHERE profile_id = ${profileId}`,
+    sql`SELECT item_key, checked, label FROM shopping_item_state WHERE plan_id = ${planId}`,
+    sql`SELECT id, name, label, checked, is_basic FROM shopping_extras WHERE plan_id = ${planId} ORDER BY created_at`,
+    sql`SELECT name_key, label, asin, product_name FROM ingredient_prefs WHERE profile_id = ${profileId}`,
+  ]);
+  const labelIds = new Set(labels.map((l) => l.id));
+  const portions = familyPortions(members as { type: string; age: number | null }[]);
+  const built = buildPlanItems(meals.map((m) => m.ingredients as string[]), portions);
+  const stateBy = new Map(states.map((r) => [r.item_key, r]));
+  const prefBy = new Map(prefs.map((r) => [r.name_key, r]));
+  const validLabel = (l: string | null | undefined, fallback: string) => (l && labelIds.has(l) ? l : fallback);
+
+  const items = [
+    ...built.items.map((i) => {
+      const st = stateBy.get(i.key);
+      const pref = prefBy.get(prefKey(i.baseName));
+      return {
+        id: `p:${i.key}`,
+        name: i.display,
+        baseName: i.baseName,
+        label: validLabel(st?.label ?? pref?.label, validLabel(i.defaultLabel, "knuspr")),
+        checked: !!st?.checked,
+        isBasic: false,
+        asin: pref?.asin ?? undefined,
+        productName: pref?.product_name ?? undefined,
+      };
+    }),
+    ...extras.map((x) => {
+      const pref = prefBy.get(prefKey(x.name));
+      return {
+        id: `x:${x.id}`,
+        name: x.name,
+        baseName: x.name,
+        label: validLabel(x.label, "knuspr"),
+        checked: x.checked,
+        isBasic: x.is_basic,
+        asin: pref?.asin ?? undefined,
+        productName: pref?.product_name ?? undefined,
+      };
+    }),
+  ];
+  return { labels, items, pantryNeeded: built.pantryNeeded, portions };
+}
+
+async function planOwned(sql: Sql, profileId: string, planId: string) {
+  const rows = await sql`SELECT 1 FROM meal_plans WHERE id = ${planId} AND profile_id = ${profileId}`;
+  return rows.length > 0;
+}
 /** Kleine Schema-Ergänzungen automatisch nachziehen (idempotent) */
 function ensureSchema(sql: Sql) {
-  schemaReady ??= sql`ALTER TABLE routines ADD COLUMN IF NOT EXISTS last_run_at timestamptz`.catch((e) => {
+  schemaReady ??= migrate(sql).catch((e) => {
     schemaReady = null;
     throw e;
   });
@@ -225,6 +332,98 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
         [old.plan_id, old.meal_date, best.name, best.type, best.ingredients, best.instructions]
       );
       return json({ replacement: inserted[0] });
+    }
+
+    // ---------- Einkaufsliste ----------
+    if (parts[0] === "plans" && id && parts[2] === "shopping") {
+      const p = await getProfile(sql);
+      if (!(await planOwned(sql, p.id, id))) return json({ error: "Plan nicht gefunden" }, 404);
+      const itemId = parts[3] ? decodeURIComponent(parts[3]) : "";
+
+      if (request.method === "GET" && !itemId) return json(await getShopping(sql, p.id, id));
+
+      // Eigenen Artikel / Basic hinzufügen
+      if (request.method === "POST" && !itemId) {
+        const name = String(body.name ?? "").trim();
+        if (!name) return json({ error: "Name fehlt" }, 400);
+        await sql`INSERT INTO shopping_extras (plan_id, name, label, is_basic)
+          VALUES (${id}, ${name}, ${body.label || "knuspr"}, ${!!body.isBasic})`;
+        return json(await getShopping(sql, p.id, id));
+      }
+
+      // Abhaken / Label ändern
+      if (request.method === "PATCH" && itemId) {
+        if (itemId.startsWith("x:")) {
+          const xid = itemId.slice(2);
+          if (body.checked !== undefined) await sql`UPDATE shopping_extras SET checked = ${!!body.checked} WHERE id = ${xid} AND plan_id = ${id}`;
+          if (body.label) {
+            await sql`UPDATE shopping_extras SET label = ${body.label} WHERE id = ${xid} AND plan_id = ${id}`;
+            if (!body.isBasic && body.baseName) {
+              await sql`INSERT INTO ingredient_prefs (profile_id, name_key, label) VALUES (${p.id}, ${prefKey(body.baseName)}, ${body.label})
+                ON CONFLICT (profile_id, name_key) DO UPDATE SET label = EXCLUDED.label, updated_at = now()`;
+            }
+          }
+        } else if (itemId.startsWith("p:")) {
+          const key = itemId.slice(2);
+          await sql`INSERT INTO shopping_item_state (plan_id, item_key, checked, label)
+            VALUES (${id}, ${key}, ${!!body.checked}, ${body.label ?? null})
+            ON CONFLICT (plan_id, item_key) DO UPDATE SET
+              checked = CASE WHEN ${body.checked === undefined} THEN shopping_item_state.checked ELSE EXCLUDED.checked END,
+              label = COALESCE(EXCLUDED.label, shopping_item_state.label)`;
+          // Label für künftige Pläne merken
+          if (body.label && body.baseName) {
+            await sql`INSERT INTO ingredient_prefs (profile_id, name_key, label) VALUES (${p.id}, ${prefKey(body.baseName)}, ${body.label})
+              ON CONFLICT (profile_id, name_key) DO UPDATE SET label = EXCLUDED.label, updated_at = now()`;
+          }
+        }
+        return json({ ok: true });
+      }
+
+      // Eigenen Artikel / Basic entfernen
+      if (request.method === "DELETE" && itemId.startsWith("x:")) {
+        await sql`DELETE FROM shopping_extras WHERE id = ${itemId.slice(2)} AND plan_id = ${id}`;
+        return json({ ok: true });
+      }
+    }
+
+    // Amazon-Produkt pro Zutat merken (gilt für alle Pläne)
+    if (route === "PUT /ingredient-prefs") {
+      const p = await getProfile(sql);
+      const name = String(body.name ?? "").trim();
+      if (!name) return json({ error: "Name fehlt" }, 400);
+      await sql`INSERT INTO ingredient_prefs (profile_id, name_key, asin, product_name)
+        VALUES (${p.id}, ${prefKey(name)}, ${body.asin ?? null}, ${body.productName ?? null})
+        ON CONFLICT (profile_id, name_key) DO UPDATE SET asin = EXCLUDED.asin, product_name = EXCLUDED.product_name, updated_at = now()`;
+      return json({ ok: true });
+    }
+
+    // ---------- Einkaufs-Labels ----------
+    if (route === "GET /labels") {
+      const p = await getProfile(sql);
+      return json(await getLabels(sql, p.id));
+    }
+    if (route === "POST /labels") {
+      const p = await getProfile(sql);
+      const name = String(body.name ?? "").trim();
+      if (!name) return json({ error: "Name fehlt" }, 400);
+      const labelId = name.toLowerCase().replace(/[^a-z0-9äöüß]+/g, "-").replace(/^-|-$/g, "") || `label-${Date.now()}`;
+      await sql`INSERT INTO shopping_labels (profile_id, id, name, color, sort)
+        VALUES (${p.id}, ${labelId}, ${name}, ${body.color || "#3b82f6"},
+                (SELECT COALESCE(MAX(sort), 0) + 1 FROM shopping_labels WHERE profile_id = ${p.id}))
+        ON CONFLICT (profile_id, id) DO UPDATE SET name = EXCLUDED.name, color = EXCLUDED.color`;
+      return json(await getLabels(sql, p.id));
+    }
+    if (parts[0] === "labels" && id && request.method === "DELETE") {
+      if (DEFAULT_LABELS.some((l) => l.id === id)) return json({ error: "Standard-Labels können nicht gelöscht werden" }, 400);
+      const p = await getProfile(sql);
+      await sql`DELETE FROM shopping_labels WHERE profile_id = ${p.id} AND id = ${id}`;
+      // Artikel mit diesem Label wandern zurück zu Knuspr
+      await sql`UPDATE ingredient_prefs SET label = NULL WHERE profile_id = ${p.id} AND label = ${id}`;
+      await sql`UPDATE shopping_item_state SET label = NULL WHERE label = ${id}
+        AND plan_id IN (SELECT id FROM meal_plans WHERE profile_id = ${p.id})`;
+      await sql`UPDATE shopping_extras SET label = 'knuspr' WHERE label = ${id}
+        AND plan_id IN (SELECT id FROM meal_plans WHERE profile_id = ${p.id})`;
+      return json(await getLabels(sql, p.id));
     }
 
     // ---------- Bild-Cache ----------

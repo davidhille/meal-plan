@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Copy, Check, ShoppingBag, ChevronDown, X, Tag } from 'lucide-react';
-import { ShoppingItem, ShoppingLabel, LABEL_COLORS } from '../types';
+import { ShoppingItem, ShoppingLabel } from '../types';
 
 interface ShoppingSectionProps {
   label: ShoppingLabel;
@@ -10,6 +10,7 @@ interface ShoppingSectionProps {
   onLabelChange: (itemId: string, newLabelId: string) => void;
   onIngredientClick?: (item: ShoppingItem) => void;
   onAddToCart?: () => void;
+  onRemove?: (item: ShoppingItem) => void;
   showCopyButton?: boolean;
   showAmazon?: boolean;
 }
@@ -22,6 +23,7 @@ export default function ShoppingSection({
   onLabelChange,
   onIngredientClick,
   onAddToCart,
+  onRemove,
   showCopyButton = false,
   showAmazon = false,
 }: ShoppingSectionProps) {
@@ -113,12 +115,12 @@ export default function ShoppingSection({
 
       {/* Items */}
       {items.length === 0 ? (
-        <div className="px-4 py-6 text-center text-sm text-gray-400">Keine Eintraege</div>
+        <div className="px-4 py-6 text-center text-sm text-gray-400">Keine Einträge</div>
       ) : (
         <ul className="divide-y divide-gray-50">
           {items.map((item) => (
             <li key={item.id}>
-              <div className="flex items-center gap-2 px-4 py-3">
+              <div className="relative flex items-center gap-2 px-4 py-3">
                 {/* Checkbox */}
                 <button
                   onClick={() => onToggle(item.id)}
@@ -162,7 +164,7 @@ export default function ShoppingSection({
                   onClick={() => setOpenPickerId(openPickerId === item.id ? null : item.id)}
                   className="flex-shrink-0 h-6 px-1.5 rounded flex items-center gap-1 text-xs font-medium hover:bg-gray-100 transition-colors"
                   style={{ color: label.color }}
-                  title="Label aendern"
+                  title="Liste ändern"
                 >
                   <Tag size={12} />
                   <ChevronDown size={10} />
@@ -185,11 +187,22 @@ export default function ShoppingSection({
                   </a>
                 )}
 
+                {/* Eigene Artikel entfernen */}
+                {onRemove && item.id.startsWith('x:') && !item.isBasic && (
+                  <button
+                    onClick={() => onRemove(item)}
+                    className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    title="Entfernen"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+
                 {/* Inline label picker dropdown */}
                 {openPickerId === item.id && (
                   <div
                     ref={pickerRef}
-                    className="absolute right-4 mt-24 z-30 bg-white rounded-lg shadow-lg border border-gray-200 py-1 w-40"
+                    className="absolute right-4 top-full -mt-1 z-30 bg-white rounded-lg shadow-lg border border-gray-200 py-1 w-40"
                   >
                     {otherLabels.map((l) => (
                       <button

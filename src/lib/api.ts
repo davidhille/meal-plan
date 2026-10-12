@@ -1,4 +1,4 @@
-import { Profile, FamilyMember, MealRating, MealPlan, PlanMeal, Routine } from '../types';
+import { Profile, FamilyMember, MealRating, MealPlan, PlanMeal, Routine, ShoppingItem, ShoppingLabel } from '../types';
 
 // Alle Daten laufen über die Cloudflare-Functions unter /api (→ Neon).
 // Das Familien-Passwort wird im Browser gemerkt und bei jeder Anfrage mitgeschickt.
@@ -239,6 +239,96 @@ export async function generateMealImage(
     return imageUrl;
   } catch (error) {
     console.error('Error generating meal image:', error);
+    return null;
+  }
+}
+
+// ---------- Einkaufsliste ----------
+
+export interface ShoppingData {
+  labels: ShoppingLabel[];
+  items: ShoppingItem[];
+  pantryNeeded: string[];
+  portions: number;
+}
+
+const enc = encodeURIComponent;
+
+export async function getShopping(planId: string): Promise<ShoppingData | null> {
+  try {
+    return await request<ShoppingData>('GET', `/plans/${planId}/shopping`);
+  } catch (error) {
+    console.error('Error fetching shopping list:', error);
+    return null;
+  }
+}
+
+export async function updateShoppingItem(
+  planId: string,
+  item: ShoppingItem,
+  change: { checked?: boolean; label?: string }
+): Promise<boolean> {
+  try {
+    await request('PATCH', `/plans/${planId}/shopping/${enc(item.id)}`, {
+      ...change,
+      baseName: item.baseName,
+      isBasic: item.isBasic,
+    });
+    return true;
+  } catch (error) {
+    console.error('Error updating shopping item:', error);
+    return false;
+  }
+}
+
+export async function addShoppingItem(
+  planId: string,
+  name: string,
+  label: string,
+  isBasic = false
+): Promise<ShoppingData | null> {
+  try {
+    return await request<ShoppingData>('POST', `/plans/${planId}/shopping`, { name, label, isBasic });
+  } catch (error) {
+    console.error('Error adding shopping item:', error);
+    return null;
+  }
+}
+
+export async function removeShoppingItem(planId: string, itemId: string): Promise<boolean> {
+  try {
+    await request('DELETE', `/plans/${planId}/shopping/${enc(itemId)}`);
+    return true;
+  } catch (error) {
+    console.error('Error removing shopping item:', error);
+    return false;
+  }
+}
+
+export async function saveIngredientAsin(name: string, asin: string, productName: string): Promise<boolean> {
+  try {
+    await request('PUT', '/ingredient-prefs', { name, asin, productName });
+    return true;
+  } catch (error) {
+    console.error('Error saving ASIN:', error);
+    return false;
+  }
+}
+
+export async function createLabel(name: string, color: string): Promise<ShoppingLabel[] | null> {
+  try {
+    return await request<ShoppingLabel[]>('POST', '/labels', { name, color });
+  } catch (error) {
+    console.error('Error creating label:', error);
+    return null;
+  }
+}
+
+export async function deleteLabel(labelId: string): Promise<ShoppingLabel[] | null> {
+  try {
+    return await request<ShoppingLabel[]>('DELETE', `/labels/${enc(labelId)}`);
+  } catch (error) {
+    console.error('Error deleting label:', error);
     return null;
   }
 }

@@ -83,3 +83,46 @@ CREATE TABLE IF NOT EXISTS meal_images (
 
 CREATE INDEX IF NOT EXISTS plan_meals_plan_id_idx ON plan_meals (plan_id);
 CREATE INDEX IF NOT EXISTS family_members_profile_id_idx ON family_members (profile_id);
+
+-- Ab Version „Einkaufsliste in der Datenbank" (werden vom Worker auch automatisch angelegt)
+ALTER TABLE routines ADD COLUMN IF NOT EXISTS last_run_at timestamptz;
+
+CREATE TABLE IF NOT EXISTS shopping_labels (
+  profile_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  id text NOT NULL,
+  name text NOT NULL,
+  color text NOT NULL,
+  sort integer NOT NULL DEFAULT 0,
+  PRIMARY KEY (profile_id, id)
+);
+
+-- Gemerkte Zuordnung pro Zutat (Liste/Label, Amazon-Produkt) – gilt für alle Pläne
+CREATE TABLE IF NOT EXISTS ingredient_prefs (
+  profile_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  name_key text NOT NULL,
+  label text,
+  asin text,
+  product_name text,
+  updated_at timestamptz DEFAULT now(),
+  PRIMARY KEY (profile_id, name_key)
+);
+
+-- Zustand der berechneten Plan-Zutaten (abgehakt, verschoben)
+CREATE TABLE IF NOT EXISTS shopping_item_state (
+  plan_id uuid NOT NULL REFERENCES meal_plans(id) ON DELETE CASCADE,
+  item_key text NOT NULL,
+  checked boolean NOT NULL DEFAULT false,
+  label text,
+  PRIMARY KEY (plan_id, item_key)
+);
+
+-- Eigene Artikel und Basics auf der Liste eines Plans
+CREATE TABLE IF NOT EXISTS shopping_extras (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  plan_id uuid NOT NULL REFERENCES meal_plans(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  label text NOT NULL,
+  checked boolean NOT NULL DEFAULT false,
+  is_basic boolean NOT NULL DEFAULT false,
+  created_at timestamptz DEFAULT now()
+);
