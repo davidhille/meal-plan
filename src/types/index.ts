@@ -228,6 +228,15 @@ export interface ShopState {
   connections: Partial<Record<ShopProvider, { email: string; since: string }>>;
 }
 
+/** Artikel im Knuspr-Warenkorb */
+export interface CartItem {
+  productId: string;
+  name: string;
+  quantity: number;
+  price?: string;
+  imageUrl?: string;
+}
+
 export interface ProductResult {
   productId: string;
   name: string;

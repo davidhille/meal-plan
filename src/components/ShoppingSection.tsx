@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Copy, Check, ShoppingCart, ChevronDown, X, Tag, ExternalLink, Link2, Loader2, Package } from 'lucide-react';
+import { Copy, Check, ShoppingCart, ChevronDown, X, Tag, ExternalLink, Link2, Package } from 'lucide-react';
 import { ShoppingItem, ShoppingLabel } from '../types';
 import { buildAmazonSearchUrl } from '../lib/amazon';
 
@@ -11,8 +11,10 @@ interface ShoppingSectionProps {
   onLabelChange: (itemId: string, newLabelId: string) => void;
   /** Knuspr/Picnic: Produktsuche öffnen */
   onFindProduct?: (item: ShoppingItem) => void;
-  /** Knuspr: verknüpfte offene Artikel in den Warenkorb */
-  onAddToCart?: () => Promise<void>;
+  /** Knuspr: Warenkorb-Vorschau öffnen */
+  onOpenCart?: () => void;
+  /** Produkt-IDs, die schon im Knuspr-Warenkorb liegen */
+  inCart?: Set<string>;
   onRemove?: (item: ShoppingItem) => void;
   /** Plan-Zutat dauerhaft in den Vorrat legen */
   onMoveToPantry?: (item: ShoppingItem) => void;
@@ -25,12 +27,12 @@ export default function ShoppingSection({
   onToggle,
   onLabelChange,
   onFindProduct,
-  onAddToCart,
+  onOpenCart,
+  inCart,
   onRemove,
   onMoveToPantry,
 }: ShoppingSectionProps) {
   const [copied, setCopied] = useState(false);
-  const [cartBusy, setCartBusy] = useState(false);
   const [openPickerId, setOpenPickerId] = useState<string | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
 
@@ -76,20 +78,12 @@ export default function ShoppingSection({
           )}
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          {provider === 'knuspr' && onAddToCart && linkedOpen.length > 0 && (
+          {provider === 'knuspr' && onOpenCart && linkedOpen.length > 0 && (
             <button
-              onClick={async () => {
-                setCartBusy(true);
-                try {
-                  await onAddToCart();
-                } finally {
-                  setCartBusy(false);
-                }
-              }}
-              disabled={cartBusy}
-              className="flex items-center gap-1.5 px-3 h-8 rounded-lg text-xs font-semibold bg-green-700 text-white hover:bg-green-800 disabled:bg-green-300"
+              onClick={onOpenCart}
+              className="flex items-center gap-1.5 px-3 h-8 rounded-lg text-xs font-semibold bg-green-700 text-white hover:bg-green-800"
             >
-              {cartBusy ? <Loader2 size={13} className="animate-spin" /> : <ShoppingCart size={13} />}
+              <ShoppingCart size={13} />
               Warenkorb ({linkedOpen.length})
             </button>
           )}
@@ -123,6 +117,11 @@ export default function ShoppingSection({
                 {item.isBasic && !item.checked && <span className="ml-1.5 text-[11px] text-gray-500">Vorrat</span>}
                 {item.productName && !item.checked && (
                   <span className="block text-[11px] text-gray-500 truncate">→ {item.productName}</span>
+                )}
+                {item.productId && !item.checked && inCart?.has(item.productId) && (
+                  <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-green-50 text-green-800">
+                    <ShoppingCart size={10} aria-hidden="true" /> im Warenkorb
+                  </span>
                 )}
               </>
             );

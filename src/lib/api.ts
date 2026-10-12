@@ -1,6 +1,6 @@
 import {
   Profile, FamilyMember, MealRating, MealPlan, PlanMeal, Routine, ShoppingItem, ShoppingLabel, Favorite, MealType, ImageCredit,
-  ShopState, ShopProvider, ProductResult, PlanDessert, RecipeCatalog, RecipeFilter,
+  ShopState, ShopProvider, ProductResult, CartItem, PlanDessert, RecipeCatalog, RecipeFilter,
 } from '../types';
 
 // Alle Daten laufen über die Cloudflare-Functions unter /api (→ Neon).
@@ -536,6 +536,17 @@ export async function saveProductLink(name: string, provider: ShopProvider, prod
 
 export function addToKnusprCart(productIds: string[]): Promise<{ added: number; failed: string[] }> {
   return shopRequest('POST', '/shops/knuspr/cart', { productIds });
+}
+
+/** Inhalt des Knuspr-Warenkorbs; wirft bei Fehlern (z. B. not_connected) */
+export async function getKnusprCart(): Promise<CartItem[]> {
+  const result = await shopRequest<{ items: CartItem[] }>('GET', '/shops/knuspr/cart');
+  return result.items;
+}
+
+/** Verknüpftes Produkt einer Zutat wieder lösen */
+export async function removeProductLink(name: string, provider: ShopProvider): Promise<void> {
+  await request('DELETE', `/product-links?name=${enc(name)}&provider=${enc(provider)}`);
 }
 
 // ---------- Eigene Rezepte (Import per Link) ----------

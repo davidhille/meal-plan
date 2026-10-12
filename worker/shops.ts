@@ -91,6 +91,39 @@ export async function knusprAddToCart(cookie: string, productId: string, quantit
   return res.ok;
 }
 
+export interface CartItem {
+  productId: string;
+  name: string;
+  quantity: number;
+  price?: string;
+  imageUrl?: string;
+}
+
+/** Aktueller Knuspr-Warenkorb (Antwortformat defensiv lesen – die API ist nicht offiziell dokumentiert) */
+export async function knusprGetCart(cookie: string): Promise<CartItem[]> {
+  const res = await fetch(`${KNUSPR}/services/frontend-service/v2/cart`, {
+    headers: { Cookie: cookie, "User-Agent": BROWSER_UA },
+  });
+  if (!res.ok) throw new ShopError(`Knuspr-Warenkorb nicht lesbar (${res.status})`);
+  const data = (await res.json()) as any;
+  const raw = data?.data?.items ?? data?.items ?? [];
+  const list: any[] = Array.isArray(raw) ? raw : Object.values(raw);
+  return list
+    .map((p) => {
+      const price = p.price?.full ?? p.price?.amount ?? p.totalPrice?.full ?? p.price;
+      const currency = p.price?.currency ?? p.totalPrice?.currency ?? "€";
+      const img = p.imgPath ?? p.image ?? p.imageUrl;
+      return {
+        productId: String(p.productId ?? p.id ?? ""),
+        name: String(p.productName ?? p.name ?? ""),
+        quantity: Number(p.quantity ?? p.amount ?? 1) || 1,
+        price: typeof price === "number" || typeof price === "string" ? `${price} ${currency}` : undefined,
+        imageUrl: typeof img === "string" ? (img.startsWith("http") ? img : `${KNUSPR_CDN}${img}`) : undefined,
+      };
+    })
+    .filter((i) => i.productId);
+}
+
 // ---------- Picnic ----------
 
 const PICNIC = "https://storefront-prod.de.picnicinternational.com/api/15";

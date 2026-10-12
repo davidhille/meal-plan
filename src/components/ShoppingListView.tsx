@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Package, X, Loader2, ShoppingCart } from 'lucide-react';
-import { MealPlan, PlanMeal, ShoppingItem, ShoppingLabel, DEFAULT_LABELS, BASICS_ITEMS, ProductResult } from '../types';
+import { CartItem, MealPlan, PlanMeal, ShoppingItem, ShoppingLabel, DEFAULT_LABELS, BASICS_ITEMS, ProductResult } from '../types';
 import { PlanWeek, currentWeekIndex, formatShortDate, toIso } from '../lib/dateUtils';
 import ShoppingRangePicker from './ShoppingRangePicker';
 import {
@@ -9,6 +9,8 @@ import {
   addShoppingItem,
   removeShoppingItem,
   saveProductLink,
+  removeProductLink,
+  getKnusprCart,
   addToKnusprCart,
   type WeekRange,
   addToPantry,
@@ -16,6 +18,7 @@ import {
 } from '../lib/api';
 import ShoppingSection from './ShoppingSection';
 import ProductSearchModal from './ProductSearchModal';
+import CartPreviewSheet from './CartPreviewSheet';
 
 interface ShoppingListViewProps {
   plan: MealPlan | null;
@@ -67,8 +70,11 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
   const [basicPickerTarget, setBasicPickerTarget] = useState<string | null>(null);
   const [newItemName, setNewItemName] = useState('');
   const [productItem, setProductItem] = useState<ShoppingItem | null>(null);
+  // Knuspr-Warenkorb: undefined = noch nicht geladen, null = nicht lesbar
+  const [cart, setCart] = useState<CartItem[] | null | undefined>(undefined);
+  const [cartLoading, setCartLoading] = useState(false);
+  const [cartPreviewLabel, setCartPreviewLabel] = useState<string | null>(null);
   const [standardLabel, setStandardLabel] = useState('knuspr');
-  const [notice, setNotice] = useState<string | null>(null);
 
   const planId = plan?.id;
 
@@ -166,20 +172,56 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
     setProductItem(null);
   };
 
-  const handleAddToCart = async (labelId: string) => {
-    const ids = items.filter((i) => i.label === labelId && i.productId && !i.checked).map((i) => i.productId!);
-    if (ids.length === 0) return;
+  const handleProductRemove = async () => {
+    if (!productItem || !productLabel?.provider) return;
+    const base = lc(productItem.baseName);
+    const labelId = productItem.label;
+    await removeProductLink(productItem.baseName, productLabel.provider);
+    setItems((prev) =>
+      prev.map((i) =>
+        lc(i.baseName) === base && i.label === labelId
+          ? { ...i, productId: undefined, productName: undefined, productImage: undefined }
+          : i
+      )
+    );
+    setProductItem(null);
+  };
+
+  const refreshCart = async () => {
+    setCartLoading(true);
+    try {
+      setCart(await getKnusprCart());
+    } catch {
+      setCart(null);
+    } finally {
+      setCartLoading(false);
+    }
+  };
+
+  // Sobald Knuspr-Artikel mit Produkt da sind, einmal nachsehen, was schon im Warenkorb liegt
+  const knusprLabelIds = labels.filter((l) => l.provider === 'knuspr').map((l) => l.id);
+  const hasKnusprLinks = items.some((i) => i.productId && knusprLabelIds.includes(i.label));
+  useEffect(() => {
+    if (hasKnusprLinks && cart === undefined && !cartLoading) refreshCart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasKnusprLinks]);
+  const inCart = new Set((cart ?? []).map((c) => c.productId));
+
+  const openCartPreview = (labelId: string) => {
+    setCartPreviewLabel(labelId);
+    refreshCart();
+  };
+
+  const transferToCart = async (ids: string[]) => {
     try {
       const result = await addToKnusprCart(ids);
-      setNotice(
-        result.failed.length
-          ? `${result.added} Artikel im Knuspr-Warenkorb, ${result.failed.length} fehlgeschlagen.`
-          : `${result.added} Artikel liegen jetzt in deinem Knuspr-Warenkorb.`
-      );
+      await refreshCart();
+      return result.failed.length
+        ? `${result.added} Artikel übertragen, ${result.failed.length} fehlgeschlagen.`
+        : `${result.added} Artikel liegen jetzt in deinem Knuspr-Warenkorb.`;
     } catch (e) {
-      setNotice((e as Error).message === 'not_connected' ? 'Knuspr ist nicht verbunden – bitte im Profil verbinden.' : (e as Error).message);
+      throw new Error((e as Error).message === 'not_connected' ? 'Knuspr ist nicht verbunden – bitte im Profil verbinden.' : (e as Error).message);
     }
-    setTimeout(() => setNotice(null), 6000);
   };
 
   // --- Ansicht ---
@@ -294,7 +336,8 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
             onToggle={toggleItem}
             onLabelChange={changeLabel}
             onFindProduct={setProductItem}
-            onAddToCart={() => handleAddToCart(label.id)}
+            onOpenCart={() => openCartPreview(label.id)}
+            inCart={label.provider === 'knuspr' ? inCart : undefined}
             onRemove={removeItem}
             onMoveToPantry={moveToPantry}
           />
@@ -440,15 +483,21 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
           provider={productLabel.provider}
           currentProductId={productItem.productId}
           onSelect={handleProductSelect}
+          onRemove={handleProductRemove}
           onClose={() => setProductItem(null)}
         />
       )}
 
-      {notice && (
-        <div role="status" className="fixed bottom-24 inset-x-4 z-40 max-w-md mx-auto px-4 py-3 rounded-2xl bg-gray-800 text-white text-sm shadow-lg">
-          {notice}
-        </div>
+      {cartPreviewLabel && (
+        <CartPreviewSheet
+          items={items.filter((i) => i.label === cartPreviewLabel && i.productId && !i.checked)}
+          cart={cart ?? null}
+          cartLoading={cartLoading || cart === undefined}
+          onTransfer={transferToCart}
+          onClose={() => setCartPreviewLabel(null)}
+        />
       )}
+
     </>
   );
 }
