@@ -3,9 +3,7 @@ import { Plus, Package, X, Loader2, ShoppingCart } from 'lucide-react';
 import { MealPlan, ProductLink, ShopProvider, ShopRule, PlanMeal, ShoppingItem, ShoppingLabel, DEFAULT_LABELS, BASICS_ITEMS, ProductResult } from '../types';
 import { PlanWeek, currentWeekIndex, formatShortDate, toIso } from '../lib/dateUtils';
 import ShoppingRangePicker from './ShoppingRangePicker';
-import PriceComparisonCard from './PriceComparisonCard';
-import { compareShops } from '../lib/priceCompare';
-import { parseEuro } from '../lib/unitPrice';
+import { packagesNeeded, parseEuro } from '../lib/unitPrice';
 import {
   getShopping,
   updateShoppingItem,
@@ -13,11 +11,11 @@ import {
   removeShoppingItem,
   saveProductLink,
   removeProductLink,
-  getKnusprCart,
+  getShopCart,
   refreshShopPrices,
-  setKnusprCartQuantity,
-  clearKnusprCart,
-  addToKnusprCart,
+  setShopCartQuantity,
+  clearShopCart,
+  addToShopCart,
   type WeekRange,
   type CartSummary,
   addToPantry,
@@ -26,6 +24,7 @@ import {
 import ShoppingSection from './ShoppingSection';
 import ProductSearchModal from './ProductSearchModal';
 import CartPreviewSheet from './CartPreviewSheet';
+import CartBar from './CartBar';
 
 interface ShoppingListViewProps {
   plan: MealPlan | null;
@@ -36,6 +35,9 @@ interface ShoppingListViewProps {
 }
 
 const lc = (s: string) => s.trim().toLowerCase();
+
+/** Gemeinsame Liste für alle Lieferdienste – der Shop wird pro Artikel gewählt */
+const DELIVERY_LABEL: ShoppingLabel = { id: 'lieferdienst', name: 'Lieferdienst', color: '#15803d' };
 
 /** Gewählte Wochen pro Plan merken (Indizes in `weeks`) */
 function loadRange(planId: string | undefined, weeks: PlanWeek[]): [number, number] {
@@ -77,11 +79,13 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
   const [basicPickerTarget, setBasicPickerTarget] = useState<string | null>(null);
   const [newItemName, setNewItemName] = useState('');
   const [productItem, setProductItem] = useState<ShoppingItem | null>(null);
-  // Knuspr-Warenkorb: undefined = noch nicht geladen, null = nicht lesbar
-  const [cart, setCart] = useState<CartSummary | null | undefined>(undefined);
+  /** Für welchen Shop der Produkt-Dialog geöffnet wurde (nach der Auswahl dort bestellen) */
+  const [productTarget, setProductTarget] = useState<ShopProvider | null>(null);
+  // Warenkörbe: fehlt = lädt noch, null = nicht lesbar
+  const [carts, setCarts] = useState<Partial<Record<ShopProvider, CartSummary | null>>>({});
   const [shopRules, setShopRules] = useState<Partial<Record<ShopProvider, ShopRule>>>({});
-  const [cartLoading, setCartLoading] = useState(false);
-  const [cartPreviewLabel, setCartPreviewLabel] = useState<string | null>(null);
+  const [cartLoading, setCartLoading] = useState<Partial<Record<ShopProvider, boolean>>>({});
+  const [cartPreview, setCartPreview] = useState<ShopProvider | null>(null);
   const [standardLabel, setStandardLabel] = useState('knuspr');
 
   const planId = plan?.id;
@@ -200,6 +204,19 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
       productPrice: parseEuro(product.price) ?? undefined,
       productAmount: product.amount,
     });
+    // Über den Shop-Knopf geöffnet: Artikel gleich diesem Shop zuordnen
+    const shopLabel = productShops.find((s) => s.provider === provider)?.label;
+    if (provider === productTarget && shopLabel && productItem.label !== shopLabel.id) {
+      patchLocal(productItem.id, {
+        productId: product.productId,
+        productName: product.name,
+        productImage: product.imageUrl,
+        productPrice: parseEuro(product.price) ?? undefined,
+        productAmount: product.amount,
+      });
+      await changeLabel(productItem.id, shopLabel.id);
+      setProductItem((prev) => (prev ? { ...prev, label: shopLabel.id } : prev));
+    }
     // Mit nur einem Shop gleich schließen, sonst offen lassen (zweiten Shop verknüpfen)
     if (productShops.length < 2) setProductItem(null);
   };
@@ -210,62 +227,112 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
     applyLink(productItem.baseName, provider, null);
   };
 
-  const refreshCart = async () => {
-    setCartLoading(true);
+  const shopName = (p: ShopProvider) => productShops.find((s) => s.provider === p)?.label.name ?? p;
+  const shopError = (p: ShopProvider, e: unknown) =>
+    new Error(
+      (e as Error).message === 'not_connected'
+        ? `${shopName(p)} ist nicht verbunden – bitte in den Einstellungen verbinden.`
+        : (e as Error).message
+    );
+
+  const refreshCart = async (p: ShopProvider) => {
+    setCartLoading((prev) => ({ ...prev, [p]: true }));
     try {
-      setCart(await getKnusprCart());
+      const c = await getShopCart(p);
+      setCarts((prev) => ({ ...prev, [p]: c }));
     } catch {
-      setCart(null);
+      setCarts((prev) => ({ ...prev, [p]: null }));
     } finally {
-      setCartLoading(false);
+      setCartLoading((prev) => ({ ...prev, [p]: false }));
     }
   };
 
-  // Sobald Knuspr-Artikel mit Produkt da sind, einmal nachsehen, was schon im Warenkorb liegt
-  const knusprLabelIds = labels.filter((l) => l.provider === 'knuspr').map((l) => l.id);
-  const hasKnusprLinks = items.some((i) => i.productId && knusprLabelIds.includes(i.label));
+  // Warenkörbe aller verbundenen Shops laden – der aktuelle Wert soll immer zu sehen sein
+  const shopKey = productShops.map((s) => s.provider).join(',');
   useEffect(() => {
-    if (hasKnusprLinks && cart === undefined && !cartLoading) refreshCart();
+    for (const { provider } of productShops) if (!(provider in carts)) refreshCart(provider);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasKnusprLinks]);
-  const inCart = new Set((cart?.items ?? []).map((c) => c.productId));
+  }, [shopKey]);
 
-  const openCartPreview = (labelId: string) => {
-    setCartPreviewLabel(labelId);
-    refreshCart();
+  const providerOfLabel = (labelId: string) => productShops.find((s) => s.label.id === labelId)?.provider;
+  const inCartSets = Object.fromEntries(
+    productShops.map(({ provider }) => [provider, new Set((carts[provider]?.items ?? []).map((c) => c.productId))])
+  ) as Partial<Record<ShopProvider, Set<string>>>;
+  const isInCart = (item: ShoppingItem) => {
+    const p = providerOfLabel(item.label);
+    return !!(p && item.productId && inCartSets[p]?.has(item.productId));
   };
 
-  const knusprError = (e: unknown) =>
-    new Error((e as Error).message === 'not_connected' ? 'Knuspr ist nicht verbunden – bitte im Profil verbinden.' : (e as Error).message);
-
-  const setCartQuantity = async (productId: string, quantity: number) => {
+  const setCartQuantity = (p: ShopProvider) => async (productId: string, quantity: number) => {
     try {
-      setCart(await setKnusprCartQuantity(productId, quantity));
+      const c = await setShopCartQuantity(p, productId, quantity);
+      setCarts((prev) => ({ ...prev, [p]: c }));
     } catch (e) {
-      await refreshCart();
-      throw knusprError(e);
+      await refreshCart(p);
+      throw shopError(p, e);
     }
   };
 
-  const emptyCart = async () => {
+  const emptyCart = (p: ShopProvider) => async () => {
     try {
-      setCart(await clearKnusprCart());
+      const c = await clearShopCart(p);
+      setCarts((prev) => ({ ...prev, [p]: c }));
     } catch (e) {
-      await refreshCart();
-      throw knusprError(e);
+      await refreshCart(p);
+      throw shopError(p, e);
     }
   };
 
-  const transferToCart = async (wanted: { productId: string; quantity: number }[]) => {
+  const transferToCart = (p: ShopProvider) => async (wanted: { productId: string; quantity: number }[]) => {
     try {
-      const result = await addToKnusprCart(wanted);
-      await refreshCart();
+      const result = await addToShopCart(p, wanted);
+      await refreshCart(p);
       return result.failed.length
         ? `${result.added} übertragen, ${result.failed.length} fehlgeschlagen.`
-        : `${result.added} ${result.added === 1 ? 'Produkt liegt' : 'Produkte liegen'} jetzt in deinem Knuspr-Warenkorb.`;
+        : `${result.added} ${result.added === 1 ? 'Produkt liegt' : 'Produkte liegen'} jetzt in deinem ${shopName(p)}-Warenkorb.`;
     } catch (e) {
-      throw new Error((e as Error).message === 'not_connected' ? 'Knuspr ist nicht verbunden – bitte im Profil verbinden.' : (e as Error).message);
+      throw shopError(p, e);
     }
+  };
+
+  /** Artikel einem Shop zuordnen (verschiebt ihn auf dessen Liste) */
+  const assignShop = (item: ShoppingItem, p: ShopProvider) => {
+    const shopLabel = productShops.find((s) => s.provider === p)?.label;
+    if (!shopLabel || item.label === shopLabel.id) return;
+    const link = item.links?.[p];
+    // Gewähltes Produkt sofort mitwechseln, damit Summen und Warenkorb-Hinweis stimmen
+    patchLocal(item.id, {
+      productId: link?.productId,
+      productName: link?.productName,
+      productImage: link?.productImage,
+      productPrice: link?.productPrice,
+      productAmount: link?.productAmount,
+    });
+    changeLabel(item.id, shopLabel.id);
+  };
+
+  const findProduct = (item: ShoppingItem, p?: ShopProvider) => {
+    setProductTarget(p ?? null);
+    setProductItem(item);
+  };
+
+  const refreshAll = async () => {
+    const names = [...new Set(items.filter((i) => !i.checked && i.links).map((i) => i.baseName))];
+    let updated = 0;
+    const missing = new Set<string>();
+    for (const { provider } of productShops) {
+      try {
+        const r = await refreshShopPrices(provider, names);
+        updated += r.updated;
+        r.missing.forEach((m) => missing.add(m));
+      } catch {
+        // Preise bleiben dann wie sie sind
+      }
+    }
+    await Promise.all([load(), ...productShops.map(({ provider }) => refreshCart(provider))]);
+    return missing.size
+      ? `${updated} Preise aktualisiert, ${missing.size} Produkte nicht mehr gefunden.`
+      : `Warenkörbe und ${updated} Preise aktualisiert.`;
   };
 
   // --- Ansicht ---
@@ -326,31 +393,20 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
         (firstDay && lastDay ? ` · ${formatShortDate(firstDay)} – ${formatShortDate(lastDay)}` : '') +
         (past ? ` · davon ${past} schon vorbei` : '');
 
-  // Stufe 3: ganze Liste zwischen den verbundenen Shops vergleichen
-  const priceComparison = compareShops(items, labels, shopRules);
-
-  const moveAllTo = async (labelId: string) => {
-    const toMove = priceComparison?.comparable.filter((i) => i.label !== labelId) ?? [];
-    for (const i of toMove) await changeLabel(i.id, labelId);
-    await load();
-    return toMove.length;
-  };
-
-  const refreshPrices = async () => {
-    const names = [...new Set(items.filter((i) => !i.checked && i.links).map((i) => i.baseName))];
-    const shopsToAsk = (['knuspr', 'picnic'] as ShopProvider[]).filter((p) => labels.some((l) => l.provider === p));
-    let updated = 0;
-    const missing = new Set<string>();
-    for (const p of shopsToAsk) {
-      const r = await refreshShopPrices(p, names);
-      updated += r.updated;
-      r.missing.forEach((m) => missing.add(m));
-    }
-    await load();
-    return missing.size
-      ? `${updated} Preise aktualisiert, ${missing.size} Produkte nicht mehr gefunden.`
-      : `${updated} Preise aktualisiert.`;
-  };
+  // Dem Shop zugeordnet, aber noch nicht im Warenkorb – so sieht man, was die Bestellung kosten wird
+  const pending = Object.fromEntries(
+    productShops.map(({ provider, label }) => [
+      provider,
+      items
+        .filter((i) => !i.checked && i.label === label.id && i.productId && i.productPrice != null && !inCartSets[provider]?.has(i.productId))
+        .reduce((sum, i) => sum + i.productPrice! * packagesNeeded(i.name, i.productAmount), 0),
+    ])
+  ) as Partial<Record<ShopProvider, number>>;
+  const shopLabelIds = new Set(productShops.map((s) => s.label.id));
+  const firstShopLabel = labels.find((l) => shopLabelIds.has(l.id))?.id;
+  const deliveryItems = items
+    .filter((i) => shopLabelIds.has(i.label))
+    .sort((a, b) => Number(a.checked) - Number(b.checked));
 
   return (
     <>
@@ -366,10 +422,6 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
           />
         ) : (
           <p className="px-1 text-xs text-gray-600">{summary}</p>
-        )}
-
-        {priceComparison && (
-          <PriceComparisonCard comparison={priceComparison} onMoveAll={moveAllTo} onRefresh={refreshPrices} />
         )}
 
         {/* Eigenen Artikel hinzufügen */}
@@ -401,21 +453,38 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
         </form>
 
         {/* Listen je Label */}
-        {labels.map((label) => (
-          <ShoppingSection
-            key={label.id}
-            label={label}
-            items={itemsByLabel[label.id] || []}
-            allLabels={labels}
-            onToggle={toggleItem}
-            onLabelChange={changeLabel}
-            onFindProduct={setProductItem}
-            onOpenCart={() => openCartPreview(label.id)}
-            inCart={label.provider === 'knuspr' ? inCart : undefined}
-            onRemove={removeItem}
-            onMoveToPantry={moveToPantry}
-          />
-        ))}
+        {labels.map((label) =>
+          shopLabelIds.has(label.id) ? (
+            // Alle Lieferdienste als eine Liste – an der Stelle der ersten Shop-Liste
+            label.id === firstShopLabel && (
+              <ShoppingSection
+                key={DELIVERY_LABEL.id}
+                label={DELIVERY_LABEL}
+                items={deliveryItems}
+                allLabels={labels}
+                deliveryShops={productShops}
+                onAssignShop={assignShop}
+                onToggle={toggleItem}
+                onLabelChange={changeLabel}
+                onFindProduct={findProduct}
+                isInCart={isInCart}
+                onRemove={removeItem}
+                onMoveToPantry={moveToPantry}
+              />
+            )
+          ) : (
+            <ShoppingSection
+              key={label.id}
+              label={label}
+              items={itemsByLabel[label.id] || []}
+              allLabels={labels}
+              onToggle={toggleItem}
+              onLabelChange={changeLabel}
+              onRemove={removeItem}
+              onMoveToPantry={moveToPantry}
+            />
+          )
+        )}
 
         <p className="px-1 text-xs text-gray-500">Eigene Listen (z. B. Aldi, DM) legst du in den Einstellungen an.</p>
 
@@ -556,24 +625,41 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
           shops={productShops}
           onSelect={handleProductSelect}
           onRemove={handleProductRemove}
-          onClose={() => setProductItem(null)}
+          onClose={() => {
+            setProductItem(null);
+            setProductTarget(null);
+          }}
         />
       )}
 
-      {cartPreviewLabel && (
+      {productShops.length > 0 && (
+        <CartBar
+          shops={productShops}
+          carts={carts}
+          pending={pending}
+          rules={shopRules}
+          onOpen={(p) => {
+            setCartPreview(p);
+            refreshCart(p);
+          }}
+          onRefresh={refreshAll}
+        />
+      )}
+
+      {cartPreview && (
         <CartPreviewSheet
-          items={items.filter((i) => i.label === cartPreviewLabel && i.productId && !i.checked)}
-          cart={cart?.items ?? null}
-          cartTotal={cart?.total ?? null}
-          rule={shopRules.knuspr}
-          cartLoading={cartLoading || cart === undefined}
-          onTransfer={transferToCart}
-          onSetQuantity={setCartQuantity}
-          onClearCart={emptyCart}
-          onClose={() => setCartPreviewLabel(null)}
+          shopName={shopName(cartPreview)}
+          items={items.filter((i) => providerOfLabel(i.label) === cartPreview && i.productId && !i.checked)}
+          cart={carts[cartPreview]?.items ?? null}
+          cartTotal={carts[cartPreview]?.total ?? null}
+          rule={shopRules[cartPreview]}
+          cartLoading={!!cartLoading[cartPreview] || !(cartPreview in carts)}
+          onTransfer={transferToCart(cartPreview)}
+          onSetQuantity={setCartQuantity(cartPreview)}
+          onClearCart={emptyCart(cartPreview)}
+          onClose={() => setCartPreview(null)}
         />
       )}
-
     </>
   );
 }

@@ -269,3 +269,77 @@ export async function picnicSearch(authKey: string, deviceId: string, query: str
         : undefined,
     }));
 }
+
+// ---------- Picnic-Warenkorb ----------
+
+async function picnicFetch(authKey: string, deviceId: string, path: string, body?: unknown): Promise<any> {
+  const res = await fetch(`${PICNIC}${path}`, {
+    method: body === undefined ? "GET" : "POST",
+    headers: picnicHeaders(authKey, deviceId),
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (res.status === 401 || res.status === 403) {
+    throw new ShopError("Picnic-Sitzung abgelaufen – bitte neu verbinden", "not_connected");
+  }
+  if (!res.ok) throw new ShopError(`Picnic-Warenkorb: Anfrage fehlgeschlagen (${res.status})`);
+  return res.json().catch(() => ({}));
+}
+
+const cents = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.round(v) / 100 : null);
+const euroText = (v: number) => `${v.toFixed(2).replace(".", ",")} €`;
+
+/** Picnic-Warenkorb lesen: Bestellzeilen (ORDER_LINE) mit Artikeln (ORDER_ARTICLE), Preise in Cent */
+function parsePicnicCart(data: any): { items: CartItem[]; total: number | null } {
+  const byId = new Map<string, CartItem>();
+  for (const line of Array.isArray(data?.items) ? data.items : []) {
+    const articles: any[] = Array.isArray(line?.items) ? line.items : [line];
+    for (const a of articles) {
+      if (!a?.id) continue;
+      const qDeco = [...(a.decorators ?? []), ...(line.decorators ?? [])].find((d: any) => d?.type === "QUANTITY");
+      const quantity = Number(qDeco?.quantity ?? a.quantity ?? line.quantity ?? 1) || 1;
+      const unit = cents(a.display_price ?? a.price);
+      const lineTotal = articles.length === 1 ? cents(line.display_price ?? line.price) : null;
+      const prev = byId.get(String(a.id));
+      const item: CartItem = {
+        productId: String(a.id),
+        name: String(a.name ?? ""),
+        quantity: (prev?.quantity ?? 0) + quantity,
+        price: unit != null ? euroText(unit) : undefined,
+        lineTotal: lineTotal ?? (unit != null ? unit * ((prev?.quantity ?? 0) + quantity) : undefined),
+        imageUrl: a.image_ids?.[0]
+          ? `https://storefront-prod.de.picnicinternational.com/static/images/${a.image_ids[0]}/small.png`
+          : undefined,
+      };
+      byId.set(item.productId, item);
+    }
+  }
+  const items = [...byId.values()];
+  const summed = items.every((i) => i.lineTotal != null) ? items.reduce((s, i) => s + (i.lineTotal ?? 0), 0) : null;
+  const total = cents(data?.total_price) ?? summed;
+  return { items, total: total != null ? Math.round(total * 100) / 100 : null };
+}
+
+export async function picnicGetCartSummary(authKey: string, deviceId: string) {
+  return parsePicnicCart(await picnicFetch(authKey, deviceId, "/cart"));
+}
+
+export async function picnicAddToCart(authKey: string, deviceId: string, productId: string, count = 1): Promise<boolean> {
+  try {
+    await picnicFetch(authKey, deviceId, "/cart/add_product", { product_id: productId, count });
+    return true;
+  } catch (e) {
+    if (e instanceof ShopError && e.code === "not_connected") throw e;
+    return false;
+  }
+}
+
+/** Menge setzen: Differenz hinzufügen bzw. entfernen (0 = ganz entfernen) */
+export async function picnicSetQuantity(authKey: string, deviceId: string, item: CartItem, quantity: number) {
+  const diff = quantity - item.quantity;
+  if (diff > 0) await picnicFetch(authKey, deviceId, "/cart/add_product", { product_id: item.productId, count: diff });
+  if (diff < 0) await picnicFetch(authKey, deviceId, "/cart/remove_product", { product_id: item.productId, count: -diff });
+}
+
+export async function picnicClearCart(authKey: string, deviceId: string) {
+  return parsePicnicCart(await picnicFetch(authKey, deviceId, "/cart/clear", {}));
+}

@@ -338,7 +338,7 @@ export interface ShoppingData {
   shopRules?: Record<ShopProvider, ShopRule>;
 }
 
-/** Warenkorb mit Summe (total = null, wenn Knuspr keine Preise liefert) */
+/** Warenkorb mit Summe (total = null, wenn der Shop keine Preise liefert) */
 export interface CartSummary {
   items: CartItem[];
   total: number | null;
@@ -541,23 +541,26 @@ export async function saveProductLink(name: string, provider: ShopProvider, prod
   }
 }
 
-export function addToKnusprCart(items: { productId: string; quantity: number }[]): Promise<{ added: number; failed: string[] }> {
-  return shopRequest('POST', '/shops/knuspr/cart', { items });
+export function addToShopCart(
+  provider: ShopProvider,
+  items: { productId: string; quantity: number }[]
+): Promise<{ added: number; failed: string[] }> {
+  return shopRequest('POST', `/shops/${provider}/cart`, { items });
 }
 
-/** Menge im Knuspr-Warenkorb ändern (0 = entfernen); liefert den neuen Warenkorb */
-export function setKnusprCartQuantity(productId: string, quantity: number): Promise<CartSummary> {
-  return shopRequest<CartSummary>('PATCH', '/shops/knuspr/cart', { productId, quantity });
+/** Menge im Warenkorb ändern (0 = entfernen); liefert den neuen Warenkorb */
+export function setShopCartQuantity(provider: ShopProvider, productId: string, quantity: number): Promise<CartSummary> {
+  return shopRequest<CartSummary>('PATCH', `/shops/${provider}/cart`, { productId, quantity });
 }
 
-/** Knuspr-Warenkorb leeren; liefert, was übrig bleibt (normalerweise nichts) */
-export function clearKnusprCart(): Promise<CartSummary> {
-  return shopRequest<CartSummary>('DELETE', '/shops/knuspr/cart');
+/** Warenkorb leeren; liefert, was übrig bleibt (normalerweise nichts) */
+export function clearShopCart(provider: ShopProvider): Promise<CartSummary> {
+  return shopRequest<CartSummary>('DELETE', `/shops/${provider}/cart`);
 }
 
-/** Inhalt des Knuspr-Warenkorbs; wirft bei Fehlern (z. B. not_connected) */
-export function getKnusprCart(): Promise<CartSummary> {
-  return shopRequest<CartSummary>('GET', '/shops/knuspr/cart');
+/** Inhalt des Warenkorbs; wirft bei Fehlern (z. B. not_connected) */
+export function getShopCart(provider: ShopProvider): Promise<CartSummary> {
+  return shopRequest<CartSummary>('GET', `/shops/${provider}/cart`);
 }
 
 /** Preise der verknüpften Produkte frisch beim Shop abfragen (höchstens 40 Zutaten) */

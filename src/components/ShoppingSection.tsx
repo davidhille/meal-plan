@@ -1,6 +1,9 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Copy, Check, ShoppingCart, ChevronDown, X, Tag, Link2, Package } from 'lucide-react';
-import { ShoppingItem, ShoppingLabel } from '../types';
+import { ShopProvider, ShoppingItem, ShoppingLabel } from '../types';
+import { packagesNeeded } from '../lib/unitPrice';
+
+const euro = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
 
 interface ShoppingSectionProps {
   label: ShoppingLabel;
@@ -8,12 +11,13 @@ interface ShoppingSectionProps {
   allLabels: ShoppingLabel[];
   onToggle: (id: string) => void;
   onLabelChange: (itemId: string, newLabelId: string) => void;
-  /** Knuspr/Picnic: Produktsuche öffnen */
-  onFindProduct?: (item: ShoppingItem) => void;
-  /** Knuspr: Warenkorb-Vorschau öffnen */
-  onOpenCart?: () => void;
-  /** Produkt-IDs, die schon im Knuspr-Warenkorb liegen */
-  inCart?: Set<string>;
+  /** Knuspr/Picnic: Produktsuche öffnen (optional für einen bestimmten Shop) */
+  onFindProduct?: (item: ShoppingItem, provider?: ShopProvider) => void;
+  /** Liegt das gewählte Produkt schon im Warenkorb seines Shops? */
+  isInCart?: (item: ShoppingItem) => boolean;
+  /** Gemeinsame Lieferdienst-Liste: pro Artikel den Shop wählen */
+  deliveryShops?: { provider: ShopProvider; label: ShoppingLabel }[];
+  onAssignShop?: (item: ShoppingItem, provider: ShopProvider) => void;
   onRemove?: (item: ShoppingItem) => void;
   /** Plan-Zutat dauerhaft in den Vorrat legen */
   onMoveToPantry?: (item: ShoppingItem) => void;
@@ -26,8 +30,9 @@ export default function ShoppingSection({
   onToggle,
   onLabelChange,
   onFindProduct,
-  onOpenCart,
-  inCart,
+  isInCart,
+  deliveryShops,
+  onAssignShop,
   onRemove,
   onMoveToPantry,
 }: ShoppingSectionProps) {
@@ -62,9 +67,11 @@ export default function ShoppingSection({
   }, [openPickerId]);
 
   const open = items.filter((i) => !i.checked);
-  const linkedOpen = open.filter((i) => i.productId);
-  const otherLabels = allLabels.filter((l) => l.id !== label.id);
+  const shopLabelIds = new Set((deliveryShops ?? []).map((s) => s.label.id));
+  const otherLabels = allLabels.filter((l) => l.id !== label.id && !shopLabelIds.has(l.id));
   const provider = label.provider ?? null;
+  const isShopList = !!deliveryShops || provider === 'knuspr' || provider === 'picnic';
+  const labelOf = (item: ShoppingItem) => allLabels.find((l) => l.id === item.label) ?? label;
 
   const handleCopy = useCallback(async () => {
     const text = open.map((i) => i.name).join('\n');
@@ -105,18 +112,6 @@ export default function ShoppingSection({
           )}
         </button>
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          {/* Warenkorb immer erreichbar – auch wenn gerade nichts Verknüpftes auf der Liste steht */}
-          {provider === 'knuspr' && onOpenCart && (
-            <button
-              onClick={onOpenCart}
-              aria-label={linkedOpen.length ? `Warenkorb (${linkedOpen.length} verknüpfte Artikel)` : 'Warenkorb ansehen'}
-              title="Knuspr-Warenkorb"
-              className="flex items-center gap-1.5 px-3 h-8 rounded-lg text-xs font-semibold bg-green-700 text-white hover:bg-green-800"
-            >
-              <ShoppingCart size={13} />
-              {linkedOpen.length > 0 && linkedOpen.length}
-            </button>
-          )}
           <button
             onClick={handleCopy}
             disabled={open.length === 0}
@@ -148,7 +143,7 @@ export default function ShoppingSection({
                 {item.productName && !item.checked && (
                   <span className="block text-[11px] text-gray-500 truncate">→ {item.productName}</span>
                 )}
-                {item.productId && !item.checked && inCart?.has(item.productId) && (
+                {item.productId && !item.checked && isInCart?.(item) && (
                   <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-green-50 text-green-800">
                     <ShoppingCart size={10} aria-hidden="true" /> im Warenkorb
                   </span>
@@ -156,7 +151,7 @@ export default function ShoppingSection({
               </>
             );
             return (
-              <li key={item.id} className="relative flex items-center gap-3 px-4 py-3">
+              <li key={item.id} className="relative flex flex-wrap items-center gap-x-3 px-4 py-3">
                 <button
                   onClick={() => onToggle(item.id)}
                   role="checkbox"
@@ -174,7 +169,7 @@ export default function ShoppingSection({
                 )}
 
                 {/* Name: bei Knuspr/Picnic öffnet ein Tipp die Produktsuche */}
-                {!item.checked && (provider === 'knuspr' || provider === 'picnic') && onFindProduct ? (
+                {!item.checked && isShopList && onFindProduct ? (
                   <button onClick={() => onFindProduct(item)} className={`flex-1 min-w-0 text-left ${nameClass} hover:text-green-800`}>
                     {nameContent}
                   </button>
@@ -182,7 +177,7 @@ export default function ShoppingSection({
                   <span className={`flex-1 min-w-0 ${nameClass}`}>{nameContent}</span>
                 )}
 
-                {!item.checked && (provider === 'knuspr' || provider === 'picnic') && onFindProduct && !item.productId && (
+                {!item.checked && isShopList && !deliveryShops && onFindProduct && !item.productId && (
                   <button
                     onClick={() => onFindProduct(item)}
                     title="Produkt auswählen"
@@ -196,7 +191,7 @@ export default function ShoppingSection({
                 <button
                   onClick={() => setOpenPickerId(openPickerId === item.id ? null : item.id)}
                   className="flex-shrink-0 h-7 px-1.5 rounded-lg flex items-center gap-0.5 hover:bg-gray-100"
-                  style={{ color: label.color }}
+                  style={{ color: labelOf(item).color }}
                   title="Liste ändern"
                   aria-label={`${item.baseName}: Liste ändern`}
                   aria-haspopup="menu"
@@ -250,11 +245,84 @@ export default function ShoppingSection({
                     ))}
                   </div>
                 )}
+
+                {deliveryShops && !item.checked && (
+                  <ShopChips
+                    item={item}
+                    shops={deliveryShops}
+                    onAssign={(p) => onAssignShop?.(item, p)}
+                    onChoose={(p) => onFindProduct?.(item, p)}
+                  />
+                )}
               </li>
             );
           })}
         </ul>
       )}
     </section>
+  );
+}
+
+/** Preis je Shop als Knopf: antippen = bei diesem Shop bestellen (ohne Produkt: erst auswählen) */
+function ShopChips({
+  item,
+  shops,
+  onAssign,
+  onChoose,
+}: {
+  item: ShoppingItem;
+  shops: { provider: ShopProvider; label: ShoppingLabel }[];
+  onAssign: (provider: ShopProvider) => void;
+  onChoose: (provider: ShopProvider) => void;
+}) {
+  const offers = shops.map(({ provider, label }) => {
+    const link = item.links?.[provider];
+    const packs = link ? packagesNeeded(item.name, link.productAmount) : 1;
+    const total = link?.productPrice != null ? link.productPrice * packs : null;
+    return { provider, label, link, packs, total, active: item.label === label.id };
+  });
+  const priced = offers.filter((o) => o.total != null);
+  const cheapest =
+    priced.length > 1 ? priced.reduce((m, o) => (o.total! < m.total! ? o : m)) : null;
+  const tie = cheapest && priced.every((o) => Math.abs(o.total! - cheapest.total!) < 0.005);
+
+  return (
+    <div className="w-full flex flex-wrap gap-1.5 mt-2 pl-9" role="group" aria-label={`${item.baseName}: Shop wählen`}>
+      {offers.map((o) => {
+        const isCheapest = !!cheapest && !tie && o === cheapest;
+        const text = !o.link
+          ? 'Produkt wählen'
+          : o.total != null
+          ? `${o.packs > 1 ? `${o.packs}× ` : ''}${euro(o.total)}`
+          : 'Preis ?';
+        return (
+          <button
+            key={o.provider}
+            onClick={() => (o.link && !o.active ? onAssign(o.provider) : onChoose(o.provider))}
+            aria-pressed={o.active}
+            aria-label={
+              o.active
+                ? `${o.label.name}: ${text} – gewählt, antippen für anderes Produkt`
+                : o.link
+                ? `Bei ${o.label.name} bestellen: ${text}${isCheapest ? ', günstiger' : ''}`
+                : `${o.label.name}: Produkt wählen`
+            }
+            className={`inline-flex items-center gap-1 h-7 px-2 rounded-lg border text-[11px] font-semibold transition-colors ${
+              o.active
+                ? 'text-white border-transparent'
+                : o.link
+                ? 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                : 'bg-white border-dashed border-gray-300 text-gray-500 hover:bg-gray-50'
+            }`}
+            style={o.active ? { backgroundColor: o.label.color === '#22c55e' ? '#15803d' : o.label.color === '#e11d48' ? '#be123c' : o.label.color } : undefined}
+          >
+            {o.active && <Check size={11} strokeWidth={3} aria-hidden="true" />}
+            <span>{o.label.name}</span>
+            <span className={o.active ? 'font-bold' : isCheapest ? 'font-bold text-green-800' : 'font-normal'}>{text}</span>
+            {isCheapest && <span className={o.active ? '' : 'text-green-800'} aria-hidden="true">↓</span>}
+          </button>
+        );
+      })}
+    </div>
   );
 }
