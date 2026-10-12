@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ViewTab, Profile, FamilyMember, Routine, MealPlan, PlanMeal, Favorite } from './types';
+import { ViewTab, Profile, FamilyMember, Routine, MealPlan, PlanMeal, Favorite, Dessert } from './types';
 import {
   getOrCreateProfile,
   updateProfile,
@@ -25,9 +25,11 @@ import {
   rejectMeal,
   getPassword,
   UnauthorizedError,
+  setMealDessert,
 } from './lib/api';
 import PasswordGate from './components/PasswordGate';
 import { familyPortions } from './lib/portions';
+import { toPlanDessert } from './lib/desserts';
 import PlanCreationModal from './components/PlanCreationModal';
 import Header from './components/Header';
 import TabSwitcher from './components/TabSwitcher';
@@ -235,6 +237,11 @@ export default function App() {
     }
   };
 
+  const handleSetDessert = async (pm: PlanMeal, dessert: Dessert | null) => {
+    const saved = await setMealDessert(pm.id, dessert ? toPlanDessert(dessert) : null);
+    setPlanMeals((prev) => prev.map((m) => (m.id === pm.id ? { ...m, dessert: saved } : m)));
+  };
+
   const favoriteNames = new Set(favorites.map((f) => f.meal_name));
 
   const handleToggleFavorite = async (pm: PlanMeal) => {
@@ -310,6 +317,7 @@ export default function App() {
             plan={currentPlan}
             onDeletePlan={currentPlan ? handleDeletePlan : undefined}
             defaultPortions={familyPortions(familyMembers)}
+            onSetDessert={currentPlan ? handleSetDessert : undefined}
           />
         ) : activeTab === 'einkaufsliste' ? (
           <ShoppingListView

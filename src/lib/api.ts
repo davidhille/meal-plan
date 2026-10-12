@@ -1,6 +1,6 @@
 import {
   Profile, FamilyMember, MealRating, MealPlan, PlanMeal, Routine, ShoppingItem, ShoppingLabel, Favorite, MealType, ImageCredit,
-  ShopState, ShopProvider, ProductResult,
+  ShopState, ShopProvider, ProductResult, PlanDessert,
 } from '../types';
 
 // Alle Daten laufen über die Cloudflare-Functions unter /api (→ Neon).
@@ -237,6 +237,12 @@ export async function regenerateMeal(planMealId: string): Promise<PlanMeal | nul
     console.error('Error regenerating meal:', error);
     return null;
   }
+}
+
+/** Nachtisch an ein Gericht hängen (null = entfernen); wirft bei Fehlern */
+export async function setMealDessert(planMealId: string, dessert: PlanDessert | null): Promise<PlanDessert | null> {
+  const result = await request<{ dessert: PlanDessert | null }>('PUT', `/plan-meals/${planMealId}/dessert`, { dessert });
+  return result.dessert;
 }
 
 /** Kompletten Plan für denselben Zeitraum neu erstellen (ersetzt den alten) */

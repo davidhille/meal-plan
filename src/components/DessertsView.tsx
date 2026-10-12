@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CakeSlice, Clock, Loader2, Search, X } from 'lucide-react';
 import { Dessert, DessertCategory, Meal, MealPlan } from '../types';
+import { DESSERT_CREDIT as CREDIT, dessertPreview as preview } from '../lib/desserts';
 import { addShoppingItems } from '../lib/api';
 import MealModal from './MealModal';
 
 interface DessertsViewProps {
   /** Aktiver Plan – dorthin kommen die Zutaten auf die Einkaufsliste */
-  plan: MealPlan | null;
+  plan?: MealPlan | null;
+  /** Auswahlmodus (Nachtisch zum Gericht): Antippen wählt den Nachtisch statt das Rezept zu öffnen */
+  onPick?: (dessert: Dessert) => void;
 }
 
 const CATEGORIES: { id: DessertCategory | 'alle'; label: string }[] = [
@@ -20,10 +23,6 @@ const CATEGORIES: { id: DessertCategory | 'alle'; label: string }[] = [
 
 const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.label])) as Record<DessertCategory, string>;
 
-const CREDIT = { name: 'TheMealDB', url: 'https://www.themealdb.com/' };
-
-/** Kleinere Vorschau von TheMealDB (fällt bei Fehlern auf das Originalbild zurück) */
-const preview = (url: string) => `${url}/small`;
 
 const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
@@ -49,7 +48,7 @@ function toMeal(d: Dessert): Meal {
   };
 }
 
-export default function DessertsView({ plan }: DessertsViewProps) {
+export default function DessertsView({ plan = null, onPick }: DessertsViewProps) {
   const [desserts, setDesserts] = useState<Dessert[] | null>(null);
   const [category, setCategory] = useState<DessertCategory | 'alle'>('alle');
   const [query, setQuery] = useState('');
@@ -144,7 +143,7 @@ export default function DessertsView({ plan }: DessertsViewProps) {
             {visible.map((d) => (
               <li key={d.name}>
                 <button
-                  onClick={() => setSelected(d)}
+                  onClick={() => (onPick ? onPick(d) : setSelected(d))}
                   className="w-full h-full text-left bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
                 >
                   <div className="relative aspect-[4/3] bg-gray-100">

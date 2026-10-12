@@ -1,5 +1,6 @@
-import { Meal, MealType } from '../types';
-import { ChevronRight, Leaf, Beef, Sunset, Star, X, Heart, RefreshCw, Clock, Loader2 } from 'lucide-react';
+import { Meal, MealType, PlanDessert } from '../types';
+import { ChevronRight, Leaf, Beef, Sunset, Star, X, Heart, RefreshCw, Clock, Loader2, CakeSlice } from 'lucide-react';
+import { dessertPreview } from '../lib/desserts';
 
 interface DayCardProps {
   meal: Meal;
@@ -10,6 +11,10 @@ interface DayCardProps {
   onToggleFavorite?: () => void;
   isFavorite?: boolean;
   busy?: boolean;
+  /** Nachtisch zum Gericht */
+  dessert?: PlanDessert | null;
+  onPickDessert?: () => void;
+  onOpenDessert?: () => void;
 }
 
 const typeConfig: Record<MealType, { bar: string; label: string; icon: React.ReactNode }> = {
@@ -40,15 +45,19 @@ export default function DayCard({
   onToggleFavorite,
   isFavorite,
   busy,
+  dessert,
+  onPickDessert,
+  onOpenDessert,
 }: DayCardProps) {
   const config = typeConfig[meal.type];
-  const hasActions = !!(onReject || onRegenerate || onToggleFavorite);
+  const hasActions = !!(onReject || onRegenerate || onToggleFavorite || onPickDessert);
 
   return (
     <div className={`flex gap-2 items-stretch transition-opacity ${busy ? 'opacity-60' : ''}`}>
+      <div className="flex-1 min-w-0 flex flex-col bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
       <button
         onClick={onClick}
-        className="flex-1 min-w-0 text-left bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden active:scale-[0.98] transition-transform duration-100 flex"
+        className="flex-1 min-w-0 text-left active:scale-[0.98] transition-transform duration-100 flex"
       >
         <div className={`w-1 flex-shrink-0 ${config.bar}`} />
         <div className="flex items-center gap-3 px-4 py-4 flex-1 min-w-0">
@@ -90,6 +99,34 @@ export default function DayCard({
           <ChevronRight size={16} className="text-gray-300 flex-shrink-0" />
         </div>
       </button>
+      {dessert && (
+        <button
+          onClick={onOpenDessert}
+          className="flex items-center gap-3 pl-5 pr-4 py-2 border-t border-gray-100 text-left hover:bg-amber-50/50"
+        >
+          {dessert.imageUrl ? (
+            <img
+              src={dessertPreview(dessert.imageUrl)}
+              alt=""
+              loading="lazy"
+              onError={(e) => {
+                const img = e.currentTarget;
+                if (img.src !== dessert.imageUrl) img.src = dessert.imageUrl!;
+                else img.style.visibility = 'hidden';
+              }}
+              className="flex-shrink-0 w-8 h-8 rounded-md object-cover bg-amber-50"
+            />
+          ) : (
+            <CakeSlice size={16} className="flex-shrink-0 text-amber-600" aria-hidden="true" />
+          )}
+          <span className="flex-1 min-w-0">
+            <span className="block text-[11px] font-medium text-amber-700 uppercase tracking-wide">Nachtisch</span>
+            <span className="block text-xs font-medium text-gray-800 truncate">{dessert.name}</span>
+          </span>
+          <ChevronRight size={14} className="text-gray-300 flex-shrink-0" />
+        </button>
+      )}
+      </div>
 
       {hasActions && (
         <div className="w-10 flex flex-col bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden divide-y divide-gray-100">
@@ -97,7 +134,7 @@ export default function DayCard({
             <button
               onClick={onToggleFavorite}
               disabled={busy}
-              className={`flex-1 flex items-center justify-center transition-colors ${
+              className={`flex-1 min-h-[32px] flex items-center justify-center transition-colors ${
                 isFavorite ? 'text-rose-500 hover:bg-rose-50' : 'text-gray-500 hover:bg-gray-50 hover:text-rose-500'
               }`}
               title={isFavorite ? 'Aus Favoriten entfernen' : 'Merken'}
@@ -107,11 +144,24 @@ export default function DayCard({
               <Heart size={15} className={isFavorite ? 'fill-rose-500' : ''} />
             </button>
           )}
+          {onPickDessert && (
+            <button
+              onClick={onPickDessert}
+              disabled={busy}
+              className={`flex-1 min-h-[32px] flex items-center justify-center transition-colors ${
+                dessert ? 'text-amber-600 hover:bg-amber-50' : 'text-gray-500 hover:bg-amber-50 hover:text-amber-600'
+              }`}
+              title={dessert ? 'Nachtisch ändern' : 'Nachtisch dazu'}
+              aria-label={`${meal.meal}: ${dessert ? `Nachtisch ändern (${dessert.name})` : 'Nachtisch hinzufügen'}`}
+            >
+              <CakeSlice size={15} />
+            </button>
+          )}
           {onRegenerate && (
             <button
               onClick={onRegenerate}
               disabled={busy}
-              className="flex-1 flex items-center justify-center text-gray-500 hover:bg-green-50 hover:text-green-700 transition-colors"
+              className="flex-1 min-h-[32px] flex items-center justify-center text-gray-500 hover:bg-green-50 hover:text-green-700 transition-colors"
               title="Neu generieren – nur austauschen"
               aria-label={`${meal.meal}: austauschen`}
             >
@@ -122,7 +172,7 @@ export default function DayCard({
             <button
               onClick={onReject}
               disabled={busy}
-              className="flex-1 flex items-center justify-center text-red-600 hover:bg-red-50 transition-colors"
+              className="flex-1 min-h-[32px] flex items-center justify-center text-red-600 hover:bg-red-50 transition-colors"
               title="Ablehnen – kommt nicht wieder"
               aria-label={`${meal.meal}: ablehnen, kommt nicht wieder`}
             >
