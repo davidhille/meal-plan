@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Package, X, Loader2, ShoppingCart } from 'lucide-react';
-import { MealPlan, PlanMeal, ShoppingItem, ShoppingLabel, DEFAULT_LABELS, LABEL_COLORS, BASICS_ITEMS, ProductResult } from '../types';
+import { MealPlan, PlanMeal, ShoppingItem, ShoppingLabel, DEFAULT_LABELS, BASICS_ITEMS, ProductResult } from '../types';
 import { PlanWeek, currentWeekIndex, formatShortDate, toIso } from '../lib/dateUtils';
 import ShoppingRangePicker from './ShoppingRangePicker';
 import {
@@ -10,10 +10,7 @@ import {
   removeShoppingItem,
   saveProductLink,
   addToKnusprCart,
-  createLabel,
   type WeekRange,
-  deleteLabel,
-  updateLabel,
   addToPantry,
   removeFromPantry,
 } from '../lib/api';
@@ -65,13 +62,9 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
   const [labels, setLabels] = useState<ShoppingLabel[]>([...DEFAULT_LABELS]);
   const [pantryNeeded, setPantryNeeded] = useState<string[]>([]);
   const [customPantry, setCustomPantry] = useState<string[]>([]);
-  const [editingLabelId, setEditingLabelId] = useState<string | null>(null);
   const [newPantryName, setNewPantryName] = useState('');
   const [showBasics, setShowBasics] = useState(false);
   const [basicPickerTarget, setBasicPickerTarget] = useState<string | null>(null);
-  const [showAddLabel, setShowAddLabel] = useState(false);
-  const [newLabelName, setNewLabelName] = useState('');
-  const [newLabelColor, setNewLabelColor] = useState(LABEL_COLORS[2]);
   const [newItemName, setNewItemName] = useState('');
   const [productItem, setProductItem] = useState<ShoppingItem | null>(null);
   const [standardLabel, setStandardLabel] = useState('knuspr');
@@ -142,26 +135,6 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
     await removeShoppingItem(planId, item.id);
   };
 
-  // --- Labels ---
-
-  const addLabel = async () => {
-    if (!newLabelName.trim()) return;
-    const next = editingLabelId
-      ? await updateLabel(editingLabelId, newLabelName.trim(), newLabelColor)
-      : await createLabel(newLabelName.trim(), newLabelColor);
-    if (next) setLabels(next);
-    setNewLabelName('');
-    setEditingLabelId(null);
-    setShowAddLabel(false);
-  };
-
-  const startEditLabel = (label: ShoppingLabel) => {
-    setEditingLabelId(label.id);
-    setNewLabelName(label.name);
-    setNewLabelColor(label.color);
-    setShowAddLabel(true);
-  };
-
   // --- Vorrat ---
 
   const moveToPantry = async (item: ShoppingItem) => {
@@ -172,14 +145,6 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
   const takeFromPantry = async (name: string) => {
     setCustomPantry((prev) => prev.filter((n) => n !== name));
     if (await removeFromPantry(name)) await load();
-  };
-
-  const removeLabel = async (labelId: string) => {
-    const next = await deleteLabel(labelId);
-    if (next) {
-      setLabels(next);
-      await load();
-    }
   };
 
   // --- Shops ---
@@ -335,94 +300,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
           />
         ))}
 
-        {/* Eigenes Label */}
-        {showAddLabel ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
-              <span className="text-sm font-semibold text-gray-800">{editingLabelId ? 'Liste bearbeiten' : 'Neue Liste'}</span>
-              <button
-                onClick={() => {
-                  setShowAddLabel(false);
-                  setEditingLabelId(null);
-                  setNewLabelName('');
-                }}
-                aria-label="Abbrechen"
-                className="w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100"
-              >
-                <X size={14} />
-              </button>
-            </div>
-            <div className="px-4 py-3 space-y-3">
-              <input
-                type="text"
-                value={newLabelName}
-                onChange={(e) => setNewLabelName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && addLabel()}
-                placeholder="z. B. Aldi, Rewe, DM …"
-                aria-label="Name der Liste"
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-green-400"
-                autoFocus
-              />
-              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Farbe">
-                {LABEL_COLORS.map((color, i) => (
-                  <button
-                    key={color}
-                    role="radio"
-                    aria-checked={newLabelColor === color}
-                    aria-label={`Farbe ${i + 1}`}
-                    onClick={() => setNewLabelColor(color)}
-                    className={`w-7 h-7 rounded-full transition-all ${
-                      newLabelColor === color ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : ''
-                    }`}
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
-              </div>
-              <button
-                onClick={addLabel}
-                disabled={!newLabelName.trim()}
-                className="w-full py-2 rounded-lg text-sm font-medium bg-green-700 text-white hover:bg-green-800 disabled:bg-gray-200 disabled:text-gray-500 transition-all"
-              >
-                {editingLabelId ? 'Speichern' : 'Liste hinzufügen'}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => setShowAddLabel(true)}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-gray-200 text-sm text-gray-500 hover:border-gray-300 hover:text-gray-500 transition-colors"
-          >
-            <Plus size={16} />
-            Liste hinzufügen
-          </button>
-        )}
-
-        {/* Eigene Labels verwalten */}
-        {labels.some((l) => !l.provider && !DEFAULT_LABELS.some((d) => d.id === l.id)) && (
-          <div className="flex flex-wrap gap-2 px-1">
-            {labels
-              .filter((l) => !l.provider && !DEFAULT_LABELS.some((d) => d.id === l.id))
-              .map((l) => (
-                <span
-                  key={l.id}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
-                >
-                  <button onClick={() => startEditLabel(l)} title="Liste bearbeiten" aria-label={`Liste ${l.name} bearbeiten`} className="inline-flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: l.color }} />
-                    {l.name}
-                  </button>
-                  <button
-                    onClick={() => removeLabel(l.id)}
-                    title="Liste löschen (Artikel wandern zu Knuspr)"
-                    aria-label={`Liste ${l.name} löschen`}
-                    className="w-6 h-6 flex items-center justify-center rounded-full text-gray-500 hover:text-red-600 hover:bg-red-50"
-                  >
-                    <X size={10} />
-                  </button>
-                </span>
-              ))}
-          </div>
-        )}
+        <p className="px-1 text-xs text-gray-500">Eigene Listen (z. B. Aldi, DM) legst du in den Einstellungen an.</p>
 
         {/* Basics & Vorrat */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">

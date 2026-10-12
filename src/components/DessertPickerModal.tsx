@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { X, Loader2, Trash2 } from 'lucide-react';
 import { useDialog } from '../lib/useDialog';
-import { Dessert, PlanDessert } from '../types';
+import { Dessert, PlanDessert, RecipeFilter } from '../types';
+import { getRecipeFilters } from '../lib/api';
+import { filtersFor } from '../lib/recipeFilters';
 import DessertsView from './DessertsView';
 
 interface DessertPickerModalProps {
@@ -21,6 +23,12 @@ export default function DessertPickerModal({ dayLabel, mealName, current, onSave
   // Beim Auswählen zeigt die Rezeptansicht den Ladezustand, das Overlay nur beim Entfernen
   const [removing, setRemoving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [customFilters, setCustomFilters] = useState<RecipeFilter[]>([]);
+  useEffect(() => {
+    getRecipeFilters()
+      .then((f) => setCustomFilters(filtersFor(f, 'nachtische')))
+      .catch(() => setCustomFilters([]));
+  }, []);
 
   const save = async (dessert: Dessert | null) => {
     if (saving) return;
@@ -86,7 +94,7 @@ export default function DessertPickerModal({ dayLabel, mealName, current, onSave
         )}
 
         <div className="flex-1 overflow-y-auto">
-          <DessertsView onPick={save} />
+          <DessertsView onPick={save} customFilters={customFilters} />
         </div>
 
         {removing && saving && (
