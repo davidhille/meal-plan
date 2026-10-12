@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Package, X, Loader2, ShoppingCart } from 'lucide-react';
-import { MealPlan, ShopProvider, ShopRule, PlanMeal, ShoppingItem, ShoppingLabel, DEFAULT_LABELS, BASICS_ITEMS, ProductResult } from '../types';
+import { MealPlan, ProductLink, ShopProvider, ShopRule, PlanMeal, ShoppingItem, ShoppingLabel, DEFAULT_LABELS, BASICS_ITEMS, ProductResult } from '../types';
 import { PlanWeek, currentWeekIndex, formatShortDate, toIso } from '../lib/dateUtils';
 import ShoppingRangePicker from './ShoppingRangePicker';
+import { parseEuro } from '../lib/unitPrice';
 import {
   getShopping,
   updateShoppingItem,
@@ -160,36 +161,50 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
 
   // --- Shops ---
 
-  const productLabel = productItem ? labels.find((l) => l.id === productItem.label) : undefined;
+  // Verbundene Shops für den Produkt-Dialog (Preisvergleich nebeneinander)
+  const productShops = labels
+    .filter((l): l is ShoppingLabel & { provider: ShopProvider } => l.provider === 'knuspr' || l.provider === 'picnic')
+    .map((l) => ({ provider: l.provider, label: l }));
 
-  const handleProductSelect = async (product: ProductResult) => {
-    if (!productItem || !productLabel?.provider) return;
-    const base = lc(productItem.baseName);
-    const labelId = productItem.label;
-    setItems((prev) =>
-      prev.map((i) =>
-        lc(i.baseName) === base && i.label === labelId
-          ? { ...i, productId: product.productId, productName: product.name, productImage: product.imageUrl }
-          : i
-      )
-    );
-    await saveProductLink(productItem.baseName, productLabel.provider, product);
-    setProductItem(null);
+  /** Verknüpfung in allen Einträgen mit derselben Zutat aktualisieren (null = gelöst) */
+  const applyLink = (baseName: string, provider: ShopProvider, link: ProductLink | null) => {
+    const base = lc(baseName);
+    const update = (i: ShoppingItem): ShoppingItem => {
+      if (lc(i.baseName) !== base) return i;
+      const links = { ...(i.links ?? {}) };
+      if (link) links[provider] = link;
+      else delete links[provider];
+      const labelProvider = labels.find((l) => l.id === i.label)?.provider;
+      const own =
+        labelProvider === provider
+          ? link
+            ? { productId: link.productId, productName: link.productName, productImage: link.productImage, productPrice: link.productPrice, productAmount: link.productAmount }
+            : { productId: undefined, productName: undefined, productImage: undefined, productPrice: undefined, productAmount: undefined }
+          : {};
+      return { ...i, ...own, links };
+    };
+    setItems((prev) => prev.map(update));
+    setProductItem((prev) => (prev ? update(prev) : prev));
   };
 
-  const handleProductRemove = async () => {
-    if (!productItem || !productLabel?.provider) return;
-    const base = lc(productItem.baseName);
-    const labelId = productItem.label;
-    await removeProductLink(productItem.baseName, productLabel.provider);
-    setItems((prev) =>
-      prev.map((i) =>
-        lc(i.baseName) === base && i.label === labelId
-          ? { ...i, productId: undefined, productName: undefined, productImage: undefined }
-          : i
-      )
-    );
-    setProductItem(null);
+  const handleProductSelect = async (provider: ShopProvider, product: ProductResult) => {
+    if (!productItem) return;
+    if (!(await saveProductLink(productItem.baseName, provider, product))) throw new Error('Die Auswahl konnte nicht gespeichert werden.');
+    applyLink(productItem.baseName, provider, {
+      productId: product.productId,
+      productName: product.name,
+      productImage: product.imageUrl,
+      productPrice: parseEuro(product.price) ?? undefined,
+      productAmount: product.amount,
+    });
+    // Mit nur einem Shop gleich schließen, sonst offen lassen (zweiten Shop verknüpfen)
+    if (productShops.length < 2) setProductItem(null);
+  };
+
+  const handleProductRemove = async (provider: ShopProvider) => {
+    if (!productItem) return;
+    await removeProductLink(productItem.baseName, provider);
+    applyLink(productItem.baseName, provider, null);
   };
 
   const refreshCart = async () => {
@@ -502,12 +517,10 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
         </div>
       </div>
 
-      {productItem && productLabel && (productLabel.provider === 'knuspr' || productLabel.provider === 'picnic') && (
+      {productItem && productShops.length > 0 && (
         <ProductSearchModal
-          ingredientName={productItem.baseName}
-          label={productLabel}
-          provider={productLabel.provider}
-          currentProductId={productItem.productId}
+          item={productItem}
+          shops={productShops}
           onSelect={handleProductSelect}
           onRemove={handleProductRemove}
           onClose={() => setProductItem(null)}
