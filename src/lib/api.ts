@@ -287,15 +287,11 @@ export async function setFavoriteTurnus(id: string, weeks: number | null): Promi
   }
 }
 
-/** Bild über den Server erzeugen (Cloudflare Workers AI). force = neues Bild statt vorhandenem */
-export async function generateMealImage(mealName: string, force = false): Promise<string | null> {
-  try {
-    const result = await request<{ imageUrl: string }>('POST', '/meal-images/generate', { mealName, force });
-    return result.imageUrl;
-  } catch (error) {
-    console.error('Error generating meal image:', error);
-    return null;
-  }
+/** Bild über den Server erzeugen (Cloudflare Workers AI). force = neues Bild statt vorhandenem.
+ *  Wirft mit verständlicher Meldung, z. B. wenn das Tageskontingent aufgebraucht ist. */
+export async function generateMealImage(mealName: string, force = false): Promise<string> {
+  const result = await request<{ imageUrl: string }>('POST', '/meal-images/generate', { mealName, force });
+  return result.imageUrl;
 }
 
 // ---------- Einkaufsliste ----------
