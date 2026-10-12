@@ -1,4 +1,7 @@
 // Rezeptdatenbank + Auswahl-Logik (übernommen aus den Supabase Edge Functions)
+import { VEGETARISCH } from "./recipes/vegetarisch";
+import { FLEISCH } from "./recipes/fleisch";
+import { WOCHENENDE } from "./recipes/wochenende";
 
 export interface Recipe {
   name: string;
@@ -8,7 +11,8 @@ export interface Recipe {
   durationMin?: number | null;
 }
 
-export const MEAL_DATABASE: Recipe[] = [
+/** Ursprüngliche Rezepte (Juli-Version) */
+const CLASSIC_RECIPES: Recipe[] = [
   {
     name: "Spaghetti Bolognese",
     type: "fleisch",
@@ -198,6 +202,9 @@ export const MEAL_DATABASE: Recipe[] = [
   },
 ];
 
+/** Feste Grundsammlung: Klassiker + große Basis (worker/recipes/*), dazu kommen KI-Rezepte aus der DB */
+export const MEAL_DATABASE: Recipe[] = [...CLASSIC_RECIPES, ...VEGETARISCH, ...FLEISCH, ...WOCHENENDE];
+
 export interface ScoringContext {
   familyMembers: { type: string; age: number | null; favorite_foods: string[] | null; disliked_foods: string[] | null }[];
   rejectedMeals: string[];
@@ -214,7 +221,8 @@ export interface ScoringContext {
   newNames?: string[];
 }
 
-const MEAT_RE = /hackfleisch|hähnchen|speck|fleisch|rippchen|lachs|schwein|rind|lamm|filet|schnitzel|braten|burger/i;
+const MEAT_RE =
+  /hackfleisch|hähnchen|huhn|hühner|pute|kalb|speck|schinken|wurst|würstchen|leberkäse|guanciale|kassler|fleisch|rippchen|schwein|\brind|\blamm|filet|schnitzel|braten|burger|lachs|fisch|kabeljau|thunfisch|garnele/i;
 
 // Zutaten mit Gluten (Weizen, Dinkel, Roggen, Gerste …)
 const GLUTEN_RE =
@@ -334,12 +342,27 @@ export function pickMeal(
   pool: Recipe[] = MEAL_DATABASE
 ): Recipe | null {
   const preferred = preferredTypeFor(dateStr);
+  // Etwas Zufall, damit nicht jeder Plan dieselben Spitzenreiter bekommt
   const all = pool.map((meal) => ({ meal, score: scoreMeal(meal, ctx) }))
     .filter((s) => s.score >= 0)
-    .sort((a, b) => b.score - a.score);
+    .map((s) => ({ ...s, rank: s.score + Math.random() * 15 }))
+    .sort((a, b) => b.rank - a.rank);
   const fresh = all.filter((s) => !used.has(s.meal.name));
-  const choice = fresh.find((s) => s.meal.type === preferred) ?? fresh[0] ?? all[0];
+  // Sind alle schon dran gewesen: das Gericht wiederholen, das am längsten zurückliegt
+  // (`used` ist in Einfüge-Reihenfolge, wiederholte Gerichte wandern ans Ende)
+  const order = [...used];
+  const oldest = (list: typeof all) =>
+    list.reduce<(typeof all)[number] | undefined>(
+      (best, s) => (!best || order.indexOf(s.meal.name) < order.indexOf(best.meal.name) ? s : best),
+      undefined
+    );
+  const choice =
+    fresh.find((s) => s.meal.type === preferred) ??
+    fresh[0] ??
+    oldest(all.filter((s) => s.meal.type === preferred)) ??
+    oldest(all);
   if (!choice) return null;
+  used.delete(choice.meal.name);
   used.add(choice.meal.name);
   return choice.meal;
 }
