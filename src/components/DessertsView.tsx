@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CakeSlice, Clock, Loader2, Search, X } from 'lucide-react';
-import { Dessert, DessertCategory, Meal, MealPlan } from '../types';
+import { Dessert, DessertCategory, Meal, PlanMeal } from '../types';
 import { DESSERT_CREDIT as CREDIT, dessertPreview as preview } from '../lib/desserts';
-import { addShoppingItems } from '../lib/api';
 import MealModal from './MealModal';
+import DayAssignSheet from './DayAssignSheet';
 
 interface DessertsViewProps {
-  /** Aktiver Plan – dorthin kommen die Zutaten auf die Einkaufsliste */
-  plan?: MealPlan | null;
+  /** Gerichte des Plans – der Nachtisch lässt sich an einen Tag hängen */
+  planMeals?: PlanMeal[];
+  onAssign?: (pm: PlanMeal, dessert: Dessert) => Promise<void>;
   /** Auswahlmodus (Nachtisch zum Gericht): Das Rezept bekommt einen Button „Zum Gericht hinzufügen“ */
   onPick?: (dessert: Dessert) => Promise<void>;
 }
@@ -48,11 +49,13 @@ function toMeal(d: Dessert): Meal {
   };
 }
 
-export default function DessertsView({ plan = null, onPick }: DessertsViewProps) {
+export default function DessertsView({ planMeals = [], onAssign, onPick }: DessertsViewProps) {
   const [desserts, setDesserts] = useState<Dessert[] | null>(null);
   const [category, setCategory] = useState<DessertCategory | 'alle'>('alle');
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<Dessert | null>(null);
+  const [assign, setAssign] = useState<Dessert | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   // Die Sammlung erst laden, wenn der Reiter geöffnet wird
   useEffect(() => {
@@ -82,12 +85,6 @@ export default function DessertsView({ plan = null, onPick }: DessertsViewProps)
       </div>
     );
   }
-
-  const addToShopping = async (d: Dessert) => {
-    if (!plan) throw new Error('Erstelle zuerst einen Speiseplan – dann gibt es auch eine Einkaufsliste.');
-    await addShoppingItems(plan.id, d.ingredients);
-    return `${d.ingredients.length} Zutaten stehen jetzt auf der Einkaufsliste.`;
-  };
 
   return (
     <>
@@ -178,11 +175,31 @@ export default function DessertsView({ plan = null, onPick }: DessertsViewProps)
         <MealModal
           meal={toMeal(selected)}
           yieldLabel={selected.yield}
-          onAddToShopping={onPick ? undefined : () => addToShopping(selected)}
-          onChoose={onPick ? () => onPick(selected) : undefined}
-          chooseLabel="Zum Gericht hinzufügen"
+          onChoose={onPick ? () => onPick(selected) : onAssign ? async () => setAssign(selected) : undefined}
+          chooseLabel={onPick ? 'Zum Gericht hinzufügen' : 'An einen Tag hängen'}
           onClose={() => setSelected(null)}
         />
+      )}
+
+      {assign && onAssign && (
+        <DayAssignSheet
+          mode="dessert"
+          itemName={assign.name}
+          planMeals={planMeals}
+          onConfirm={async (pm) => {
+            await onAssign(pm, assign);
+            setSelected(null);
+            setNotice(`„${assign.name}“ hängt jetzt am Speiseplan.`);
+            setTimeout(() => setNotice(null), 4000);
+          }}
+          onClose={() => setAssign(null)}
+        />
+      )}
+
+      {notice && (
+        <div role="status" className="fixed bottom-6 inset-x-4 z-40 max-w-md mx-auto px-4 py-3 rounded-2xl bg-gray-800 text-white text-sm shadow-lg">
+          {notice}
+        </div>
       )}
     </>
   );
