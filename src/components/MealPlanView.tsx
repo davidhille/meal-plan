@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Trash2, CalendarPlus, RefreshCw, Loader2 } from 'lucide-react';
-import { ImageCredit, Meal, MealPlan, MealType, PlanMeal } from '../types';
+import { Dessert, ImageCredit, Meal, MealPlan, MealType, PlanDessert, PlanMeal } from '../types';
 import { generateMealImage } from '../lib/api';
+import { planDessertToMeal } from '../lib/desserts';
+import DessertPickerModal from './DessertPickerModal';
 import { formatShortDate } from '../lib/dateUtils';
 import DayCard from './DayCard';
 import MealModal from './MealModal';
@@ -19,6 +21,8 @@ interface MealPlanViewProps {
   plan?: MealPlan | null;
   onDeletePlan?: () => Promise<void>;
   defaultPortions?: number;
+  /** Nachtisch an ein Gericht hängen (null = entfernen) */
+  onSetDessert?: (pm: PlanMeal, dessert: Dessert | null) => Promise<void>;
 }
 
 const dayNames = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
@@ -57,8 +61,11 @@ export default function MealPlanView({
   plan,
   onDeletePlan,
   defaultPortions,
+  onSetDessert,
 }: MealPlanViewProps) {
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
+  const [pickDessertFor, setPickDessertFor] = useState<PlanMeal | null>(null);
+  const [openDessert, setOpenDessert] = useState<PlanDessert | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -126,6 +133,9 @@ export default function MealPlanView({
               onRegenerate={onRegenerate ? withBusy(pm.id, () => onRegenerate(pm.id)) : undefined}
               onToggleFavorite={onToggleFavorite ? withBusy(pm.id, () => onToggleFavorite(pm)) : undefined}
               isFavorite={favoriteNames?.has(pm.meal_name)}
+              dessert={pm.dessert}
+              onPickDessert={onSetDessert ? () => setPickDessertFor(pm) : undefined}
+              onOpenDessert={() => pm.dessert && setOpenDessert(pm.dessert)}
             />
           );
         })}
@@ -186,6 +196,20 @@ export default function MealPlanView({
           </div>
         </div>
       </div>
+
+      {pickDessertFor && onSetDessert && (
+        <DessertPickerModal
+          dayLabel={planMealToMeal(pickDessertFor).day}
+          mealName={pickDessertFor.meal_name}
+          current={pickDessertFor.dessert}
+          onSave={(dessert) => onSetDessert(pickDessertFor, dessert)}
+          onClose={() => setPickDessertFor(null)}
+        />
+      )}
+
+      {openDessert && (
+        <MealModal meal={planDessertToMeal(openDessert)} yieldLabel={openDessert.yield} onClose={() => setOpenDessert(null)} />
+      )}
 
       {selectedMeal && (
         <MealModal

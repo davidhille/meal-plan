@@ -27,7 +27,7 @@ const json = (data: unknown, status = 200) =>
 
 // Spaltenlisten mit Datum als Text (YYYY-MM-DD), damit das Frontend Strings bekommt
 const PLAN_COLS = `id, profile_id, start_date::text AS start_date, end_date::text AS end_date, status, created_at`;
-const PLAN_MEAL_COLS = `id, plan_id, meal_date::text AS meal_date, meal_name, meal_type, ingredients, instructions, rejected, image_url, duration_min, created_at`;
+const PLAN_MEAL_COLS = `id, plan_id, meal_date::text AS meal_date, meal_name, meal_type, ingredients, instructions, rejected, image_url, duration_min, dessert, created_at`;
 const ROUTINE_COLS = `id, profile_id, name, frequency, day_of_week, to_char(time, 'HH24:MI') AS time, duration_days, active, last_run_at, created_at`;
 
 let schemaReady: Promise<unknown> | null = null;
@@ -35,7 +35,7 @@ let schemaReady: Promise<unknown> | null = null;
 // Bei jeder Schema-Änderung unten hochzählen. Der Stand steht als Kommentar an der Tabelle `profiles`,
 // damit ein aktueller Worker beim Kaltstart gar keine DDL ausführt: ALTER TABLE sperrt die Tabelle
 // auch dann, wenn die Spalte schon existiert, und kann so alle Anfragen blockieren.
-const SCHEMA_VERSION = "schema:2026101203";
+const SCHEMA_VERSION = "schema:2026101204";
 
 async function migrate(sql: Sql) {
   const current = await sql`SELECT obj_description('public.profiles'::regclass, 'pg_class') AS v`;
@@ -48,6 +48,8 @@ async function migrate(sql: Sql) {
 async function runMigrations(sql: Sql) {
   await sql`ALTER TABLE routines ADD COLUMN IF NOT EXISTS last_run_at timestamptz`;
   await sql`ALTER TABLE plan_meals ADD COLUMN IF NOT EXISTS duration_min integer`;
+  // Nachtisch zum Gericht: { name, ingredients, instructions, durationMin, imageUrl, yield } aus der Sammlung im Frontend
+  await sql`ALTER TABLE plan_meals ADD COLUMN IF NOT EXISTS dessert jsonb`;
   await sql`CREATE TABLE IF NOT EXISTS recipes (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     name text NOT NULL UNIQUE,
@@ -171,7 +173,7 @@ async function getShopping(sql: Sql, profileId: string, planId: string, range?: 
   const keyPrefix = range ? `${range.from}:` : "";
   const [labels, meals, members, states, extras, prefs, links, settingsRows, pantry] = await Promise.all([
     getLabels(sql, profileId),
-    sql`SELECT ingredients FROM plan_meals WHERE plan_id = ${planId} AND NOT rejected
+    sql`SELECT ingredients, dessert FROM plan_meals WHERE plan_id = ${planId} AND NOT rejected
       AND meal_date BETWEEN ${from}::date AND ${to}::date`,
     sql`SELECT type, age FROM family_members WHERE profile_id = ${profileId}`,
     sql`SELECT item_key, checked, label FROM shopping_item_state WHERE plan_id = ${planId}`,
@@ -186,7 +188,9 @@ async function getShopping(sql: Sql, profileId: string, planId: string, range?: 
   const built = buildPlanItems(
     meals.map((m) => m.ingredients as string[]),
     portions,
-    new Set(pantry.map((r) => r.name_key as string))
+    new Set(pantry.map((r) => r.name_key as string)),
+    // Nachtische haben eine feste Menge (z. B. ein ganzer Kuchen) und werden nicht umgerechnet
+    meals.flatMap((m) => (m.dessert?.ingredients ? [m.dessert.ingredients as string[]] : []))
   );
   const stateBy = new Map(states.map((r) => [r.item_key, r]));
   const prefBy = new Map(prefs.map((r) => [r.name_key, r]));
@@ -483,9 +487,11 @@ async function replaceMeal(env: Env, sql: Sql, profileId: string, planMealId: st
 
   if (!reject) await sql`DELETE FROM plan_meals WHERE id = ${planMealId}`;
   const inserted = await sql.query(
-    `INSERT INTO plan_meals (plan_id, meal_date, meal_name, meal_type, ingredients, instructions, duration_min, rejected)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, false) RETURNING ${PLAN_MEAL_COLS}`,
-    [old.plan_id, old.meal_date, best.name, best.type, best.ingredients, best.instructions, best.durationMin ?? null]
+    `INSERT INTO plan_meals (plan_id, meal_date, meal_name, meal_type, ingredients, instructions, duration_min, dessert, rejected)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false) RETURNING ${PLAN_MEAL_COLS}`,
+    // Der Nachtisch bleibt beim Austauschen am Tag hängen
+    [old.plan_id, old.meal_date, best.name, best.type, best.ingredients, best.instructions, best.durationMin ?? null,
+      old.dessert ? JSON.stringify(old.dessert) : null]
   );
   const replacement = inserted[0];
   await markFavoritesPlanned(sql, profileId, old.plan_id);
@@ -493,6 +499,23 @@ async function replaceMeal(env: Env, sql: Sql, profileId: string, planMealId: st
   if (img[0]) replacement.image_url = img[0].image_url;
   else waitUntil(generateImage(env, sql, best.name));
   return replacement;
+}
+
+/** Nachtisch aus dem Request prüfen und auf die erlaubten Felder beschränken */
+function parseDessert(raw: unknown) {
+  if (!raw || typeof raw !== "object") return null;
+  const d = raw as Record<string, unknown>;
+  const name = String(d.name ?? "").trim().slice(0, 200);
+  const ingredients = (Array.isArray(d.ingredients) ? d.ingredients : [])
+    .map((i) => String(i).trim().slice(0, 200))
+    .filter(Boolean)
+    .slice(0, 40);
+  const imageUrl = typeof d.imageUrl === "string" && /^https:\/\/www\.themealdb\.com\//.test(d.imageUrl) ? d.imageUrl : null;
+  const yieldText = String(d.yield ?? "").trim().slice(0, 100);
+  const instructions = String(d.instructions ?? "").trim().slice(0, 5000);
+  const durationMin = Number(d.durationMin) > 0 ? Math.round(Number(d.durationMin)) : null;
+  if (!name || !ingredients.length) return null;
+  return { name, ingredients, instructions, durationMin, imageUrl, yield: yieldText };
 }
 
 async function latestPlan(sql: Sql, profileId: string) {
@@ -648,7 +671,7 @@ export async function handleApi(
       return json(
         await sql.query(
           `SELECT pm.id, pm.plan_id, pm.meal_date::text AS meal_date, pm.meal_name, pm.meal_type, pm.ingredients,
-                  pm.instructions, pm.rejected, ${IMAGE_URL_SQL} AS image_url, ${IMAGE_CREDIT_SQL}, pm.duration_min, pm.created_at
+                  pm.instructions, pm.rejected, ${IMAGE_URL_SQL} AS image_url, ${IMAGE_CREDIT_SQL}, pm.duration_min, pm.dessert, pm.created_at
            FROM plan_meals pm LEFT JOIN meal_images mi ON mi.meal_name = pm.meal_name
            WHERE pm.plan_id = $1 ORDER BY pm.meal_date`,
           [id]
@@ -662,6 +685,18 @@ export async function handleApi(
       const replacement = await replaceMeal(env, sql, p.id, id, parts[2] === "reject", waitUntil);
       if (!replacement) return json({ error: "Kein passender Ersatz gefunden" }, 404);
       return json({ replacement });
+    }
+
+    // Nachtisch an ein Gericht hängen (oder mit dessert: null entfernen)
+    if (parts[0] === "plan-meals" && id && parts[2] === "dessert" && request.method === "PUT") {
+      const p = await getProfile(sql);
+      const owner = await sql`SELECT pm.id FROM plan_meals pm JOIN meal_plans mp ON mp.id = pm.plan_id
+        WHERE pm.id = ${id} AND mp.profile_id = ${p.id}`;
+      if (!owner[0]) return json({ error: "Gericht nicht gefunden" }, 404);
+      const dessert = parseDessert(body.dessert);
+      if (body.dessert && !dessert) return json({ error: "Ungültiger Nachtisch" }, 400);
+      await sql`UPDATE plan_meals SET dessert = ${dessert ? JSON.stringify(dessert) : null}::jsonb WHERE id = ${id}`;
+      return json({ dessert });
     }
 
     // Kompletten Plan neu generieren (gleicher Zeitraum, alter Plan wird ersetzt)

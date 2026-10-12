@@ -140,6 +140,18 @@ export interface PlanMeal {
   rejected: boolean;
   created_at: string;
   duration_min?: number | null;
+  /** Nachtisch zu diesem Gericht (aus der Nachtisch-Sammlung) */
+  dessert?: PlanDessert | null;
+}
+
+/** Am Gericht gespeicherter Nachtisch – die Zutaten landen mit fester Menge auf der Einkaufsliste */
+export interface PlanDessert {
+  name: string;
+  ingredients: string[];
+  instructions: string;
+  durationMin: number | null;
+  imageUrl: string | null;
+  yield: string;
 }
 
 export interface Routine {

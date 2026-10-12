@@ -158,12 +158,21 @@ export interface BuildResult {
 }
 
 /** extraPantry: eigene Vorrats-Zutaten der Familie (als mergeKey) */
-export function buildPlanItems(mealIngredients: string[][], portions: number, extraPantry: Set<string> = new Set()): BuildResult {
-  const factor = portions / RECIPE_BASE_PORTIONS;
+export function buildPlanItems(
+  mealIngredients: string[][],
+  portions: number,
+  extraPantry: Set<string> = new Set(),
+  /** Zutaten mit fester Menge (Nachtische), nicht auf die Portionen umgerechnet */
+  unscaledIngredients: string[][] = []
+): BuildResult {
   const agg = new Map<string, { name: string; unit: string; qty: number | null; count: number }>();
   const pantry = new Set<string>();
 
-  for (const ingredients of mealIngredients) {
+  const lists = [
+    ...mealIngredients.map((ingredients) => ({ ingredients, factor: portions / RECIPE_BASE_PORTIONS })),
+    ...unscaledIngredients.map((ingredients) => ({ ingredients, factor: 1 })),
+  ];
+  for (const { ingredients, factor } of lists) {
     for (const raw of ingredients) {
       for (const part of splitCombined(raw)) {
         const p = parse(part.replace(/^optional:\s*/i, ""));
