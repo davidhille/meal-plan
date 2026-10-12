@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Copy, Check, ShoppingCart, ChevronDown, X, Tag, ExternalLink, Link2, Package } from 'lucide-react';
+import { Copy, Check, ShoppingCart, ChevronDown, X, Tag, Link2, Package } from 'lucide-react';
 import { ShoppingItem, ShoppingLabel } from '../types';
-import { buildAmazonSearchUrl } from '../lib/amazon';
 
 interface ShoppingSectionProps {
   label: ShoppingLabel;
@@ -143,18 +142,8 @@ export default function ShoppingSection({
                   <img src={item.productImage} alt="" className="w-8 h-8 rounded-lg object-contain bg-white border border-gray-100 flex-shrink-0" />
                 )}
 
-                {/* Name: je nach Shop Amazon-Suche oder Produktsuche */}
-                {!item.checked && provider === 'amazon' ? (
-                  <a
-                    href={buildAmazonSearchUrl(item.baseName)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`flex-1 min-w-0 ${nameClass} hover:text-amber-700`}
-                  >
-                    {nameContent}
-                    <ExternalLink size={11} className="inline ml-1 -mt-0.5 text-gray-500" />
-                  </a>
-                ) : !item.checked && (provider === 'knuspr' || provider === 'picnic') && onFindProduct ? (
+                {/* Name: bei Knuspr/Picnic öffnet ein Tipp die Produktsuche */}
+                {!item.checked && (provider === 'knuspr' || provider === 'picnic') && onFindProduct ? (
                   <button onClick={() => onFindProduct(item)} className={`flex-1 min-w-0 text-left ${nameClass} hover:text-green-800`}>
                     {nameContent}
                   </button>

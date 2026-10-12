@@ -1,29 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Loader2, ShoppingBag, Check, Unplug } from 'lucide-react';
 import { ShopProvider, ShopState } from '../types';
-import { getShopState, saveShopSettings, enableAmazon, connectShop, verifyPicnic, disconnectShop } from '../lib/api';
+import { getShopState, saveShopSettings, connectShop, verifyPicnic, disconnectShop } from '../lib/api';
 
-const SHOPS: { id: ShopProvider; name: string; color: string; needsLogin: boolean; hint: string }[] = [
+const SHOPS: { id: ShopProvider; name: string; color: string; hint: string }[] = [
   {
     id: 'knuspr',
     name: 'Knuspr',
     color: '#22c55e',
-    needsLogin: true,
     hint: 'Produkte suchen und mit einem Klick in deinen Knuspr-Warenkorb legen.',
   },
   {
     id: 'picnic',
     name: 'Picnic',
     color: '#e11d48',
-    needsLogin: true,
     hint: 'Produkte suchen und verknüpfen. Beim Verbinden schickt Picnic evtl. einen SMS-Code.',
-  },
-  {
-    id: 'amazon',
-    name: 'Amazon',
-    color: '#f59e0b',
-    needsLogin: false,
-    hint: 'Ein Tipp auf eine Zutat öffnet die Amazon-Suche (Amazon erlaubt keine direkte Suche aus Apps).',
   },
 ];
 
@@ -64,7 +55,7 @@ export default function ShopSettings() {
     );
   }
 
-  const isActive = (id: ShopProvider) => state.activeShops.includes(id) && (id === 'amazon' || !!state.connections[id]);
+  const isActive = (id: ShopProvider) => state.activeShops.includes(id) && !!state.connections[id];
 
   const submitConnect = async (shop: ShopProvider) => {
     if (shop !== 'knuspr' && shop !== 'picnic') return;
@@ -152,9 +143,9 @@ export default function ShopSettings() {
                     className="flex items-center gap-1 px-3 h-8 rounded-lg text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600"
                   >
                     {busy === `off-${shop.id}` ? <Loader2 size={12} className="animate-spin" /> : <Unplug size={12} />}
-                    {shop.needsLogin ? 'Trennen' : 'Ausschalten'}
+                    Trennen
                   </button>
-                ) : shop.needsLogin ? (
+                ) : (
                   <button
                     onClick={() => {
                       setOpenShop(expanded ? null : shop.id);
@@ -164,14 +155,6 @@ export default function ShopSettings() {
                     className="px-3 h-8 rounded-lg text-xs font-semibold bg-green-700 text-white hover:bg-green-800"
                   >
                     {expanded ? 'Abbrechen' : 'Verbinden'}
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => act('amazon', enableAmazon)}
-                    disabled={busy !== null}
-                    className="px-3 h-8 rounded-lg text-xs font-semibold bg-green-700 text-white hover:bg-green-800"
-                  >
-                    {busy === 'amazon' ? <Loader2 size={12} className="animate-spin" /> : 'Einschalten'}
                   </button>
                 )}
               </div>

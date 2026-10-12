@@ -77,7 +77,7 @@ export interface ImageCredit {
 export interface ShoppingItem {
   id: string;
   name: string;
-  /** Zutat ohne Menge (für Amazon-Suche und gemerkte Zuordnungen) */
+  /** Zutat ohne Menge (für die Shop-Suche und gemerkte Zuordnungen) */
   baseName: string;
   checked: boolean;
   label: string;
@@ -92,7 +92,7 @@ export interface ShoppingLabel {
   id: string;
   name: string;
   color: string;
-  /** Online-Shop hinter der Liste (amazon, knuspr, picnic) */
+  /** Online-Shop hinter der Liste (knuspr, picnic) */
   provider?: ShopProvider | null;
 }
 
@@ -218,7 +218,7 @@ export interface Favorite {
   created_at: string;
 }
 
-export type ShopProvider = 'amazon' | 'knuspr' | 'picnic';
+export type ShopProvider = 'knuspr' | 'picnic';
 
 export interface ShopState {
   labels: ShoppingLabel[];
