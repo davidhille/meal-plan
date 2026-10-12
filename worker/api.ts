@@ -11,6 +11,7 @@ import { generateRecipes } from "./aiRecipes";
 import { importRecipeFromUrl, ImportError } from "./recipeImport";
 import {
   encrypt, decrypt, ShopError, knusprLogin, knusprSearch, knusprAddToCart, knusprGetCart, knusprGetCartSummary, knusprRemoveFromCart, knusprSetQuantity, picnicLogin, picnicVerify, picnicSearch,
+  picnicGetCartSummary, picnicAddToCart, picnicSetQuantity, picnicClearCart, type CartItem,
   type ShopEnv,
 } from "./shops";
 
@@ -1152,52 +1153,63 @@ export async function handleApi(
         return json({ updated, missing });
       }
 
-      // Was liegt schon im Knuspr-Warenkorb?
-      if (provider === "knuspr" && action === "cart" && request.method === "GET") {
-        const conn = await loadConnection(env, sql, p.id, "knuspr");
+      // ---------- Warenkorb (Knuspr und Picnic) ----------
+      if (action === "cart" && (provider === "knuspr" || provider === "picnic")) {
+        const conn = await loadConnection(env, sql, p.id, provider);
         if (!conn) return json({ error: "not_connected" }, 409);
-        return json(await knusprGetCartSummary(await knusprLogin(conn.email, conn.secret)));
-      }
+        // Einheitliche Schnittstelle für beide Shops
+        const cart =
+          provider === "knuspr"
+            ? await (async () => {
+                const cookie = await knusprLogin(conn.email, conn.secret);
+                return {
+                  summary: () => knusprGetCartSummary(cookie),
+                  add: (id: string, q: number) => knusprAddToCart(cookie, id, q),
+                  setQuantity: (item: CartItem, q: number) => knusprSetQuantity(cookie, item, q),
+                  clear: async () => {
+                    for (const item of await knusprGetCart(cookie)) {
+                      if (item.orderFieldId) await knusprRemoveFromCart(cookie, item.orderFieldId);
+                    }
+                    return knusprGetCartSummary(cookie);
+                  },
+                };
+              })()
+            : {
+                summary: () => picnicGetCartSummary(conn.secret, conn.deviceId ?? ""),
+                add: (id: string, q: number) => picnicAddToCart(conn.secret, conn.deviceId ?? "", id, q),
+                setQuantity: (item: CartItem, q: number) => picnicSetQuantity(conn.secret, conn.deviceId ?? "", item, q),
+                clear: () => picnicClearCart(conn.secret, conn.deviceId ?? ""),
+              };
 
-      // Alle offenen, verknüpften Artikel einer Liste in den Knuspr-Warenkorb legen
-      if (provider === "knuspr" && action === "cart" && request.method === "POST") {
-        const conn = await loadConnection(env, sql, p.id, "knuspr");
-        if (!conn) return json({ error: "not_connected" }, 409);
-        // { items: [{ productId, quantity }] } oder (älter) { productIds: [...] }
-        const wanted: { productId: string; quantity: number }[] = Array.isArray(body.items)
-          ? body.items.map((i: any) => ({ productId: String(i.productId), quantity: Math.min(Math.max(Math.round(Number(i.quantity) || 1), 1), 50) }))
-          : (Array.isArray(body.productIds) ? body.productIds : []).map((pid: unknown) => ({ productId: String(pid), quantity: 1 }));
-        const cookie = await knusprLogin(conn.email, conn.secret);
-        let added = 0;
-        const failed: string[] = [];
-        for (const w of wanted) (await knusprAddToCart(cookie, w.productId, w.quantity)) ? added++ : failed.push(w.productId);
-        return json({ added, failed });
-      }
+        // Was liegt im Warenkorb (mit Summe)?
+        if (request.method === "GET") return json(await cart.summary());
 
-      // Menge im Knuspr-Warenkorb ändern (0 = entfernen)
-      if (provider === "knuspr" && action === "cart" && request.method === "PATCH") {
-        const conn = await loadConnection(env, sql, p.id, "knuspr");
-        if (!conn) return json({ error: "not_connected" }, 409);
-        const cookie = await knusprLogin(conn.email, conn.secret);
-        const item = (await knusprGetCart(cookie)).find((c) => c.productId === String(body.productId));
-        if (!item) return json({ error: "Artikel liegt nicht (mehr) im Warenkorb" }, 404);
-        await knusprSetQuantity(cookie, item, Math.min(Math.max(Math.round(Number(body.quantity) || 0), 0), 50));
-        return json(await knusprGetCartSummary(cookie));
-      }
-
-      // Knuspr-Warenkorb leeren
-      if (provider === "knuspr" && action === "cart" && request.method === "DELETE") {
-        const conn = await loadConnection(env, sql, p.id, "knuspr");
-        if (!conn) return json({ error: "not_connected" }, 409);
-        const cookie = await knusprLogin(conn.email, conn.secret);
-        const items = await knusprGetCart(cookie);
-        let failed = 0;
-        for (const item of items) {
-          if (!item.orderFieldId || !(await knusprRemoveFromCart(cookie, item.orderFieldId))) failed++;
+        // Ausgewählte Produkte mit Menge in den Warenkorb legen
+        if (request.method === "POST") {
+          // { items: [{ productId, quantity }] } oder (älter) { productIds: [...] }
+          const wanted: { productId: string; quantity: number }[] = Array.isArray(body.items)
+            ? body.items.map((i: any) => ({ productId: String(i.productId), quantity: Math.min(Math.max(Math.round(Number(i.quantity) || 1), 1), 50) }))
+            : (Array.isArray(body.productIds) ? body.productIds : []).map((pid: unknown) => ({ productId: String(pid), quantity: 1 }));
+          let added = 0;
+          const failed: string[] = [];
+          for (const w of wanted) (await cart.add(w.productId, w.quantity)) ? added++ : failed.push(w.productId);
+          return json({ added, failed });
         }
-        const rest = await knusprGetCartSummary(cookie);
-        if (failed && rest.items.length) return json({ error: `${rest.items.length} Artikel konnten nicht entfernt werden.` }, 502);
-        return json(rest);
+
+        // Menge ändern (0 = entfernen)
+        if (request.method === "PATCH") {
+          const item = (await cart.summary()).items.find((c) => c.productId === String(body.productId));
+          if (!item) return json({ error: "Artikel liegt nicht (mehr) im Warenkorb" }, 404);
+          await cart.setQuantity(item, Math.min(Math.max(Math.round(Number(body.quantity) || 0), 0), 50));
+          return json(await cart.summary());
+        }
+
+        // Warenkorb leeren
+        if (request.method === "DELETE") {
+          const rest = await cart.clear();
+          if (rest.items.length) return json({ error: `${rest.items.length} Artikel konnten nicht entfernt werden.` }, 502);
+          return json(rest);
+        }
       }
 
       return json({ error: "Unbekannte Shop-Aktion" }, 404);

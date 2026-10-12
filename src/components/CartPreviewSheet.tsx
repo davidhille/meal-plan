@@ -3,13 +3,16 @@ import { X, Loader2, Check, ShoppingCart, ImageOff, Minus, Plus, Trash2 } from '
 import { useDialog } from '../lib/useDialog';
 import { CartItem, ShopRule, ShoppingItem } from '../types';
 import ConfirmDialog from './ConfirmDialog';
+import { packagesNeeded } from '../lib/unitPrice';
 
 interface CartPreviewSheetProps {
+  /** Name des Shops (Knuspr, Picnic) */
+  shopName: string;
   /** Offene, mit einem Produkt verknüpfte Artikel dieser Liste */
   items: ShoppingItem[];
-  /** Aktueller Knuspr-Warenkorb (null = konnte nicht geladen werden) */
+  /** Aktueller Warenkorb (null = konnte nicht geladen werden) */
   cart: CartItem[] | null;
-  /** Summe des Warenkorbs laut Knuspr (null = unbekannt) */
+  /** Summe des Warenkorbs laut Shop (null = unbekannt) */
   cartTotal?: number | null;
   /** Mindestbestellwert und Liefergebühr */
   rule?: ShopRule;
@@ -107,8 +110,9 @@ function Stepper({
   );
 }
 
-/** Vorschau vor dem Übertragen und Bearbeiten des Knuspr-Warenkorbs */
+/** Vorschau vor dem Übertragen und Bearbeiten des Warenkorbs (Knuspr oder Picnic) */
 export default function CartPreviewSheet({
+  shopName,
   items,
   cart,
   cartTotal = null,
@@ -126,6 +130,8 @@ export default function CartPreviewSheet({
     () => new Set(items.filter((i) => !inCart.has(i.productId!)).map((i) => i.id))
   );
   const [qty, setQty] = useState<Record<string, number>>({});
+  // Vorschlag: so viele Packungen, wie das Rezept braucht
+  const qtyOf = (i: ShoppingItem) => qty[i.id] ?? Math.min(packagesNeeded(i.name, i.productAmount), 50);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [cartBusyId, setCartBusyId] = useState<string | null>(null);
@@ -149,8 +155,8 @@ export default function CartPreviewSheet({
     });
 
   const chosen = items.filter((i) => selected.has(i.id));
-  const totalPieces = chosen.reduce((sum, i) => sum + (qty[i.id] ?? 1), 0);
-  const addedPrice = chosen.reduce((sum, i) => sum + (i.productPrice ?? 0) * (qty[i.id] ?? 1), 0);
+  const totalPieces = chosen.reduce((sum, i) => sum + (qtyOf(i)), 0);
+  const addedPrice = chosen.reduce((sum, i) => sum + (i.productPrice ?? 0) * (qtyOf(i)), 0);
   const unknownPrices = chosen.filter((i) => i.productPrice == null).length;
   const currentTotal = cartTotal ?? (cart ?? []).reduce((sum, c) => sum + (c.lineTotal ?? 0), 0);
 
@@ -159,7 +165,7 @@ export default function CartPreviewSheet({
     setBusy(true);
     setMessage(null);
     try {
-      setMessage(await onTransfer(chosen.map((i) => ({ productId: i.productId!, quantity: qty[i.id] ?? 1 }))));
+      setMessage(await onTransfer(chosen.map((i) => ({ productId: i.productId!, quantity: qtyOf(i) }))));
       setSelected(new Set());
     } catch (e) {
       setMessage((e as Error).message || 'Das hat nicht geklappt.');
@@ -193,7 +199,7 @@ export default function CartPreviewSheet({
         <div className="flex items-center gap-2 px-4 py-4 border-b border-gray-100">
           <ShoppingCart size={16} className="text-green-700" aria-hidden="true" />
           <h2 id="cart-preview-title" className="flex-1 text-base font-semibold text-gray-900">
-            Knuspr-Warenkorb
+            {shopName}-Warenkorb
           </h2>
           <button
             onClick={onClose}
@@ -209,7 +215,7 @@ export default function CartPreviewSheet({
           <h3 className="px-4 pt-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Hinzufügen</h3>
           <p className="px-4 pb-1 text-xs text-gray-500">Abgehakt wird übertragen. Was schon im Warenkorb liegt, ist abgewählt.</p>
           {items.length === 0 ? (
-            <p className="px-4 py-3 text-sm text-gray-500">Auf dieser Liste steht gerade nichts mit Knuspr-Produkt.</p>
+            <p className="px-4 py-3 text-sm text-gray-500">Gerade ist nichts mit {shopName}-Produkt bei {shopName} eingeplant.</p>
           ) : (
             <ul className="divide-y divide-gray-100">
               {items.map((i) => {
@@ -251,7 +257,7 @@ export default function CartPreviewSheet({
                     </span>
                     {on && (
                       <Stepper
-                        value={qty[i.id] ?? 1}
+                        value={qtyOf(i)}
                         min={1}
                         label={name}
                         onChange={(v) => setQty((prev) => ({ ...prev, [i.id]: v }))}
@@ -353,7 +359,7 @@ export default function CartPreviewSheet({
       {confirmClear && (
         <ConfirmDialog
           title="Warenkorb leeren?"
-          message={<>Alle {cart?.length ?? 0} Artikel werden aus deinem Knuspr-Warenkorb entfernt – auch die, die du direkt bei Knuspr hineingelegt hast.</>}
+          message={<>Alle {cart?.length ?? 0} Artikel werden aus deinem {shopName}-Warenkorb entfernt – auch die, die du direkt bei {shopName} hineingelegt hast.</>}
           confirmLabel="Leeren"
           danger
           onConfirm={onClearCart}
