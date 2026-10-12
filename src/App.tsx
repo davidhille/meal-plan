@@ -306,6 +306,7 @@ export default function App() {
               const next = await removeFavorite(id);
               if (next) setFavorites(next);
             }}
+            onFavoritesChange={setFavorites}
           />
         ) : (
           <SettingsView

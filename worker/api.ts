@@ -8,6 +8,7 @@ import { pickMeal, pickReplacement, preferredTypeFor, scoreMeal, MEAL_DATABASE, 
 import { buildPlanItems, familyPortions, mergeKey } from "./shopping";
 import { generateImage, fillMissingImages, serveImage, IMAGE_URL_SQL, type AiEnv } from "./images";
 import { generateRecipes } from "./aiRecipes";
+import { importRecipeFromUrl, ImportError } from "./recipeImport";
 import {
   encrypt, decrypt, ShopError, knusprLogin, knusprSearch, knusprAddToCart, picnicLogin, picnicVerify, picnicSearch,
   type ShopEnv,
@@ -43,6 +44,7 @@ async function migrate(sql: Sql) {
     duration_min integer,
     source text NOT NULL DEFAULT 'ai',
     created_at timestamptz DEFAULT now())`;
+  await sql`ALTER TABLE recipes ADD COLUMN IF NOT EXISTS source_url text`;
   await sql`CREATE TABLE IF NOT EXISTS favorites (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     profile_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -650,6 +652,46 @@ export async function handleApi(
       const plan = await createPlan(env, sql, p.id, rows[0].start_date, rows[0].end_date);
       waitUntil(fillMissingImages(env, sql, 7, plan.id));
       return json(plan);
+    }
+
+    // ---------- Eigene Rezepte (Import per Link) ----------
+    if (route === "POST /recipes/import") {
+      try {
+        return json({ recipe: await importRecipeFromUrl(String(body.url ?? "")) });
+      } catch (e) {
+        if (e instanceof ImportError) return json({ error: e.message }, 422);
+        throw e;
+      }
+    }
+    if (route === "POST /recipes") {
+      const p = await getProfile(sql);
+      const name = String(body.name ?? "").trim();
+      const type = ["vegetarisch", "fleisch", "wochenende"].includes(body.type) ? body.type : "vegetarisch";
+      const ingredients = (Array.isArray(body.ingredients) ? body.ingredients : []).map((i: unknown) => String(i).trim()).filter(Boolean);
+      const instructions = String(body.instructions ?? "").trim();
+      const duration = Number(body.durationMin) > 0 ? Math.round(Number(body.durationMin)) : null;
+      if (!name || ingredients.length === 0) return json({ error: "Name und Zutaten fehlen" }, 400);
+      await sql`INSERT INTO recipes (name, type, ingredients, instructions, duration_min, source, source_url)
+        VALUES (${name}, ${type}, ${ingredients}, ${instructions}, ${duration}, 'import', ${body.sourceUrl || null})
+        ON CONFLICT (name) DO UPDATE SET type = EXCLUDED.type, ingredients = EXCLUDED.ingredients,
+          instructions = EXCLUDED.instructions, duration_min = EXCLUDED.duration_min,
+          source = 'import', source_url = EXCLUDED.source_url`;
+      // Als Favorit: wird bei der Planung bevorzugt (ohne Turnus)
+      if (body.favorite) {
+        await sql`INSERT INTO favorites (profile_id, meal_name, meal_type, ingredients, instructions, duration_min)
+          VALUES (${p.id}, ${name}, ${type}, ${ingredients}, ${instructions}, ${duration})
+          ON CONFLICT (profile_id, meal_name) DO UPDATE SET meal_type = EXCLUDED.meal_type,
+            ingredients = EXCLUDED.ingredients, instructions = EXCLUDED.instructions, duration_min = EXCLUDED.duration_min`;
+      }
+      return json({ ok: true, favorites: await loadFavorites(sql, p.id) });
+    }
+    if (route === "GET /recipes") {
+      return json(await sql`SELECT id, name, type, duration_min, source, source_url, created_at::text AS created_at
+        FROM recipes WHERE source = 'import' ORDER BY created_at DESC`);
+    }
+    if (parts[0] === "recipes" && id && request.method === "DELETE") {
+      await sql`DELETE FROM recipes WHERE id = ${id} AND source = 'import'`;
+      return json({ ok: true });
     }
 
     // ---------- Favoriten ----------
