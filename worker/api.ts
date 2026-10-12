@@ -537,7 +537,7 @@ export async function handleApi(
 
   // Einmaliger Rezept-Export aus TheMealDB als Download (Passwort per ?pw=, da ein Link keinen Header mitschickt)
   if (request.method === "GET" && path === "/api/mealdb-export") {
-    const pw = new URL(request.url).searchParams.get("pw");
+    const pw = request.headers.get("X-App-Password") ?? new URL(request.url).searchParams.get("pw");
     if (env.APP_PASSWORD && pw !== env.APP_PASSWORD) return json({ error: "unauthorized" }, 401);
     try {
       return await exportMealDb();
