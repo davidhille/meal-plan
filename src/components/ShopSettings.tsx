@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2, ShoppingBag, Check, Unplug } from 'lucide-react';
 import { ShopProvider, ShopState } from '../types';
+import CollapsibleCard from './CollapsibleCard';
 import { getShopState, saveShopSettings, connectShop, verifyPicnic, disconnectShop } from '../lib/api';
 
 const SHOPS: { id: ShopProvider; name: string; color: string; hint: string }[] = [
@@ -49,9 +50,11 @@ export default function ShopSettings() {
 
   if (!state) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex justify-center">
-        <Loader2 size={18} className="animate-spin text-gray-300" />
-      </div>
+      <CollapsibleCard storageKey="shops" title="Einkaufen & Shops" icon={<ShoppingBag size={16} />}>
+        <div className="p-6 flex justify-center">
+          <Loader2 size={18} className="animate-spin text-gray-300" />
+        </div>
+      </CollapsibleCard>
     );
   }
 
@@ -84,12 +87,15 @@ export default function ShopSettings() {
     }
   };
 
+  const connected = SHOPS.filter((s) => isActive(s.id)).map((s) => s.name);
+
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="px-4 pt-4 pb-2 flex items-center gap-2">
-        <ShoppingBag size={16} className="text-gray-500" />
-        <h2 className="text-sm font-semibold text-gray-800">Einkaufen & Shops</h2>
-      </div>
+    <CollapsibleCard
+      storageKey="shops"
+      title="Einkaufen & Shops"
+      icon={<ShoppingBag size={16} />}
+      summary={connected.length ? `Verbunden: ${connected.join(', ')}` : 'Kein Shop verbunden'}
+    >
 
       {/* Standard-Liste + Metzger */}
       <div className="px-4 pb-4 space-y-3">
@@ -226,6 +232,6 @@ export default function ShopSettings() {
           {error}
         </p>
       )}
-    </div>
+    </CollapsibleCard>
   );
 }

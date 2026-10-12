@@ -32,6 +32,24 @@ export default function ShoppingSection({
   onMoveToPantry,
 }: ShoppingSectionProps) {
   const [copied, setCopied] = useState(false);
+  // Auf-/zugeklappt pro Liste auf diesem Gerät merken
+  const storageKey = `liste-offen-${label.id}`;
+  const [expanded, setExpanded] = useState(() => {
+    try {
+      return localStorage.getItem(storageKey) !== '0';
+    } catch {
+      return true;
+    }
+  });
+  const toggleExpanded = () =>
+    setExpanded((v) => {
+      try {
+        localStorage.setItem(storageKey, v ? '0' : '1');
+      } catch {
+        // dann nur bis zum Neuladen
+      }
+      return !v;
+    });
   const [openPickerId, setOpenPickerId] = useState<string | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
 
@@ -68,29 +86,42 @@ export default function ShoppingSection({
   return (
     <section className="bg-white rounded-xl shadow-sm border border-gray-100">
       {/* Kopf */}
-      <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-100">
-        <div className="flex items-center gap-2 min-w-0">
+      <div className={`flex items-center justify-between gap-2 pl-2 pr-4 py-2 ${expanded ? 'border-b border-gray-100' : ''}`}>
+        <button
+          onClick={toggleExpanded}
+          aria-expanded={expanded}
+          aria-label={`${label.name}: ${expanded ? 'zuklappen' : 'aufklappen'}`}
+          className="flex items-center gap-2 min-w-0 flex-1 px-2 py-1.5 rounded-lg text-left hover:bg-gray-50"
+        >
+          <ChevronDown
+            size={15}
+            className={`flex-shrink-0 text-gray-400 transition-transform ${expanded ? '' : '-rotate-90'}`}
+            aria-hidden="true"
+          />
           <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: label.color }} />
           <h2 className="text-sm font-semibold text-gray-800 truncate">{label.name}</h2>
           {open.length > 0 && (
             <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-0.5 rounded-full">{open.length}</span>
           )}
-        </div>
+        </button>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {provider === 'knuspr' && onOpenCart && linkedOpen.length > 0 && (
             <button
               onClick={onOpenCart}
+              aria-label={`Warenkorb (${linkedOpen.length} verknüpfte Artikel)`}
+              title="Knuspr-Warenkorb"
               className="flex items-center gap-1.5 px-3 h-8 rounded-lg text-xs font-semibold bg-green-700 text-white hover:bg-green-800"
             >
               <ShoppingCart size={13} />
-              Warenkorb ({linkedOpen.length})
+              {linkedOpen.length}
             </button>
           )}
           <button
             onClick={handleCopy}
             disabled={open.length === 0}
             title="Offene Einträge als Text kopieren"
-            className={`flex items-center gap-1.5 px-3 h-8 rounded-lg text-xs font-semibold transition-colors ${
+            aria-label={copied ? `${label.name}: kopiert` : `${label.name}: offene Einträge kopieren`}
+            className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
               copied
                 ? 'bg-green-100 text-green-700'
                 : open.length === 0
@@ -98,13 +129,12 @@ export default function ShoppingSection({
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            {copied ? <Check size={13} /> : <Copy size={13} />}
-            {copied ? 'Kopiert' : 'Kopieren'}
+            {copied ? <Check size={14} /> : <Copy size={14} />}
           </button>
         </div>
       </div>
 
-      {items.length === 0 ? (
+      {!expanded ? null : items.length === 0 ? (
         <div className="px-4 py-6 text-center text-sm text-gray-500">Keine Einträge</div>
       ) : (
         <ul className="divide-y divide-gray-100">
