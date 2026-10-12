@@ -65,12 +65,12 @@ export default function ShoppingSection({
   }, [open]);
 
   return (
-    <section className="bg-white rounded-2xl shadow-card border border-gray-200/70">
+    <section className="bg-white rounded-xl shadow-sm border border-gray-100">
       {/* Kopf */}
       <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-100">
         <div className="flex items-center gap-2 min-w-0">
           <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: label.color }} />
-          <h3 className="text-[15px] font-semibold text-gray-800 truncate">{label.name}</h3>
+          <h3 className="text-sm font-semibold text-gray-800 truncate">{label.name}</h3>
           {open.length > 0 && (
             <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-0.5 rounded-full">{open.length}</span>
           )}
@@ -87,7 +87,7 @@ export default function ShoppingSection({
                 }
               }}
               disabled={cartBusy}
-              className="flex items-center gap-1.5 px-3 h-8 rounded-full text-xs font-semibold bg-green-500 text-white hover:bg-green-600 disabled:bg-green-300"
+              className="flex items-center gap-1.5 px-3 h-8 rounded-lg text-xs font-semibold bg-green-500 text-white hover:bg-green-600 disabled:bg-green-300"
             >
               {cartBusy ? <Loader2 size={13} className="animate-spin" /> : <ShoppingCart size={13} />}
               Warenkorb ({linkedOpen.length})
@@ -97,7 +97,7 @@ export default function ShoppingSection({
             onClick={handleCopy}
             disabled={open.length === 0}
             title="Offene Einträge als Text kopieren"
-            className={`flex items-center gap-1.5 px-3 h-8 rounded-full text-xs font-semibold transition-colors ${
+            className={`flex items-center gap-1.5 px-3 h-8 rounded-lg text-xs font-semibold transition-colors ${
               copied
                 ? 'bg-green-100 text-green-700'
                 : open.length === 0
@@ -185,7 +185,7 @@ export default function ShoppingSection({
                   <button
                     onClick={() => onMoveToPantry(item)}
                     title="Haben wir immer da – in den Vorrat legen"
-                    className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-amber-700 hover:bg-sand"
+                    className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-amber-700 hover:bg-amber-50"
                   >
                     <Package size={13} />
                   </button>

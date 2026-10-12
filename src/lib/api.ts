@@ -310,9 +310,16 @@ export interface ShoppingData {
 
 const enc = encodeURIComponent;
 
-export async function getShopping(planId: string): Promise<ShoppingData | null> {
+export interface WeekRange {
+  from: string;
+  to: string;
+}
+
+const weekQuery = (week?: WeekRange) => (week ? `?from=${week.from}&to=${week.to}` : '');
+
+export async function getShopping(planId: string, week?: WeekRange): Promise<ShoppingData | null> {
   try {
-    return await request<ShoppingData>('GET', `/plans/${planId}/shopping`);
+    return await request<ShoppingData>('GET', `/plans/${planId}/shopping${weekQuery(week)}`);
   } catch (error) {
     console.error('Error fetching shopping list:', error);
     return null;
@@ -341,10 +348,11 @@ export async function addShoppingItem(
   planId: string,
   name: string,
   label: string,
-  isBasic = false
+  isBasic = false,
+  week?: WeekRange
 ): Promise<ShoppingData | null> {
   try {
-    return await request<ShoppingData>('POST', `/plans/${planId}/shopping`, { name, label, isBasic });
+    return await request<ShoppingData>('POST', `/plans/${planId}/shopping${weekQuery(week)}`, { name, label, isBasic });
   } catch (error) {
     console.error('Error adding shopping item:', error);
     return null;

@@ -8,11 +8,11 @@ Eine deutschsprachige App zur automatisierten Essensplanung für Familien mit Wo
 
 ## 1. Hauptfunktionen
 
-Die App hat drei Hauptbereiche, die über einen Tab-Switcher erreichbar sind.
+Aussehen wie in der Juli-Version: Kopfzeile mit Logo, darunter KW-Auswahl (nur bei Plänen über mehrere Wochen) und Reiter **Speiseplan · Einkaufsliste · ♥ Favoriten · ⚙ Einstellungen**. Gerichtkarten mit Farbbalken (grün = vegetarisch, orange = Fleisch, blau = Wochenende) und Aktionen rechts (♥ Merken, ↻ Neu generieren, ✕ Ablehnen).
 
 ### 1.1 Speiseplan (Tab: „speiseplan")
 
-- Wochenansicht mit Gerichten für jeden Tag (Mo–So)
+- Wochenansicht mit Gerichten für jeden Tag; bei längeren Plänen per KW-Auswahl gefiltert (`lib/dateUtils.ts`, aus der Juli-Version); die Einkaufsliste folgt der gewählten KW (eigene Häkchen pro Woche)
 - Drei Gericht-Typen:
   - `vegetarisch` — vegetarische Gerichte
   - `fleisch` — Fleischgerichte

@@ -108,7 +108,7 @@ export default function PreferencesModal({
           </div>
 
           {conditions.size > 0 && (
-            <div className="bg-sand border border-amber-100 rounded-lg px-3 py-2 flex gap-2 text-xs text-amber-900">
+            <div className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 flex gap-2 text-xs text-amber-900">
               <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
               <p>Diese Einschränkungen werden bei der Meal-Auswahl berücksichtigt.</p>
             </div>

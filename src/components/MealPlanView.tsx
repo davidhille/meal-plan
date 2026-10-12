@@ -23,11 +23,16 @@ interface MealPlanViewProps {
 const dayNames = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
 const dayShort = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 
+function formatDate(d: string) {
+  const [y, m, day] = d.split('-');
+  return `${day}.${m}.${y.slice(2)}`;
+}
+
 function planMealToMeal(pm: PlanMeal): Meal {
   const dow = new Date(pm.meal_date + 'T12:00:00').getDay();
   const [, m, d] = pm.meal_date.split('-');
   return {
-    day: `${dayNames[dow]} · ${d}.${m}.`,
+    day: `${dayNames[dow]}, ${d}.${m}.`,
     dayShort: dayShort[dow],
     meal: pm.meal_name,
     description: '',
@@ -65,17 +70,15 @@ export default function MealPlanView({
 
   if (!plan) {
     return (
-      <div className="px-5 py-12 flex flex-col items-center text-center gap-3">
-        <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center">
-          <CalendarPlus size={28} className="text-green-500" />
-        </div>
-        <p className="font-display text-lg font-semibold text-gray-800 mt-2">Noch kein Speiseplan</p>
-        <p className="text-sm text-gray-500 max-w-xs">
+      <div className="px-4 py-12 flex flex-col items-center text-center gap-3">
+        <CalendarPlus size={32} className="text-gray-300" />
+        <p className="text-sm text-gray-500">Noch kein Speiseplan vorhanden.</p>
+        <p className="text-xs text-gray-400">
           Erstelle einen Plan – er berücksichtigt eure Familie, Vorlieben und Bewertungen.
         </p>
         <button
           onClick={onCreatePlan}
-          className="mt-3 px-6 h-11 rounded-full text-sm font-semibold bg-green-500 text-white hover:bg-green-600 transition-colors"
+          className="mt-2 px-4 py-2 rounded-lg text-sm font-medium bg-green-500 text-white hover:bg-green-600"
         >
           Plan erstellen
         </button>
@@ -94,7 +97,17 @@ export default function MealPlanView({
 
   return (
     <>
-      <div className="px-4 space-y-3">
+      <div className="px-4 py-4 space-y-3">
+        {plan && (
+          <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-white border border-gray-100 text-sm">
+            <span className="text-gray-600">
+              Plan {formatDate(plan.start_date)} – {formatDate(plan.end_date)}
+            </span>
+            <button onClick={onCreatePlan} className="text-xs font-medium text-green-600 hover:text-green-700">
+              Neuer Zeitraum
+            </button>
+          </div>
+        )}
         {displayItems.map((pm) => {
           const meal = planMealToMeal(pm);
           if (imageOverrides[pm.meal_name]) meal.imageUrl = imageOverrides[pm.meal_name];
@@ -120,7 +133,7 @@ export default function MealPlanView({
         )}
 
         {/* Plan-Aktionen */}
-        <div className="pt-3 space-y-2">
+        <div className="pt-2 space-y-2">
           {onRegeneratePlan && (
             <button
               onClick={async () => {
@@ -132,20 +145,13 @@ export default function MealPlanView({
                 }
               }}
               disabled={regeneratingPlan}
-              className="w-full h-12 flex items-center justify-center gap-2 rounded-full bg-green-500 text-white text-sm font-semibold hover:bg-green-600 disabled:bg-green-300 transition-colors"
+              className="w-full py-3 flex items-center justify-center gap-2 rounded-xl bg-green-500 text-white text-sm font-medium hover:bg-green-600 disabled:bg-green-300 transition-colors"
             >
               {regeneratingPlan ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
               {regeneratingPlan ? 'Wird neu geplant …' : 'Komplett neuen Plan generieren'}
             </button>
           )}
           <div className="flex gap-2">
-            <button
-              onClick={onCreatePlan}
-              className="flex-1 h-11 flex items-center justify-center gap-2 rounded-full border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50"
-            >
-              <CalendarPlus size={15} />
-              Anderer Zeitraum
-            </button>
             {onDeletePlan &&
               (confirmDelete ? (
                 <button
@@ -160,14 +166,14 @@ export default function MealPlanView({
                   }}
                   onBlur={() => !deleting && setConfirmDelete(false)}
                   disabled={deleting}
-                  className="flex-1 h-11 rounded-full text-sm font-semibold text-white bg-red-500 disabled:bg-red-300"
+                  className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white bg-red-500 disabled:bg-red-300"
                 >
                   {deleting ? 'Löscht …' : 'Wirklich löschen?'}
                 </button>
               ) : (
                 <button
                   onClick={() => setConfirmDelete(true)}
-                  className="flex-1 h-11 flex items-center justify-center gap-2 rounded-full border border-gray-200 bg-white text-sm font-semibold text-red-500 hover:bg-red-50"
+                  className="flex-1 py-2.5 flex items-center justify-center gap-2 rounded-xl border border-gray-100 bg-white text-sm font-medium text-red-500 hover:bg-red-50"
                 >
                   <Trash2 size={15} />
                   Plan löschen

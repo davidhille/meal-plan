@@ -153,7 +153,7 @@ export default function RoutineModal({ onSave, onClose }: RoutineModalProps) {
             )}
           </div>
 
-          <div className="bg-sand border border-amber-100 rounded-lg px-3 py-2 text-xs text-amber-900">
+          <div className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 text-xs text-amber-900">
             <p className="font-medium mb-1">Automatische Erstellung</p>
             <p>
               Der Plan wird automatisch {frequency === 'weekly' ? `jeden ${dayNames[dayOfWeek]}` : 'monatlich'} um {time} Uhr erstellt.

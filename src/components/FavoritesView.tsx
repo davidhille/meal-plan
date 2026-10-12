@@ -48,7 +48,7 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
         <div className="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center">
           <Heart size={28} className="text-rose-400" />
         </div>
-        <p className="font-display text-lg font-semibold text-gray-800 mt-2">Noch keine Favoriten</p>
+        <p className="text-lg font-semibold text-gray-800 mt-2">Noch keine Favoriten</p>
         <p className="text-sm text-gray-500 max-w-xs">
           Tippe im Speiseplan bei einem Gericht auf „Merken“. Hier kannst du dann festlegen, wie oft es wiederkommen soll.
         </p>
@@ -67,17 +67,18 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
 
   return (
     <>
-      <div className="px-4 space-y-3">
+      <div className="px-4 py-4 space-y-3">
+        <p className="text-xs text-gray-400 px-1">Eure Lieblingsgerichte – mit Turnus kommen sie automatisch wieder in den Plan.</p>
         {favorites.map((f) => (
           <article
             key={f.id}
-            className={`bg-white rounded-2xl border border-gray-200/70 shadow-card p-4 transition-opacity ${
+            className={`bg-white rounded-xl border border-gray-100 shadow-sm p-4 transition-opacity ${
               busyId === f.id ? 'opacity-60' : ''
             }`}
           >
             <div className="flex items-start gap-3">
               <button onClick={() => setSelected(f)} className="flex-1 min-w-0 text-left">
-                <h3 className="text-[17px] leading-snug font-semibold text-gray-800">{f.meal_name}</h3>
+                <h3 className="text-sm leading-snug font-semibold text-gray-800">{f.meal_name}</h3>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-gray-500">
                   {f.duration_min ? (
                     <span className="flex items-center gap-1">
@@ -91,7 +92,7 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
                 <button
                   onClick={() => run(f.id, () => onRemove(f.id))}
                   onBlur={() => setConfirmId(null)}
-                  className="px-3 h-8 rounded-full text-xs font-semibold text-white bg-red-500"
+                  className="px-3 h-8 rounded-lg text-xs font-semibold text-white bg-red-500"
                 >
                   Entfernen?
                 </button>
@@ -107,7 +108,7 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
             </div>
 
             <div className="mt-3">
-              <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500 mb-2">
+              <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2">
                 <Repeat size={11} /> Turnus
               </p>
               <div className="flex flex-wrap gap-1.5">
@@ -118,7 +119,7 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
                       key={o.label}
                       onClick={() => !active && run(f.id, () => onSetTurnus(f.id, o.weeks))}
                       disabled={busyId === f.id}
-                      className={`px-3 h-8 rounded-full text-xs font-semibold transition-colors ${
+                      className={`px-3 h-8 rounded-lg text-xs font-semibold transition-colors ${
                         active ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >

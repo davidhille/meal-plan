@@ -50,10 +50,10 @@ export default function ProductSearchModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-gray-900/40" onClick={onClose} />
-      <div className="relative w-full sm:max-w-md max-h-[88vh] bg-cream rounded-t-3xl sm:rounded-3xl shadow-xl flex flex-col overflow-hidden">
+      <div className="relative w-full sm:max-w-md max-h-[88vh] bg-gray-50 rounded-t-3xl sm:rounded-3xl shadow-xl flex flex-col overflow-hidden">
         <div className="flex items-start gap-3 px-5 pt-5 pb-3">
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: label.color }}>
+            <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: label.color }}>
               {label.name}
             </p>
             <h2 className="text-lg font-bold text-gray-800 leading-snug">Produkt für „{ingredientName}“</h2>
@@ -114,7 +114,7 @@ export default function ProductSearchModal({
                     }
                   }}
                   className={`w-full flex items-center gap-3 p-3 rounded-2xl border text-left transition-colors ${
-                    active ? 'border-green-400 bg-green-50' : 'border-gray-200/70 bg-white hover:bg-gray-50'
+                    active ? 'border-green-400 bg-green-50' : 'border-gray-100 bg-white hover:bg-gray-50'
                   }`}
                 >
                   {p.imageUrl ? (

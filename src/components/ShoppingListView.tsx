@@ -9,6 +9,7 @@ import {
   saveProductLink,
   addToKnusprCart,
   createLabel,
+  type WeekRange,
   deleteLabel,
   updateLabel,
   addToPantry,
@@ -19,12 +20,14 @@ import ProductSearchModal from './ProductSearchModal';
 
 interface ShoppingListViewProps {
   plan: MealPlan | null;
+  /** Gewählte Kalenderwoche (nur bei Plänen über mehrere Wochen) */
+  week?: WeekRange;
   onCreatePlan: () => void;
 }
 
 const lc = (s: string) => s.trim().toLowerCase();
 
-export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListViewProps) {
+export default function ShoppingListView({ plan, week, onCreatePlan }: ShoppingListViewProps) {
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [labels, setLabels] = useState<ShoppingLabel[]>([...DEFAULT_LABELS]);
@@ -50,7 +53,7 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
       return;
     }
     setLoading(true);
-    const data = await getShopping(planId);
+    const data = await getShopping(planId, week);
     if (data) {
       setItems(data.items);
       setLabels(data.labels);
@@ -59,7 +62,8 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
       setStandardLabel(data.standardLabel);
     }
     setLoading(false);
-  }, [planId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planId, week?.from]);
 
   useEffect(() => {
     load();
@@ -96,7 +100,7 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
 
   const addItem = async (name: string, label: string, isBasic = false) => {
     if (!planId || !name.trim()) return;
-    const data = await addShoppingItem(planId, name.trim(), label, isBasic);
+    const data = await addShoppingItem(planId, name.trim(), label, isBasic, week);
     if (data) setItems(data.items);
   };
 
@@ -191,7 +195,7 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
         <p className="text-xs text-gray-400">Die Einkaufsliste entsteht automatisch aus deinem Speiseplan.</p>
         <button
           onClick={onCreatePlan}
-          className="mt-3 px-6 h-11 rounded-full text-sm font-semibold bg-green-500 text-white hover:bg-green-600"
+          className="mt-3 px-6 h-11 rounded-lg text-sm font-semibold bg-green-500 text-white hover:bg-green-600"
         >
           Plan erstellen
         </button>
@@ -225,7 +229,7 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
 
   return (
     <>
-      <div className="px-4 pb-4 space-y-4">
+      <div className="px-4 py-4 space-y-4">
         {/* Eigenen Artikel hinzufügen */}
         <form
           onSubmit={async (e) => {
@@ -271,7 +275,7 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
 
         {/* Eigenes Label */}
         {showAddLabel ? (
-          <div className="bg-white rounded-2xl shadow-card border border-gray-200/70 overflow-hidden">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
               <span className="text-sm font-semibold text-gray-800">{editingLabelId ? 'Liste bearbeiten' : 'Neue Liste'}</span>
               <button
@@ -353,7 +357,7 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
         )}
 
         {/* Basics & Vorrat */}
-        <div className="bg-white rounded-2xl shadow-card border border-gray-200/70 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <button
             onClick={() => setShowBasics(!showBasics)}
             className="w-full flex items-center justify-between px-4 py-3 border-b border-gray-50"
@@ -430,7 +434,7 @@ export default function ShoppingListView({ plan, onCreatePlan }: ShoppingListVie
                 {customPantry.length > 0 ? (
                   <div className="flex flex-wrap gap-1.5 mb-3">
                     {customPantry.map((name) => (
-                      <span key={name} className="inline-flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full bg-sand text-xs text-amber-900">
+                      <span key={name} className="inline-flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full bg-amber-50 text-xs text-amber-900">
                         {name}
                         <button
                           onClick={() => takeFromPantry(name)}

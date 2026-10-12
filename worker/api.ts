@@ -144,10 +144,15 @@ async function getLabels(sql: Sql, profileId: string) {
 }
 
 /** Komplette Einkaufsliste eines Plans: berechnete Zutaten + gespeicherter Zustand + eigene Artikel */
-async function getShopping(sql: Sql, profileId: string, planId: string) {
+async function getShopping(sql: Sql, profileId: string, planId: string, range?: { from: string; to: string }) {
+  const from = range?.from ?? "0001-01-01";
+  const to = range?.to ?? "9999-12-31";
+  // Pro Woche eigene Häkchen: Schlüssel bekommt das Wochen-Startdatum vorangestellt
+  const keyPrefix = range ? `${range.from}:` : "";
   const [labels, meals, members, states, extras, prefs, links, settingsRows, pantry] = await Promise.all([
     getLabels(sql, profileId),
-    sql`SELECT ingredients FROM plan_meals WHERE plan_id = ${planId} AND NOT rejected`,
+    sql`SELECT ingredients FROM plan_meals WHERE plan_id = ${planId} AND NOT rejected
+      AND meal_date BETWEEN ${from}::date AND ${to}::date`,
     sql`SELECT type, age FROM family_members WHERE profile_id = ${profileId}`,
     sql`SELECT item_key, checked, label FROM shopping_item_state WHERE plan_id = ${planId}`,
     sql`SELECT id, name, label, checked, is_basic FROM shopping_extras WHERE plan_id = ${planId} ORDER BY created_at`,
@@ -181,11 +186,11 @@ async function getShopping(sql: Sql, profileId: string, planId: string) {
 
   const items = [
     ...built.items.map((i) => {
-      const st = stateBy.get(i.key);
+      const st = stateBy.get(keyPrefix + i.key);
       const pref = prefBy.get(prefKey(i.baseName));
       const label = validLabel(st?.label ?? pref?.label, i.defaultLabel === "metzger" ? meatLabel : standard);
       return {
-        id: `p:${i.key}`,
+        id: `p:${keyPrefix}${i.key}`,
         name: i.display,
         baseName: i.baseName,
         label,
@@ -680,7 +685,9 @@ export async function handleApi(
       if (!(await planOwned(sql, p.id, id))) return json({ error: "Plan nicht gefunden" }, 404);
       const itemId = parts[3] ? decodeURIComponent(parts[3]) : "";
 
-      if (request.method === "GET" && !itemId) return json(await getShopping(sql, p.id, id));
+      const qs = new URL(request.url).searchParams;
+      const range = qs.get("from") && qs.get("to") ? { from: qs.get("from")!, to: qs.get("to")! } : undefined;
+      if (request.method === "GET" && !itemId) return json(await getShopping(sql, p.id, id, range));
 
       // Eigenen Artikel / Basic hinzufügen
       if (request.method === "POST" && !itemId) {
@@ -688,7 +695,7 @@ export async function handleApi(
         if (!name) return json({ error: "Name fehlt" }, 400);
         await sql`INSERT INTO shopping_extras (plan_id, name, label, is_basic)
           VALUES (${id}, ${name}, ${body.label || "knuspr"}, ${!!body.isBasic})`;
-        return json(await getShopping(sql, p.id, id));
+        return json(await getShopping(sql, p.id, id, range));
       }
 
       // Abhaken / Label ändern

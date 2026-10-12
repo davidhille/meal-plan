@@ -29,22 +29,20 @@ import {
 import PasswordGate from './components/PasswordGate';
 import { familyPortions } from './lib/portions';
 import PlanCreationModal from './components/PlanCreationModal';
-import BottomNav from './components/BottomNav';
-import PageHeader from './components/PageHeader';
+import Header from './components/Header';
+import TabSwitcher from './components/TabSwitcher';
+import WeekSelector from './components/WeekSelector';
+import { getWeeksInRange, isDateInWeek } from './lib/dateUtils';
 import FavoritesView from './components/FavoritesView';
 import MealPlanView from './components/MealPlanView';
 import ShoppingListView from './components/ShoppingListView';
 import SettingsView from './components/SettingsView';
 
-function formatDay(d: string) {
-  const [, m, day] = d.split('-');
-  return `${day}.${m}.`;
-}
-
 export default function App() {
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [imagePolls, setImagePolls] = useState(0);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
+  const [selectedWeekKey, setSelectedWeekKey] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ViewTab>('speiseplan');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
@@ -60,6 +58,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    setSelectedWeekKey(null);
     if (currentPlan) {
       loadPlanMeals();
     }
@@ -244,89 +243,85 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
-        <p className="text-sm text-gray-500">Wird geladen …</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-sm text-gray-500">Wird geladen...</p>
       </div>
     );
   }
 
+  // KW-Auswahl (aus der Juli-Version): nur Wochen, die der Plan wirklich abdeckt
+  const planWeeks = currentPlan ? getWeeksInRange(currentPlan.start_date, currentPlan.end_date) : [];
+  const selectedWeek = planWeeks.find((w) => w.key === selectedWeekKey) ?? planWeeks[0];
+  const visiblePlanMeals = selectedWeek
+    ? planMeals.filter((m) => isDateInWeek(m.meal_date, selectedWeek))
+    : planMeals;
+  const showWeeks = planWeeks.length > 1 && (activeTab === 'speiseplan' || activeTab === 'einkaufsliste');
+
   return (
-    <div className="min-h-screen bg-cream">
-      <div className="max-w-lg mx-auto min-h-screen flex flex-col">
-      <main className="flex-1 pb-28">
-        {activeTab === 'speiseplan' ? (
-          <>
-            <PageHeader
-              eyebrow="Hallo Familie 👋"
-              title="Speiseplan"
-              subtitle={currentPlan ? `${formatDay(currentPlan.start_date)} – ${formatDay(currentPlan.end_date)}` : undefined}
-            />
-            <MealPlanView
-              key={`meals-${currentPlan?.id || 'none'}`}
-              onCreatePlan={() => setShowPlanModal(true)}
-              planMeals={currentPlan ? planMeals : undefined}
-              ratings={mealRatings}
-              onRate={handleRateMeal}
-              onReject={currentPlan ? handleRejectMeal : undefined}
-              onRegenerate={currentPlan ? handleRegenerateMeal : undefined}
-              onRegeneratePlan={currentPlan ? handleRegeneratePlan : undefined}
-              favoriteNames={favoriteNames}
-              onToggleFavorite={handleToggleFavorite}
-              plan={currentPlan}
-              onDeletePlan={currentPlan ? handleDeletePlan : undefined}
-              defaultPortions={familyPortions(familyMembers)}
-            />
-          </>
-        ) : activeTab === 'einkaufsliste' ? (
-          <>
-            <PageHeader
-              title="Einkaufsliste"
-              subtitle={currentPlan ? 'Aus deinem Speiseplan zusammengestellt.' : undefined}
-            />
-            <ShoppingListView
-              key={`shopping-${currentPlan?.id || 'none'}`}
-              plan={currentPlan}
-              onCreatePlan={() => setShowPlanModal(true)}
-            />
-          </>
-        ) : activeTab === 'favoriten' ? (
-          <>
-            <PageHeader title="Favoriten" subtitle="Eure Lieblingsgerichte – wiederholbar im Turnus." />
-            <FavoritesView
-              favorites={favorites}
-              ratings={mealRatings}
-              defaultPortions={familyPortions(familyMembers)}
-              onSetTurnus={async (id, weeks) => {
-                const next = await setFavoriteTurnus(id, weeks);
-                if (next) setFavorites(next);
-              }}
-              onRemove={async (id) => {
-                const next = await removeFavorite(id);
-                if (next) setFavorites(next);
-              }}
-            />
-          </>
-        ) : (
-          <>
-            <PageHeader title="Familienprofil" subtitle="Damit die Planung zu euch passt." />
-            <SettingsView
-              profile={profile}
-              familyMembers={familyMembers}
-              routines={routines}
-              onUpdateProfile={handleUpdateProfile}
-              onAddFamilyMember={handleAddFamilyMember}
-              onUpdateFamilyMember={handleUpdateFamilyMember}
-              onDeleteFamilyMember={handleDeleteFamilyMember}
-              onCreateRoutine={handleCreateRoutine}
-              onDeleteRoutine={handleDeleteRoutine}
-              onCreatePlan={handleCreatePlan}
-            />
-          </>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Sticky top bar */}
+      <div className="sticky top-0 z-10 flex flex-col">
+        <Header />
+        {showWeeks && (
+          <WeekSelector weeks={planWeeks} selectedWeekKey={selectedWeek?.key ?? null} onSelectWeek={setSelectedWeekKey} />
         )}
-      </main>
+        <TabSwitcher activeTab={activeTab} onTabChange={setActiveTab} />
       </div>
 
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      {/* Scrollable content area */}
+      <main className="flex-1 pb-8 w-full max-w-2xl mx-auto">
+        {activeTab === 'speiseplan' ? (
+          <MealPlanView
+            key={`meals-${currentPlan?.id || 'none'}`}
+            onCreatePlan={() => setShowPlanModal(true)}
+            planMeals={currentPlan ? visiblePlanMeals : undefined}
+            ratings={mealRatings}
+            onRate={handleRateMeal}
+            onReject={currentPlan ? handleRejectMeal : undefined}
+            onRegenerate={currentPlan ? handleRegenerateMeal : undefined}
+            onRegeneratePlan={currentPlan ? handleRegeneratePlan : undefined}
+            favoriteNames={favoriteNames}
+            onToggleFavorite={handleToggleFavorite}
+            plan={currentPlan}
+            onDeletePlan={currentPlan ? handleDeletePlan : undefined}
+            defaultPortions={familyPortions(familyMembers)}
+          />
+        ) : activeTab === 'einkaufsliste' ? (
+          <ShoppingListView
+            key={`shopping-${currentPlan?.id || 'none'}-${selectedWeek?.key ?? 'all'}`}
+            plan={currentPlan}
+            week={showWeeks && selectedWeek ? { from: selectedWeek.weekStart, to: selectedWeek.weekEnd } : undefined}
+            onCreatePlan={() => setShowPlanModal(true)}
+          />
+        ) : activeTab === 'favoriten' ? (
+          <FavoritesView
+            favorites={favorites}
+            ratings={mealRatings}
+            defaultPortions={familyPortions(familyMembers)}
+            onSetTurnus={async (id, weeks) => {
+              const next = await setFavoriteTurnus(id, weeks);
+              if (next) setFavorites(next);
+            }}
+            onRemove={async (id) => {
+              const next = await removeFavorite(id);
+              if (next) setFavorites(next);
+            }}
+          />
+        ) : (
+          <SettingsView
+            profile={profile}
+            familyMembers={familyMembers}
+            routines={routines}
+            onUpdateProfile={handleUpdateProfile}
+            onAddFamilyMember={handleAddFamilyMember}
+            onUpdateFamilyMember={handleUpdateFamilyMember}
+            onDeleteFamilyMember={handleDeleteFamilyMember}
+            onCreateRoutine={handleCreateRoutine}
+            onDeleteRoutine={handleDeleteRoutine}
+            onCreatePlan={handleCreatePlan}
+          />
+        )}
+      </main>
 
       {showPlanModal && (
         <PlanCreationModal onCreate={handleCreatePlan} onClose={() => setShowPlanModal(false)} />

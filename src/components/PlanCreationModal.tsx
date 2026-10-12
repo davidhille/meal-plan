@@ -182,7 +182,7 @@ export default function PlanCreationModal({ onCreate, onClose }: PlanCreationMod
             </div>
           )}
 
-          <div className="bg-sand border border-amber-100 rounded-lg px-3 py-2 flex gap-2 text-xs text-amber-900">
+          <div className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 flex gap-2 text-xs text-amber-900">
             <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
             <p>Der Plan berücksichtigt eure Familie, Vorlieben und Bewertungen. Dabei entstehen auch ein paar neue KI-Rezepte – das kann bis zu einer halben Minute dauern.</p>
           </div>
@@ -193,14 +193,14 @@ export default function PlanCreationModal({ onCreate, onClose }: PlanCreationMod
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 h-11 px-4 rounded-full text-sm font-semibold text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
+            className="flex-1 h-11 px-4 rounded-xl text-sm font-semibold text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
           >
             Abbrechen
           </button>
           <button
             onClick={handleCreate}
             disabled={loading || (!isCustom && !previewStart) || (isCustom && (!customStart || !customEnd))}
-            className="flex-1 h-11 px-4 rounded-full text-sm font-semibold text-white bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex-1 h-11 px-4 rounded-xl text-sm font-semibold text-white bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
