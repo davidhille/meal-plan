@@ -81,8 +81,24 @@ describe("Fleisch-Grenze", () => {
     const meals = pickDays(twoWeeks.slice(0, 7), ctx(0), new Set(), [...MEAL_DATABASE]);
     expect(meals.some((m) => isMeatDish(m.recipe))).toBe(false);
   });
-  test("ohne Grenze kommt Fleisch normal vor", () => {
-    const meals = pickDays(twoWeeks, ctx(null), new Set(), [...MEAL_DATABASE]);
-    expect([...meatByWeek(meals).values()].some((n) => n > 2)).toBe(true);
+  test("Grenze greift genau ab dem X-ten Fleischgericht der Woche", () => {
+    // Kleiner Pool: nur Fleisch und ein vegetarisches Gericht pro Art – Ergebnis ist eindeutig
+    const pool = [
+      r("Gulasch", ["500 g Rindfleisch"], "fleisch"),
+      r("Schnitzel", ["4 Schweineschnitzel"], "fleisch"),
+      r("Hähnchenpfanne", ["400 g Hähnchenbrust"], "fleisch"),
+      r("Gemüsecurry", ["1 Brokkoli"], "vegetarisch"),
+    ];
+    const tue = "2026-10-13";
+    const thu = "2026-10-15";
+    // ohne Grenze: an beiden Fleisch-Tagen Fleisch
+    const free = pickDays([tue, thu], ctx(null), new Set(), pool);
+    expect(free.every((m) => isMeatDish(m.recipe))).toBe(true);
+    // Grenze 1: Dienstag Fleisch, Donnerstag nicht mehr
+    const limited = pickDays([tue, thu], ctx(1), new Set(), pool);
+    expect(limited.map((m) => isMeatDish(m.recipe))).toEqual([true, false]);
+    // neue Woche: wieder Fleisch erlaubt
+    const nextWeek = pickDays([tue, thu, "2026-10-20"], ctx(1), new Set(), pool);
+    expect(nextWeek.map((m) => isMeatDish(m.recipe))).toEqual([true, false, true]);
   });
 });
