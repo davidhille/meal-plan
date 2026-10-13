@@ -1,4 +1,5 @@
 // Rezeptdatenbank + Auswahl-Logik (übernommen aus den Supabase Edge Functions)
+import type { DayRules } from "./dayRules";
 import { VEGETARISCH } from "./recipes/vegetarisch";
 import { FLEISCH } from "./recipes/fleisch";
 import { WOCHENENDE } from "./recipes/wochenende";
@@ -220,6 +221,8 @@ export interface ScoringContext {
   meatMaxPerWeek?: number | null;
   /** Monat 1–12 für „saisonal“ */
   month?: number;
+  /** Regeln pro Wochentag (frei / höchstens X Minuten), siehe dayRules.ts */
+  dayRules?: DayRules;
   /** Gerichte, die schon im Plan sind (nur beim Ersetzen: −20) */
   existingPlanMeals?: string[];
   /** Favoriten ohne Turnus bekommen einen Bonus */

@@ -12,13 +12,15 @@ interface TodayCardProps {
   onOpen: (pm: PlanMeal) => void;
   onCook: (pm: PlanMeal) => void;
   onRate?: (mealName: string, rating: number) => Promise<void>;
+  /** Heute ist laut Wochentag-Regel frei */
+  todayOff?: boolean;
 }
 
 const longDate = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
 
 /** Oben im Speiseplan: was gibt es heute, was morgen, und kurz das letzte Essen bewerten */
-export default function TodayCard({ todayIso, today, tomorrow, toRate, onOpen, onCook, onRate }: TodayCardProps) {
+export default function TodayCard({ todayIso, today, tomorrow, toRate, onOpen, onCook, onRate, todayOff }: TodayCardProps) {
   const [saving, setSaving] = useState<number | null>(null);
   const [thanks, setThanks] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -89,7 +91,7 @@ export default function TodayCard({ todayIso, today, tomorrow, toRate, onOpen, o
           </div>
         </div>
       ) : (
-        <p className="px-4 pb-3 text-sm text-gray-500">Für heute ist nichts geplant.</p>
+        <p className="px-4 pb-3 text-sm text-gray-500">{todayOff ? 'Heute ist frei – nichts geplant.' : 'Für heute ist nichts geplant.'}</p>
       )}
 
       {tomorrow && (

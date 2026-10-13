@@ -1,6 +1,6 @@
 import {
   Profile, FamilyMember, MealRating, MealPlan, PlanMeal, Routine, ShoppingItem, ShoppingLabel, Favorite, MealType, ImageCredit,
-  ShopState, ShopProvider, ProductResult, CartItem, ShopRule, PlanDessert, RecipeCatalog, RecipeFilter, RecipeFilterInput, RecipeDraft,
+  ShopState, ShopProvider, ProductResult, CartItem, ShopRule, PlanDessert, RecipeCatalog, RecipeFilter, RecipeFilterInput, RecipeDraft, DayRules,
 } from '../types';
 
 // Alle Daten laufen über die Cloudflare-Functions unter /api (→ Neon).
@@ -70,6 +70,11 @@ export async function updateProfile(
     console.error('Error updating profile:', error);
     return null;
   }
+}
+
+/** Regeln pro Wochentag speichern; wirft bei Fehlern */
+export function saveDayRules(dayRules: DayRules): Promise<Profile> {
+  return request<Profile>('PUT', '/profile/day-rules', { day_rules: dayRules });
 }
 
 export async function getFamilyMembers(_profileId: string): Promise<FamilyMember[]> {

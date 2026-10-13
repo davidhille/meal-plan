@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Trash2, CalendarPlus, RefreshCw, Loader2 } from 'lucide-react';
-import { Dessert, ImageCredit, Meal, MealPlan, MealType, PlanDessert, PlanMeal } from '../types';
+import { DayRules, Dessert, ImageCredit, Meal, MealPlan, MealType, PlanDessert, PlanMeal } from '../types';
 import { generateMealImage } from '../lib/api';
 import { planDessertToMeal } from '../lib/desserts';
 import DessertPickerModal from './DessertPickerModal';
 import { formatShortDate, toIso } from '../lib/dateUtils';
+import { ruleForDate } from '../lib/dayRules';
 import TodayCard from './TodayCard';
 import DayCard from './DayCard';
 import MealModal from './MealModal';
@@ -28,6 +29,10 @@ interface MealPlanViewProps {
   allPlanMeals?: PlanMeal[];
   /** Uhrzeit der Erinnerung zum Bewerten („HH:MM“) */
   reminderTime?: string;
+  /** Regeln pro Wochentag – freie Tage erscheinen als schmale Zeile */
+  dayRules?: DayRules;
+  /** Sichtbarer Zeitraum (gewählte KW), für die Zeilen der freien Tage */
+  visibleRange?: { from: string; to: string };
 }
 
 /** Spätestens ab dann fragt die Heute-Karte nach dem heutigen Essen (vorher: nach dem von gestern) */
@@ -36,11 +41,16 @@ const ASK_TODAY_LATEST = '18:00';
 const dayNames = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
 const dayShort = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 
+/** „2026-10-14“ → „Mittwoch, 14.10.“ */
+function dayLabel(iso: string): string {
+  const [, m, d] = iso.split('-');
+  return `${dayNames[new Date(iso + 'T12:00:00').getDay()]}, ${d}.${m}.`;
+}
+
 function planMealToMeal(pm: PlanMeal): Meal {
   const dow = new Date(pm.meal_date + 'T12:00:00').getDay();
-  const [, m, d] = pm.meal_date.split('-');
   return {
-    day: `${dayNames[dow]}, ${d}.${m}.`,
+    day: dayLabel(pm.meal_date),
     dayShort: dayShort[dow],
     meal: pm.meal_name,
     description: '',
@@ -72,6 +82,8 @@ export default function MealPlanView({
   onSetDessert,
   allPlanMeals,
   reminderTime,
+  dayRules,
+  visibleRange,
 }: MealPlanViewProps) {
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [cookOnOpen, setCookOnOpen] = useState(false);
@@ -121,6 +133,22 @@ export default function MealPlanView({
   ];
   const toRate = rateCandidates.find((pm) => !ratings[pm.meal_name]) ?? null;
 
+  // Freie Tage im sichtbaren Zeitraum ohne Gericht → eigene, schmale Zeile
+  const offDays: string[] = [];
+  if (plan && dayRules) {
+    const from = visibleRange && visibleRange.from > plan.start_date ? visibleRange.from : plan.start_date;
+    const to = visibleRange && visibleRange.to < plan.end_date ? visibleRange.to : plan.end_date;
+    const planned = new Set(displayItems.map((pm) => pm.meal_date));
+    for (let d = new Date(`${from}T12:00:00`); toIso(d) <= to; d.setDate(d.getDate() + 1)) {
+      const iso = toIso(d);
+      if (!planned.has(iso) && ruleForDate(iso, dayRules).off) offDays.push(iso);
+    }
+  }
+  const rows = [
+    ...displayItems.map((pm) => ({ date: pm.meal_date, pm })),
+    ...offDays.map((date) => ({ date, pm: null as PlanMeal | null })),
+  ].sort((a, b) => a.date.localeCompare(b.date));
+
   const openPlanMeal = (pm: PlanMeal, cook = false) => {
     const meal = planMealToMeal(pm);
     const override = imageOverrides[pm.meal_name];
@@ -162,8 +190,22 @@ export default function MealPlanView({
           onOpen={(pm) => openPlanMeal(pm)}
           onCook={(pm) => openPlanMeal(pm, true)}
           onRate={onRate ? (name, stars) => onRate(name, stars, '') : undefined}
+          todayOff={!todayMeal && ruleForDate(todayIso, dayRules).off === true}
         />
-        {displayItems.map((pm) => {
+        {rows.map(({ date, pm }) => {
+          if (!pm) {
+            return (
+              <div
+                key={`frei-${date}`}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed text-xs ${
+                  date === todayIso ? 'border-brand-300 text-brand-800' : 'border-gray-200 text-gray-500'
+                }`}
+              >
+                <span className="font-medium uppercase tracking-wide">{dayLabel(date)}</span>
+                <span>· frei, nichts geplant</span>
+              </div>
+            );
+          }
           const meal = planMealToMeal(pm);
           const override = imageOverrides[pm.meal_name];
           if (override) {
@@ -189,7 +231,7 @@ export default function MealPlanView({
           );
         })}
 
-        {displayItems.length === 0 && (
+        {displayItems.length === 0 && offDays.length === 0 && (
           <div className="text-center py-8 text-gray-500 text-sm">
             Alle Gerichte dieser Woche wurden abgelehnt. Erstelle einen neuen Plan.
           </div>

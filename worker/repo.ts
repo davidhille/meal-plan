@@ -1,5 +1,6 @@
 // Gemeinsame Datenbank-Zugriffe: Profil, Bewertungs-Kontext, Rezept-Pool, Favoriten, Pläne.
 import type { Row, Sql } from "./db";
+import { parseDayRules } from "./dayRules";
 import { MEAL_DATABASE, type Recipe, type ScoringContext } from "./meals";
 
 // Spaltenlisten mit Datum als Text (YYYY-MM-DD), damit das Frontend Strings bekommt
@@ -73,7 +74,7 @@ export async function getProfile(sql: Sql) {
 
 export async function loadContext(sql: Sql, profileId: string): Promise<ScoringContext> {
   const [profiles, members, ratings, rejected] = await Promise.all([
-    sql`SELECT health_focus, health_conditions, meat_max_per_week FROM profiles WHERE id = ${profileId}`,
+    sql`SELECT health_focus, health_conditions, meat_max_per_week, day_rules FROM profiles WHERE id = ${profileId}`,
     sql`SELECT type, age, favorite_foods, disliked_foods FROM family_members WHERE profile_id = ${profileId}`,
     sql`SELECT meal_name, rating FROM meal_ratings WHERE profile_id = ${profileId}`,
     sql`SELECT meal_name FROM rejected_meals WHERE profile_id = ${profileId}`,
@@ -83,6 +84,7 @@ export async function loadContext(sql: Sql, profileId: string): Promise<ScoringC
     healthFocus: p.health_focus || [],
     healthConditions: p.health_conditions || [],
     meatMaxPerWeek: p.meat_max_per_week ?? null,
+    dayRules: parseDayRules(p.day_rules),
     month: new Date().getMonth() + 1,
     familyMembers: members as ScoringContext["familyMembers"],
     mealRatings: Object.fromEntries(ratings.map((r) => [r.meal_name, r.rating])),

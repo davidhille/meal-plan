@@ -8,6 +8,7 @@ import ShopSettings from './ShopSettings';
 import LabelSettings from './LabelSettings';
 import FilterSettings from './FilterSettings';
 import ReminderSettings from './ReminderSettings';
+import DayRulesSettings from './DayRulesSettings';
 import { CONDITION_LABELS, FOCUS_LABELS } from '../lib/health';
 import CollapsibleCard from './CollapsibleCard';
 import PlanCreationModal from './PlanCreationModal';
@@ -31,6 +32,8 @@ interface SettingsViewProps {
   onCreatePlan: (startDate: string, endDate: string) => Promise<void>;
   /** Uhrzeit der Erinnerung geändert */
   onReminderTimeChange?: (time: string) => void;
+  /** Profil vom Server neu (z. B. nach Änderung der Wochentage) */
+  onProfileChange?: (profile: Profile) => void;
 }
 
 export default function SettingsView({
@@ -45,6 +48,7 @@ export default function SettingsView({
   onDeleteRoutine,
   onCreatePlan,
   onReminderTimeChange,
+  onProfileChange,
 }: SettingsViewProps) {
   const [showFamilyModal, setShowFamilyModal] = useState(false);
   const [editingMember, setEditingMember] = useState<FamilyMember | null>(null);
@@ -151,6 +155,9 @@ export default function SettingsView({
             </div>
           </button>
         </CollapsibleCard>
+
+        {/* Regeln pro Wochentag: frei / wenig Zeit */}
+        {profile && onProfileChange && <DayRulesSettings profile={profile} onSaved={onProfileChange} />}
 
         {/* Einkaufen & Shops */}
         <ShopSettings />
