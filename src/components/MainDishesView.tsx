@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ChefHat, Clock, Loader2, Search, Trash2, X, RotateCcw, ChevronDown, ShieldAlert, Sparkles } from 'lucide-react';
 import { CatalogRecipe, Meal, MealType, PlanMeal, RecipeCatalog, RecipeFilter } from '../types';
 import { matchesRecipeFilter } from '../lib/recipeFilters';
-import { CONDITION_LABELS } from '../lib/health';
+import { CONDITION_LABELS, swapExample } from '../lib/health';
 import CustomFilterChips from './CustomFilterChips';
 import RecipeFilterAssign from './RecipeFilterAssign';
 import RecipeEditModal from './RecipeEditModal';
@@ -118,6 +118,7 @@ export default function MainDishesView({
   const unsuitableCount = catalog.recipes.length - suitableCount;
   const shownTotal = showUnsuitable ? catalog.recipes.length : suitableCount;
   const conditions = (catalog.healthConditions ?? []).map((c) => CONDITION_LABELS[c] ?? c).join(', ');
+  const example = swapExample(catalog.healthConditions ?? []);
 
   /** Nach dem Bearbeiten: Übersicht übernehmen, Ansicht auf das (evtl. umbenannte) Gericht setzen */
   const applyEdit = (result: { name: string; catalog: RecipeCatalog }) => {
@@ -201,7 +202,7 @@ export default function MainDishesView({
             />
             <span>
               {unsuitableCount} weitere Gerichte passen nicht zu euren Einstellungen{conditions ? ` (${conditions})` : ''} und werden
-              nie geplant. <strong>Auch diese zeigen</strong> – z. B. um sie anzupassen (glutenfreie Nudeln statt normaler).
+              nie geplant. <strong>Auch diese zeigen</strong> – z. B. um Zutaten auszutauschen{example ? ` (${example})` : ''}.
             </span>
           </label>
         )}
