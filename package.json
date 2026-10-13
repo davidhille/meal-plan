@@ -8,6 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "test": "bun test",
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc -p worker",
     "dev:worker": "vite build && wrangler dev"
   },

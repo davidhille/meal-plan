@@ -18,11 +18,12 @@ Nutzerdoku/Funktionsübersicht: `PROJEKTUEBERSICHT.md`. Einrichtung: `SETUP_NEON
 bun install
 bun run typecheck   # Frontend (tsconfig.app.json) + Worker (worker/tsconfig.json)
 bun run lint
+bun test            # Tests der Kernlogik (*.test.ts neben dem Code, bun:test)
 bun run build       # vite build – prüft KEINE Typen, deshalb typecheck separat
 bun run dev:worker  # App + API lokal (braucht .dev.vars, siehe .dev.vars.example)
 ```
 
-Dieselben drei Prüfungen (typecheck, lint, build) laufen bei jedem PR in GitHub Actions (`.github/workflows/check.yml`).
+Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHub Actions (`.github/workflows/check.yml`).
 
 ## Arbeitsweise
 

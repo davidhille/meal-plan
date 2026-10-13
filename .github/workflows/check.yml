@@ -43,6 +43,10 @@ jobs:
         if: ${{ !cancelled() }}
         run: bun run lint 2>&1 | tee lint.log; exit ${PIPESTATUS[0]}
 
+      - name: Tests
+        if: ${{ !cancelled() }}
+        run: bun test 2>&1 | tee test.log; exit ${PIPESTATUS[0]}
+
       - name: Build
         if: ${{ !cancelled() }}
         run: bun run build
@@ -54,13 +58,13 @@ jobs:
         run: |
           {
             echo "### ❌ Prüfung fehlgeschlagen"
-            for f in tsc-app.log tsc-worker.log lint.log; do
+            for f in tsc-app.log tsc-worker.log lint.log test.log; do
               if [ -s "$f" ] && grep -qE "error|✖" "$f"; then
                 echo ""
                 echo "<details open><summary><code>$f</code></summary>"
                 echo ""
                 echo '```'
-                grep -E "^/|error|✖" "$f" | sed "s#$GITHUB_WORKSPACE/##" | head -200
+                grep -E "^/|error|✖|\(fail\)|Expected|Received" "$f" | sed "s#$GITHUB_WORKSPACE/##" | head -200
                 echo '```'
                 echo "</details>"
               fi
