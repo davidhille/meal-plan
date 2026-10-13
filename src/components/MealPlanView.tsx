@@ -4,7 +4,8 @@ import { Dessert, ImageCredit, Meal, MealPlan, MealType, PlanDessert, PlanMeal }
 import { generateMealImage } from '../lib/api';
 import { planDessertToMeal } from '../lib/desserts';
 import DessertPickerModal from './DessertPickerModal';
-import { formatShortDate } from '../lib/dateUtils';
+import { formatShortDate, toIso } from '../lib/dateUtils';
+import TodayCard from './TodayCard';
 import DayCard from './DayCard';
 import MealModal from './MealModal';
 
@@ -23,7 +24,12 @@ interface MealPlanViewProps {
   defaultPortions?: number;
   /** Nachtisch an ein Gericht hängen (null = entfernen) */
   onSetDessert?: (pm: PlanMeal, dessert: Dessert | null) => Promise<void>;
+  /** Alle Gerichte des Plans (unabhängig von der KW-Auswahl) – für die Heute-Karte */
+  allPlanMeals?: PlanMeal[];
 }
+
+/** Ab wann am Tag nach dem heutigen Essen gefragt wird (vorher: das von gestern) */
+const ASK_TODAY_FROM_HOUR = 18;
 
 const dayNames = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
 const dayShort = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
@@ -62,8 +68,10 @@ export default function MealPlanView({
   onDeletePlan,
   defaultPortions,
   onSetDessert,
+  allPlanMeals,
 }: MealPlanViewProps) {
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
+  const [cookOnOpen, setCookOnOpen] = useState(false);
   const [pickDessertFor, setPickDessertFor] = useState<PlanMeal | null>(null);
   const [openDessert, setOpenDessert] = useState<PlanDessert | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -93,6 +101,31 @@ export default function MealPlanView({
     );
   }
 
+  // Heute-Karte: heute, morgen und das letzte Essen, das noch nicht bewertet ist
+  const active = (allPlanMeals ?? planMeals ?? []).filter((pm) => !pm.rejected);
+  const now = new Date();
+  const todayIso = toIso(now);
+  const tomorrowIso = toIso(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
+  const yesterdayIso = toIso(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
+  const todayMeal = active.find((pm) => pm.meal_date === todayIso) ?? null;
+  const tomorrowMeal = active.find((pm) => pm.meal_date === tomorrowIso) ?? null;
+  const rateCandidates = [
+    ...(now.getHours() >= ASK_TODAY_FROM_HOUR && todayMeal ? [todayMeal] : []),
+    ...active.filter((pm) => pm.meal_date === yesterdayIso),
+  ];
+  const toRate = rateCandidates.find((pm) => !ratings[pm.meal_name]) ?? null;
+
+  const openPlanMeal = (pm: PlanMeal, cook = false) => {
+    const meal = planMealToMeal(pm);
+    const override = imageOverrides[pm.meal_name];
+    if (override) {
+      meal.imageUrl = override.url;
+      meal.imageCredit = override.credit;
+    }
+    setCookOnOpen(cook);
+    setSelectedMeal(meal);
+  };
+
   const withBusy = (id: string, fn: () => Promise<void>) => async () => {
     setBusyId(id);
     try {
@@ -115,6 +148,15 @@ export default function MealPlanView({
             </button>
           </div>
         )}
+        <TodayCard
+          todayIso={todayIso}
+          today={todayMeal}
+          tomorrow={tomorrowMeal}
+          toRate={toRate}
+          onOpen={(pm) => openPlanMeal(pm)}
+          onCook={(pm) => openPlanMeal(pm, true)}
+          onRate={onRate ? (name, stars) => onRate(name, stars, '') : undefined}
+        />
         {displayItems.map((pm) => {
           const meal = planMealToMeal(pm);
           const override = imageOverrides[pm.meal_name];
@@ -128,7 +170,8 @@ export default function MealPlanView({
               meal={meal}
               rating={ratings[pm.meal_name]}
               busy={busyId === pm.id}
-              onClick={() => setSelectedMeal(meal)}
+              onClick={() => openPlanMeal(pm)}
+              isToday={pm.meal_date === todayIso}
               onReject={onReject ? withBusy(pm.id, () => onReject(pm.id, pm.meal_name)) : undefined}
               onRegenerate={onRegenerate ? withBusy(pm.id, () => onRegenerate(pm.id)) : undefined}
               onToggleFavorite={onToggleFavorite ? withBusy(pm.id, () => onToggleFavorite(pm)) : undefined}
@@ -213,7 +256,9 @@ export default function MealPlanView({
 
       {selectedMeal && (
         <MealModal
+          key={`${selectedMeal.meal}-${cookOnOpen}`}
           meal={selectedMeal}
+          startCooking={cookOnOpen}
           currentRating={ratings[selectedMeal.meal]}
           defaultPortions={defaultPortions}
           onRate={

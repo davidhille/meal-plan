@@ -15,6 +15,8 @@ interface DayCardProps {
   dessert?: PlanDessert | null;
   onPickDessert?: () => void;
   onOpenDessert?: () => void;
+  /** Heutiger Tag – hervorgehoben */
+  isToday?: boolean;
 }
 
 const typeConfig: Record<MealType, { bar: string; label: string; icon: React.ReactNode }> = {
@@ -48,13 +50,18 @@ export default function DayCard({
   dessert,
   onPickDessert,
   onOpenDessert,
+  isToday,
 }: DayCardProps) {
   const config = typeConfig[meal.type];
   const hasActions = !!(onReject || onRegenerate || onToggleFavorite || onPickDessert);
 
   return (
     <div className={`flex gap-2 items-stretch transition-opacity ${busy ? 'opacity-60' : ''}`}>
-      <div className="flex-1 min-w-0 flex flex-col bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div
+        className={`flex-1 min-w-0 flex flex-col bg-white rounded-xl shadow-sm border overflow-hidden ${
+          isToday ? 'border-brand-300 ring-1 ring-brand-300' : 'border-gray-100'
+        }`}
+      >
       <button
         onClick={onClick}
         className="flex-1 min-w-0 text-left active:scale-[0.98] transition-transform duration-100 flex"
@@ -74,7 +81,10 @@ export default function DayCard({
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">{meal.day}</p>
+            <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">
+              {isToday && <span className="mr-1.5 px-1.5 py-px rounded bg-brand-700 text-white normal-case tracking-normal">Heute</span>}
+              {meal.day}
+            </p>
             <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">{meal.meal}</p>
             <div className="flex items-center gap-2 mt-1.5">
               <span className="flex items-center gap-1">

@@ -1,6 +1,6 @@
 // Service Worker: macht die App installierbar und lädt die Oberfläche schneller.
 // Daten (/api) kommen immer live vom Server und werden nie zwischengespeichert.
-const CACHE = 'speiseplaner-v2';
+const CACHE = 'speiseplaner-v3';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(['/', '/manifest.webmanifest', '/icons/icon-192.png'])));
@@ -51,4 +51,36 @@ self.addEventListener('fetch', (event) => {
       )
     );
   }
+});
+
+// Erinnerung zum Bewerten (Web Push vom Worker, siehe worker/push.ts)
+self.addEventListener('push', (event) => {
+  let msg = { title: 'Familien-Speiseplaner', body: '', url: '/', tag: 'speiseplaner' };
+  try {
+    msg = { ...msg, ...event.data.json() };
+  } catch {
+    // ohne lesbaren Inhalt: allgemeine Meldung
+  }
+  event.waitUntil(
+    self.registration.showNotification(msg.title, {
+      body: msg.body,
+      tag: msg.tag,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      data: { url: msg.url },
+    })
+  );
+});
+
+// Tipp auf die Benachrichtigung: offene App nach vorne holen, sonst öffnen
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = new URL(event.notification.data?.url || '/', self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      const open = list.find((c) => new URL(c.url).origin === self.location.origin);
+      if (open) return open.navigate(url).then((c) => (c || open).focus()).catch(() => open.focus());
+      return self.clients.openWindow(url);
+    })
+  );
 });

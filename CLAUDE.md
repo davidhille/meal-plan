@@ -47,7 +47,8 @@ Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHu
 | `recipeEdits.ts` | Gericht bearbeiten/zurücksetzen. Grundsammlung: Zeile in `recipes` mit `replaces` = Originalname; Umbenennen zieht Bewertung, Ausblenden, Favorit, Filter, Bild und kommende Plan-Tage mit |
 | `shoppingList.ts` | Einkaufsliste eines Plans aus DB-Daten (Labels, Zustand, Produkt-Verknüpfungen, Shop-Regeln) |
 | `shopAccounts.ts` | Shop-Verbindungen speichern/laden (verschlüsselt), Shop-Zustand für die Einstellungen |
-| `routines.ts` | Cron: fällige Routinen → neuer Plan, fehlende Bilder nachziehen |
+| `routines.ts` | Cron: fällige Routinen → neuer Plan, Bewertungs-Erinnerung, fehlende Bilder nachziehen |
+| `push.ts`, `webpush.ts` | Erinnerung zum Bewerten per Web Push. `webpush.ts` = Verschlüsselung (RFC 8291) + VAPID ohne Bibliothek; die VAPID-Schlüssel erzeugt der Worker selbst und speichert sie verschlüsselt in `app_settings` (kein Secret nötig). Nur bekannte Push-Dienste als Ziel |
 | `migrate.ts`, `migrations/` | Datenbank-Migrationen (siehe unten) |
 | `meals.ts` | Rezept-Typ, Grundsammlung `MEAL_DATABASE`, Scoring (`scoreMeal`), Auswahl (`pickMeal`, `pickReplacement`), Gesundheitsfilter, Ähnlichkeit (`isSimilarDish`) |
 | `recipes/*.ts` | Feste Rezeptsammlung (vegetarisch, fleisch, wochenende, `mealdb` = 231 übersetzte TheMealDB-Rezepte mit Foto-URL) |
@@ -100,7 +101,7 @@ Daten-Konventionen:
 
 ## Secrets (Cloudflare Worker)
 
-`DATABASE_URL`, `APP_PASSWORD` (Familien-Passwort, Header `X-App-Password`), `CREDENTIALS_KEY` (Shop-Zugangsdaten),
+`DATABASE_URL`, `APP_PASSWORD` (Familien-Passwort, Header `X-App-Password`), `CREDENTIALS_KEY` (verschlüsselt Shop-Zugangsdaten und den privaten Push-Schlüssel; Ändern = Shops neu verbinden, Erinnerung neu einschalten),
 optional `PIXABAY_API_KEY`, `PEXELS_API_KEY`. Nie ins Repo, nie in `wrangler.jsonc` (`vars` würden bei Deploys überschrieben).
 
 ## Stolperfallen
@@ -115,3 +116,6 @@ optional `PIXABAY_API_KEY`, `PEXELS_API_KEY`. Nie ins Repo, nie in `wrangler.jso
 - **Abwechslung:** `isSimilarDish` verhindert Varianten desselben Gerichts im Plan; Gerichte der letzten 3 Wochen bekommen Abzug.
 - `/api/images/*` ist absichtlich ohne Passwort (ein `<img>` kann keinen Header schicken).
 - Service Worker (`public/sw.js`): `/api` wird nie gecacht. Bei Änderungen an gecachten Dateien `CACHE`-Version hochzählen.
+  Er empfängt auch die Push-Nachrichten (`push`, `notificationclick`).
+- Push auf dem iPhone geht nur in der installierten PWA (Home-Bildschirm), ab iOS 16.4.
+- Fenster (Modals) immer über `useDialog`: Escape und Scroll-Sperre zählen offene Fenster (`lib/dialogStack.ts`).

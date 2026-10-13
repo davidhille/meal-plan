@@ -4,6 +4,7 @@ import type { Env } from "./http";
 import { ensureSchema } from "./migrate";
 import { fillMissingImages } from "./images";
 import { addDaysIso, createPlan } from "./planning";
+import { sendRatingReminders } from "./push";
 
 /** Aktuelles Datum/Uhrzeit in Deutschland */
 function berlinNow() {
@@ -44,9 +45,17 @@ export async function runRoutines(env: Env) {
 
     const start = addDaysIso(now.date, 1);
     const end = addDaysIso(start, Math.max(1, r.duration_days) - 1);
-    await createPlan(env, sql, r.profile_id, start, end);
-    console.log(`Routine "${r.name}" ausgeführt: Plan ${start} bis ${end}`);
+    try {
+      await createPlan(env, sql, r.profile_id, start, end);
+      console.log(`Routine "${r.name}" ausgeführt: Plan ${start} bis ${end}`);
+    } catch (e) {
+      // Eine fehlgeschlagene Routine soll Erinnerungen und Bilder nicht aufhalten
+      console.error(`Routine "${r.name}" fehlgeschlagen:`, e);
+    }
   }
+
+  // Erinnerung zum Bewerten (Fehler hier sollen die Bilder nicht aufhalten)
+  await sendRatingReminders(env, sql, now).catch((e) => console.error("Bewertungs-Erinnerung fehlgeschlagen:", e));
 
   // Fehlende Rezeptbilder nachziehen
   await fillMissingImages(env, sql, 5);

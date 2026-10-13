@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useDialog } from '../lib/useDialog';
-import { X, Clock, ShoppingBasket, BookOpen, Star, ImageIcon, Loader2, Minus, Plus, Users, ListPlus, Pencil } from 'lucide-react';
+import { X, Clock, ShoppingBasket, BookOpen, Star, ImageIcon, Loader2, Minus, Plus, Users, ListPlus, Pencil, ChefHat } from 'lucide-react';
 import { ImageCredit, Meal } from '../types';
 import MealRatingModal from './MealRatingModal';
+import CookingMode from './CookingMode';
+import { toSteps } from '../lib/cooking';
 import { RECIPE_BASE_PORTIONS, scaleIngredient, formatPortions } from '../lib/portions';
 
 interface MealModalProps {
@@ -25,18 +27,13 @@ interface MealModalProps {
   onImageChange?: (url: string, credit: ImageCredit | null) => void;
   /** Zusätzlicher Bereich unter dem Bild (z. B. Filter zuordnen) */
   extra?: React.ReactNode;
+  /** Direkt im Kochmodus öffnen (z. B. aus der Heute-Karte) */
+  startCooking?: boolean;
   onClose: () => void;
 }
 
 type ModalTab = 'zutaten' | 'zubereitung';
 
-/** KI-Rezepte haben eine Zeile pro Schritt; ältere Rezepte sind Fließtext */
-function toSteps(instructions: string): string[] {
-  return (instructions || '')
-    .split(/\n+/)
-    .map((l) => l.replace(/^\s*\d+[.)]\s*/, '').trim())
-    .filter(Boolean);
-}
 
 export default function MealModal({
   meal,
@@ -51,6 +48,7 @@ export default function MealModal({
   onEdit,
   onImageChange,
   extra,
+  startCooking = false,
   onClose,
 }: MealModalProps) {
   const [portions, setPortions] = useState(defaultPortions);
@@ -62,6 +60,7 @@ export default function MealModal({
   const dialogRef = useDialog(onClose);
   const [activeTab, setActiveTab] = useState<ModalTab>('zutaten');
   const [showRating, setShowRating] = useState(false);
+  const [cooking, setCooking] = useState(startCooking && steps.length > 0);
   const [generating, setGenerating] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState(meal.imageUrl);
@@ -274,6 +273,15 @@ export default function MealModal({
             <BookOpen size={14} />
             Zubereitung
           </button>
+          {steps.length > 0 && (
+            <button
+              onClick={() => setCooking(true)}
+              className="ml-auto my-1.5 flex items-center gap-1.5 px-3 rounded-lg text-xs font-semibold bg-brand-700 text-white hover:bg-brand-800"
+            >
+              <ChefHat size={14} />
+              Kochmodus
+            </button>
+          )}
         </div>
 
         {/* Tab Content */}
@@ -397,6 +405,24 @@ export default function MealModal({
         )}
       </div>
       </div>
+
+      {cooking && (
+        <CookingMode
+          name={meal.meal}
+          ingredients={meal.ingredients.map((i) => scaleIngredient(i, factor))}
+          steps={steps}
+          amountLabel={yieldLabel ?? `${formatPortions(portions)} Portionen`}
+          onRate={
+            onRate
+              ? () => {
+                  setCooking(false);
+                  setShowRating(true);
+                }
+              : undefined
+          }
+          onClose={() => setCooking(false)}
+        />
+      )}
 
       {showRating && onRate && (
         <MealRatingModal

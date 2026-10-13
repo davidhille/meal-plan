@@ -17,6 +17,8 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
 
 ## 1. Speiseplan
 
+- **Heute-Karte** oben: heutiges Gericht groß mit Bild, „Rezept“ und „Kochmodus“, darunter das Gericht von morgen.
+  Gestern (bzw. heute ab 18 Uhr) noch nicht bewertet? Direkt dort mit Sternen bewerten. Der heutige Tag ist im Plan markiert.
 - **Plan erstellen** für einen Zeitraum (nächster Tag, nächste Woche, nächster Monat oder frei gewählt). Bei Plänen über mehrere Wochen
   filtert eine **KW-Auswahl** die Ansicht.
 - Tagesrhythmus: Sa/So aufwendigere **Wochenend**-Gerichte, unter der Woche abwechselnd **vegetarisch** und **Fleisch/Fisch**.
@@ -25,6 +27,9 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
 - **Komplett neuen Plan generieren** für denselben Zeitraum; **Plan löschen** mit Bestätigung.
 - **Rezept-Ansicht:** Bild mit Quellenangabe, Zutaten mit **Portionen-Umrechnung** (Familie: Erwachsene 1, Kinder je nach Alter
   ½ bis 1 Portion; per +/− änderbar), Zubereitung Schritt für Schritt, Bewertung.
+- **Kochmodus** (Knopf in jeder Rezept-Ansicht): Vollbild mit großer Schrift, erst Zutaten zum Abhaken, dann ein Schritt
+  pro Seite. Zeitangaben im Text („15–20 Min.“) werden zu Timer-Knöpfen; laufende Timer bleiben sichtbar und klingeln/
+  vibrieren. Der Bildschirm bleibt an (wo der Browser das kann). Am Ende: „Gericht bewerten“.
 
 ### Wie die Gerichte ausgewählt werden
 
@@ -91,6 +96,9 @@ Auf- und zuklappbare Karten:
   bearbeiten und löschen. Einzelne Gerichte werden im Rezept zugeordnet oder ausgenommen (auch ganz ohne Suchbegriffe).
   Vorschläge u. a. „Fisch“ und „Fleisch“ – die festen Arten „Vegetarisch / Fleisch & Fisch / Wochenende“ steuern den
   Wochenrhythmus und bleiben unverändert.
+- **Erinnerung zum Bewerten:** pro Gerät einschalten, Uhrzeit wählen (Standard 20:00), Test senden. Abends kommt eine
+  Benachrichtigung, wenn das heutige Gericht noch keine Sterne hat (höchstens einmal am Tag). iPhone: nur mit der
+  installierten App vom Home-Bildschirm.
 - **Einkaufen & Shops:** Standard-Liste, Metzger-Automatik, Knuspr und Picnic verbinden (Picnic ggf. mit SMS-Code),
   Mindestbestellwert und Liefergebühr je Shop. Zugangsdaten werden verschlüsselt gespeichert.
 
@@ -105,6 +113,8 @@ Auf- und zuklappbare Karten:
 | Einkaufsliste berechnen | `worker/shopping.ts` |
 | Knuspr/Picnic | `worker/shops.ts` |
 | Frontend-Zustand / Serveraufrufe | `src/App.tsx`, `src/lib/api.ts` |
+| Push-Erinnerung | `worker/push.ts`, `worker/webpush.ts`, `public/sw.js`, `src/components/ReminderSettings.tsx` |
+| Kochmodus / Heute-Karte | `src/components/CookingMode.tsx`, `src/components/TodayCard.tsx`, `src/lib/cooking.ts` |
 | Nachtische | `src/data/desserts.ts` |
 | Datenbank-Schema | `worker/migrations/` (der Worker migriert selbst, siehe `CLAUDE.md`) |
 | App installierbar | `public/manifest.webmanifest`, `public/sw.js` |

@@ -169,9 +169,8 @@ export default function App() {
   const handleRateMeal = async (mealName: string, rating: number, notes: string) => {
     if (!profile) return;
     const result = await addMealRating(profile.id, mealName, rating, notes);
-    if (result) {
-      setMealRatings({ ...mealRatings, [mealName]: rating });
-    }
+    if (!result) throw new Error('Die Bewertung konnte nicht gespeichert werden.');
+    setMealRatings((prev) => ({ ...prev, [mealName]: rating }));
   };
 
   const handleCreateRoutine = async (
@@ -337,6 +336,7 @@ export default function App() {
             onDeletePlan={currentPlan ? handleDeletePlan : undefined}
             defaultPortions={familyPortions(familyMembers)}
             onSetDessert={currentPlan ? handleSetDessert : undefined}
+            allPlanMeals={currentPlan ? planMeals : undefined}
           />
         ) : activeTab === 'einkaufsliste' ? (
           <ShoppingListView
