@@ -6,6 +6,7 @@ import { generateImage } from "./images";
 import { generateRecipes } from "./aiRecipes";
 import { PLAN_COLS, PLAN_MEAL_COLS, favoriteToRecipe, loadContext, loadPool } from "./repo";
 import { isMeatDish, isoWeekKey } from "./nutrition";
+import { fitsTime, isOffDay, ruleFor, withinTime } from "./dayRules";
 
 /** Gerichte, die in den 3 Wochen vor `startDate` schon geplant waren */
 async function recentMealNames(sql: Sql, profileId: string, startDate: string): Promise<string[]> {
@@ -42,7 +43,8 @@ export function addDaysIso(date: string, days: number) {
 }
 
 /**
- * Gerichte für alle Tage auswählen. Feste Tage (Turnus-Favoriten) bleiben; mit Fleisch-Grenze
+ * Gerichte für alle Tage auswählen (freie Tage sind vorher schon herausgenommen). Tage mit Zeitlimit bekommen nur
+ * Gerichte, die reinpassen. Feste Tage (Turnus-Favoriten) bleiben; mit Fleisch-Grenze
  * (ctx.meatMaxPerWeek) gibt es pro Kalenderwoche höchstens so viele Fleischgerichte – an „Fleisch-Tagen“
  * dann Fisch oder vegetarisch.
  */
@@ -67,7 +69,10 @@ export function pickDays(
   for (const date of dates) {
     const fixed = assigned.get(date);
     const limitReached = max != null && (meatPerWeek.get(isoWeekKey(date)) ?? 0) >= max;
-    const recipe = fixed ?? pickMeal(date, ctx, used, limitReached ? meatFree : pool);
+    const base = limitReached ? meatFree : pool;
+    // Tage mit Zeitlimit: nur Gerichte, die reinpassen – passt keins, lieber irgendwas als ein leerer Tag
+    const quick = withinTime(base, date, ctx.dayRules);
+    const recipe = fixed ?? pickMeal(date, ctx, used, quick.length ? quick : base);
     if (!recipe) continue;
     if (!fixed) addMeat(date, recipe);
     meals.push({ date, recipe });
@@ -83,8 +88,9 @@ export async function createPlan(env: Env, sql: Sql, profileId: string, startDat
   ctx.recentNames = await recentMealNames(sql, profileId, startDate);
   ctx.month = Number(startDate.slice(5, 7));
 
+  // Freie Wochentage (Einstellungen → Wochentage) werden gar nicht geplant
   const dates: string[] = [];
-  for (let d = startDate; d <= endDate; d = addDaysIso(d, 1)) dates.push(d);
+  for (let d = startDate; d <= endDate; d = addDaysIso(d, 1)) if (!isOffDay(d, ctx.dayRules)) dates.push(d);
 
   // 1) Fällige Turnus-Favoriten fest einplanen (am liebsten an einem passenden Tag)
   const assigned = new Map<string, Recipe>();
@@ -97,7 +103,8 @@ export async function createPlan(env: Env, sql: Sql, profileId: string, startDat
     const free = dates.filter((d) => !assigned.has(d));
     if (free.length === 0) break;
     const earliest = f.last_planned ? addDaysIso(f.last_planned, f.turnus_weeks * 7) : startDate;
-    const candidates = free.filter((d) => d >= earliest);
+    // Nur Tage, an denen die Zeit reicht
+    const candidates = free.filter((d) => d >= earliest && fitsTime(favoriteToRecipe(f), ruleFor(d, ctx.dayRules).maxMinutes));
     const day = candidates.find((d) => preferredTypeFor(d) === f.meal_type) ?? candidates[0];
     if (!day) continue;
     assigned.set(day, favoriteToRecipe(f));
@@ -184,10 +191,16 @@ export async function replaceMeal(env: Env, sql: Sql, profileId: string, planMea
     limitReached = meat >= ctx.meatMaxPerWeek;
     if (limitReached) candidates = pool.filter((r) => !isMeatDish(r));
   }
+  // Zeitlimit des Wochentags: nur Gerichte, die reinpassen (passt keins, wie bisher)
+  const maxMinutes = ruleFor(old.meal_date, ctx.dayRules).maxMinutes;
+  const quick = withinTime(candidates, old.meal_date, ctx.dayRules);
+  if (quick.length) candidates = quick;
   // Ist die Grenze erreicht, soll auch die KI nichts mit Fleisch liefern
   const dayType = limitReached && preferredTypeFor(old.meal_date) === "fleisch" ? "vegetarisch" : preferredTypeFor(old.meal_date);
   const fromAi = async () =>
-    (await generateRecipes(env, sql, [dayType], ctx, pool.map((m) => m.name))).find((r) => !limitReached || !isMeatDish(r)) ?? null;
+    (await generateRecipes(env, sql, [dayType], ctx, pool.map((m) => m.name))).find(
+      (r) => (!limitReached || !isMeatDish(r)) && fitsTime(r, maxMinutes)
+    ) ?? null;
 
   let best: Recipe | null = null;
   // „Neu generieren“: am liebsten ein ganz neues KI-Rezept

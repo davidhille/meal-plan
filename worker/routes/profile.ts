@@ -3,6 +3,7 @@ import type { Ctx } from "../http";
 import { json } from "../http";
 import { ROUTINE_COLS, getProfile } from "../repo";
 import { FOCUS_IDS } from "../nutrition";
+import { parseDayRules } from "../dayRules";
 
 /** Erlaubte Einschränkungen (harte Ausschlüsse, siehe violatesHealthConditions) */
 const CONDITION_IDS = ["diabetes", "gluten_free", "lactose_intolerant", "nut_allergy", "vegetarian", "vegan", "no_alcohol"];
@@ -23,6 +24,15 @@ export async function profileRoutes({ request, sql, body, parts, route, id }: Ct
     const meatLimit = Number.isInteger(meatMax) && meatMax >= 0 && meatMax <= 7 ? meatMax : null;
     const rows = await sql`UPDATE profiles
       SET health_focus = ${focus}, health_conditions = ${conditions}, meat_max_per_week = ${meatLimit}, updated_at = now()
+      WHERE id = ${p.id} RETURNING *`;
+    return json(rows[0]);
+  }
+
+  // Regeln pro Wochentag: { "3": { "maxMinutes": 20 }, "0": { "off": true } }
+  if (route === "PUT /profile/day-rules") {
+    const p = await getProfile(sql);
+    const rules = parseDayRules(body.day_rules);
+    const rows = await sql`UPDATE profiles SET day_rules = ${JSON.stringify(rules)}::jsonb, updated_at = now()
       WHERE id = ${p.id} RETURNING *`;
     return json(rows[0]);
   }

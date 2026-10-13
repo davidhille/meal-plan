@@ -1,0 +1,30 @@
+import { DayRule, DayRules } from '../types';
+
+/** Wochentage in Anzeige-Reihenfolge (Mo–So), Schlüssel wie getDay (0 = Sonntag) */
+export const WEEKDAYS: { key: string; short: string; long: string }[] = [
+  { key: '1', short: 'Mo', long: 'Montag' },
+  { key: '2', short: 'Di', long: 'Dienstag' },
+  { key: '3', short: 'Mi', long: 'Mittwoch' },
+  { key: '4', short: 'Do', long: 'Donnerstag' },
+  { key: '5', short: 'Fr', long: 'Freitag' },
+  { key: '6', short: 'Sa', long: 'Samstag' },
+  { key: '0', short: 'So', long: 'Sonntag' },
+];
+
+export const MINUTE_CHOICES = [15, 20, 30, 45, 60];
+
+/** Regel für ein Datum (YYYY-MM-DD, lokal) */
+export function ruleForDate(iso: string, rules: DayRules | undefined): DayRule {
+  return rules?.[String(new Date(`${iso}T12:00:00`).getDay())] ?? {};
+}
+
+/** Kurzbeschreibung, z. B. „Mi max. 20 Min · So frei“ */
+export function describeDayRules(rules: DayRules | undefined): string {
+  const parts = WEEKDAYS.flatMap((d) => {
+    const r = rules?.[d.key];
+    if (r?.off) return [`${d.short} frei`];
+    if (r?.maxMinutes) return [`${d.short} max. ${r.maxMinutes} Min`];
+    return [];
+  });
+  return parts.length ? parts.join(' · ') : 'Jeder Tag wird normal geplant';
+}

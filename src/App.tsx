@@ -365,6 +365,8 @@ export default function App() {
             onSetDessert={currentPlan ? handleSetDessert : undefined}
             allPlanMeals={currentPlan ? planMeals : undefined}
             reminderTime={profile?.reminder_time}
+            dayRules={profile?.day_rules}
+            visibleRange={selectedWeek ? { from: selectedWeek.weekStart, to: selectedWeek.weekEnd } : undefined}
           />
         ) : activeTab === 'einkaufsliste' ? (
           <ShoppingListView
@@ -413,6 +415,7 @@ export default function App() {
             onDeleteRoutine={handleDeleteRoutine}
             onCreatePlan={handleCreatePlan}
             onReminderTimeChange={(time) => setProfile((p) => (p ? { ...p, reminder_time: time } : p))}
+            onProfileChange={setProfile}
           />
         )}
       </main>

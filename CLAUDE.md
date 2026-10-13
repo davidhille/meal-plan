@@ -51,6 +51,7 @@ Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHu
 | `push.ts`, `webpush.ts` | Erinnerung zum Bewerten per Web Push. `webpush.ts` = Verschlüsselung (RFC 8291) + VAPID ohne Bibliothek; die VAPID-Schlüssel erzeugt der Worker selbst und speichert sie verschlüsselt in `app_settings` (kein Secret nötig). Nur bekannte Push-Dienste als Ziel |
 | `migrate.ts`, `migrations/` | Datenbank-Migrationen (siehe unten) |
 | `meals.ts` | Rezept-Typ, Grundsammlung `MEAL_DATABASE`, Scoring (`scoreMeal`), Auswahl (`pickMeal`, `pickReplacement`), Gesundheitsfilter, Ähnlichkeit (`isSimilarDish`) |
+| `dayRules.ts` | Regeln pro Wochentag (`profiles.day_rules`, Schlüssel 0–6 = getUTCDay): `off` → Tag wird nicht geplant, `maxMinutes` → nur passende Gerichte (`withinTime`) |
 | `nutrition.ts` | Ernährungs-Schwerpunkte (`focusScore`, Pluspunkte, mehrere gleichzeitig), Saison-Liste, Fleisch-Erkennung ohne Fisch (`isMeatDish`) für die Wochen-Grenze `meat_max_per_week` |
 | `recipes/*.ts` | Feste Rezeptsammlung (vegetarisch, fleisch, wochenende, `mealdb` = 231 übersetzte TheMealDB-Rezepte mit Foto-URL) |
 | `aiRecipes.ts` | KI-Rezepte erzeugen, mit eigenen Filtern nachprüfen, in Tabelle `recipes` speichern; `generateWishRecipe` = Rezept nach Wunsch (nur Vorschau, Speichern über `POST /recipes/ai-save`) |
