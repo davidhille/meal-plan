@@ -44,6 +44,7 @@ import MealPlanView from './components/MealPlanView';
 import ShoppingListView from './components/ShoppingListView';
 import SettingsView from './components/SettingsView';
 import MealRatingModal from './components/MealRatingModal';
+import ReplacePlanDialog from './components/ReplacePlanDialog';
 
 const VIEW_TABS: ViewTab[] = ['speiseplan', 'einkaufsliste', 'rezepte', 'favoriten', 'einstellungen'];
 
@@ -60,6 +61,8 @@ function takeRateRequest(): string | null {
 
 export default function App() {
   const [showPlanModal, setShowPlanModal] = useState(false);
+  /** Neuer Zeitraum, der erst nach Rückfrage den laufenden Plan ersetzt */
+  const [pendingPlan, setPendingPlan] = useState<{ start: string; end: string } | null>(null);
   const [imagePolls, setImagePolls] = useState(0);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [selectedWeekKey, setSelectedWeekKey] = useState<string | null>(null);
@@ -237,6 +240,22 @@ export default function App() {
       setCurrentPlan(plan);
       setActiveTab('speiseplan');
     }
+  };
+
+  /** Läuft noch ein Plan mit Gerichten? Dann vor dem Ersetzen nachfragen */
+  const planStillRunning = () => {
+    const today = new Date().toISOString().slice(0, 10);
+    return !!currentPlan && currentPlan.end_date >= today && planMeals.some((m) => !m.rejected);
+  };
+
+  const requestCreatePlan = async (startDate: string, endDate: string) => {
+    if (planStillRunning()) {
+      setShowPlanModal(false);
+      setPendingPlan({ start: startDate, end: endDate });
+      return;
+    }
+    await handleCreatePlan(startDate, endDate);
+    setShowPlanModal(false);
   };
 
   const handleDeletePlan = async () => {
@@ -429,7 +448,7 @@ export default function App() {
             onDeleteFamilyMember={handleDeleteFamilyMember}
             onCreateRoutine={handleCreateRoutine}
             onDeleteRoutine={handleDeleteRoutine}
-            onCreatePlan={handleCreatePlan}
+            onCreatePlan={requestCreatePlan}
             onReminderTimeChange={(time) => setProfile((p) => (p ? { ...p, reminder_time: time } : p))}
             onProfileChange={setProfile}
           />
@@ -449,7 +468,18 @@ export default function App() {
       )}
 
       {showPlanModal && (
-        <PlanCreationModal onCreate={handleCreatePlan} onClose={() => setShowPlanModal(false)} />
+        <PlanCreationModal onCreate={requestCreatePlan} onClose={() => setShowPlanModal(false)} />
+      )}
+
+      {pendingPlan && currentPlan && (
+        <ReplacePlanDialog
+          plan={currentPlan}
+          meals={planMeals}
+          portions={familyPortions(familyMembers)}
+          confirmLabel="Neuen Plan erstellen"
+          onConfirm={() => handleCreatePlan(pendingPlan.start, pendingPlan.end)}
+          onClose={() => setPendingPlan(null)}
+        />
       )}
     </div>
   );

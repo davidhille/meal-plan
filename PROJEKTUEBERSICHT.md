@@ -28,6 +28,10 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
     auch bis 2 Wochen nach Planende (der Plan wird verlängert). Oder „Tag leeren – nicht kochen“: Gericht kommt aus dem
     Plan (nicht abgelehnt), die Zutaten verschwinden von der Einkaufsliste.
 - **Komplett neuen Plan generieren** für denselben Zeitraum; **Plan löschen** mit Bestätigung.
+- **Plan herunterladen:** „Herunterladen“ neben dem Zeitraum öffnet den ganzen Plan als Druckseite (Übersicht, alle Rezepte
+  mit auf die Familie umgerechneten Zutaten und Zubereitung, Nachtische) → „Als PDF speichern“. Ohne Pop-up als HTML-Datei.
+- **Rückfrage vor dem Ersetzen:** Läuft der Plan noch, fragen „Komplett neuen Plan generieren“ und „Neuer Zeitraum“ nach –
+  mit „Vorher herunterladen“, damit die Rezepte zum schon erledigten Einkauf nicht verloren gehen.
 - **Rezept-Ansicht:** Bild mit Quellenangabe, Zutaten mit **Portionen-Umrechnung** (Familie: Erwachsene 1, Kinder je nach Alter
   ½ bis 1 Portion; per +/− änderbar), Zubereitung Schritt für Schritt, Bewertung.
 - **Kochmodus** (Knopf in jeder Rezept-Ansicht): Vollbild mit großer Schrift, erst Zutaten zum Abhaken, dann ein Schritt
