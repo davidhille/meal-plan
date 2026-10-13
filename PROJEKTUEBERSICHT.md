@@ -110,4 +110,5 @@ Auf- und zuklappbare Karten:
 - **Amazon** ist bewusst nicht angebunden (keine Suche/Warenkorb aus Apps möglich).
 - **Gesundheitsfilter** sind eine Heuristik, keine zertifizierte Allergie-Absicherung.
 - Routinen lassen sich nur anlegen und löschen, nicht bearbeiten.
-- Keine automatischen Tests (in Arbeit).
+- Automatische Tests decken die Kernlogik ab (Einkaufsliste, Portionen, Gesundheitsfilter, Auswahl, Grundpreis,
+  Rezept-Import), nicht aber Oberfläche, Datenbank und Shop-Anbindung.

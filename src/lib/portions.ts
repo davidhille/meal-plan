@@ -51,6 +51,27 @@ function formatQty(value: number, rest: string): string {
   return Number.isInteger(rounded) ? String(rounded) : String(rounded).replace('.', ',');
 }
 
+/** Einheiten mit Einzahl/Mehrzahl, damit nach dem Umrechnen „1 Dose“ und „2 Dosen“ dasteht */
+const UNIT_FORMS: [singular: string, plural: string][] = [
+  ['Dose', 'Dosen'], ['Glas', 'Gläser'], ['Packung', 'Packungen'], ['Prise', 'Prisen'], ['Zehe', 'Zehen'],
+  ['Scheibe', 'Scheiben'], ['Stange', 'Stangen'], ['Tasse', 'Tassen'], ['Becher', 'Becher'],
+];
+
+function fixUnitNumber(qtyText: string, rest: string): string {
+  const many = !/^[½¼¾]$/.test(qtyText) && Number(qtyText.replace(',', '.')) > 1;
+  for (const [one, more] of UNIT_FORMS) {
+    const from = many ? one : more;
+    const to = many ? more : one;
+    const re = new RegExp(`^${from}\\b`, 'i');
+    if (re.test(rest) && !new RegExp(`^${to}\\b`, 'i').test(rest)) {
+      const word = rest.match(re)![0];
+      const replacement = word[0] === word[0].toLowerCase() ? to.toLowerCase() : to;
+      return replacement + rest.slice(word.length);
+    }
+  }
+  return rest;
+}
+
 /** Mengenangabe am Anfang einer Zutat umrechnen, z. B. "400g Spaghetti" × 0,75 → "300g Spaghetti" */
 export function scaleIngredient(ingredient: string, factor: number): string {
   if (factor === 1) return ingredient;
@@ -58,7 +79,8 @@ export function scaleIngredient(ingredient: string, factor: number): string {
   if (!m) return ingredient;
   const qty = parseQty(m[1]);
   if (!Number.isFinite(qty)) return ingredient;
-  return `${formatQty(qty * factor, m[3])}${m[2]}${m[3]}`;
+  const qtyText = formatQty(qty * factor, m[3]);
+  return `${qtyText}${m[2]}${fixUnitNumber(qtyText, m[3])}`;
 }
 
 export function formatPortions(p: number): string {
