@@ -3,7 +3,8 @@ import type { Ctx } from "../http";
 import { json } from "../http";
 import { generateImage } from "../images";
 import { importRecipeFromUrl, ImportError } from "../recipeImport";
-import { PLAN_MEAL_COLS, getProfile, loadFavorites } from "../repo";
+import { PLAN_MEAL_COLS, getProfile, loadContext, loadFavorites, loadPool } from "../repo";
+import { cleanWish, generateWishRecipe } from "../aiRecipes";
 import { recipeCatalog } from "../planning";
 import { RecipeEditError, parseRecipeInput, resetRecipe, saveRecipeEdit } from "../recipeEdits";
 import type { Sql } from "../db";
@@ -27,12 +28,49 @@ function parseRecipeFilter(raw: Record<string, unknown>) {
   return { name, scope, keywords, maxMinutes };
 }
 
-export async function recipeRoutes({ request, env, sql, body, parts, route, id }: Ctx): Promise<Response | null> {
+export async function recipeRoutes({ request, env, sql, body, parts, route, id, waitUntil }: Ctx): Promise<Response | null> {
   // ---------- Rezept-Übersicht ----------
   if (route === "GET /recipes/catalog") {
     const p = await getProfile(sql);
     return json(await recipeCatalog(sql, p.id));
   }
+  // KI-Rezept nach Wunsch: erst Vorschau (nicht gespeichert) …
+  if (route === "POST /recipes/ai-preview") {
+    const wish = cleanWish(body.wish);
+    if (wish.length < 3) return json({ error: "Bitte kurz beschreiben, was ihr gern hättet." }, 400);
+    const type = ["vegetarisch", "fleisch", "wochenende"].includes(body.type) ? body.type : null;
+    const p = await getProfile(sql);
+    const [ctx, { pool }] = await Promise.all([loadContext(sql, p.id), loadPool(sql, p.id)]);
+    const result = await generateWishRecipe(env, wish, type, ctx, pool.map((r) => r.name));
+    if ("error" in result) return json({ error: result.error, quota: !!result.quota }, result.quota ? 429 : 422);
+    return json({ recipe: result.recipe });
+  }
+  // … dann speichern (als KI-Rezept in der Sammlung, auf Wunsch als Favorit; Bild entsteht im Hintergrund)
+  if (route === "POST /recipes/ai-save") {
+    const p = await getProfile(sql);
+    let recipe;
+    try {
+      recipe = parseRecipeInput(body.recipe ?? {});
+    } catch (e) {
+      if (e instanceof RecipeEditError) return json({ error: e.message }, e.status);
+      throw e;
+    }
+    const { pool } = await loadPool(sql, p.id);
+    if (pool.some((r) => r.name.toLowerCase() === recipe.name.toLowerCase())) {
+      return json({ error: `„${recipe.name}“ gibt es schon in der Sammlung.` }, 409);
+    }
+    await sql`INSERT INTO recipes (name, type, ingredients, instructions, duration_min, source)
+      VALUES (${recipe.name}, ${recipe.type}, ${recipe.ingredients}, ${recipe.instructions}, ${recipe.durationMin ?? null}, 'ai')
+      ON CONFLICT (name) DO NOTHING`;
+    if (body.favorite) {
+      await sql`INSERT INTO favorites (profile_id, meal_name, meal_type, ingredients, instructions, duration_min)
+        VALUES (${p.id}, ${recipe.name}, ${recipe.type}, ${recipe.ingredients}, ${recipe.instructions}, ${recipe.durationMin ?? null})
+        ON CONFLICT (profile_id, meal_name) DO NOTHING`;
+    }
+    waitUntil(generateImage(env, sql, recipe.name));
+    return json({ name: recipe.name, catalog: await recipeCatalog(sql, p.id) });
+  }
+
   // Gericht bearbeiten (Name, Art, Zeit, Zutaten, Zubereitung) bzw. auf das Original zurücksetzen
   if (route === "PUT /recipes/edit" || route === "POST /recipes/reset") {
     const p = await getProfile(sql);

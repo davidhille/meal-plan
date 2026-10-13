@@ -10,6 +10,8 @@ interface RecipeEditModalProps {
   canReset?: boolean;
   onSave: (draft: RecipeDraft) => Promise<void>;
   onReset?: () => Promise<void>;
+  /** Hinweis unter den Feldern (Standard: gilt auch für Plan und Favorit) */
+  note?: string;
   onClose: () => void;
 }
 
@@ -23,7 +25,14 @@ const inputClass =
   'mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-300';
 
 /** Gericht bearbeiten: Name, Art, Zeit, Zutaten (eine pro Zeile), Zubereitung (ein Schritt pro Zeile) */
-export default function RecipeEditModal({ recipe, canReset, onSave, onReset, onClose }: RecipeEditModalProps) {
+export default function RecipeEditModal({
+  recipe,
+  canReset,
+  onSave,
+  onReset,
+  note = 'Änderungen gelten auch für dieses Gericht in den kommenden Tagen des Speiseplans und für den Favoriten.',
+  onClose,
+}: RecipeEditModalProps) {
   const dialogRef = useDialog(onClose);
   const [name, setName] = useState(recipe.name);
   const [type, setType] = useState<MealType>(recipe.type);
@@ -148,9 +157,7 @@ export default function RecipeEditModal({ recipe, canReset, onSave, onReset, onC
               />
             </label>
 
-            <p className="text-xs text-gray-500">
-              Änderungen gelten auch für dieses Gericht in den kommenden Tagen des Speiseplans und für den Favoriten.
-            </p>
+            <p className="text-xs text-gray-500">{note}</p>
 
             {canReset && onReset && (
               <button

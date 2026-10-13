@@ -260,6 +260,17 @@ export async function saveRecipeEdit(originalName: string, recipe: RecipeDraft):
   return request('PUT', '/recipes/edit', { originalName, ...recipe });
 }
 
+/** KI-Rezept nach Wunsch (nur Vorschau, nicht gespeichert). Wirft mit Klartext-Meldung. */
+export async function previewAiRecipe(wish: string, type: MealType | null): Promise<RecipeDraft> {
+  const r = await request<{ recipe: RecipeDraft }>('POST', '/recipes/ai-preview', { wish, type });
+  return r.recipe;
+}
+
+/** Vorschau in die Sammlung übernehmen (auf Wunsch als Favorit); liefert Namen und neue Übersicht */
+export async function saveAiRecipe(recipe: RecipeDraft, favorite: boolean): Promise<{ name: string; catalog: RecipeCatalog }> {
+  return request('POST', '/recipes/ai-save', { recipe, favorite });
+}
+
 /** Bearbeitetes Gericht der Grundsammlung auf das Original zurücksetzen. Wirft bei Fehlern. */
 export async function resetRecipeEdit(name: string): Promise<{ name: string; catalog: RecipeCatalog }> {
   return request('POST', '/recipes/reset', { name });
