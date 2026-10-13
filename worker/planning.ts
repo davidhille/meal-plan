@@ -173,7 +173,10 @@ export async function replaceMeal(env: Env, sql: Sql, profileId: string, planMea
   const { pool, favorites } = await loadPool(sql, profileId);
   ctx.favoriteNames = favorites.filter((f) => !f.turnus_weeks).map((f) => f.meal_name);
   const existing = await sql`SELECT meal_name FROM plan_meals WHERE plan_id = ${old.plan_id}`;
-  const exclude = new Set<string>([...existing.map((r) => r.meal_name as string), old.meal_name]);
+  // Was an diesem Tag schon weggetauscht wurde, soll nicht gleich wiederkommen
+  const history = await sql`SELECT skipped_names FROM plan_meals WHERE id = ${planMealId}`;
+  const skipped = [...((history[0]?.skipped_names as string[] | undefined) ?? []), old.meal_name].slice(-30);
+  const exclude = new Set<string>([...existing.map((r) => r.meal_name as string), ...skipped]);
 
   ctx.recentNames = await recentMealNames(sql, profileId, old.meal_date);
   ctx.month = Number(String(old.meal_date).slice(5, 7));
@@ -206,17 +209,24 @@ export async function replaceMeal(env: Env, sql: Sql, profileId: string, planMea
   // „Neu generieren“: am liebsten ein ganz neues KI-Rezept
   if (!reject) best = await fromAi();
   best ??= pickReplacement(old.meal_date, ctx, candidates, exclude);
+  // Alles schon durchprobiert: Verlauf vergessen, nur das aktuelle Gericht und den Plan ausschließen
+  best ??= pickReplacement(
+    old.meal_date,
+    ctx,
+    candidates,
+    new Set<string>([...existing.map((r) => r.meal_name as string), old.meal_name])
+  );
   // Pool erschöpft (z. B. vegan) → KI als Rettung
   if (!best && reject) best = await fromAi();
   if (!best) return null;
 
   if (!reject) await sql`DELETE FROM plan_meals WHERE id = ${planMealId}`;
   const inserted = await sql.query(
-    `INSERT INTO plan_meals (plan_id, meal_date, meal_name, meal_type, ingredients, instructions, duration_min, dessert, rejected)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false) RETURNING ${PLAN_MEAL_COLS}`,
-    // Der Nachtisch bleibt beim Austauschen am Tag hängen
+    `INSERT INTO plan_meals (plan_id, meal_date, meal_name, meal_type, ingredients, instructions, duration_min, dessert, rejected, skipped_names)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, $9) RETURNING ${PLAN_MEAL_COLS}`,
+    // Der Nachtisch bleibt beim Austauschen am Tag hängen, der Verlauf auch
     [old.plan_id, old.meal_date, best.name, best.type, best.ingredients, best.instructions, best.durationMin ?? null,
-      old.dessert ? JSON.stringify(old.dessert) : null]
+      old.dessert ? JSON.stringify(old.dessert) : null, skipped]
   );
   const replacement = inserted[0];
   await markFavoritesPlanned(sql, profileId, old.plan_id);
