@@ -19,9 +19,9 @@ interface DayCardProps {
 
 const typeConfig: Record<MealType, { bar: string; label: string; icon: React.ReactNode }> = {
   vegetarisch: {
-    bar: 'bg-green-600',
+    bar: 'bg-brand-600',
     label: 'Vegetarisch',
-    icon: <Leaf size={11} className="text-green-700" aria-hidden="true" />,
+    icon: <Leaf size={11} className="text-brand-700" aria-hidden="true" />,
   },
   fleisch: {
     bar: 'bg-orange-400',
@@ -161,7 +161,7 @@ export default function DayCard({
             <button
               onClick={onRegenerate}
               disabled={busy}
-              className="flex-1 min-h-[32px] flex items-center justify-center text-gray-500 hover:bg-green-50 hover:text-green-700 transition-colors"
+              className="flex-1 min-h-[32px] flex items-center justify-center text-gray-500 hover:bg-brand-50 hover:text-brand-700 transition-colors"
               title="Neu generieren – nur austauschen"
               aria-label={`${meal.meal}: austauschen`}
             >

@@ -281,7 +281,7 @@ export default function App() {
           <p className="text-sm text-gray-500">Meist hilft es, kurz zu warten und neu zu laden.</p>
           <button
             onClick={loadProfile}
-            className="px-6 h-11 rounded-xl text-sm font-semibold bg-green-700 text-white hover:bg-green-800"
+            className="px-6 h-11 rounded-xl text-sm font-semibold bg-brand-700 text-white hover:bg-brand-800"
           >
             Neu laden
           </button>
@@ -313,10 +313,10 @@ export default function App() {
       {/* Sticky top bar */}
       <div className="sticky top-0 z-10 flex flex-col">
         <Header />
+        <TabSwitcher activeTab={activeTab} onTabChange={setActiveTab} />
         {showWeeks && (
           <WeekSelector weeks={planWeeks} selectedWeekKey={selectedWeek?.key ?? null} onSelectWeek={setSelectedWeekKey} />
         )}
-        <TabSwitcher activeTab={activeTab} onTabChange={setActiveTab} />
       </div>
 
       {/* Scrollable content area */}

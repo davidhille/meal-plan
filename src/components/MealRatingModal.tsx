@@ -104,7 +104,7 @@ export default function MealRatingModal({
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="z. B. zu scharf, Kinder mochten die Soße nicht"
                 rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none resize-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none resize-none"
               />
             </div>
           )}
@@ -121,7 +121,7 @@ export default function MealRatingModal({
           <button
             onClick={handleSave}
             disabled={rating === 0}
-            className="flex-1 h-11 px-4 rounded-xl text-sm font-semibold text-white bg-green-700 hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 h-11 px-4 rounded-xl text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Speichern
           </button>

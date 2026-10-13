@@ -119,7 +119,7 @@ export default function ShoppingSection({
             aria-label={copied ? `${label.name}: kopiert` : `${label.name}: offene Einträge kopieren`}
             className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
               copied
-                ? 'bg-green-100 text-green-700'
+                ? 'bg-brand-100 text-brand-700'
                 : open.length === 0
                 ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -144,7 +144,7 @@ export default function ShoppingSection({
                   <span className="block text-[11px] text-gray-500 truncate">→ {item.productName}</span>
                 )}
                 {item.productId && !item.checked && isInCart?.(item) && (
-                  <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-green-50 text-green-800">
+                  <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-brand-50 text-brand-800">
                     <ShoppingCart size={10} aria-hidden="true" /> im Warenkorb
                   </span>
                 )}
@@ -158,7 +158,7 @@ export default function ShoppingSection({
                   aria-checked={item.checked}
                   aria-label={item.name}
                   className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center border-2 transition-colors ${
-                    item.checked ? 'bg-green-600 border-green-500' : 'bg-white border-gray-300'
+                    item.checked ? 'bg-brand-600 border-brand-500' : 'bg-white border-gray-300'
                   }`}
                 >
                   {item.checked && <Check size={14} className="text-white" strokeWidth={3} />}
@@ -170,7 +170,7 @@ export default function ShoppingSection({
 
                 {/* Name: bei Knuspr/Picnic öffnet ein Tipp die Produktsuche */}
                 {!item.checked && isShopList && onFindProduct ? (
-                  <button onClick={() => onFindProduct(item)} className={`flex-1 min-w-0 text-left ${nameClass} hover:text-green-800`}>
+                  <button onClick={() => onFindProduct(item)} className={`flex-1 min-w-0 text-left ${nameClass} hover:text-brand-800`}>
                     {nameContent}
                   </button>
                 ) : (
@@ -182,7 +182,7 @@ export default function ShoppingSection({
                     onClick={() => onFindProduct(item)}
                     title="Produkt auswählen"
                     aria-label={`${item.baseName}: Produkt auswählen`}
-                    className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-lg text-gray-500 hover:text-green-700 hover:bg-green-50"
+                    className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-lg text-gray-500 hover:text-brand-700 hover:bg-brand-50"
                   >
                     <Link2 size={14} />
                   </button>
@@ -191,7 +191,7 @@ export default function ShoppingSection({
                 <button
                   onClick={() => setOpenPickerId(openPickerId === item.id ? null : item.id)}
                   className="flex-shrink-0 h-7 px-1.5 rounded-lg flex items-center gap-0.5 hover:bg-gray-100"
-                  style={{ color: labelOf(item).color }}
+                  style={{ color: deliveryShops ? "#A396A7" : labelOf(item).color }}
                   title="Liste ändern"
                   aria-label={`${item.baseName}: Liste ändern`}
                   aria-haspopup="menu"
@@ -307,19 +307,21 @@ function ShopChips({
                 ? `Bei ${o.label.name} bestellen: ${text}${isCheapest ? ', günstiger' : ''}`
                 : `${o.label.name}: Produkt wählen`
             }
-            className={`inline-flex items-center gap-1 h-7 px-2 rounded-lg border text-[11px] font-semibold transition-colors ${
+            className={`inline-flex items-center gap-1 h-8 px-3 rounded-full border text-xs font-bold transition-colors ${
               o.active
-                ? 'text-white border-transparent'
+                ? 'bg-brand-700 border-brand-700 text-white'
+                : isCheapest
+                ? 'bg-coral-50 border-coral-500 text-coral-700 hover:bg-coral-100'
                 : o.link
                 ? 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
-                : 'bg-white border-dashed border-gray-300 text-gray-500 hover:bg-gray-50'
+                : 'bg-white border-dashed border-gray-300 text-gray-500 font-semibold hover:bg-gray-50'
             }`}
-            style={o.active ? { backgroundColor: o.label.color === '#22c55e' ? '#15803d' : o.label.color === '#e11d48' ? '#be123c' : o.label.color } : undefined}
           >
-            {o.active && <Check size={11} strokeWidth={3} aria-hidden="true" />}
+            {o.active && <Check size={12} strokeWidth={3} aria-hidden="true" />}
             <span>{o.label.name}</span>
-            <span className={o.active ? 'font-bold' : isCheapest ? 'font-bold text-green-800' : 'font-normal'}>{text}</span>
-            {isCheapest && <span className={o.active ? '' : 'text-green-800'} aria-hidden="true">↓</span>}
+            <span aria-hidden="true">·</span>
+            <span>{text}</span>
+            {isCheapest && <span aria-hidden="true">↓</span>}
           </button>
         );
       })}

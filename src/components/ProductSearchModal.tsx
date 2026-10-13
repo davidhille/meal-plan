@@ -132,9 +132,9 @@ export default function ProductSearchModal({ item, shops, onSelect, onRemove, on
             onChange={(e) => setQuery(e.target.value)}
             aria-label="Suchbegriff"
             type="search"
-            className="flex-1 h-10 px-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
+            className="flex-1 h-10 px-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
           />
-          <button type="submit" aria-label="Suchen" className="w-10 h-10 flex items-center justify-center rounded-xl bg-green-700 text-white">
+          <button type="submit" aria-label="Suchen" className="w-10 h-10 flex items-center justify-center rounded-xl bg-brand-700 text-white">
             <Search size={16} />
           </button>
         </form>
@@ -142,7 +142,7 @@ export default function ProductSearchModal({ item, shops, onSelect, onRemove, on
         {cheapestLinked && (
           <div className="mx-5 mb-3 px-3 py-2 rounded-xl bg-white border border-gray-100 text-xs text-gray-700 space-y-0.5" aria-live="polite">
             {linkedCompare.map((x) => (
-              <p key={x.provider} className={x === cheapestLinked ? 'font-semibold text-green-800' : ''}>
+              <p key={x.provider} className={x === cheapestLinked ? 'font-semibold text-brand-800' : ''}>
                 {x.label.name}: {x.packs > 1 ? `${x.packs} × ${euro(x.link.productPrice!)} = ` : ''}
                 {euro(x.total)}
                 {x.up ? ` (${x.up.label})` : ''}
@@ -211,7 +211,7 @@ export default function ProductSearchModal({ item, shops, onSelect, onRemove, on
                             aria-pressed={active}
                             onClick={() => choose(provider, p, active)}
                             className={`w-full flex items-center gap-3 p-3 rounded-2xl border text-left transition-colors ${
-                              active ? 'border-green-400 bg-green-50' : 'border-gray-100 bg-white hover:bg-gray-50'
+                              active ? 'border-brand-400 bg-brand-50' : 'border-gray-100 bg-white hover:bg-gray-50'
                             }`}
                           >
                             {p.imageUrl ? (
@@ -233,16 +233,16 @@ export default function ProductSearchModal({ item, shops, onSelect, onRemove, on
                                 </p>
                               )}
                               {best === key && (
-                                <p className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-green-100 text-green-800">
+                                <p className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-brand-100 text-brand-800">
                                   <TrendingDown size={10} aria-hidden="true" /> Günstigster Grundpreis
                                 </p>
                               )}
-                              {active && <p className="text-[11px] text-green-700 mt-0.5">Ausgewählt – nochmal antippen zum Abwählen</p>}
+                              {active && <p className="text-[11px] text-brand-700 mt-0.5">Ausgewählt – nochmal antippen zum Abwählen</p>}
                             </div>
                             {savingId === key ? (
                               <Loader2 size={16} className="animate-spin text-gray-500" />
                             ) : active ? (
-                              <Check size={18} className="text-green-600" />
+                              <Check size={18} className="text-brand-600" />
                             ) : null}
                           </button>
                         </li>

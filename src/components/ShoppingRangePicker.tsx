@@ -48,11 +48,11 @@ export default function ShoppingRangePicker({ weeks, currentIndex, start, end, o
               onClick={() => toggle(i)}
               aria-pressed={active}
               className={`flex-none px-3 py-1.5 rounded-lg text-left transition-colors border ${
-                active ? 'bg-green-700 border-green-700 text-white' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                active ? 'bg-brand-700 border-brand-700 text-white' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
               }`}
             >
               <span className="block text-sm font-semibold leading-tight">{weekName(i, currentIndex, w.kw)}</span>
-              <span className={`block text-[11px] leading-tight ${active ? 'text-green-100' : 'text-gray-500'}`}>
+              <span className={`block text-[11px] leading-tight ${active ? 'text-brand-100' : 'text-gray-500'}`}>
                 {formatShortDate(w.weekStart).replace(/^\w+\.?,\s*/, '')} – {formatShortDate(w.weekEnd).replace(/^\w+\.?,\s*/, '')}
               </span>
             </button>

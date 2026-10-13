@@ -37,7 +37,7 @@ interface ShoppingListViewProps {
 const lc = (s: string) => s.trim().toLowerCase();
 
 /** Gemeinsame Liste für alle Lieferdienste – der Shop wird pro Artikel gewählt */
-const DELIVERY_LABEL: ShoppingLabel = { id: 'lieferdienst', name: 'Lieferdienst', color: '#15803d' };
+const DELIVERY_LABEL: ShoppingLabel = { id: 'lieferdienst', name: 'Lieferdienst', color: '#6B2E7A' };
 
 /** Gewählte Wochen pro Plan merken (Indizes in `weeks`) */
 function loadRange(planId: string | undefined, weeks: PlanWeek[]): [number, number] {
@@ -345,7 +345,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
         <p className="text-sm text-gray-500 max-w-xs">Die Einkaufsliste entsteht automatisch aus deinem Speiseplan.</p>
         <button
           onClick={onCreatePlan}
-          className="mt-3 px-6 h-11 rounded-lg text-sm font-semibold bg-green-700 text-white hover:bg-green-800"
+          className="mt-3 px-6 h-11 rounded-lg text-sm font-semibold bg-brand-700 text-white hover:bg-brand-800"
         >
           Plan erstellen
         </button>
@@ -440,13 +440,13 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
             onChange={(e) => setNewItemName(e.target.value)}
             placeholder="Artikel hinzufügen, z. B. Klopapier"
             aria-label="Eigenen Artikel hinzufügen"
-            className="flex-1 px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
+            className="flex-1 px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
           />
           <button
             type="submit"
             disabled={!newItemName.trim()}
             aria-label="Hinzufügen"
-            className="w-10 flex items-center justify-center rounded-xl bg-green-700 text-white disabled:bg-gray-200 disabled:text-gray-500"
+            className="w-10 flex items-center justify-center rounded-xl bg-brand-700 text-white disabled:bg-gray-200 disabled:text-gray-500"
           >
             <Plus size={16} />
           </button>

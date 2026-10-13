@@ -160,7 +160,7 @@ export default function ShopSettings() {
             type="checkbox"
             checked={state.metzgerAuto}
             onChange={(e) => act('settings', () => saveShopSettings(state.standardLabel, e.target.checked))}
-            className="w-5 h-5 accent-green-600"
+            className="w-5 h-5 accent-brand-600"
           />
         </label>
       </div>
@@ -197,7 +197,7 @@ export default function ShopSettings() {
                       setForm({ email: '', password: '', code: '' });
                       setError(null);
                     }}
-                    className="px-3 h-8 rounded-lg text-xs font-semibold bg-green-700 text-white hover:bg-green-800"
+                    className="px-3 h-8 rounded-lg text-xs font-semibold bg-brand-700 text-white hover:bg-brand-800"
                   >
                     {expanded ? 'Abbrechen' : 'Verbinden'}
                   </button>
@@ -254,7 +254,7 @@ export default function ShopSettings() {
                   <button
                     type="submit"
                     disabled={busy !== null || (form.pending ? !form.code : !form.email || !form.password)}
-                    className="w-full h-10 flex items-center justify-center gap-2 rounded-xl bg-green-700 text-white text-sm font-semibold disabled:bg-green-300"
+                    className="w-full h-10 flex items-center justify-center gap-2 rounded-xl bg-brand-700 text-white text-sm font-semibold disabled:bg-brand-300"
                   >
                     {busy === 'connect' ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                     {form.pending ? 'Code bestätigen' : 'Verbinden'}

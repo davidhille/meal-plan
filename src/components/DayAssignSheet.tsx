@@ -140,7 +140,7 @@ export default function DayAssignSheet({ mode, itemName, planMeals, onConfirm, o
               <button
                 onClick={confirm}
                 disabled={saving}
-                className="flex-1 h-11 rounded-xl text-sm font-semibold text-white bg-green-700 hover:bg-green-800 disabled:bg-green-300 flex items-center justify-center gap-2"
+                className="flex-1 h-11 rounded-xl text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 disabled:bg-brand-300 flex items-center justify-center gap-2"
               >
                 {saving && <Loader2 size={14} className="animate-spin" />}
                 Bestätigen

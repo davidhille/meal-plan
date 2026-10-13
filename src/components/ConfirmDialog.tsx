@@ -62,7 +62,7 @@ export default function ConfirmDialog({ title, message, confirmLabel, danger, on
             onClick={confirm}
             disabled={busy}
             className={`flex-1 h-11 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 ${
-              danger ? 'bg-red-600 hover:bg-red-700 disabled:bg-red-300' : 'bg-green-700 hover:bg-green-800 disabled:bg-green-300'
+              danger ? 'bg-red-600 hover:bg-red-700 disabled:bg-red-300' : 'bg-brand-700 hover:bg-brand-800 disabled:bg-brand-300'
             }`}
           >
             {busy && <Loader2 size={14} className="animate-spin" />}

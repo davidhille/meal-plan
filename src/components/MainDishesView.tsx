@@ -124,7 +124,7 @@ export default function MainDishesView({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Suchen, z. B. Curry oder Hähnchen"
-            className="w-full h-11 pl-9 pr-9 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full h-11 pl-9 pr-9 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
           {query && (
             <button
@@ -144,7 +144,7 @@ export default function MainDishesView({
               aria-pressed={filter === f.id}
               onClick={() => setFilter(f.id)}
               className={`flex-none px-3 h-8 rounded-lg text-xs font-semibold transition-colors ${
-                filter === f.id ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                filter === f.id ? 'bg-brand-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
               }`}
             >
               {f.label}
@@ -232,7 +232,7 @@ export default function MainDishesView({
                     <button
                       onClick={() => restore(name)}
                       disabled={restoring === name}
-                      className="flex items-center gap-1 px-2.5 h-8 rounded-lg text-xs font-semibold text-green-700 bg-green-50 hover:bg-green-100"
+                      className="flex items-center gap-1 px-2.5 h-8 rounded-lg text-xs font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100"
                     >
                       {restoring === name ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
                       Wiederherstellen

@@ -85,7 +85,7 @@ export default function PreferencesModal({
                   onClick={() => setGoal(g.id)}
                   className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all border ${
                     goal === g.id
-                      ? 'bg-green-50 border-green-300 text-green-700 font-medium'
+                      ? 'bg-brand-50 border-brand-300 text-brand-700 font-medium'
                       : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
                   }`}
                 >
@@ -136,7 +136,7 @@ export default function PreferencesModal({
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 h-11 px-4 rounded-xl text-sm font-semibold text-white bg-green-700 hover:bg-green-800"
+            className="flex-1 h-11 px-4 rounded-xl text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800"
           >
             Speichern
           </button>

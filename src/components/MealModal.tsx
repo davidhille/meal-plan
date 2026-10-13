@@ -159,7 +159,7 @@ export default function MealModal({
                 <button
                   onClick={handleGenerateImage}
                   disabled={generating}
-                  className="mt-1 flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-green-700 text-white hover:bg-green-800 disabled:bg-green-300 transition-all active:scale-95"
+                  className="mt-1 flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-brand-700 text-white hover:bg-brand-800 disabled:bg-brand-300 transition-all active:scale-95"
                 >
                   {generating ? (
                     <>
@@ -232,7 +232,7 @@ export default function MealModal({
             onClick={() => setActiveTab('zutaten')}
             className={`flex items-center gap-1.5 py-3 mr-6 text-sm font-medium transition-colors border-b-2 ${
               activeTab === 'zutaten'
-                ? 'border-green-500 text-green-700'
+                ? 'border-brand-500 text-brand-700'
                 : 'border-transparent text-gray-500'
             }`}
           >
@@ -245,7 +245,7 @@ export default function MealModal({
             onClick={() => setActiveTab('zubereitung')}
             className={`flex items-center gap-1.5 py-3 text-sm font-medium transition-colors border-b-2 ${
               activeTab === 'zubereitung'
-                ? 'border-green-500 text-green-700'
+                ? 'border-brand-500 text-brand-700'
                 : 'border-transparent text-gray-500'
             }`}
           >
@@ -293,7 +293,7 @@ export default function MealModal({
             <ul className="space-y-2">
               {meal.ingredients.map((ingredient, idx) => (
                 <li key={idx} className="flex items-start gap-3 py-2.5 border-b border-gray-100 last:border-0">
-                  <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0 mt-2" />
+                  <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-brand-500 flex-shrink-0 mt-2" />
                   <span className="text-sm text-gray-700">{scaleIngredient(ingredient, factor)}</span>
                 </li>
               ))}
@@ -310,7 +310,7 @@ export default function MealModal({
                 <ol className="space-y-3">
                   {steps.map((step, idx) => (
                     <li key={idx} className="flex gap-3">
-                      <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-semibold flex items-center justify-center flex-shrink-0">
+                      <span className="w-6 h-6 rounded-full bg-brand-100 text-brand-700 text-xs font-semibold flex items-center justify-center flex-shrink-0">
                         {idx + 1}
                       </span>
                       <p className="text-sm text-gray-700 leading-relaxed">{step}</p>
@@ -330,7 +330,7 @@ export default function MealModal({
             <button
               onClick={handleChoose}
               disabled={choosing}
-              className="w-full px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-green-700 hover:bg-green-800 disabled:bg-green-300 transition-colors flex items-center justify-center gap-2"
+              className="w-full px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 disabled:bg-brand-300 transition-colors flex items-center justify-center gap-2"
             >
               {choosing ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
               {chooseLabel}
@@ -348,7 +348,7 @@ export default function MealModal({
             <button
               onClick={handleAddToShopping}
               disabled={adding}
-              className="w-full px-4 py-2 rounded-lg text-sm font-medium text-white bg-green-700 hover:bg-green-800 disabled:bg-green-300 transition-colors flex items-center justify-center gap-2"
+              className="w-full px-4 py-2 rounded-lg text-sm font-medium text-white bg-brand-700 hover:bg-brand-800 disabled:bg-brand-300 transition-colors flex items-center justify-center gap-2"
             >
               {adding ? <Loader2 size={14} className="animate-spin" /> : <ListPlus size={14} />}
               Zutaten auf die Einkaufsliste

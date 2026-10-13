@@ -110,7 +110,7 @@ export default function LabelSettings() {
             placeholder="z. B. Aldi, Rewe, DM …"
             aria-label="Name der Liste"
             autoFocus
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
+            className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
           />
           <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Farbe">
             {LABEL_COLORS.map((c, i) => (
@@ -133,7 +133,7 @@ export default function LabelSettings() {
           <button
             onClick={save}
             disabled={!name.trim() || saving}
-            className="w-full h-10 rounded-lg text-sm font-semibold bg-green-700 text-white hover:bg-green-800 disabled:bg-gray-200 disabled:text-gray-500 flex items-center justify-center gap-2"
+            className="w-full h-10 rounded-lg text-sm font-semibold bg-brand-700 text-white hover:bg-brand-800 disabled:bg-gray-200 disabled:text-gray-500 flex items-center justify-center gap-2"
           >
             {saving && <Loader2 size={14} className="animate-spin" />}
             {editing === 'new' ? 'Liste anlegen' : 'Speichern'}

@@ -151,7 +151,7 @@ export default function FilterSettings() {
               onChange={(e) => setDraft({ ...draft, name: e.target.value })}
               placeholder="z. B. Kinderliebling"
               autoFocus
-              className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
+              className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
             />
           </label>
           <div>
@@ -164,7 +164,7 @@ export default function FilterSettings() {
                   aria-checked={draft.scope === s.id}
                   onClick={() => setDraft({ ...draft, scope: s.id })}
                   className={`h-9 rounded-lg text-xs font-semibold border ${
-                    draft.scope === s.id ? 'bg-green-700 border-green-700 text-white' : 'bg-white border-gray-200 text-gray-600'
+                    draft.scope === s.id ? 'bg-brand-700 border-brand-700 text-white' : 'bg-white border-gray-200 text-gray-600'
                   }`}
                 >
                   {s.label}
@@ -179,7 +179,7 @@ export default function FilterSettings() {
               value={draft.keywords}
               onChange={(e) => setDraft({ ...draft, keywords: e.target.value })}
               placeholder="z. B. Nudel, Pasta, Spaghetti"
-              className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
+              className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
             />
           </label>
           <label className="block">
@@ -191,7 +191,7 @@ export default function FilterSettings() {
               value={draft.maxMinutes}
               onChange={(e) => setDraft({ ...draft, maxMinutes: e.target.value })}
               placeholder="z. B. 30"
-              className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
+              className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
             />
           </label>
           {!valid(draft) && draft.name.trim() && (
@@ -205,7 +205,7 @@ export default function FilterSettings() {
           <button
             onClick={save}
             disabled={!valid(draft) || saving}
-            className="w-full h-10 rounded-lg text-sm font-semibold bg-green-700 text-white hover:bg-green-800 disabled:bg-gray-200 disabled:text-gray-500 flex items-center justify-center gap-2"
+            className="w-full h-10 rounded-lg text-sm font-semibold bg-brand-700 text-white hover:bg-brand-800 disabled:bg-gray-200 disabled:text-gray-500 flex items-center justify-center gap-2"
           >
             {saving && <Loader2 size={14} className="animate-spin" />}
             {draft.id ? 'Speichern' : 'Filter anlegen'}

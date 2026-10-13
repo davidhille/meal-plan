@@ -85,7 +85,7 @@ export default function MealPlanView({
         </p>
         <button
           onClick={onCreatePlan}
-          className="mt-2 px-6 h-11 rounded-xl text-sm font-semibold bg-green-700 text-white hover:bg-green-800"
+          className="mt-2 px-6 h-11 rounded-xl text-sm font-semibold bg-brand-700 text-white hover:bg-brand-800"
         >
           Plan erstellen
         </button>
@@ -110,7 +110,7 @@ export default function MealPlanView({
             <span className="text-gray-600">
               {formatShortDate(plan.start_date)} – {formatShortDate(plan.end_date)}
             </span>
-            <button onClick={onCreatePlan} className="text-xs font-medium text-green-700 hover:text-green-800">
+            <button onClick={onCreatePlan} className="text-xs font-medium text-brand-700 hover:text-brand-800">
               Neuer Zeitraum
             </button>
           </div>
@@ -159,7 +159,7 @@ export default function MealPlanView({
                 }
               }}
               disabled={regeneratingPlan}
-              className="w-full py-3 flex items-center justify-center gap-2 rounded-xl bg-green-700 text-white text-sm font-medium hover:bg-green-800 disabled:bg-green-300 transition-colors"
+              className="w-full py-3 flex items-center justify-center gap-2 rounded-xl bg-brand-700 text-white text-sm font-medium hover:bg-brand-800 disabled:bg-brand-300 transition-colors"
             >
               {regeneratingPlan ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
               {regeneratingPlan ? 'Wird neu geplant …' : 'Komplett neuen Plan generieren'}
