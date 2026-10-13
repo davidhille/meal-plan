@@ -5,3 +5,6 @@ import type { NeonQueryFunction } from "@neondatabase/serverless";
  * (`ReturnType<typeof neon>` wäre zu allgemein – dann kennt TypeScript den Ergebnistyp der Abfragen nicht.)
  */
 export type Sql = NeonQueryFunction<false, false>;
+
+/** Eine Ergebniszeile (Spaltenname → Wert), wie sie Neon liefert */
+export type Row = Awaited<ReturnType<Sql>>[number];
