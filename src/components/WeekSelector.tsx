@@ -11,7 +11,7 @@ export default function WeekSelector({ weeks, selectedWeekKey, onSelectWeek }: W
 
   return (
     <nav className="bg-gray-50" aria-label="Kalenderwoche">
-      <div className="flex overflow-x-auto no-scrollbar gap-2 px-4 py-3">
+      <div className="flex overflow-x-auto no-scrollbar gap-2 px-4 pb-3 max-w-2xl mx-auto">
         {weeks.map((week) => (
           <button
             key={week.key}
