@@ -26,10 +26,12 @@ interface MealPlanViewProps {
   onSetDessert?: (pm: PlanMeal, dessert: Dessert | null) => Promise<void>;
   /** Alle Gerichte des Plans (unabhängig von der KW-Auswahl) – für die Heute-Karte */
   allPlanMeals?: PlanMeal[];
+  /** Uhrzeit der Erinnerung zum Bewerten („HH:MM“) */
+  reminderTime?: string;
 }
 
-/** Ab wann am Tag nach dem heutigen Essen gefragt wird (vorher: das von gestern) */
-const ASK_TODAY_FROM_HOUR = 18;
+/** Spätestens ab dann fragt die Heute-Karte nach dem heutigen Essen (vorher: nach dem von gestern) */
+const ASK_TODAY_LATEST = '18:00';
 
 const dayNames = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
 const dayShort = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
@@ -69,6 +71,7 @@ export default function MealPlanView({
   defaultPortions,
   onSetDessert,
   allPlanMeals,
+  reminderTime,
 }: MealPlanViewProps) {
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [cookOnOpen, setCookOnOpen] = useState(false);
@@ -109,8 +112,11 @@ export default function MealPlanView({
   const yesterdayIso = toIso(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
   const todayMeal = active.find((pm) => pm.meal_date === todayIso) ?? null;
   const tomorrowMeal = active.find((pm) => pm.meal_date === tomorrowIso) ?? null;
+  // Ab der Erinnerungszeit (früher eingestellt → früher), spätestens ab 18 Uhr
+  const askTodayFrom = reminderTime && reminderTime < ASK_TODAY_LATEST ? reminderTime : ASK_TODAY_LATEST;
+  const nowHm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   const rateCandidates = [
-    ...(now.getHours() >= ASK_TODAY_FROM_HOUR && todayMeal ? [todayMeal] : []),
+    ...(nowHm >= askTodayFrom && todayMeal ? [todayMeal] : []),
     ...active.filter((pm) => pm.meal_date === yesterdayIso),
   ];
   const toRate = rateCandidates.find((pm) => !ratings[pm.meal_name]) ?? null;

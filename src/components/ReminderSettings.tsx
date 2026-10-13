@@ -5,7 +5,7 @@ import { currentSubscription, deviceLabel, pushSupport, subscribeThisDevice } fr
 import CollapsibleCard from './CollapsibleCard';
 
 /** Einstellungen → Erinnerung zum Bewerten (Push aufs Handy) */
-export default function ReminderSettings() {
+export default function ReminderSettings({ onTimeChange }: { onTimeChange?: (time: string) => void }) {
   const support = pushSupport();
   const [state, setState] = useState<PushState | null>(null);
   const [endpoint, setEndpoint] = useState<string | null>(null);
@@ -68,7 +68,10 @@ export default function ReminderSettings() {
   const saveTime = (value: string) => {
     setTime(value);
     if (!/^\d\d:\d\d$/.test(value) || value === state?.reminderTime) return;
-    run('time', async () => setState(await saveReminderTime(value)));
+    run('time', async () => {
+      setState(await saveReminderTime(value));
+      onTimeChange?.(value);
+    });
   };
 
   const summary = !state

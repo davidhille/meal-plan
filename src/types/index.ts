@@ -176,6 +176,8 @@ export interface Profile {
   health_conditions: string[];
   created_at: string;
   updated_at: string;
+  /** Uhrzeit der Erinnerung zum Bewerten, z. B. „20:00“ */
+  reminder_time?: string;
 }
 
 export interface MealRating {

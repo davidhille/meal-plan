@@ -41,14 +41,42 @@ import FavoritesView from './components/FavoritesView';
 import MealPlanView from './components/MealPlanView';
 import ShoppingListView from './components/ShoppingListView';
 import SettingsView from './components/SettingsView';
+import MealRatingModal from './components/MealRatingModal';
 
 const VIEW_TABS: ViewTab[] = ['speiseplan', 'einkaufsliste', 'rezepte', 'favoriten', 'einstellungen'];
+
+/** Aus der Erinnerung geöffnet (?bewerten=Gerichtname)? Parameter danach aus der Adresse entfernen */
+function takeRateRequest(): string | null {
+  const params = new URLSearchParams(window.location.search);
+  const name = params.get('bewerten');
+  if (!name) return null;
+  params.delete('bewerten');
+  const rest = params.toString();
+  window.history.replaceState(null, '', window.location.pathname + (rest ? `?${rest}` : '') + window.location.hash);
+  return name.trim() || null;
+}
 
 export default function App() {
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [imagePolls, setImagePolls] = useState(0);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [selectedWeekKey, setSelectedWeekKey] = useState<string | null>(null);
+  // Gericht, das bewertet werden soll (Tipp auf die Erinnerung)
+  const [rateRequest, setRateRequest] = useState<string | null>(() => takeRateRequest());
+  // App war schon offen: der Service Worker schickt den Wunsch als Nachricht
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    const onMessage = (e: MessageEvent) => {
+      const data = e.data as { type?: string; name?: string } | null;
+      if (data?.type === 'bewerten' && data.name) {
+        setActiveTab('speiseplan');
+        setRateRequest(data.name);
+      }
+    };
+    navigator.serviceWorker.addEventListener('message', onMessage);
+    navigator.serviceWorker.startMessages?.();
+    return () => navigator.serviceWorker.removeEventListener('message', onMessage);
+  }, []);
   // Aktiver Bereich steht im URL-Hash (#einkaufsliste) – so bleibt man beim Neuladen, wo man war
   const [activeTab, setActiveTab] = useState<ViewTab>(() => {
     const hash = window.location.hash.slice(1);
@@ -337,6 +365,7 @@ export default function App() {
             defaultPortions={familyPortions(familyMembers)}
             onSetDessert={currentPlan ? handleSetDessert : undefined}
             allPlanMeals={currentPlan ? planMeals : undefined}
+            reminderTime={profile?.reminder_time}
           />
         ) : activeTab === 'einkaufsliste' ? (
           <ShoppingListView
@@ -384,9 +413,22 @@ export default function App() {
             onCreateRoutine={handleCreateRoutine}
             onDeleteRoutine={handleDeleteRoutine}
             onCreatePlan={handleCreatePlan}
+            onReminderTimeChange={(time) => setProfile((p) => (p ? { ...p, reminder_time: time } : p))}
           />
         )}
       </main>
+
+      {rateRequest && profile && (
+        <MealRatingModal
+          mealName={rateRequest}
+          currentRating={mealRatings[rateRequest]}
+          onSave={async (rating, notes) => {
+            await handleRateMeal(rateRequest, rating, notes);
+            setRateRequest(null);
+          }}
+          onClose={() => setRateRequest(null)}
+        />
+      )}
 
       {showPlanModal && (
         <PlanCreationModal onCreate={handleCreatePlan} onClose={() => setShowPlanModal(false)} />

@@ -18,7 +18,7 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
 ## 1. Speiseplan
 
 - **Heute-Karte** oben: heutiges Gericht groß mit Bild, „Rezept“ und „Kochmodus“, darunter das Gericht von morgen.
-  Gestern (bzw. heute ab 18 Uhr) noch nicht bewertet? Direkt dort mit Sternen bewerten. Der heutige Tag ist im Plan markiert.
+  Gestern (bzw. heute ab der Erinnerungszeit, spätestens ab 18 Uhr) noch nicht bewertet? Direkt dort mit Sternen bewerten. Der heutige Tag ist im Plan markiert.
 - **Plan erstellen** für einen Zeitraum (nächster Tag, nächste Woche, nächster Monat oder frei gewählt). Bei Plänen über mehrere Wochen
   filtert eine **KW-Auswahl** die Ansicht.
 - Tagesrhythmus: Sa/So aufwendigere **Wochenend**-Gerichte, unter der Woche abwechselnd **vegetarisch** und **Fleisch/Fisch**.
@@ -97,7 +97,8 @@ Auf- und zuklappbare Karten:
   Vorschläge u. a. „Fisch“ und „Fleisch“ – die festen Arten „Vegetarisch / Fleisch & Fisch / Wochenende“ steuern den
   Wochenrhythmus und bleiben unverändert.
 - **Erinnerung zum Bewerten:** pro Gerät einschalten, Uhrzeit wählen (Standard 20:00), Test senden. Abends kommt eine
-  Benachrichtigung, wenn das heutige Gericht noch keine Sterne hat (höchstens einmal am Tag). iPhone: nur mit der
+  Benachrichtigung, wenn das heutige Gericht noch keine Sterne hat (höchstens einmal am Tag). Ein Tipp darauf öffnet
+  direkt das Bewerten-Fenster für dieses Gericht. iPhone: nur mit der
   installierten App vom Home-Bildschirm.
 - **Einkaufen & Shops:** Standard-Liste, Metzger-Automatik, Knuspr und Picnic verbinden (Picnic ggf. mit SMS-Code),
   Mindestbestellwert und Liefergebühr je Shop. Zugangsdaten werden verschlüsselt gespeichert.

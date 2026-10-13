@@ -106,7 +106,8 @@ export async function sendRatingReminders(env: Env, sql: Sql, now: { date: strin
     const r = await sendToProfile(env, sql, p.id, {
       title: "Wie war das Essen?",
       body: `„${name}“ – kurz bewerten, dann plant die App besser.`,
-      url: "/#speiseplan",
+      // Öffnet in der App direkt das Bewerten-Fenster für dieses Gericht
+      url: `/?bewerten=${encodeURIComponent(name)}#speiseplan`,
       tag: "bewerten",
     });
     console.log(`Bewertungs-Erinnerung „${name}“: ${r.sent} gesendet, ${r.failed} fehlgeschlagen, ${r.removed} entfernt`);
