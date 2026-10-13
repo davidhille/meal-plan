@@ -60,6 +60,8 @@ werden nur übernommen, wenn sie wirklich zum Gericht passen, und mit Quellenang
 - **„Einkauf für“:** eigene Wochenauswahl („Diese Woche“, „Nächste Woche“ …), mehrere Wochen kombinierbar; Häkchen je Woche.
 - **Listen:** Lieferdienst (Knuspr/Picnic), Metzger (Fleisch automatisch, abschaltbar), eigene Listen (Aldi, DM …).
   Zuordnungen pro Zutat werden für künftige Pläne gemerkt. Listen sind auf- und zuklappbar.
+- **PDF:** Listen ohne Shop (Metzger, Aldi, DM …) einzeln über das PDF-Symbol in der Liste oder alle zusammen über
+  „Listen ohne Shop als PDF“ herunterladen – nur offene Einträge, mit Kästchen zum Abhaken, Umlaute und € passen.
 - **Basics & Vorrat:** Salz, Gewürze, Öl usw. kommen nicht auf die Liste; gelb markiert, wenn der Plan sie braucht.
   Eigener Vorrat per Kisten-Symbol („haben wir immer da“). Eigene Artikel per Eingabefeld.
 - **Lieferdienst-Liste:** pro Artikel ein Preis-Knopf je Shop, der günstigere ist markiert; Antippen ordnet den Artikel zu.
