@@ -238,7 +238,10 @@ const PROVIDERS: { id: PhotoSource; enabled: (env: AiEnv) => boolean; search: (e
  * dann soll „Neues Bild“ wirklich ein anderes liefern.
  */
 async function libraryPhoto(sql: Sql, mealName: string) {
-  const url = MEAL_DATABASE.find((m) => m.name === mealName)?.imageUrl;
+  // Bearbeitete Gerichte der Sammlung behalten ihr Originalfoto
+  const edited = await sql`SELECT replaces FROM recipes WHERE name = ${mealName} AND replaces IS NOT NULL`;
+  const original = (edited[0]?.replaces as string | undefined) ?? mealName;
+  const url = MEAL_DATABASE.find((m) => m.name === original)?.imageUrl;
   if (!url) return null;
   const current = await sql`SELECT source FROM meal_images WHERE meal_name = ${mealName} AND image_data IS NOT NULL`;
   if (current[0]?.source === "mealdb") return null;

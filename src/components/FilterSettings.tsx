@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Filter, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
-import { RecipeFilter } from '../types';
+import { RecipeFilter, RecipeFilterInput } from '../types';
 import { deleteRecipeFilter, getRecipeFilters, saveRecipeFilter } from '../lib/api';
 import ConfirmDialog from './ConfirmDialog';
 import CollapsibleCard from './CollapsibleCard';
@@ -12,8 +12,20 @@ const SCOPES: { id: RecipeFilter['scope']; label: string }[] = [
 ];
 
 /** Vorschläge zum schnellen Anlegen */
-const SUGGESTIONS: Omit<RecipeFilter, 'id'>[] = [
+const SUGGESTIONS: RecipeFilterInput[] = [
   { name: 'Schnell', scope: 'beide', keywords: [], maxMinutes: 30 },
+  {
+    name: 'Fisch',
+    scope: 'gerichte',
+    keywords: ['Fisch', 'Lachs', 'Forelle', 'Kabeljau', 'Seelachs', 'Dorsch', 'Zander', 'Garnele', 'Shrimp', 'Scampi', 'Muschel', 'Tintenfisch', 'Hering', 'Makrele', 'Sardine'],
+    maxMinutes: null,
+  },
+  {
+    name: 'Fleisch',
+    scope: 'gerichte',
+    keywords: ['Hähnchen', 'Huhn', 'Hühner', 'Pute', 'Rind', 'Schwein', 'Hack', 'Kalb', 'Lamm', 'Speck', 'Schinken', 'Wurst', 'Würstchen', 'Bacon', 'Chorizo', 'Salami', 'Kassler', 'Gulasch', 'Schnitzel'],
+    maxMinutes: null,
+  },
   { name: 'Nudeln', scope: 'gerichte', keywords: ['Nudel', 'Pasta', 'Spaghetti', 'Penne', 'Lasagne', 'Tortellini'], maxMinutes: null },
   { name: 'Mit Reis', scope: 'gerichte', keywords: ['Reis', 'Risotto'], maxMinutes: null },
   { name: 'Suppen & Eintöpfe', scope: 'gerichte', keywords: ['Suppe', 'Eintopf'], maxMinutes: null },
@@ -27,6 +39,9 @@ const describe = (f: RecipeFilter) =>
     SCOPES.find((s) => s.id === f.scope)?.label,
     f.keywords.length ? `enthält: ${f.keywords.join(', ')}` : null,
     f.maxMinutes ? `bis ${f.maxMinutes} Min` : null,
+    f.includeNames?.length ? `${f.includeNames.length} von Hand zugeordnet` : null,
+    f.excludeNames?.length ? `${f.excludeNames.length} ausgenommen` : null,
+    !f.keywords.length && !f.maxMinutes && !f.includeNames?.length ? 'noch keine Gerichte zugeordnet' : null,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -51,7 +66,7 @@ export default function FilterSettings() {
       .map((k) => k.trim())
       .filter(Boolean);
   const minutesOf = (d: Draft) => (Number(d.maxMinutes) > 0 ? Math.round(Number(d.maxMinutes)) : null);
-  const valid = (d: Draft) => !!d.name.trim() && (keywordsOf(d).length > 0 || !!minutesOf(d));
+  const valid = (d: Draft) => !!d.name.trim();
 
   const save = async () => {
     if (!draft || !valid(draft) || saving) return;
@@ -75,9 +90,9 @@ export default function FilterSettings() {
     }
   };
 
-  const edit = (f: RecipeFilter | Omit<RecipeFilter, 'id'>) =>
+  const edit = (f: RecipeFilterInput) =>
     setDraft({
-      id: 'id' in f ? f.id : undefined,
+      id: f.id,
       name: f.name,
       scope: f.scope,
       keywords: f.keywords.join(', '),
@@ -94,8 +109,12 @@ export default function FilterSettings() {
       summary={filters ? (filters.length ? filters.map((f) => f.name).join(', ') : 'Noch keine eigenen Filter') : undefined}
     >
       <p className="px-4 pb-3 text-xs text-gray-500">
-        Eigene Filter erscheinen in der Rezept-Übersicht neben „Vegetarisch“ &amp; Co. Ein Rezept passt, wenn einer der Begriffe im
-        Namen oder in den Zutaten vorkommt.
+        Eigene Filter erscheinen in der Rezept-Übersicht neben „Vegetarisch“ &amp; Co. Ein Gericht passt, wenn einer der Begriffe im
+        Namen oder in den Zutaten vorkommt. Einzelne Gerichte ordnest du im Rezept selbst zu oder nimmst sie aus (Filter-Knöpfe
+        unter dem Bild) – ganz ohne Suchbegriffe geht es auch.
+        <br />
+        „Vegetarisch“, „Fleisch &amp; Fisch“ und „Wochenende“ steuern den Wochenrhythmus und bleiben fest. Um Fisch und Fleisch
+        getrennt zu sehen, die Vorschläge „Fisch“ und „Fleisch“ unten anlegen.
       </p>
 
       {!filters ? (
@@ -173,7 +192,7 @@ export default function FilterSettings() {
             </div>
           </div>
           <label className="block">
-            <span className="text-xs font-semibold text-gray-500">Suchbegriffe (mit Komma getrennt)</span>
+            <span className="text-xs font-semibold text-gray-500">Suchbegriffe (mit Komma getrennt, optional)</span>
             <input
               type="text"
               value={draft.keywords}
@@ -194,8 +213,8 @@ export default function FilterSettings() {
               className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
             />
           </label>
-          {!valid(draft) && draft.name.trim() && (
-            <p className="text-xs text-gray-500">Bitte Suchbegriffe oder eine Zeit angeben.</p>
+          {draft.name.trim() && !keywordsOf(draft).length && !minutesOf(draft) && (
+            <p className="text-xs text-gray-500">Ohne Suchbegriffe und Zeit enthält der Filter nur Gerichte, die du im Rezept zuordnest.</p>
           )}
           {error && (
             <p role="alert" className="text-xs text-red-600">

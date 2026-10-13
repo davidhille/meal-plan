@@ -28,16 +28,25 @@ export function favoriteToRecipe(f: Row): Recipe {
 export async function loadPool(sql: Sql, profileId: string): Promise<{ pool: Recipe[]; favorites: Row[] }> {
   const [favorites, dbRecipes] = await Promise.all([
     loadFavorites(sql, profileId),
-    sql`SELECT name, type, ingredients, instructions, duration_min FROM recipes`,
+    sql`SELECT name, type, ingredients, instructions, duration_min, replaces FROM recipes`,
   ]);
   const pool: Recipe[] = [...MEAL_DATABASE];
-  const names = new Set(pool.map((m) => m.name));
+  const index = new Map(pool.map((m, i) => [m.name, i]));
   for (const r of dbRecipes) {
-    if (names.has(r.name)) continue;
-    pool.push({ name: r.name, type: r.type, ingredients: r.ingredients, instructions: r.instructions, durationMin: r.duration_min });
-    names.add(r.name);
+    const recipe: Recipe = { name: r.name, type: r.type, ingredients: r.ingredients, instructions: r.instructions, durationMin: r.duration_min };
+    // Bearbeitete Gerichte ersetzen das Original (Foto aus der Sammlung bleibt)
+    const target = (r.replaces as string | null) ?? r.name;
+    const i = index.get(target) ?? index.get(r.name);
+    if (i === undefined) {
+      index.set(r.name, pool.length);
+      pool.push(recipe);
+    } else {
+      pool[i] = { ...recipe, imageUrl: pool[i].imageUrl };
+      index.delete(target);
+      index.set(r.name, i);
+    }
   }
-  for (const f of favorites) if (!names.has(f.meal_name)) pool.push(favoriteToRecipe(f));
+  for (const f of favorites) if (!index.has(f.meal_name)) pool.push(favoriteToRecipe(f));
   return { pool, favorites };
 }
 

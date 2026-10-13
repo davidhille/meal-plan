@@ -65,8 +65,12 @@ werden nur übernommen, wenn sie wirklich zum Gericht passen, und mit Quellenang
 
 ## 3. Rezepte
 
-- **Hauptgerichte:** Kachel-Übersicht aller planbaren Gerichte (nur die, die zum Profil passen), Suche und Filter
-  (Typ, eigene Filter). Gericht einem Tag im Plan zuordnen; Gerichte ausblenden.
+- **Hauptgerichte:** Kachel-Übersicht aller planbaren Gerichte, Suche und Filter (Typ, eigene Filter). Gericht einem Tag
+  im Plan zuordnen; Gerichte ausblenden. Gerichte, die nicht zu den Gesundheitseinstellungen passen (z. B. Nudeln bei
+  glutenfrei), sind standardmäßig versteckt und lassen sich einblenden – sie werden nie automatisch geplant.
+- **Rezept-Ansicht in der Übersicht:** Bild erzeugen bzw. neues Bild, **Gericht bearbeiten** (Stift: Name, Art, Zeit,
+  Zutaten, Zubereitung; gilt auch für kommende Plan-Tage und den Favoriten; Gerichte der Sammlung lassen sich auf das
+  Original zurücksetzen) und **eigene Filter zuordnen** (Filter-Knöpfe unter dem Bild).
 - **Nachtische:** 124 übersetzte Desserts mit Fotos (Kuchen & Torten, Gebäck, Cremes & Pudding …), mit fester Menge;
   im Speiseplan per Kuchen-Knopf an ein Gericht hängen (erst Rezept ansehen, dann hinzufügen).
 
@@ -83,7 +87,10 @@ Auf- und zuklappbare Karten:
 - **Familienmitglieder:** Name, Erwachsener/Kind mit Alter, mag/mag nicht – anlegen, bearbeiten, löschen (mit Bestätigung).
 - **Routinen:** wöchentlich oder monatlich automatisch einen neuen Plan erstellen (Cron alle 15 Minuten, deutsche Zeit).
 - **Einkaufslisten verwalten:** eigene Listen anlegen, umbenennen, umfärben, löschen.
-- **Eigene Rezept-Filter:** Name, Suchbegriffe und/oder maximale Zubereitungszeit, für Gerichte, Nachtische oder beide.
+- **Eigene Rezept-Filter:** Name, Suchbegriffe und/oder maximale Zubereitungszeit, für Gerichte, Nachtische oder beide;
+  bearbeiten und löschen. Einzelne Gerichte werden im Rezept zugeordnet oder ausgenommen (auch ganz ohne Suchbegriffe).
+  Vorschläge u. a. „Fisch“ und „Fleisch“ – die festen Arten „Vegetarisch / Fleisch & Fisch / Wochenende“ steuern den
+  Wochenrhythmus und bleiben unverändert.
 - **Einkaufen & Shops:** Standard-Liste, Metzger-Automatik, Knuspr und Picnic verbinden (Picnic ggf. mit SMS-Code),
   Mindestbestellwert und Liefergebühr je Shop. Zugangsdaten werden verschlüsselt gespeichert.
 

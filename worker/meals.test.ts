@@ -73,8 +73,10 @@ describe("violatesHealthConditions", () => {
   });
   test("glutenfrei: normale Nudeln raus, glutenfreie erlaubt", () => {
     expect(containsGluten(recipe("Pasta", ["400 g Spaghetti"]))).toBe(true);
-    expect(violatesHealthConditions(recipe("Glutenfreie Pasta", ["400 g glutenfreie Spaghetti"]), ["gluten_free"])).toBe(false);
+    expect(violatesHealthConditions(recipe("Spaghetti Bolognese", ["400 g glutenfreie Spaghetti", "300 g Rinderhack"]), ["gluten_free"])).toBe(false);
     expect(violatesHealthConditions(recipe("Gemüsepfanne", ["2 EL Sojasoße"]), ["gluten_free"])).toBe(true);
+    // Name allein reicht, wenn keine glutenfreie Variante in den Zutaten steht
+    expect(violatesHealthConditions(recipe("Spaghetti-Salat", ["200 g Rucola"]), ["gluten_free"])).toBe(true);
   });
   test("Nussallergie, koscher, halal", () => {
     expect(violatesHealthConditions(recipe("Pesto", ["50 g Pinienkerne"]), ["nut_allergy"])).toBe(true);

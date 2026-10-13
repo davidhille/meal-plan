@@ -277,10 +277,15 @@ const SHELLFISH_RE = /garnele|shrimp|muschel|auster|krabbe|hummer|meeresfrüchte
 const ALCOHOL_RE = /wein(?!essig|blatt|traube)|bier|\brum\b|likör|sekt|alkohol|cognac|brandy/i;
 const SUGAR_RE = /zucker|honig|sirup|weißbrot|marmelade|nutella/i;
 
-/** Trifft das Muster eine Zutat, die nicht ausdrücklich „…frei“ ist? */
+/**
+ * Trifft das Muster eine Zutat, die nicht ausdrücklich „…frei“ ist? Der Name zählt auch („Spaghetti Bolognese“),
+ * außer die Zutaten nennen die freie Variante („glutenfreie Spaghetti“).
+ */
 function violates(meal: Recipe, pattern: RegExp, freeMarker?: RegExp): boolean {
-  if (pattern.test(meal.name) && !(freeMarker && freeMarker.test(meal.name))) return true;
-  return meal.ingredients.some((i) => pattern.test(i) && !(freeMarker && freeMarker.test(i)));
+  const isFree = (s: string) => !!freeMarker && freeMarker.test(s);
+  const freeIngredient = meal.ingredients.some((i) => pattern.test(i) && isFree(i));
+  if (pattern.test(meal.name) && !isFree(meal.name) && !freeIngredient) return true;
+  return meal.ingredients.some((i) => pattern.test(i) && !isFree(i));
 }
 
 /** Enthält das Rezept Fleisch oder Fisch? */

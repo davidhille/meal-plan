@@ -10,12 +10,14 @@ interface RecipesViewProps {
   onReplace?: (pm: PlanMeal, recipe: CatalogRecipe) => Promise<void>;
   onAssignDessert?: (pm: PlanMeal, dessert: Dessert) => Promise<void>;
   defaultPortions?: number;
+  /** Gericht bearbeitet – Plan und Favoriten neu laden */
+  onRecipesChanged?: () => void;
 }
 
 type Section = 'gerichte' | 'nachtische';
 
 /** Rezept-Übersicht: Hauptgerichte und Nachtische */
-export default function RecipesView({ planMeals, onReplace, onAssignDessert, defaultPortions }: RecipesViewProps) {
+export default function RecipesView({ planMeals, onReplace, onAssignDessert, defaultPortions, onRecipesChanged }: RecipesViewProps) {
   const [section, setSection] = useState<Section>(() => {
     try {
       return localStorage.getItem('rezepte-bereich') === 'nachtische' ? 'nachtische' : 'gerichte';
@@ -70,9 +72,16 @@ export default function RecipesView({ planMeals, onReplace, onAssignDessert, def
           onReplace={onReplace}
           defaultPortions={defaultPortions}
           customFilters={filtersFor(customFilters, 'gerichte')}
+          onFiltersChange={setCustomFilters}
+          onRecipesChanged={onRecipesChanged}
         />
       ) : (
-        <DessertsView planMeals={planMeals} onAssign={onAssignDessert} customFilters={filtersFor(customFilters, 'nachtische')} />
+        <DessertsView
+          planMeals={planMeals}
+          onAssign={onAssignDessert}
+          customFilters={filtersFor(customFilters, 'nachtische')}
+          onFiltersChange={setCustomFilters}
+        />
       )}
     </>
   );

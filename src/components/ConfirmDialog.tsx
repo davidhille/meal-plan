@@ -32,7 +32,7 @@ export default function ConfirmDialog({ title, message, confirmLabel, danger, on
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-[70] bg-black/50 flex items-end sm:items-center justify-center">
       <div
         ref={dialogRef}
         role="alertdialog"
