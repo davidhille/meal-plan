@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2, CalendarPlus, RefreshCw, Loader2 } from 'lucide-react';
+import { Trash2, CalendarPlus, RefreshCw, Loader2, Download } from 'lucide-react';
 import { DayRules, Dessert, ImageCredit, Meal, MealPlan, MealType, PlanDessert, PlanMeal } from '../types';
 import { generateMealImage } from '../lib/api';
 import { planDessertToMeal } from '../lib/desserts';
@@ -10,6 +10,7 @@ import TodayCard from './TodayCard';
 import MoveMealSheet from './MoveMealSheet';
 import DayCard from './DayCard';
 import MealModal from './MealModal';
+import { exportPlan } from '../lib/planExport';
 
 interface MealPlanViewProps {
   onCreatePlan: () => void;
@@ -185,9 +186,19 @@ export default function MealPlanView({
             <span className="text-gray-600">
               {formatShortDate(plan.start_date)} – {formatShortDate(plan.end_date)}
             </span>
-            <button onClick={onCreatePlan} className="text-xs font-medium text-brand-700 hover:text-brand-800">
-              Neuer Zeitraum
-            </button>
+            <span className="flex items-center gap-3">
+              <button
+                onClick={() => exportPlan(plan, allPlanMeals ?? planMeals ?? [], defaultPortions ?? 4)}
+                title="Plan mit allen Rezepten herunterladen oder drucken"
+                className="flex items-center gap-1 text-xs font-medium text-brand-700 hover:text-brand-800"
+              >
+                <Download size={13} aria-hidden="true" />
+                Herunterladen
+              </button>
+              <button onClick={onCreatePlan} className="text-xs font-medium text-brand-700 hover:text-brand-800">
+                Neuer Zeitraum
+              </button>
+            </span>
           </div>
         )}
         <TodayCard
