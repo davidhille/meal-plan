@@ -11,6 +11,7 @@ import MoveMealSheet from './MoveMealSheet';
 import DayCard from './DayCard';
 import MealModal from './MealModal';
 import { exportPlan } from '../lib/planExport';
+import ReplacePlanDialog from './ReplacePlanDialog';
 
 interface MealPlanViewProps {
   onCreatePlan: () => void;
@@ -99,6 +100,7 @@ export default function MealPlanView({
   const [pickDessertFor, setPickDessertFor] = useState<PlanMeal | null>(null);
   const [openDessert, setOpenDessert] = useState<PlanDessert | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmRegenerate, setConfirmRegenerate] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [regeneratingPlan, setRegeneratingPlan] = useState(false);
@@ -261,14 +263,7 @@ export default function MealPlanView({
         <div className="pt-2 space-y-2">
           {onRegeneratePlan && (
             <button
-              onClick={async () => {
-                setRegeneratingPlan(true);
-                try {
-                  await onRegeneratePlan();
-                } finally {
-                  setRegeneratingPlan(false);
-                }
-              }}
+              onClick={() => setConfirmRegenerate(true)}
               disabled={regeneratingPlan}
               className="w-full py-3 flex items-center justify-center gap-2 rounded-xl bg-brand-700 text-white text-sm font-medium hover:bg-brand-800 disabled:bg-brand-300 transition-colors"
             >
@@ -355,6 +350,23 @@ export default function MealPlanView({
             return image;
           }}
           onClose={() => setSelectedMeal(null)}
+        />
+      )}
+      {confirmRegenerate && plan && onRegeneratePlan && (
+        <ReplacePlanDialog
+          plan={plan}
+          meals={allPlanMeals ?? planMeals ?? []}
+          portions={defaultPortions ?? 4}
+          confirmLabel="Neu generieren"
+          onConfirm={async () => {
+            setRegeneratingPlan(true);
+            try {
+              await onRegeneratePlan();
+            } finally {
+              setRegeneratingPlan(false);
+            }
+          }}
+          onClose={() => setConfirmRegenerate(false)}
         />
       )}
     </>
