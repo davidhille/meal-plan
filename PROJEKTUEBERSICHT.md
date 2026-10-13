@@ -24,6 +24,9 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
 - Tagesrhythmus: Sa/So aufwendigere **Wochenend**-Gerichte, unter der Woche abwechselnd **vegetarisch** und **Fleisch/Fisch**.
 - Gerichtkarte: Bild, Typ, Zubereitungszeit, Bewertung, ggf. Nachtisch. Aktionen:
   - **♥ Merken** (Favorit) · **↻ Neu generieren** (nur austauschen) · **✕ Ablehnen** (kommt nie wieder) · **Kuchen** (Nachtisch dazu)
+  - **Kalender** (Verschieben oder Tag leeren): Gericht auf einen anderen Tag legen – steht dort schon eins, tauschen beide;
+    auch bis 2 Wochen nach Planende (der Plan wird verlängert). Oder „Tag leeren – nicht kochen“: Gericht kommt aus dem
+    Plan (nicht abgelehnt), die Zutaten verschwinden von der Einkaufsliste.
 - **Komplett neuen Plan generieren** für denselben Zeitraum; **Plan löschen** mit Bestätigung.
 - **Rezept-Ansicht:** Bild mit Quellenangabe, Zutaten mit **Portionen-Umrechnung** (Familie: Erwachsene 1, Kinder je nach Alter
   ½ bis 1 Portion; per +/− änderbar), Zubereitung Schritt für Schritt, Bewertung.

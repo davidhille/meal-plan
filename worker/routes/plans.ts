@@ -73,6 +73,44 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
     return json({ replacement });
   }
 
+  // Gericht auf einen anderen Tag verschieben. Steht dort schon eins, tauschen beide den Tag.
+  // Liegt der Tag außerhalb des Plans, wird der Plan bis dahin verlängert (höchstens 8 Wochen nach Planende).
+  if (parts[0] === "plan-meals" && id && parts[2] === "move" && request.method === "POST") {
+    const p = await getProfile(sql);
+    const date = String(body.date ?? "");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date))) return json({ error: "Ungültiges Datum" }, 400);
+    const rows = await sql`SELECT pm.id, pm.plan_id, pm.meal_date::text AS meal_date, mp.start_date::text AS start_date,
+        mp.end_date::text AS end_date
+      FROM plan_meals pm JOIN meal_plans mp ON mp.id = pm.plan_id
+      WHERE pm.id = ${id} AND mp.profile_id = ${p.id} AND NOT pm.rejected`;
+    const pm = rows[0];
+    if (!pm) return json({ error: "Gericht nicht gefunden" }, 404);
+    if (date === pm.meal_date) return json({ ok: true, swapped: false });
+    const limit = new Date(`${pm.end_date}T00:00:00Z`);
+    limit.setUTCDate(limit.getUTCDate() + 56);
+    if (date > limit.toISOString().slice(0, 10)) return json({ error: "So weit lässt sich nicht verschieben" }, 400);
+
+    const other = await sql`SELECT id FROM plan_meals WHERE plan_id = ${pm.plan_id} AND meal_date = ${date}::date AND NOT rejected`;
+    if (other[0]) await sql`UPDATE plan_meals SET meal_date = ${pm.meal_date}::date WHERE id = ${other[0].id}`;
+    await sql`UPDATE plan_meals SET meal_date = ${date}::date WHERE id = ${id}`;
+    // Abgelehnte Einträge am Zieltag stören nicht (bleiben unsichtbar)
+    const plans = await sql.query(
+      `UPDATE meal_plans SET start_date = LEAST(start_date, $2::date), end_date = GREATEST(end_date, $2::date)
+       WHERE id = $1 RETURNING ${PLAN_COLS}`,
+      [pm.plan_id, date]
+    );
+    return json({ ok: true, swapped: !!other[0], plan: plans[0] });
+  }
+
+  // Gericht aus dem Plan nehmen (spontan nicht kochen) – der Tag bleibt leer, das Gericht wird nicht abgelehnt
+  if (parts[0] === "plan-meals" && id && !parts[2] && request.method === "DELETE") {
+    const p = await getProfile(sql);
+    const removed = await sql`DELETE FROM plan_meals pm USING meal_plans mp
+      WHERE pm.id = ${id} AND mp.id = pm.plan_id AND mp.profile_id = ${p.id} RETURNING pm.id`;
+    if (!removed[0]) return json({ error: "Gericht nicht gefunden" }, 404);
+    return json({ ok: true });
+  }
+
   // Nachtisch an ein Gericht hängen (oder mit dessert: null entfernen)
   if (parts[0] === "plan-meals" && id && parts[2] === "dessert" && request.method === "PUT") {
     const p = await getProfile(sql);

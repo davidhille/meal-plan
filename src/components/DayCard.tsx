@@ -1,5 +1,5 @@
 import { Meal, MealType, PlanDessert } from '../types';
-import { ChevronRight, Leaf, Beef, Sunset, Star, X, Heart, RefreshCw, Clock, Loader2, CakeSlice } from 'lucide-react';
+import { ChevronRight, Leaf, Beef, Sunset, Star, X, Heart, RefreshCw, Clock, Loader2, CakeSlice, CalendarDays } from 'lucide-react';
 import { dessertPreview } from '../lib/desserts';
 
 interface DayCardProps {
@@ -17,6 +17,8 @@ interface DayCardProps {
   onOpenDessert?: () => void;
   /** Heutiger Tag – hervorgehoben */
   isToday?: boolean;
+  /** Verschieben oder Tag leeren */
+  onMove?: () => void;
 }
 
 const typeConfig: Record<MealType, { bar: string; label: string; icon: React.ReactNode }> = {
@@ -51,9 +53,10 @@ export default function DayCard({
   onPickDessert,
   onOpenDessert,
   isToday,
+  onMove,
 }: DayCardProps) {
   const config = typeConfig[meal.type];
-  const hasActions = !!(onReject || onRegenerate || onToggleFavorite || onPickDessert);
+  const hasActions = !!(onReject || onRegenerate || onToggleFavorite || onPickDessert || onMove);
 
   return (
     <div className={`flex gap-2 items-stretch transition-opacity ${busy ? 'opacity-60' : ''}`}>
@@ -165,6 +168,17 @@ export default function DayCard({
               aria-label={`${meal.meal}: ${dessert ? `Nachtisch ändern (${dessert.name})` : 'Nachtisch hinzufügen'}`}
             >
               <CakeSlice size={15} />
+            </button>
+          )}
+          {onMove && (
+            <button
+              onClick={onMove}
+              disabled={busy}
+              className="flex-1 min-h-[32px] flex items-center justify-center text-gray-500 hover:bg-brand-50 hover:text-brand-700 transition-colors"
+              title="Verschieben oder Tag leeren"
+              aria-label={`${meal.meal}: auf anderen Tag verschieben oder Tag leeren`}
+            >
+              <CalendarDays size={15} />
             </button>
           )}
           {onRegenerate && (

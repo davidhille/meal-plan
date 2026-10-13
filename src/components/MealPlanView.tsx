@@ -7,6 +7,7 @@ import DessertPickerModal from './DessertPickerModal';
 import { formatShortDate, toIso } from '../lib/dateUtils';
 import { ruleForDate } from '../lib/dayRules';
 import TodayCard from './TodayCard';
+import MoveMealSheet from './MoveMealSheet';
 import DayCard from './DayCard';
 import MealModal from './MealModal';
 
@@ -33,6 +34,10 @@ interface MealPlanViewProps {
   dayRules?: DayRules;
   /** Sichtbarer Zeitraum (gewählte KW), für die Zeilen der freien Tage */
   visibleRange?: { from: string; to: string };
+  /** Gericht auf einen anderen Tag verschieben */
+  onMove?: (pm: PlanMeal, date: string) => Promise<void>;
+  /** Gericht aus dem Plan nehmen (Tag leeren) */
+  onRemove?: (pm: PlanMeal) => Promise<void>;
 }
 
 /** Spätestens ab dann fragt die Heute-Karte nach dem heutigen Essen (vorher: nach dem von gestern) */
@@ -84,9 +89,12 @@ export default function MealPlanView({
   reminderTime,
   dayRules,
   visibleRange,
+  onMove,
+  onRemove,
 }: MealPlanViewProps) {
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [cookOnOpen, setCookOnOpen] = useState(false);
+  const [moving, setMoving] = useState<PlanMeal | null>(null);
   const [pickDessertFor, setPickDessertFor] = useState<PlanMeal | null>(null);
   const [openDessert, setOpenDessert] = useState<PlanDessert | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -220,6 +228,7 @@ export default function MealPlanView({
               busy={busyId === pm.id}
               onClick={() => openPlanMeal(pm)}
               isToday={pm.meal_date === todayIso}
+              onMove={onMove && onRemove ? () => setMoving(pm) : undefined}
               onReject={onReject ? withBusy(pm.id, () => onReject(pm.id, pm.meal_name)) : undefined}
               onRegenerate={onRegenerate ? withBusy(pm.id, () => onRegenerate(pm.id)) : undefined}
               onToggleFavorite={onToggleFavorite ? withBusy(pm.id, () => onToggleFavorite(pm)) : undefined}
@@ -287,6 +296,18 @@ export default function MealPlanView({
           </div>
         </div>
       </div>
+
+      {moving && plan && onMove && onRemove && (
+        <MoveMealSheet
+          pm={moving}
+          plan={plan}
+          planMeals={allPlanMeals ?? planMeals ?? []}
+          dayRules={dayRules}
+          onMove={(date) => onMove(moving, date)}
+          onRemove={() => onRemove(moving)}
+          onClose={() => setMoving(null)}
+        />
+      )}
 
       {pickDessertFor && onSetDessert && (
         <DessertPickerModal

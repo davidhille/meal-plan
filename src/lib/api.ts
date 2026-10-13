@@ -249,6 +249,16 @@ export async function regenerateMeal(planMealId: string): Promise<PlanMeal | nul
   }
 }
 
+/** Gericht auf einen anderen Tag verschieben (tauscht, wenn dort schon eins steht); liefert ggf. den verlängerten Plan */
+export function movePlanMeal(planMealId: string, date: string): Promise<{ swapped: boolean; plan?: MealPlan }> {
+  return request('POST', `/plan-meals/${enc(planMealId)}/move`, { date });
+}
+
+/** Gericht aus dem Plan nehmen (Tag bleibt leer, Gericht wird nicht abgelehnt); wirft bei Fehlern */
+export async function removePlanMeal(planMealId: string): Promise<void> {
+  await request('DELETE', `/plan-meals/${enc(planMealId)}`);
+}
+
 /** Nachtisch an ein Gericht hängen (null = entfernen); wirft bei Fehlern */
 export async function setMealDessert(planMealId: string, dessert: PlanDessert | null): Promise<PlanDessert | null> {
   const result = await request<{ dessert: PlanDessert | null }>('PUT', `/plan-meals/${planMealId}/dessert`, { dessert });
