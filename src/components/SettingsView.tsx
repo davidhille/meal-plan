@@ -7,6 +7,7 @@ import RoutineModal from './RoutineModal';
 import ShopSettings from './ShopSettings';
 import LabelSettings from './LabelSettings';
 import FilterSettings from './FilterSettings';
+import ReminderSettings from './ReminderSettings';
 import CollapsibleCard from './CollapsibleCard';
 import PlanCreationModal from './PlanCreationModal';
 
@@ -145,6 +146,9 @@ export default function SettingsView({
 
         {/* Eigene Filter für die Rezept-Übersicht */}
         <FilterSettings />
+
+        {/* Push-Erinnerung zum Bewerten */}
+        <ReminderSettings />
 
         {/* Routines Section */}
         <CollapsibleCard

@@ -13,12 +13,13 @@ import { planRoutes } from "./routes/plans";
 import { recipeRoutes } from "./routes/recipes";
 import { shoppingRoutes } from "./routes/shopping";
 import { shopRoutes } from "./routes/shops";
+import { pushRoutes } from "./routes/push";
 
 export type { Env } from "./http";
 export { runRoutines } from "./routines";
 
 /** Reihenfolge ist egal, die Routen überschneiden sich nicht */
-const ROUTES: RouteHandler[] = [profileRoutes, planRoutes, recipeRoutes, shoppingRoutes, shopRoutes];
+const ROUTES: RouteHandler[] = [profileRoutes, planRoutes, recipeRoutes, shoppingRoutes, shopRoutes, pushRoutes];
 
 export async function handleApi(
   request: Request,

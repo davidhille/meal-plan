@@ -619,3 +619,34 @@ export async function saveImportedRecipe(
   const result = await request<{ favorites: Favorite[] }>('POST', '/recipes', { ...recipe, favorite });
   return result.favorites;
 }
+
+// ---------- Erinnerung zum Bewerten (Push) – werfen bei Fehlern ----------
+
+export interface PushState {
+  /** VAPID-Schlüssel für pushManager.subscribe */
+  publicKey: string;
+  /** Uhrzeit der Erinnerung, z. B. „20:00“ */
+  reminderTime: string;
+  /** Angemeldete Geräte (Push-Adressen) */
+  endpoints: string[];
+}
+
+export function getPushState(): Promise<PushState> {
+  return request<PushState>('GET', '/push');
+}
+
+export function subscribePush(subscription: PushSubscriptionJSON, label: string): Promise<PushState> {
+  return request<PushState>('POST', '/push/subscribe', { subscription, label });
+}
+
+export function unsubscribePush(endpoint: string): Promise<PushState> {
+  return request<PushState>('POST', '/push/unsubscribe', { endpoint });
+}
+
+export function saveReminderTime(reminderTime: string): Promise<PushState> {
+  return request<PushState>('PUT', '/push/settings', { reminderTime });
+}
+
+export function sendTestPush(endpoint: string): Promise<{ ok: true }> {
+  return request<{ ok: true }>('POST', '/push/test', { endpoint });
+}
