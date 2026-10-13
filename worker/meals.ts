@@ -3,6 +3,7 @@ import { VEGETARISCH } from "./recipes/vegetarisch";
 import { FLEISCH } from "./recipes/fleisch";
 import { WOCHENENDE } from "./recipes/wochenende";
 import { MEALDB } from "./recipes/mealdb";
+import { focusScore } from "./nutrition";
 
 export interface Recipe {
   name: string;
@@ -213,7 +214,12 @@ export interface ScoringContext {
   rejectedMeals: string[];
   mealRatings: Record<string, number>;
   healthConditions: string[];
-  healthGoal: string;
+  /** Ernährungs-Schwerpunkte (mehrere möglich), siehe nutrition.ts */
+  healthFocus: string[];
+  /** Fleisch höchstens so oft pro Kalenderwoche (null = keine Grenze) */
+  meatMaxPerWeek?: number | null;
+  /** Monat 1–12 für „saisonal“ */
+  month?: number;
   /** Gerichte, die schon im Plan sind (nur beim Ersetzen: −20) */
   existingPlanMeals?: string[];
   /** Favoriten ohne Turnus bekommen einen Bonus */
@@ -272,8 +278,6 @@ const ANIMAL_RE = new RegExp(
   `${LACTOSE_RE.source}|butterschmalz|\\bei(er)?\\b|eigelb|eiweiß|honig|gelatine|fisch|lachs|thunfisch|garnele`,
   "i"
 );
-const PORK_RE = /schwein|speck|schinken|salami|bacon|pancetta|chorizo|mett|wurst/i;
-const SHELLFISH_RE = /garnele|shrimp|muschel|auster|krabbe|hummer|meeresfrüchte|tintenfisch|calamari/i;
 const ALCOHOL_RE = /wein(?!essig|blatt|traube)|bier|\brum\b|likör|sekt|alkohol|cognac|brandy/i;
 const SUGAR_RE = /zucker|honig|sirup|weißbrot|marmelade|nutella/i;
 
@@ -302,8 +306,7 @@ export function violatesHealthConditions(meal: Recipe, conditions: string[]): bo
   if (has("gluten_free") && containsGluten(meal)) return true;
   if (has("lactose_intolerant") && violates(meal, LACTOSE_RE, /laktosefrei|vegan/i)) return true;
   if (has("nut_allergy") && violates(meal, NUT_RE)) return true;
-  if (has("kosher") && (violates(meal, PORK_RE) || violates(meal, SHELLFISH_RE))) return true;
-  if (has("halal") && (violates(meal, PORK_RE) || violates(meal, ALCOHOL_RE))) return true;
+  if (has("no_alcohol") && violates(meal, ALCOHOL_RE, /alkoholfrei/i)) return true;
   return false;
 }
 
@@ -330,14 +333,7 @@ export function scoreMeal(meal: Recipe, ctx: ScoringContext): number {
   if (violatesHealthConditions(meal, ctx.healthConditions)) return -1;
   if (ctx.healthConditions.includes("diabetes") && violates(meal, SUGAR_RE)) score -= 15;
 
-  if (ctx.healthGoal === "weight_loss") {
-    if (meal.type === "vegetarisch") score += 10;
-    if (meal.ingredients.some((i) => /sahne|butter|käse|pancetta/i.test(i))) score -= 5;
-  }
-  if (ctx.healthGoal === "muscle_gain") {
-    if (meal.type === "fleisch") score += 10;
-    if (meal.ingredients.some((i) => /hähnchen|lachs|tofu|linsen|kichererbsen/i.test(i))) score += 5;
-  }
+  score += focusScore(meal, ctx.healthFocus ?? [], ctx.month);
   return Math.max(0, score);
 }
 

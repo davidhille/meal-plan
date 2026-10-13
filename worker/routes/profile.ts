@@ -2,6 +2,13 @@
 import type { Ctx } from "../http";
 import { json } from "../http";
 import { ROUTINE_COLS, getProfile } from "../repo";
+import { FOCUS_IDS } from "../nutrition";
+
+/** Erlaubte Einschränkungen (harte Ausschlüsse, siehe violatesHealthConditions) */
+const CONDITION_IDS = ["diabetes", "gluten_free", "lactose_intolerant", "nut_allergy", "vegetarian", "vegan", "no_alcohol"];
+
+const onlyKnown = (raw: unknown, allowed: readonly string[]) =>
+  [...new Set((Array.isArray(raw) ? raw : []).map(String))].filter((x) => allowed.includes(x));
 
 
 export async function profileRoutes({ request, sql, body, parts, route, id }: Ctx): Promise<Response | null> {
@@ -10,8 +17,12 @@ export async function profileRoutes({ request, sql, body, parts, route, id }: Ct
 
   if (route === "PUT /profile") {
     const p = await getProfile(sql);
+    const focus = onlyKnown(body.health_focus, FOCUS_IDS);
+    const conditions = onlyKnown(body.health_conditions, CONDITION_IDS);
+    const meatMax = body.meat_max_per_week == null || body.meat_max_per_week === "" ? NaN : Number(body.meat_max_per_week);
+    const meatLimit = Number.isInteger(meatMax) && meatMax >= 0 && meatMax <= 7 ? meatMax : null;
     const rows = await sql`UPDATE profiles
-      SET health_goal = ${body.health_goal}, health_conditions = ${body.health_conditions ?? []}, updated_at = now()
+      SET health_focus = ${focus}, health_conditions = ${conditions}, meat_max_per_week = ${meatLimit}, updated_at = now()
       WHERE id = ${p.id} RETURNING *`;
     return json(rows[0]);
   }

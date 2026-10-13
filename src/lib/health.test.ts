@@ -9,5 +9,6 @@ describe('swapExample', () => {
   test('ohne passende Einstellung kein Beispiel', () => {
     expect(swapExample([])).toBeNull();
     expect(swapExample(['diabetes'])).toBeNull();
+    expect(swapExample(['no_alcohol'])).toBe('Brühe statt Weißwein');
   });
 });

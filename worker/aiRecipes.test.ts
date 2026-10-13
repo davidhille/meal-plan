@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { cleanWish, generateWishRecipe, type RecipeRequestContext } from "./aiRecipes";
 
 const ctx = (over: Partial<RecipeRequestContext> = {}): RecipeRequestContext => ({
-  healthGoal: "balanced",
+  healthFocus: [],
   healthConditions: [],
   familyMembers: [],
   ...over,
