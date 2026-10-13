@@ -436,10 +436,12 @@ export function pickReplacement(
   exclude: Set<string>
 ): Recipe | null {
   const preferred = preferredTypeFor(dateStr);
+  // Etwas Zufall wie bei pickMeal, sonst kommt beim Austauschen immer derselbe Spitzenreiter
   const scored = pool
     .filter((m) => !exclude.has(m.name))
     .map((meal) => ({ meal, score: scoreMeal(meal, ctx) }))
     .filter((s) => s.score >= 0)
-    .sort((a, b) => b.score - a.score);
+    .map((s) => ({ ...s, rank: s.score + Math.random() * 15 }))
+    .sort((a, b) => b.rank - a.rank);
   return (scored.find((s) => s.meal.type === preferred) ?? scored[0])?.meal ?? null;
 }
