@@ -1,0 +1,34 @@
+# Prüft jeden Pull Request (und main), bevor Cloudflare deployt.
+# Cloudflare selbst baut nur mit `vite build` – das prüft keine Typen und kein Lint.
+name: Prüfen
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Typen, Lint, Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Pakete installieren
+        run: bun install --frozen-lockfile
+
+      - name: Typen prüfen (Frontend + Worker)
+        run: bun run typecheck
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Build
+        run: bun run build
