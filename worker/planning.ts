@@ -5,6 +5,7 @@ import { pickMeal, pickReplacement, preferredTypeFor, scoreMeal, violatesHealthC
 import { generateImage } from "./images";
 import { generateRecipes } from "./aiRecipes";
 import { PLAN_COLS, PLAN_MEAL_COLS, favoriteToRecipe, loadContext, loadPool } from "./repo";
+import { isMeatDish, isoWeekKey } from "./nutrition";
 
 /** Gerichte, die in den 3 Wochen vor `startDate` schon geplant waren */
 async function recentMealNames(sql: Sql, profileId: string, startDate: string): Promise<string[]> {
@@ -40,12 +41,47 @@ export function addDaysIso(date: string, days: number) {
   return d.toISOString().slice(0, 10);
 }
 
+/**
+ * Gerichte für alle Tage auswählen. Feste Tage (Turnus-Favoriten) bleiben; mit Fleisch-Grenze
+ * (ctx.meatMaxPerWeek) gibt es pro Kalenderwoche höchstens so viele Fleischgerichte – an „Fleisch-Tagen“
+ * dann Fisch oder vegetarisch.
+ */
+export function pickDays(
+  dates: string[],
+  ctx: ScoringContext,
+  used: Set<string>,
+  pool: Recipe[],
+  assigned: Map<string, Recipe> = new Map()
+): { date: string; recipe: Recipe }[] {
+  const max = ctx.meatMaxPerWeek;
+  const meatPerWeek = new Map<string, number>();
+  const addMeat = (date: string, r: Recipe) => {
+    if (max == null || !isMeatDish(r)) return;
+    const k = isoWeekKey(date);
+    meatPerWeek.set(k, (meatPerWeek.get(k) ?? 0) + 1);
+  };
+  for (const [date, r] of assigned) addMeat(date, r);
+  const meatFree = max == null ? pool : pool.filter((r) => !isMeatDish(r));
+
+  const meals: { date: string; recipe: Recipe }[] = [];
+  for (const date of dates) {
+    const fixed = assigned.get(date);
+    const limitReached = max != null && (meatPerWeek.get(isoWeekKey(date)) ?? 0) >= max;
+    const recipe = fixed ?? pickMeal(date, ctx, used, limitReached ? meatFree : pool);
+    if (!recipe) continue;
+    if (!fixed) addMeat(date, recipe);
+    meals.push({ date, recipe });
+  }
+  return meals;
+}
+
 /** Plan für [startDate, endDate] erzeugen und speichern */
 export async function createPlan(env: Env, sql: Sql, profileId: string, startDate: string, endDate: string) {
   const ctx = await loadContext(sql, profileId);
   const { pool, favorites } = await loadPool(sql, profileId);
   ctx.favoriteNames = favorites.filter((f) => !f.turnus_weeks).map((f) => f.meal_name);
   ctx.recentNames = await recentMealNames(sql, profileId, startDate);
+  ctx.month = Number(startDate.slice(5, 7));
 
   const dates: string[] = [];
   for (let d = startDate; d <= endDate; d = addDaysIso(d, 1)) dates.push(d);
@@ -76,12 +112,7 @@ export async function createPlan(env: Env, sql: Sql, profileId: string, startDat
   ctx.newNames = fresh.map((r) => r.name);
 
   // 3) Restliche Tage planen
-  const meals: { date: string; recipe: Recipe }[] = [];
-  for (const date of dates) {
-    const fixed = assigned.get(date);
-    const recipe = fixed ?? pickMeal(date, ctx, used, pool);
-    if (recipe) meals.push({ date, recipe });
-  }
+  const meals = pickDays(dates, ctx, used, pool, assigned);
 
   const planRows = await sql.query(
     `INSERT INTO meal_plans (profile_id, start_date, end_date, status) VALUES ($1, $2, $3, 'active') RETURNING ${PLAN_COLS}`,
@@ -138,13 +169,32 @@ export async function replaceMeal(env: Env, sql: Sql, profileId: string, planMea
   const exclude = new Set<string>([...existing.map((r) => r.meal_name as string), old.meal_name]);
 
   ctx.recentNames = await recentMealNames(sql, profileId, old.meal_date);
-  const dayType = preferredTypeFor(old.meal_date);
+  ctx.month = Number(String(old.meal_date).slice(5, 7));
+
+  // Fleisch-Grenze: zählt die anderen Gerichte derselben Kalenderwoche im Plan
+  let candidates = pool;
+  let limitReached = false;
+  if (ctx.meatMaxPerWeek != null) {
+    const week = isoWeekKey(old.meal_date);
+    const others = await sql`SELECT meal_name, ingredients, meal_date::text AS d FROM plan_meals
+      WHERE plan_id = ${old.plan_id} AND id <> ${planMealId} AND NOT rejected`;
+    const meat = others.filter(
+      (o) => isoWeekKey(o.d) === week && isMeatDish({ name: o.meal_name, ingredients: o.ingredients ?? [], type: "fleisch", instructions: "" })
+    ).length;
+    limitReached = meat >= ctx.meatMaxPerWeek;
+    if (limitReached) candidates = pool.filter((r) => !isMeatDish(r));
+  }
+  // Ist die Grenze erreicht, soll auch die KI nichts mit Fleisch liefern
+  const dayType = limitReached && preferredTypeFor(old.meal_date) === "fleisch" ? "vegetarisch" : preferredTypeFor(old.meal_date);
+  const fromAi = async () =>
+    (await generateRecipes(env, sql, [dayType], ctx, pool.map((m) => m.name))).find((r) => !limitReached || !isMeatDish(r)) ?? null;
+
   let best: Recipe | null = null;
   // „Neu generieren“: am liebsten ein ganz neues KI-Rezept
-  if (!reject) best = (await generateRecipes(env, sql, [dayType], ctx, pool.map((m) => m.name)))[0] ?? null;
-  best ??= pickReplacement(old.meal_date, ctx, pool, exclude);
+  if (!reject) best = await fromAi();
+  best ??= pickReplacement(old.meal_date, ctx, candidates, exclude);
   // Pool erschöpft (z. B. vegan) → KI als Rettung
-  if (!best && reject) best = (await generateRecipes(env, sql, [dayType], ctx, pool.map((m) => m.name)))[0] ?? null;
+  if (!best && reject) best = await fromAi();
   if (!best) return null;
 
   if (!reject) await sql`DELETE FROM plan_meals WHERE id = ${planMealId}`;

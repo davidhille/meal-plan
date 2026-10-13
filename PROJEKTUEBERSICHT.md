@@ -36,8 +36,8 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
 - **Rezept-Pool:** feste Grundsammlung (383 Gerichte, davon 231 übersetzte TheMealDB-Rezepte mit Originalfoto)
   + KI-Rezepte + importierte Rezepte + Favoriten.
 - **Bewertung je Gericht:** Sterne, Vorlieben und Abneigungen der Familie (mit Oberbegriffen: „Fisch“ trifft auch Lachs),
-  Gesundheitsziel, Favoriten-Bonus, Abzug für Gerichte der letzten 3 Wochen.
-- **Gesundheitsbedingungen** schließen hart aus: vegetarisch, vegan, glutenfrei, laktosefrei, Nussallergie, koscher, halal;
+  Ernährungs-Schwerpunkte, Favoriten-Bonus, Abzug für Gerichte der letzten 3 Wochen.
+- **Gesundheitsbedingungen** schließen hart aus: vegetarisch, vegan, glutenfrei, laktosefrei, Nussallergie, ohne Alkohol;
   Diabetes gibt einen Abzug bei Zucker. *Heuristik auf Zutatentext, keine Allergie-Garantie.*
 - **Abwechslung:** ähnliche Gerichte (z. B. mehrere „Quinoa-Pfannen“) werden im Plan verteilt statt gehäuft.
 - **Favoriten mit Turnus** werden fest eingeplant, sobald sie wieder dran sind.
@@ -91,7 +91,13 @@ werden nur übernommen, wenn sie wirklich zum Gericht passen, und mit Quellenang
 ## 5. Einstellungen
 
 Auf- und zuklappbare Karten:
-- **Gesundheit & Ernährung:** Ziel und Einschränkungen.
+- **Gesundheit & Ernährung:**
+  - **Schwerpunkte** (mehrere): Kalorienbewusst, Proteinreich, Low Carb, Viel Gemüse, Vollkorn & Ballaststoffe,
+    Kinderfreundlich, Saisonal, Günstig – passende Gerichte bekommen Pluspunkte, nichts wird ausgeschlossen.
+  - **Einschränkungen** (mehrere): Diabetes (nur Abzug bei Zucker), glutenfrei, laktosefrei, Nussallergie, vegetarisch,
+    vegan, ohne Alkohol – schließen hart aus.
+  - **Fleisch pro Woche:** keine Grenze, kein Fleisch oder höchstens 1–5× pro Kalenderwoche (Fisch zählt nicht mit);
+    gilt beim Planen und beim „Neu generieren“.
 - **Familienmitglieder:** Name, Erwachsener/Kind mit Alter, mag/mag nicht – anlegen, bearbeiten, löschen (mit Bestätigung).
 - **Routinen:** wöchentlich oder monatlich automatisch einen neuen Plan erstellen (Cron alle 15 Minuten, deutsche Zeit).
 - **Einkaufslisten verwalten:** eigene Listen anlegen, umbenennen, umfärben, löschen.

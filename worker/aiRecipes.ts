@@ -4,13 +4,14 @@
 import type { Sql } from "./db";
 import { isQuotaError, type AiEnv } from "./images";
 import { guessType } from "./recipeImport";
+import { FOCUS_PROMPT, type Focus } from "./nutrition";
 import { type Recipe, violatesHealthConditions, dislikeMatches, isSimilarDish } from "./meals";
 
 
 const MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 
 export interface RecipeRequestContext {
-  healthGoal: string;
+  healthFocus: string[];
   healthConditions: string[];
   familyMembers: { type: string; age: number | null; favorite_foods: string[] | null; disliked_foods: string[] | null }[];
 }
@@ -21,12 +22,6 @@ const TYPE_LABEL: Record<Recipe["type"], string> = {
   wochenende: "ein etwas aufwendigeres Wochenend-Gericht (darf 60–120 Minuten dauern)",
 };
 
-const HEALTH_GOAL_LABEL: Record<string, string> = {
-  weight_loss: "Gewichtsabnahme (kalorienbewusst, leicht statt schwer/fettig)",
-  muscle_gain: "Muskelaufbau (proteinreich)",
-  healthy_lifestyle: "gesunder Lebensstil (vollwertig, wenig verarbeitet)",
-  balanced: "ausgewogene Ernährung",
-};
 
 const CONDITION_LABEL: Record<string, string> = {
   diabetes: "Diabetes (wenig Zucker und schnell wirkende Kohlenhydrate)",
@@ -35,8 +30,7 @@ const CONDITION_LABEL: Record<string, string> = {
   nut_allergy: "Nussallergie (keinerlei Nüsse, Mandeln, Erdnüsse, Pinienkerne)",
   vegetarian: "vegetarisch (kein Fleisch, kein Fisch)",
   vegan: "vegan (keine tierischen Produkte, auch keine Milchprodukte, Eier, Honig)",
-  kosher: "koscher (kein Schweinefleisch, keine Meeresfrüchte, Fleisch und Milch nicht mischen)",
-  halal: "halal (kein Schweinefleisch, kein Alkohol)",
+  no_alcohol: "ohne Alkohol (kein Wein, Bier, Likör – auch nicht zum Ablöschen)",
 };
 
 /** Küchen-Richtungen für Abwechslung bei parallelen Anfragen */
@@ -98,7 +92,9 @@ function buildPrompt(type: Recipe["type"] | null, cuisine: string, ctx: RecipeRe
     conditions.length ? `STRIKT einzuhalten: ${conditions.join("; ")}.` : "",
     dislikes.length ? `Diese Zutaten mag niemand – NICHT verwenden: ${dislikes.join(", ")}.` : "",
     likes.length ? `Beliebt in der Familie (gern einbauen, wenn passend): ${likes.join(", ")}.` : "",
-    HEALTH_GOAL_LABEL[ctx.healthGoal] ? `Ziel: ${HEALTH_GOAL_LABEL[ctx.healthGoal]}.` : "",
+    ctx.healthFocus?.length
+      ? `Schwerpunkte: ${ctx.healthFocus.map((f) => FOCUS_PROMPT[f as Focus]).filter(Boolean).join("; ")}.`
+      : "",
     avoid.length ? `Nicht wiederholen (gibt es schon): ${avoid.slice(0, 60).join(", ")}.` : "",
     `Mengen für GENAU 4 Portionen. Jede Zutat als eigener Eintrag im Format "Menge Einheit Zutat", z. B. "400 g Spaghetti", "2 EL Olivenöl", "1 Zwiebel". Gewürze ohne Menge sind ok ("Salz", "Pfeffer").`,
     `steps: 4–8 kurze Zubereitungsschritte. duration_min: realistische Gesamtzeit in Minuten. name: appetitlicher, kurzer Gerichtname ohne Anführungszeichen.`,

@@ -56,11 +56,16 @@ export async function getOrCreateProfile(): Promise<Profile | null> {
 
 export async function updateProfile(
   _profileId: string,
-  goal: string,
-  conditions: string[]
+  focus: string[],
+  conditions: string[],
+  meatMaxPerWeek: number | null
 ): Promise<Profile | null> {
   try {
-    return await request<Profile>('PUT', '/profile', { health_goal: goal, health_conditions: conditions });
+    return await request<Profile>('PUT', '/profile', {
+      health_focus: focus,
+      health_conditions: conditions,
+      meat_max_per_week: meatMaxPerWeek,
+    });
   } catch (error) {
     console.error('Error updating profile:', error);
     return null;

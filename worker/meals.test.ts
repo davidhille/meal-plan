@@ -27,7 +27,7 @@ const ctx = (over: Partial<ScoringContext> = {}): ScoringContext => ({
   rejectedMeals: [],
   mealRatings: {},
   healthConditions: [],
-  healthGoal: "balanced",
+  healthFocus: [],
   ...over,
 });
 
@@ -78,11 +78,11 @@ describe("violatesHealthConditions", () => {
     // Name allein reicht, wenn keine glutenfreie Variante in den Zutaten steht
     expect(violatesHealthConditions(recipe("Spaghetti-Salat", ["200 g Rucola"]), ["gluten_free"])).toBe(true);
   });
-  test("Nussallergie, koscher, halal", () => {
+  test("Nussallergie, ohne Alkohol", () => {
     expect(violatesHealthConditions(recipe("Pesto", ["50 g Pinienkerne"]), ["nut_allergy"])).toBe(true);
-    expect(violatesHealthConditions(recipe("Carbonara", ["100 g Speck"], "fleisch"), ["kosher"])).toBe(true);
-    expect(violatesHealthConditions(recipe("Risotto", ["100 ml Weißwein"]), ["halal"])).toBe(true);
-    expect(violatesHealthConditions(recipe("Salat", ["2 EL Weinessig"]), ["halal"])).toBe(false);
+    expect(violatesHealthConditions(recipe("Risotto", ["100 ml Weißwein"]), ["no_alcohol"])).toBe(true);
+    expect(violatesHealthConditions(recipe("Salat", ["2 EL Weinessig"]), ["no_alcohol"])).toBe(false);
+    expect(violatesHealthConditions(recipe("Gulasch", ["1 Flasche alkoholfreies Bier"]), ["no_alcohol"])).toBe(false);
   });
   test("ohne Bedingungen ist alles erlaubt", () => expect(violatesHealthConditions(curry, [])).toBe(false));
 });

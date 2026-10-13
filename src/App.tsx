@@ -161,12 +161,11 @@ export default function App() {
     setPlanMeals(meals);
   };
 
-  const handleUpdateProfile = async (goal: string, conditions: string[]) => {
+  const handleUpdateProfile = async (focus: string[], conditions: string[], meatMaxPerWeek: number | null) => {
     if (!profile) return;
-    const updated = await updateProfile(profile.id, goal, conditions);
-    if (updated) {
-      setProfile(updated);
-    }
+    const updated = await updateProfile(profile.id, focus, conditions, meatMaxPerWeek);
+    if (!updated) throw new Error('Die Einstellungen konnten nicht gespeichert werden.');
+    setProfile(updated);
   };
 
   const handleAddFamilyMember = async (

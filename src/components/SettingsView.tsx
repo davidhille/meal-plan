@@ -8,6 +8,7 @@ import ShopSettings from './ShopSettings';
 import LabelSettings from './LabelSettings';
 import FilterSettings from './FilterSettings';
 import ReminderSettings from './ReminderSettings';
+import { CONDITION_LABELS, FOCUS_LABELS } from '../lib/health';
 import CollapsibleCard from './CollapsibleCard';
 import PlanCreationModal from './PlanCreationModal';
 
@@ -15,7 +16,7 @@ interface SettingsViewProps {
   profile: Profile | null;
   familyMembers: FamilyMember[];
   routines: Routine[];
-  onUpdateProfile: (goal: string, conditions: string[]) => Promise<void>;
+  onUpdateProfile: (focus: string[], conditions: string[], meatMaxPerWeek: number | null) => Promise<void>;
   onAddFamilyMember: (member: Omit<FamilyMember, 'id' | 'profile_id' | 'created_at'>) => Promise<void>;
   onUpdateFamilyMember: (id: string, member: Omit<FamilyMember, 'id' | 'profile_id' | 'created_at'>) => Promise<void>;
   onDeleteFamilyMember: (id: string) => Promise<void>;
@@ -52,24 +53,6 @@ export default function SettingsView({
   const [showPlanModal, setShowPlanModal] = useState(false);
   // Löschen erst nach zweitem Tipp ("Löschen?")
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-
-  const goalLabels: Record<string, string> = {
-    balanced: 'Ausgewogene Ernährung',
-    weight_loss: 'Gewichtsabnahme',
-    muscle_gain: 'Muskelaufbau',
-    healthy_lifestyle: 'Gesunder Lebensstil',
-  };
-
-  const conditionLabels: Record<string, string> = {
-    diabetes: 'Diabetes',
-    gluten_free: 'Glutenfrei',
-    lactose_intolerant: 'Laktoseintolerant',
-    nut_allergy: 'Nussallergie',
-    vegetarian: 'Vegetarisch',
-    vegan: 'Vegan',
-    kosher: 'Koscher',
-    halal: 'Halal',
-  };
 
   const dayNames = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
 
@@ -110,7 +93,15 @@ export default function SettingsView({
           storageKey="gesundheit"
           title="Gesundheit & Ernährung"
           icon={<HeartPulse size={16} />}
-          summary={[goalLabels[profile.health_goal] || profile.health_goal, ...profile.health_conditions.map((c) => conditionLabels[c] || c)].join(' · ')}
+          summary={
+            [
+              ...(profile.health_focus ?? []).map((f) => FOCUS_LABELS[f] || f),
+              ...profile.health_conditions.map((c) => CONDITION_LABELS[c] || c),
+              profile.meat_max_per_week != null ? `Fleisch max. ${profile.meat_max_per_week}×/Woche` : null,
+            ]
+              .filter(Boolean)
+              .join(' · ') || 'Ausgewogen, keine Einschränkungen'
+          }
           action={
             <button
               onClick={() => setShowPrefsModal(true)}
@@ -124,16 +115,34 @@ export default function SettingsView({
           <button onClick={() => setShowPrefsModal(true)} className="w-full text-left px-4 pb-4 hover:bg-gray-50 transition-colors">
             <div className="space-y-2">
               <div>
-                <p className="text-xs text-gray-500 mb-0.5">Gesundheitsziel</p>
-                <p className="text-sm text-gray-700 font-medium">{goalLabels[profile.health_goal] || profile.health_goal}</p>
+                <p className="text-xs text-gray-500 mb-1">Schwerpunkte</p>
+                {(profile.health_focus ?? []).length ? (
+                  <div className="flex flex-wrap gap-1">
+                    {profile.health_focus.map((f) => (
+                      <span key={f} className="text-xs bg-brand-50 text-brand-800 px-2 py-1 rounded border border-brand-200">
+                        {FOCUS_LABELS[f] || f}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-700 font-medium">Ausgewogen (keine besonderen)</p>
+                )}
               </div>
+              {profile.meat_max_per_week != null && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-0.5">Regeln</p>
+                  <p className="text-sm text-gray-700">
+                    {profile.meat_max_per_week === 0 ? 'Kein Fleisch' : `Fleisch höchstens ${profile.meat_max_per_week}× pro Woche`}
+                  </p>
+                </div>
+              )}
               {profile.health_conditions.length > 0 && (
                 <div>
                   <p className="text-xs text-gray-500 mb-1">Krankheiten & Einschränkungen</p>
                   <div className="flex flex-wrap gap-1">
                     {profile.health_conditions.map((cond) => (
                       <span key={cond} className="text-xs bg-orange-50 text-orange-700 px-2 py-1 rounded border border-orange-200">
-                        {conditionLabels[cond] || cond}
+                        {CONDITION_LABELS[cond] || cond}
                       </span>
                     ))}
                   </div>
@@ -333,10 +342,11 @@ export default function SettingsView({
 
       {showPrefsModal && (
         <PreferencesModal
-          healthGoal={profile.health_goal}
+          healthFocus={profile.health_focus ?? []}
           healthConditions={profile.health_conditions}
-          onSave={async (goal, conditions) => {
-            await onUpdateProfile(goal, conditions);
+          meatMaxPerWeek={profile.meat_max_per_week ?? null}
+          onSave={async (focus, conditions, meatMax) => {
+            await onUpdateProfile(focus, conditions, meatMax);
             setShowPrefsModal(false);
           }}
           onClose={() => setShowPrefsModal(false)}

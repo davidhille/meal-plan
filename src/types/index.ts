@@ -172,8 +172,13 @@ export interface FamilyMember {
 export interface Profile {
   id: string;
   user_id: string;
-  health_goal: HealthGoal;
+  /** Alt (vor den Schwerpunkten), wird nicht mehr benutzt */
+  health_goal?: HealthGoal;
+  /** Ernährungs-Schwerpunkte (mehrere möglich): calorie_light, high_protein, low_carb … */
+  health_focus: string[];
   health_conditions: string[];
+  /** Fleisch höchstens so oft pro Kalenderwoche (null = keine Grenze) */
+  meat_max_per_week: number | null;
   created_at: string;
   updated_at: string;
   /** Uhrzeit der Erinnerung zum Bewerten, z. B. „20:00“ */
