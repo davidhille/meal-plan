@@ -352,6 +352,10 @@ export default function App() {
             onReplace={currentPlan ? handleReplaceWithRecipe : undefined}
             onAssignDessert={currentPlan ? handleSetDessert : undefined}
             defaultPortions={familyPortions(familyMembers)}
+            onRecipesChanged={() => {
+              loadPlanMeals();
+              getFavorites().then(setFavorites).catch(() => {});
+            }}
           />
         ) : activeTab === 'favoriten' ? (
           <FavoritesView

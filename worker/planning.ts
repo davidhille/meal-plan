@@ -163,21 +163,31 @@ export async function replaceMeal(env: Env, sql: Sql, profileId: string, planMea
   return replacement;
 }
 
-/** Alle Gerichte, die geplant werden können (ohne ausgeblendete und solche, die nicht zum Profil passen) */
+/**
+ * Alle Gerichte (ohne ausgeblendete). Solche, die nicht zu den Gesundheitseinstellungen passen, sind mit
+ * `unsuitable` markiert – sie werden nie automatisch geplant, lassen sich aber ansehen und bearbeiten.
+ */
 export async function recipeCatalog(sql: Sql, profileId: string) {
   const [{ pool, favorites }, ctx, images, dbRecipes] = await Promise.all([
     loadPool(sql, profileId),
     loadContext(sql, profileId),
     sql`SELECT meal_name, image_url, source, credit_name, credit_url FROM meal_images WHERE image_data IS NOT NULL`,
-    sql`SELECT name, source FROM recipes`,
+    sql`SELECT name, source, replaces FROM recipes`,
   ]);
   const imageBy = new Map(images.map((r) => [r.meal_name as string, r]));
   const hidden = new Set(ctx.rejectedMeals);
   const builtIn = new Set(MEAL_DATABASE.map((m) => m.name));
-  const sourceBy = new Map(dbRecipes.map((r) => [r.name as string, r.source as string]));
+  const rowBy = new Map(dbRecipes.map((r) => [r.name as string, r]));
   const favoriteNames = new Set(favorites.map((f) => f.meal_name as string));
+  const origin = (name: string) => {
+    const row = rowBy.get(name);
+    if (builtIn.has(name) || row?.replaces) return "basis";
+    if (row?.source === "import") return "import";
+    if (row?.source === "ai") return "ki";
+    return favoriteNames.has(name) || row ? "favorit" : "ki";
+  };
   const recipes = pool
-    .filter((r) => !hidden.has(r.name) && !violatesHealthConditions(r, ctx.healthConditions))
+    .filter((r) => !hidden.has(r.name))
     .map((r) => {
       const img = imageBy.get(r.name);
       return {
@@ -190,11 +200,14 @@ export async function recipeCatalog(sql: Sql, profileId: string) {
         imageCredit: img
           ? img.source !== "ai" && img.credit_name ? { name: img.credit_name, url: img.credit_url } : null
           : r.imageUrl ? { name: "TheMealDB", url: "https://www.themealdb.com/" } : null,
-        origin: builtIn.has(r.name) ? "basis" : sourceBy.get(r.name) === "import" ? "import" : favoriteNames.has(r.name) && !sourceBy.has(r.name) ? "favorit" : "ki",
+        origin: origin(r.name),
+        /** Gericht der Grundsammlung, das bearbeitet wurde (lässt sich zurücksetzen) */
+        edited: !!rowBy.get(r.name)?.replaces,
+        unsuitable: violatesHealthConditions(r, ctx.healthConditions),
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, "de"));
-  return { recipes, hidden: [...hidden].sort((a, b) => a.localeCompare(b, "de")) };
+  return { recipes, hidden: [...hidden].sort((a, b) => a.localeCompare(b, "de")), healthConditions: ctx.healthConditions };
 }
 
 /** Gericht im Plan gezielt durch ein Rezept aus der Übersicht ersetzen (Nachtisch bleibt am Tag) */

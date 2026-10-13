@@ -43,7 +43,8 @@ Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHu
 | `http.ts` | `Env`, Anfrage-Kontext `Ctx`, `json()` |
 | `routes/*.ts` | Routen nach Bereich (`profile`, `plans`, `recipes`, `shopping`, `shops`). Jede Datei prüft `route`/`parts` und gibt eine `Response` oder `null` (nicht zuständig) zurück |
 | `repo.ts` | Gemeinsame DB-Zugriffe: `getProfile`, `loadContext`, `loadPool`, Favoriten, Spaltenlisten (`PLAN_COLS` …) |
-| `planning.ts` | Plan erstellen, Gericht austauschen/ersetzen, Rezept-Übersicht |
+| `planning.ts` | Plan erstellen, Gericht austauschen/ersetzen, Rezept-Übersicht (`unsuitable` = passt nicht zu den Gesundheitseinstellungen) |
+| `recipeEdits.ts` | Gericht bearbeiten/zurücksetzen. Grundsammlung: Zeile in `recipes` mit `replaces` = Originalname; Umbenennen zieht Bewertung, Ausblenden, Favorit, Filter, Bild und kommende Plan-Tage mit |
 | `shoppingList.ts` | Einkaufsliste eines Plans aus DB-Daten (Labels, Zustand, Produkt-Verknüpfungen, Shop-Regeln) |
 | `shopAccounts.ts` | Shop-Verbindungen speichern/laden (verschlüsselt), Shop-Zustand für die Einstellungen |
 | `routines.ts` | Cron: fällige Routinen → neuer Plan, fehlende Bilder nachziehen |
@@ -65,6 +66,7 @@ Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHu
 - Fenster nutzen `useDialog` (Escape schließt das oberste, Fokus, Scroll-Sperre); Bestätigungen über `ConfirmDialog`, nie `alert()`/`confirm()`.
 - Nachtische sind reine Frontend-Daten (`data/desserts.ts`, eigener Chunk); am Gericht gespeichert in `plan_meals.dessert` (jsonb).
 - Preisvergleich/Grundpreis: `lib/unitPrice.ts`. Portionen: `lib/portions.ts`.
+- Eigene Rezept-Filter: `lib/recipeFilters.ts` – Regeln (Suchbegriffe/Zeit) plus Hand-Zuordnung (`includeNames`/`excludeNames`).
 - `localStorage` nur für Komfort (Passwort, auf-/zugeklappt, gewählte Einkaufswochen), immer in `try/catch`.
 
 ### Design „Aubergine“

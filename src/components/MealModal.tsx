@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useDialog } from '../lib/useDialog';
-import { X, Clock, ShoppingBasket, BookOpen, Star, ImageIcon, Loader2, Minus, Plus, Users, ListPlus } from 'lucide-react';
+import { X, Clock, ShoppingBasket, BookOpen, Star, ImageIcon, Loader2, Minus, Plus, Users, ListPlus, Pencil } from 'lucide-react';
 import { ImageCredit, Meal } from '../types';
 import MealRatingModal from './MealRatingModal';
 import { RECIPE_BASE_PORTIONS, scaleIngredient, formatPortions } from '../lib/portions';
@@ -19,6 +19,12 @@ interface MealModalProps {
   /** Auswahl-Button unten (z. B. Nachtisch zum Gericht hinzufügen); wirft bei Fehlern */
   onChoose?: () => Promise<void>;
   chooseLabel?: string;
+  /** Stift oben rechts: Gericht bearbeiten */
+  onEdit?: () => void;
+  /** Neues Bild wurde erzeugt (z. B. damit die Übersicht es auch zeigt) */
+  onImageChange?: (url: string, credit: ImageCredit | null) => void;
+  /** Zusätzlicher Bereich unter dem Bild (z. B. Filter zuordnen) */
+  extra?: React.ReactNode;
   onClose: () => void;
 }
 
@@ -42,6 +48,9 @@ export default function MealModal({
   onAddToShopping,
   onChoose,
   chooseLabel = 'Auswählen',
+  onEdit,
+  onImageChange,
+  extra,
   onClose,
 }: MealModalProps) {
   const [portions, setPortions] = useState(defaultPortions);
@@ -95,6 +104,7 @@ export default function MealModal({
       const image = await onGenerateImage(meal.meal);
       setImageUrl(image.url);
       setImageCredit(image.credit);
+      onImageChange?.(image.url, image.credit);
     } catch (e) {
       setImageError((e as Error).message || 'Das Bild konnte nicht erstellt werden.');
     } finally {
@@ -128,6 +138,16 @@ export default function MealModal({
             </p>
             <h2 id="meal-dialog-title" className="text-base font-semibold text-gray-900 leading-tight truncate">{meal.meal}</h2>
           </div>
+          {onEdit && (
+            <button
+              onClick={onEdit}
+              aria-label={`${meal.meal} bearbeiten`}
+              title="Bearbeiten"
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors flex-shrink-0"
+            >
+              <Pencil size={14} />
+            </button>
+          )}
           {currentRating > 0 && (
             <div className="flex items-center gap-1 flex-shrink-0" role="img" aria-label={`Bewertet mit ${currentRating} von 5 Sternen`}>
               {[...Array(5)].map((_, i) => (
@@ -212,6 +232,8 @@ export default function MealModal({
             {imageError}
           </p>
         )}
+
+        {extra && <div className="mx-4 mt-4">{extra}</div>}
 
         {/* Weekend Badge */}
         {isWeekend && (

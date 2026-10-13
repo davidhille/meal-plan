@@ -1,6 +1,6 @@
 import {
   Profile, FamilyMember, MealRating, MealPlan, PlanMeal, Routine, ShoppingItem, ShoppingLabel, Favorite, MealType, ImageCredit,
-  ShopState, ShopProvider, ProductResult, CartItem, ShopRule, PlanDessert, RecipeCatalog, RecipeFilter,
+  ShopState, ShopProvider, ProductResult, CartItem, ShopRule, PlanDessert, RecipeCatalog, RecipeFilter, RecipeFilterInput, RecipeDraft,
 } from '../types';
 
 // Alle Daten laufen über die Cloudflare-Functions unter /api (→ Neon).
@@ -255,6 +255,16 @@ export async function setRecipeHidden(name: string, hidden: boolean): Promise<Re
   return request<RecipeCatalog>('POST', hidden ? '/recipes/hide' : '/recipes/unhide', { name });
 }
 
+/** Gericht bearbeiten; liefert den (neuen) Namen und die aktualisierte Übersicht. Wirft bei Fehlern. */
+export async function saveRecipeEdit(originalName: string, recipe: RecipeDraft): Promise<{ name: string; catalog: RecipeCatalog }> {
+  return request('PUT', '/recipes/edit', { originalName, ...recipe });
+}
+
+/** Bearbeitetes Gericht der Grundsammlung auf das Original zurücksetzen. Wirft bei Fehlern. */
+export async function resetRecipeEdit(name: string): Promise<{ name: string; catalog: RecipeCatalog }> {
+  return request('POST', '/recipes/reset', { name });
+}
+
 /** Gericht im Plan durch ein bestimmtes Rezept ersetzen; wirft bei Fehlern */
 export async function replacePlanMeal(planMealId: string, recipeName: string): Promise<PlanMeal> {
   const result = await request<{ replacement: PlanMeal }>('POST', `/plan-meals/${planMealId}/replace`, { name: recipeName });
@@ -421,11 +431,16 @@ export async function getRecipeFilters(): Promise<RecipeFilter[]> {
   return request<RecipeFilter[]>('GET', '/recipe-filters');
 }
 
-export async function saveRecipeFilter(filter: Omit<RecipeFilter, 'id'> & { id?: string }): Promise<RecipeFilter[]> {
+export async function saveRecipeFilter(filter: RecipeFilterInput): Promise<RecipeFilter[]> {
   const { id, ...data } = filter;
   return id
     ? request<RecipeFilter[]>('PUT', `/recipe-filters/${enc(id)}`, data)
     : request<RecipeFilter[]>('POST', '/recipe-filters', data);
+}
+
+/** Gericht von Hand einem Filter zuordnen (include), ausnehmen (exclude) oder wieder den Regeln überlassen (auto) */
+export async function assignRecipeFilter(filterId: string, name: string, state: 'include' | 'exclude' | 'auto'): Promise<RecipeFilter[]> {
+  return request<RecipeFilter[]>('POST', `/recipe-filters/${enc(filterId)}/assign`, { name, state });
 }
 
 export async function deleteRecipeFilter(id: string): Promise<RecipeFilter[]> {

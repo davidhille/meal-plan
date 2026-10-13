@@ -5,14 +5,16 @@ import { generateImage } from "../images";
 import { importRecipeFromUrl, ImportError } from "../recipeImport";
 import { PLAN_MEAL_COLS, getProfile, loadFavorites } from "../repo";
 import { recipeCatalog } from "../planning";
+import { RecipeEditError, parseRecipeInput, resetRecipe, saveRecipeEdit } from "../recipeEdits";
 import type { Sql } from "../db";
 
 async function listRecipeFilters(sql: Sql, profileId: string) {
-  return sql`SELECT id, name, scope, keywords, max_minutes AS "maxMinutes" FROM recipe_filters
+  return sql`SELECT id, name, scope, keywords, max_minutes AS "maxMinutes",
+      include_names AS "includeNames", exclude_names AS "excludeNames" FROM recipe_filters
     WHERE profile_id = ${profileId} ORDER BY created_at`;
 }
 
-/** Eigenen Filter prüfen: Name plus Suchbegriffe und/oder maximale Zeit */
+/** Eigenen Filter prüfen: Name, optional Suchbegriffe und/oder maximale Zeit (ohne beides: nur von Hand zugeordnete Gerichte) */
 function parseRecipeFilter(raw: Record<string, unknown>) {
   const name = String(raw.name ?? "").trim().slice(0, 40);
   const scope = ["gerichte", "nachtische", "beide"].includes(raw.scope as string) ? (raw.scope as string) : "beide";
@@ -21,7 +23,7 @@ function parseRecipeFilter(raw: Record<string, unknown>) {
     .filter(Boolean)
     .slice(0, 20);
   const maxMinutes = Number(raw.maxMinutes) > 0 ? Math.min(Math.round(Number(raw.maxMinutes)), 1440) : null;
-  if (!name || (!keywords.length && !maxMinutes)) return null;
+  if (!name) return null;
   return { name, scope, keywords, maxMinutes };
 }
 
@@ -30,6 +32,24 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id }
   if (route === "GET /recipes/catalog") {
     const p = await getProfile(sql);
     return json(await recipeCatalog(sql, p.id));
+  }
+  // Gericht bearbeiten (Name, Art, Zeit, Zutaten, Zubereitung) bzw. auf das Original zurücksetzen
+  if (route === "PUT /recipes/edit" || route === "POST /recipes/reset") {
+    const p = await getProfile(sql);
+    try {
+      let name: string;
+      if (route === "PUT /recipes/edit") {
+        const recipe = parseRecipeInput(body);
+        await saveRecipeEdit(sql, p.id, String(body.originalName ?? ""), recipe);
+        name = recipe.name;
+      } else {
+        name = await resetRecipe(sql, p.id, String(body.name ?? ""));
+      }
+      return json({ name, catalog: await recipeCatalog(sql, p.id) });
+    } catch (e) {
+      if (e instanceof RecipeEditError) return json({ error: e.message }, e.status);
+      throw e;
+    }
   }
   // Gericht ausblenden (wird nie mehr vorgeschlagen) bzw. wieder einblenden
   if (route === "POST /recipes/hide" || route === "POST /recipes/unhide") {
@@ -121,7 +141,7 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id }
   if (route === "POST /recipe-filters" || (parts[0] === "recipe-filters" && id && request.method === "PUT")) {
     const p = await getProfile(sql);
     const f = parseRecipeFilter(body);
-    if (!f) return json({ error: "Name und Suchbegriffe oder Zeit angeben" }, 400);
+    if (!f) return json({ error: "Bitte einen Namen angeben" }, 400);
     if (request.method === "POST") {
       await sql`INSERT INTO recipe_filters (profile_id, name, scope, keywords, max_minutes)
         VALUES (${p.id}, ${f.name}, ${f.scope}, ${f.keywords}, ${f.maxMinutes})`;
@@ -129,6 +149,18 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id }
       await sql`UPDATE recipe_filters SET name = ${f.name}, scope = ${f.scope}, keywords = ${f.keywords}, max_minutes = ${f.maxMinutes}
         WHERE id = ${id} AND profile_id = ${p.id}`;
     }
+    return json(await listRecipeFilters(sql, p.id));
+  }
+  // Gericht einem Filter von Hand zuordnen: include = immer dabei, exclude = nie, auto = nach Suchbegriffen/Zeit
+  if (parts[0] === "recipe-filters" && id && parts[2] === "assign" && request.method === "POST") {
+    const p = await getProfile(sql);
+    const name = String(body.name ?? "").trim();
+    const state = ["include", "exclude", "auto"].includes(body.state) ? (body.state as string) : null;
+    if (!name || !state) return json({ error: "Angaben fehlen" }, 400);
+    await sql`UPDATE recipe_filters SET
+        include_names = array_remove(include_names, ${name}) || CASE WHEN ${state} = 'include' THEN ARRAY[${name}]::text[] ELSE '{}'::text[] END,
+        exclude_names = array_remove(exclude_names, ${name}) || CASE WHEN ${state} = 'exclude' THEN ARRAY[${name}]::text[] ELSE '{}'::text[] END
+      WHERE id = ${id} AND profile_id = ${p.id}`;
     return json(await listRecipeFilters(sql, p.id));
   }
   if (parts[0] === "recipe-filters" && id && request.method === "DELETE") {

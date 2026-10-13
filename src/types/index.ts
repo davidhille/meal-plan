@@ -13,6 +13,19 @@ export interface CatalogRecipe {
   imageCredit: ImageCredit | null;
   /** basis = feste Sammlung, ki = KI-Rezept, import = aus dem Web, favorit = eigener Favorit */
   origin: 'basis' | 'ki' | 'import' | 'favorit';
+  /** Gericht der Grundsammlung, das bearbeitet wurde (lässt sich auf das Original zurücksetzen) */
+  edited?: boolean;
+  /** Passt nicht zu den Gesundheitseinstellungen – wird nie automatisch geplant */
+  unsuitable?: boolean;
+}
+
+/** Änderbare Angaben eines Gerichts (Mengen für 4 Portionen) */
+export interface RecipeDraft {
+  name: string;
+  type: MealType;
+  durationMin: number | null;
+  ingredients: string[];
+  instructions: string;
 }
 
 /** Eigener Filter für die Rezept-Übersicht (in den Einstellungen angelegt) */
@@ -24,12 +37,21 @@ export interface RecipeFilter {
   keywords: string[];
   /** Höchstens so viele Minuten Zubereitung */
   maxMinutes: number | null;
+  /** Von Hand zugeordnet: immer dabei */
+  includeNames: string[];
+  /** Von Hand ausgenommen: nie dabei, auch wenn ein Begriff passt */
+  excludeNames: string[];
 }
+
+/** Angaben eines Filters, die in den Einstellungen bearbeitet werden */
+export type RecipeFilterInput = Pick<RecipeFilter, 'name' | 'scope' | 'keywords' | 'maxMinutes'> & { id?: string };
 
 export interface RecipeCatalog {
   recipes: CatalogRecipe[];
   /** Ausgeblendete bzw. abgelehnte Gerichte */
   hidden: string[];
+  /** Gesundheitseinstellungen des Profils (z. B. gluten_free) – erklären, warum Gerichte unpassend sind */
+  healthConditions?: string[];
 }
 
 export type DessertCategory = 'kuchen' | 'gebaeck' | 'creme' | 'pfanne' | 'obst';

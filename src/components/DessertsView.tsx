@@ -5,6 +5,7 @@ import { matchesRecipeFilter } from '../lib/recipeFilters';
 import CustomFilterChips from './CustomFilterChips';
 import { DESSERT_CREDIT as CREDIT, dessertPreview as preview } from '../lib/desserts';
 import MealModal from './MealModal';
+import RecipeFilterAssign from './RecipeFilterAssign';
 import DayAssignSheet from './DayAssignSheet';
 
 interface DessertsViewProps {
@@ -15,6 +16,8 @@ interface DessertsViewProps {
   onPick?: (dessert: Dessert) => Promise<void>;
   /** Eigene Filter aus den Einstellungen */
   customFilters?: RecipeFilter[];
+  /** Filter-Zuordnung geändert (neue Filterliste); ohne: keine Zuordnung in der Ansicht */
+  onFiltersChange?: (filters: RecipeFilter[]) => void;
 }
 
 const CATEGORIES: { id: DessertCategory | 'alle'; label: string }[] = [
@@ -53,7 +56,7 @@ function toMeal(d: Dessert): Meal {
   };
 }
 
-export default function DessertsView({ planMeals = [], onAssign, onPick, customFilters = [] }: DessertsViewProps) {
+export default function DessertsView({ planMeals = [], onAssign, onPick, customFilters = [], onFiltersChange }: DessertsViewProps) {
   const [desserts, setDesserts] = useState<Dessert[] | null>(null);
   const [category, setCategory] = useState<DessertCategory | 'alle'>('alle');
   const [customId, setCustomId] = useState<string | null>(null);
@@ -185,6 +188,11 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
           yieldLabel={selected.yield}
           onChoose={onPick ? () => onPick(selected) : onAssign ? async () => setAssign(selected) : undefined}
           chooseLabel={onPick ? 'Zum Gericht hinzufügen' : 'An einen Tag hängen'}
+          extra={
+            onFiltersChange ? (
+              <RecipeFilterAssign filters={customFilters} recipe={selected} onChange={onFiltersChange} />
+            ) : undefined
+          }
           onClose={() => setSelected(null)}
         />
       )}

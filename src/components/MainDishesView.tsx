@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChefHat, Clock, Loader2, Search, Trash2, X, RotateCcw, ChevronDown } from 'lucide-react';
+import { ChefHat, Clock, Loader2, Search, Trash2, X, RotateCcw, ChevronDown, ShieldAlert } from 'lucide-react';
 import { CatalogRecipe, Meal, MealType, PlanMeal, RecipeCatalog, RecipeFilter } from '../types';
 import { matchesRecipeFilter } from '../lib/recipeFilters';
+import { CONDITION_LABELS } from '../lib/health';
 import CustomFilterChips from './CustomFilterChips';
-import { getRecipeCatalog, setRecipeHidden } from '../lib/api';
+import RecipeFilterAssign from './RecipeFilterAssign';
+import RecipeEditModal from './RecipeEditModal';
+import { generateMealImage, getRecipeCatalog, resetRecipeEdit, saveRecipeEdit, setRecipeHidden } from '../lib/api';
 import { RECIPE_BASE_PORTIONS } from '../lib/portions';
 import MealModal from './MealModal';
 import DayAssignSheet from './DayAssignSheet';
@@ -16,6 +19,10 @@ interface MainDishesViewProps {
   defaultPortions?: number;
   /** Eigene Filter aus den Einstellungen */
   customFilters?: RecipeFilter[];
+  /** Filter-Zuordnung geändert (neue Filterliste) */
+  onFiltersChange?: (filters: RecipeFilter[]) => void;
+  /** Gericht bearbeitet – Plan und Favoriten neu laden */
+  onRecipesChanged?: () => void;
 }
 
 const FILTERS: { id: MealType | 'alle'; label: string }[] = [
@@ -53,6 +60,8 @@ export default function MainDishesView({
   onReplace,
   defaultPortions = RECIPE_BASE_PORTIONS,
   customFilters = [],
+  onFiltersChange,
+  onRecipesChanged,
 }: MainDishesViewProps) {
   const [catalog, setCatalog] = useState<RecipeCatalog | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -66,6 +75,8 @@ export default function MainDishesView({
   const [showHidden, setShowHidden] = useState(false);
   const [restoring, setRestoring] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [editing, setEditing] = useState<CatalogRecipe | null>(null);
+  const [showUnsuitable, setShowUnsuitable] = useState(false);
 
   useEffect(() => {
     getRecipeCatalog()
@@ -83,11 +94,12 @@ export default function MainDishesView({
     const q = normalize(query.trim());
     return catalog.recipes.filter(
       (r) =>
+        (showUnsuitable || !r.unsuitable) &&
         (filter === 'alle' || r.type === filter) &&
         (!custom || matchesRecipeFilter(custom, r)) &&
         (!q || normalize(r.name).includes(q) || r.ingredients.some((i) => normalize(i).includes(q)))
     );
-  }, [catalog, filter, query, custom]);
+  }, [catalog, filter, query, custom, showUnsuitable]);
 
   if (loadError) {
     return <p className="px-4 py-12 text-sm text-center text-red-600">{loadError}</p>;
@@ -99,6 +111,19 @@ export default function MainDishesView({
       </div>
     );
   }
+
+  const suitableCount = catalog.recipes.filter((r) => !r.unsuitable).length;
+  const unsuitableCount = catalog.recipes.length - suitableCount;
+  const shownTotal = showUnsuitable ? catalog.recipes.length : suitableCount;
+  const conditions = (catalog.healthConditions ?? []).map((c) => CONDITION_LABELS[c] ?? c).join(', ');
+
+  /** Nach dem Bearbeiten: Übersicht übernehmen, Ansicht auf das (evtl. umbenannte) Gericht setzen */
+  const applyEdit = (result: { name: string; catalog: RecipeCatalog }) => {
+    setCatalog(result.catalog);
+    setSelected(result.catalog.recipes.find((r) => r.name === result.name) ?? null);
+    setEditing(null);
+    onRecipesChanged?.();
+  };
 
   const restore = async (name: string) => {
     setRestoring(name);
@@ -154,15 +179,32 @@ export default function MainDishesView({
         <CustomFilterChips filters={customFilters} activeId={customId} onChange={setCustomId} />
 
         <p className="text-xs text-gray-500 px-1" aria-live="polite">
-          {visible.length === catalog.recipes.length
-            ? `${catalog.recipes.length} Gerichte`
-            : `${visible.length} von ${catalog.recipes.length} Gerichten`}
+          {visible.length === shownTotal ? `${shownTotal} Gerichte` : `${visible.length} von ${shownTotal} Gerichten`}
         </p>
+        {unsuitableCount > 0 && (
+          <label className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
+            <input
+              type="checkbox"
+              checked={showUnsuitable}
+              onChange={(e) => setShowUnsuitable(e.target.checked)}
+              className="mt-0.5 accent-amber-700"
+            />
+            <span>
+              {unsuitableCount} weitere Gerichte passen nicht zu euren Einstellungen{conditions ? ` (${conditions})` : ''} und werden
+              nie geplant. <strong>Auch diese zeigen</strong> – z. B. um sie anzupassen (glutenfreie Nudeln statt normaler).
+            </span>
+          </label>
+        )}
 
         {visible.length === 0 ? (
           <div className="py-10 flex flex-col items-center text-center gap-2">
             <ChefHat size={28} className="text-gray-300" />
             <p className="text-sm text-gray-500">Nichts gefunden – versuch es mit einem anderen Begriff.</p>
+            {!showUnsuitable && unsuitableCount > 0 && (
+              <button onClick={() => setShowUnsuitable(true)} className="text-xs font-semibold text-brand-700 hover:underline">
+                Auch unpassende Gerichte durchsuchen
+              </button>
+            )}
           </div>
         ) : (
           <ul className="grid grid-cols-2 gap-3">
@@ -199,6 +241,12 @@ export default function MainDishesView({
                         </span>
                       ) : null}
                     </p>
+                    {r.unsuitable && (
+                      <p className="flex items-center gap-1 mt-1 text-[11px] font-medium text-amber-800">
+                        <ShieldAlert size={11} aria-hidden="true" />
+                        Passt nicht{conditions ? ` (${conditions})` : ''}
+                      </p>
+                    )}
                   </div>
                 </button>
                 <button
@@ -247,11 +295,43 @@ export default function MainDishesView({
 
       {selected && (
         <MealModal
+          key={selected.name}
           meal={toMeal(selected)}
           defaultPortions={defaultPortions}
           onChoose={onReplace ? async () => setAssign(selected) : undefined}
           chooseLabel="In den Speiseplan übernehmen"
+          onGenerateImage={async (name) => generateMealImage(name, !!selected.imageUrl)}
+          onImageChange={(url, credit) =>
+            setCatalog((c) =>
+              c ? { ...c, recipes: c.recipes.map((r) => (r.name === selected.name ? { ...r, imageUrl: url, imageCredit: credit } : r)) } : c
+            )
+          }
+          onEdit={() => setEditing(selected)}
+          extra={
+            <div className="space-y-3">
+              {selected.unsuitable && (
+                <p className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
+                  <ShieldAlert size={14} className="flex-shrink-0 mt-px" aria-hidden="true" />
+                  Passt nicht zu euren Einstellungen{conditions ? ` (${conditions})` : ''} und wird nicht automatisch geplant. Über den
+                  Stift lassen sich die Zutaten anpassen.
+                </p>
+              )}
+              {onFiltersChange && (
+                <RecipeFilterAssign filters={customFilters} recipe={selected} onChange={onFiltersChange} />
+              )}
+            </div>
+          }
           onClose={() => setSelected(null)}
+        />
+      )}
+
+      {editing && (
+        <RecipeEditModal
+          recipe={editing}
+          canReset={editing.edited}
+          onSave={async (draft) => applyEdit(await saveRecipeEdit(editing.name, draft))}
+          onReset={async () => applyEdit(await resetRecipeEdit(editing.name))}
+          onClose={() => setEditing(null)}
         />
       )}
 
