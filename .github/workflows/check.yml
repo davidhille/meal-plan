@@ -1,5 +1,6 @@
 # Prüft jeden Pull Request (und main), bevor Cloudflare deployt.
 # Cloudflare selbst baut nur mit `vite build` – das prüft keine Typen und kein Lint.
+# Schlägt eine Prüfung fehl, stehen die Meldungen zusätzlich als Kommentar im Pull Request.
 name: Prüfen
 
 on:
@@ -10,6 +11,10 @@ on:
 concurrency:
   group: check-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
   check:
@@ -24,11 +29,41 @@ jobs:
       - name: Pakete installieren
         run: bun install --frozen-lockfile
 
-      - name: Typen prüfen (Frontend + Worker)
-        run: bun run typecheck
+      - name: Typen prüfen (Frontend)
+        id: tsc_app
+        run: bunx tsc --noEmit -p tsconfig.app.json --pretty false 2>&1 | tee tsc-app.log; exit ${PIPESTATUS[0]}
+
+      - name: Typen prüfen (Worker)
+        id: tsc_worker
+        if: ${{ !cancelled() }}
+        run: bunx tsc -p worker --pretty false 2>&1 | tee tsc-worker.log; exit ${PIPESTATUS[0]}
 
       - name: Lint
-        run: bun run lint
+        id: lint
+        if: ${{ !cancelled() }}
+        run: bun run lint 2>&1 | tee lint.log; exit ${PIPESTATUS[0]}
 
       - name: Build
+        if: ${{ !cancelled() }}
         run: bun run build
+
+      - name: Fehler in den Pull Request schreiben
+        if: ${{ failure() && github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "### ❌ Prüfung fehlgeschlagen"
+            for f in tsc-app.log tsc-worker.log lint.log; do
+              if [ -s "$f" ] && grep -qE "error|✖" "$f"; then
+                echo ""
+                echo "<details open><summary><code>$f</code></summary>"
+                echo ""
+                echo '```'
+                grep -E "error|✖|warning" "$f" | head -150
+                echo '```'
+                echo "</details>"
+              fi
+            done
+          } > kommentar.md
+          gh pr comment ${{ github.event.pull_request.number }} --body-file kommentar.md
