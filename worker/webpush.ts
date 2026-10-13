@@ -80,7 +80,9 @@ export async function encryptPayload(sub: PushSubscriptionKeys, payload: string,
   const local = (await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"])) as CryptoKeyPair;
   const asPublic = new Uint8Array((await crypto.subtle.exportKey("raw", local.publicKey)) as ArrayBuffer);
   const uaKey = await crypto.subtle.importKey("raw", uaPublic, { name: "ECDH", namedCurve: "P-256" }, false, []);
-  const ecdhSecret = new Uint8Array(await crypto.subtle.deriveBits({ name: "ECDH", public: uaKey }, local.privateKey, 256));
+  // Standard heißt das Feld „public“, die Workers-Typen nennen es „$public“ – beides mitgeben
+  const ecdhParams = { name: "ECDH", public: uaKey, $public: uaKey } as unknown as Parameters<typeof crypto.subtle.deriveBits>[0];
+  const ecdhSecret = new Uint8Array(await crypto.subtle.deriveBits(ecdhParams, local.privateKey, 256));
 
   // RFC 8291, Abschnitt 3.3/3.4 (HKDF mit je einem Block)
   const prkKey = await hmac(authSecret, ecdhSecret);

@@ -10,7 +10,10 @@ async function hmac(key: Uint8Array, data: Uint8Array) {
 const cat = (...p: Uint8Array[]) => {
   const out = new Uint8Array(p.reduce((n, x) => n + x.length, 0));
   let o = 0;
-  for (const x of p) (out.set(x, o), (o += x.length));
+  for (const x of p) {
+    out.set(x, o);
+    o += x.length;
+  }
   return out;
 };
 
