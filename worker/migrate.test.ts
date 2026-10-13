@@ -50,6 +50,18 @@ describe("runMigrations", () => {
     expect(state.executed).toEqual(["ALTER TABLE a ADD COLUMN IF NOT EXISTS y int"]);
   });
 
+  test("Live-Datenbank mit nur dem Grundschema: nichts zu tun", async () => {
+    const { db, state } = fakeDb(LEGACY_VERSION);
+    expect(await runMigrations(db, TEST_MIGRATIONS.slice(0, 1))).toEqual([]);
+    expect(state.queries).toBe(1);
+  });
+
+  test("leere Datenbank mit nur dem Grundschema: läuft und setzt den alten Stand", async () => {
+    const { db, state } = fakeDb(null);
+    expect(await runMigrations(db, TEST_MIGRATIONS.slice(0, 1))).toEqual(["0001_basis"]);
+    expect(state.comment).toBe(LEGACY_VERSION);
+  });
+
   test("neue Migration nach einem Deploy: nur die neue läuft", async () => {
     const { db } = fakeDb("migration:0001_basis", ["0001_basis"]);
     expect(await runMigrations(db, TEST_MIGRATIONS)).toEqual(["0002_neu"]);

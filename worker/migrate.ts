@@ -18,7 +18,11 @@ export interface MigrationDb {
 
 /** Schema-Stand vor den Migrationsdateien; entspricht genau 0001_basis */
 export const LEGACY_VERSION = "schema:2026101207";
-const marker = (id: string) => `migration:${id}`;
+/**
+ * Kommentar an `profiles` für den neuesten Stand. Für 0001_basis bleibt es beim alten Wert: So sieht ein noch
+ * laufender alter Worker (während eines Deploys) keinen fremden Stand und führt seine alten Befehle nicht erneut aus.
+ */
+const marker = (id: string) => (id === "0001_basis" ? LEGACY_VERSION : `migration:${id}`);
 
 /** Fehlende Migrationen ausführen; gibt die IDs der ausgeführten zurück */
 export async function runMigrations(db: MigrationDb, migrations: Migration[] = MIGRATIONS): Promise<string[]> {

@@ -84,7 +84,8 @@ fehlende Migrationen beim ersten Aufruf nach einem Deploy aus (`migrate.ts`), ei
 2. Befehle idempotent schreiben (`IF NOT EXISTS`); laufen zwei Worker gleichzeitig an, kann eine Migration doppelt laufen.
    Kein `CONCURRENTLY` (eine Migration läuft in einer Transaktion). `bun test` prüft beides grob.
 3. Hintergrund: `ALTER TABLE` sperrt die Tabelle auch, wenn die Spalte schon existiert (App hing deshalb schon mal, PR #5).
-   Darum steht der Name der neuesten Migration als Kommentar an `profiles`; stimmt er, führt ein Kaltstart keine DDL aus.
+   Darum steht der Name der neuesten Migration als Kommentar an `profiles` (bei nur `0001_basis` der alte Wert
+   `schema:2026101207`); stimmt er, führt ein Kaltstart keine DDL aus.
    Ausgeführte Migrationen stehen in `schema_migrations`.
 
 Ein Familienprofil (`getProfile` nimmt das erste), kein Mehrbenutzer-Login. Fast alle Tabellen hängen an `profile_id`;
