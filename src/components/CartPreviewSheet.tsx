@@ -57,9 +57,9 @@ function MinOrderBar({ current, added, unknown, rule }: { current: number; added
         aria-valuemax={rule.minOrder}
         aria-valuenow={Math.round(total * 100) / 100}
       >
-        <div className={`h-full rounded-full ${missing ? 'bg-amber-500' : 'bg-green-600'}`} style={{ width: `${pct}%` }} />
+        <div className={`h-full rounded-full ${missing ? 'bg-amber-500' : 'bg-brand-600'}`} style={{ width: `${pct}%` }} />
       </div>
-      <p className={`text-xs font-medium ${missing ? 'text-amber-800' : 'text-green-800'}`}>
+      <p className={`text-xs font-medium ${missing ? 'text-amber-800' : 'text-brand-800'}`}>
         {missing ? `Noch ${euro(missing)} bis zum Mindestbestellwert` : '✓ Mindestbestellwert erreicht'}
         {rule.deliveryFee > 0 && <span className="font-normal text-gray-600"> · Liefergebühr {euro(rule.deliveryFee)}</span>}
       </p>
@@ -197,7 +197,7 @@ export default function CartPreviewSheet({
         className="outline-none bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl overflow-hidden flex flex-col max-h-[90vh]"
       >
         <div className="flex items-center gap-2 px-4 py-4 border-b border-gray-100">
-          <ShoppingCart size={16} className="text-green-700" aria-hidden="true" />
+          <ShoppingCart size={16} className="text-brand-700" aria-hidden="true" />
           <h2 id="cart-preview-title" className="flex-1 text-base font-semibold text-gray-900">
             {shopName}-Warenkorb
           </h2>
@@ -230,7 +230,7 @@ export default function CartPreviewSheet({
                       aria-checked={on}
                       aria-label={name}
                       className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center border-2 ${
-                        on ? 'bg-green-600 border-green-500' : 'bg-white border-gray-300'
+                        on ? 'bg-brand-600 border-brand-500' : 'bg-white border-gray-300'
                       }`}
                     >
                       {on && <Check size={14} className="text-white" strokeWidth={3} />}
@@ -346,7 +346,7 @@ export default function CartPreviewSheet({
           <button
             onClick={transfer}
             disabled={!chosen.length || busy}
-            className="w-full h-11 rounded-xl text-sm font-semibold text-white bg-green-700 hover:bg-green-800 disabled:bg-gray-200 disabled:text-gray-500 flex items-center justify-center gap-2"
+            className="w-full h-11 rounded-xl text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 disabled:bg-gray-200 disabled:text-gray-500 flex items-center justify-center gap-2"
           >
             {busy ? <Loader2 size={15} className="animate-spin" /> : <ShoppingCart size={15} />}
             {chosen.length

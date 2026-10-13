@@ -16,8 +16,8 @@ export default function TabSwitcher({ activeTab, onTabChange }: TabSwitcherProps
   ];
 
   return (
-    <nav className="bg-white border-b border-gray-100 px-4 pt-1" aria-label="Bereiche">
-      <div className="flex">
+    <nav className="bg-gray-50 px-4 pt-3 pb-3" aria-label="Bereiche">
+      <div className="flex gap-1 p-1 rounded-2xl bg-brand-100 max-w-2xl mx-auto">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -25,10 +25,10 @@ export default function TabSwitcher({ activeTab, onTabChange }: TabSwitcherProps
             title={tab.title}
             aria-label={tab.title || tab.label}
             aria-current={activeTab === tab.id ? 'page' : undefined}
-            className={`${tab.icon ? 'w-14 flex-none' : 'flex-1'} py-3 text-sm font-medium transition-all duration-200 border-b-2 flex items-center justify-center gap-1.5 ${
+            className={`${tab.icon ? 'w-11 flex-none' : 'flex-1'} h-10 rounded-xl text-sm transition-colors flex items-center justify-center gap-1.5 ${
               activeTab === tab.id
-                ? 'border-green-500 text-green-700'
-                : 'border-transparent text-gray-500 hover:text-gray-600'
+                ? 'bg-brand-700 text-white font-extrabold shadow-sm'
+                : 'text-gray-600 font-semibold hover:text-brand-800 hover:bg-brand-50'
             }`}
           >
             {tab.icon || tab.label}

@@ -136,13 +136,13 @@ export default function PlanCreationModal({ onCreate, onClose }: PlanCreationMod
                   }}
                   className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all border ${
                     durationType === option.id
-                      ? 'bg-green-50 border-green-300 text-green-700 font-medium'
+                      ? 'bg-brand-50 border-brand-300 text-brand-700 font-medium'
                       : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
                   }`}
                 >
                   <p>{option.label}</p>
                   {durationType === option.id && (
-                    <p className="text-xs text-green-700 mt-1">
+                    <p className="text-xs text-brand-700 mt-1">
                       {option.getDates()[0] === option.getDates()[1]
                         ? formatShortDate(option.getDates()[0])
                         : `${formatShortDate(option.getDates()[0])} – ${formatShortDate(option.getDates()[1])}`}
@@ -156,7 +156,7 @@ export default function PlanCreationModal({ onCreate, onClose }: PlanCreationMod
                 onClick={() => setDurationType('custom')}
                 className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all border ${
                   isCustom
-                    ? 'bg-green-50 border-green-300 text-green-700 font-medium'
+                    ? 'bg-brand-50 border-brand-300 text-brand-700 font-medium'
                     : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
                 }`}
               >
@@ -177,7 +177,7 @@ export default function PlanCreationModal({ onCreate, onClose }: PlanCreationMod
                   value={customStart}
                   onChange={(e) => setCustomStart(e.target.value)}
                   min={tomorrowIso}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
                 />
               </div>
               <div>
@@ -190,7 +190,7 @@ export default function PlanCreationModal({ onCreate, onClose }: PlanCreationMod
                   value={customEnd}
                   onChange={(e) => setCustomEnd(e.target.value)}
                   min={customStart || tomorrowIso}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
                 />
               </div>
             </div>
@@ -220,7 +220,7 @@ export default function PlanCreationModal({ onCreate, onClose }: PlanCreationMod
           <button
             onClick={handleCreate}
             disabled={loading || (!isCustom && !previewStart) || (isCustom && (!customStart || !customEnd))}
-            className="flex-1 h-11 px-4 rounded-xl text-sm font-semibold text-white bg-green-700 hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex-1 h-11 px-4 rounded-xl text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (
               <>

@@ -163,7 +163,7 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
                       onClick={() => !active && run(f.id, () => onSetTurnus(f.id, o.weeks))}
                       disabled={busyId === f.id}
                       className={`px-3 h-8 rounded-lg text-xs font-semibold transition-colors ${
-                        active ? 'bg-green-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        active ? 'bg-brand-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
                       {o.label}

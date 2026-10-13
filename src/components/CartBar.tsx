@@ -42,7 +42,7 @@ export default function CartBar({ shops, carts, pending, rules, onOpen, onRefres
           {note}
         </p>
       )}
-      <div className="flex items-stretch gap-2">
+      <div className="flex items-stretch gap-1.5 p-1.5 rounded-3xl bg-gray-900 shadow-xl">
         {shops.map(({ provider, label }) => {
           const cart = carts[provider];
           const rule = rules[provider] ?? { minOrder: 0, deliveryFee: 0 };
@@ -56,42 +56,42 @@ export default function CartBar({ shops, carts, pending, rules, onOpen, onRefres
               key={provider}
               onClick={() => onOpen(provider)}
               aria-label={`${label.name}-Warenkorb öffnen`}
-              className="flex-1 min-w-0 flex flex-col justify-start text-left px-3 py-2 rounded-xl bg-white border border-gray-200 shadow-md hover:bg-gray-50"
+              className="flex-1 min-w-0 flex flex-col justify-start text-left px-3 py-2 rounded-2xl bg-[#3A2440] text-white hover:bg-[#46304D]"
             >
-              <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-800">
+              <span className="flex items-center gap-1.5 text-xs font-bold text-gray-300">
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: label.color }} aria-hidden="true" />
                 <span className="truncate">{label.name}</span>
                 <ShoppingCart size={11} className="ml-auto text-gray-400 flex-shrink-0" aria-hidden="true" />
               </span>
               {cart === undefined ? (
-                <span className="flex items-center gap-1 mt-1 text-xs text-gray-500">
+                <span className="flex items-center gap-1 mt-1 text-xs text-gray-300">
                   <Loader2 size={11} className="animate-spin" /> lädt …
                 </span>
               ) : cart === null ? (
-                <span className="block mt-1 text-xs text-gray-500">nicht lesbar</span>
+                <span className="block mt-1 text-xs text-gray-300">nicht lesbar</span>
               ) : (
                 <>
-                  <span className="block mt-0.5 text-sm font-bold text-gray-900 leading-tight">
+                  <span className="block mt-0.5 text-base font-extrabold text-white leading-tight">
                     {euro(current)}
-                    {extra > 0 && <span className="text-xs font-semibold text-gray-600"> +{euro(extra)}</span>}
+                    {extra > 0 && <span className="text-xs font-semibold text-gray-300"> +{euro(extra)}</span>}
                   </span>
                   {rule.minOrder > 0 && (
                     <span
-                      className="block mt-1 h-1.5 rounded-full bg-gray-100 overflow-hidden"
+                      className="block mt-1.5 h-1.5 rounded-full bg-white/15 overflow-hidden"
                       role="progressbar"
                       aria-label={`${label.name}: Fortschritt bis zum Mindestbestellwert`}
                       aria-valuemin={0}
                       aria-valuemax={rule.minOrder}
                       aria-valuenow={Math.round(total * 100) / 100}
                     >
-                      <span className={`block h-full rounded-full ${missing ? 'bg-amber-500' : 'bg-green-600'}`} style={{ width: `${pct}%` }} />
+                      <span className={`block h-full rounded-full ${missing ? 'bg-coral-500' : 'bg-brand-300'}`} style={{ width: `${pct}%` }} />
                     </span>
                   )}
-                  <span className={`block mt-0.5 text-[11px] truncate ${missing ? 'text-amber-800' : 'text-green-800'}`}>
+                  <span className={`block mt-0.5 text-[11px] truncate ${missing ? 'text-coral-300' : 'text-brand-200'}`}>
                     {missing ? `noch ${euro(missing)}` : rule.minOrder > 0 ? '✓ Mindestwert' : 'kein Mindestwert'}
                   </span>
                   {rule.deliveryFee > 0 && (
-                    <span className="block text-[11px] text-gray-500 truncate">+{euro(rule.deliveryFee)} Liefergebühr</span>
+                    <span className="block text-[11px] text-gray-300 truncate">+{euro(rule.deliveryFee)} Liefergebühr</span>
                   )}
                 </>
               )}
@@ -103,7 +103,7 @@ export default function CartBar({ shops, carts, pending, rules, onOpen, onRefres
           disabled={refreshing}
           aria-label="Warenkörbe und Preise aktualisieren"
           title="Warenkörbe und Preise aktualisieren"
-          className="w-9 flex-shrink-0 flex items-center justify-center rounded-xl bg-white border border-gray-200 shadow-md text-gray-600 hover:bg-gray-50"
+          className="w-10 flex-shrink-0 flex items-center justify-center rounded-2xl bg-[#3A2440] text-gray-300 hover:bg-[#46304D]"
         >
           {refreshing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
         </button>

@@ -87,7 +87,7 @@ export default function SettingsView({
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => setShowPlanModal(true)}
-            className="bg-green-700 text-white rounded-xl px-4 py-3 font-medium text-sm hover:bg-green-800 transition-colors flex items-center justify-center gap-2"
+            className="bg-brand-700 text-white rounded-xl px-4 py-3 font-medium text-sm hover:bg-brand-800 transition-colors flex items-center justify-center gap-2"
           >
             <Calendar size={16} />
             Plan erstellen
@@ -156,7 +156,7 @@ export default function SettingsView({
             <button
               onClick={() => setShowRoutineModal(true)}
               aria-label="Routine anlegen"
-              className="w-8 h-8 flex items-center justify-center rounded-lg bg-green-700 text-white hover:bg-green-800"
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-brand-700 text-white hover:bg-brand-800"
             >
               <Plus size={16} />
             </button>
@@ -223,7 +223,7 @@ export default function SettingsView({
             <button
               onClick={() => setShowFamilyModal(true)}
               aria-label="Familienmitglied hinzufügen"
-              className="w-8 h-8 flex items-center justify-center rounded-lg bg-green-700 text-white hover:bg-green-800 transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-brand-700 text-white hover:bg-brand-800 transition-colors"
             >
               <Plus size={16} />
             </button>
@@ -253,7 +253,7 @@ export default function SettingsView({
                       {member.type === 'adult' ? 'Erwachsener' : 'Kind'}
                     </p>
                     {member.favorite_foods.length > 0 && (
-                      <p className="text-xs text-green-700 mt-1">
+                      <p className="text-xs text-brand-700 mt-1">
                         Isst gern: {member.favorite_foods.join(', ')}
                       </p>
                     )}

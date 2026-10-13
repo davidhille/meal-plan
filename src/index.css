@@ -14,6 +14,6 @@
 
 /* Sichtbarer Fokus für Tastatur-Bedienung (Maus-Klicks zeigen keinen Ring) */
 :focus-visible {
-  outline: 2px solid #16a34a;
+  outline: 2px solid #6B2E7A;
   outline-offset: 2px;
 }

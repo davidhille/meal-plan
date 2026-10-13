@@ -105,7 +105,7 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Suchen, z. B. Apfel oder Schokolade"
-            className="w-full h-11 pl-9 pr-9 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full h-11 pl-9 pr-9 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
           {query && (
             <button
@@ -125,7 +125,7 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
               aria-pressed={category === c.id}
               onClick={() => setCategory(c.id)}
               className={`flex-none px-3 h-8 rounded-lg text-xs font-semibold transition-colors ${
-                category === c.id ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                category === c.id ? 'bg-brand-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
               }`}
             >
               {c.label}

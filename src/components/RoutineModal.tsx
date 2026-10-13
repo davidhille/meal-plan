@@ -73,7 +73,7 @@ export default function RoutineModal({ onSave, onClose }: RoutineModalProps) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="z. B. Wöchentlicher Plan"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
             />
           </div>
 
@@ -88,7 +88,7 @@ export default function RoutineModal({ onSave, onClose }: RoutineModalProps) {
                   onClick={() => setFrequency(f)}
                   className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
                     frequency === f
-                      ? 'bg-green-700 text-white'
+                      ? 'bg-brand-700 text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
@@ -106,7 +106,7 @@ export default function RoutineModal({ onSave, onClose }: RoutineModalProps) {
                 id="routine-day"
                 value={dayOfWeek}
                 onChange={(e) => setDayOfWeek(parseInt(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
               >
                 {dayNames.map((day, idx) => (
                   <option key={idx} value={idx}>
@@ -129,7 +129,7 @@ export default function RoutineModal({ onSave, onClose }: RoutineModalProps) {
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
             />
           </div>
 
@@ -146,7 +146,7 @@ export default function RoutineModal({ onSave, onClose }: RoutineModalProps) {
                   onClick={() => setDurationDays(days)}
                   className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
                     durationDays === days
-                      ? 'bg-green-700 text-white'
+                      ? 'bg-brand-700 text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
@@ -161,7 +161,7 @@ export default function RoutineModal({ onSave, onClose }: RoutineModalProps) {
                 onChange={(e) => setDurationDays(Math.max(1, parseInt(e.target.value) || 1))}
                 min="1"
                 max="365"
-                className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
               />
             )}
           </div>
@@ -187,7 +187,7 @@ export default function RoutineModal({ onSave, onClose }: RoutineModalProps) {
           <button
             onClick={handleSave}
             disabled={loading || !name.trim()}
-            className="flex-1 h-11 px-4 rounded-xl text-sm font-semibold text-white bg-green-700 hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 h-11 px-4 rounded-xl text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Wird gespeichert …' : 'Speichern'}
           </button>
