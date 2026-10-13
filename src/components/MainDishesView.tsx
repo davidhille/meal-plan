@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChefHat, Clock, Loader2, Search, Trash2, X, RotateCcw, ChevronDown, ShieldAlert } from 'lucide-react';
+import { ChefHat, Clock, Loader2, Search, Trash2, X, RotateCcw, ChevronDown, ShieldAlert, Sparkles } from 'lucide-react';
 import { CatalogRecipe, Meal, MealType, PlanMeal, RecipeCatalog, RecipeFilter } from '../types';
 import { matchesRecipeFilter } from '../lib/recipeFilters';
 import { CONDITION_LABELS } from '../lib/health';
 import CustomFilterChips from './CustomFilterChips';
 import RecipeFilterAssign from './RecipeFilterAssign';
 import RecipeEditModal from './RecipeEditModal';
+import AiRecipeModal from './AiRecipeModal';
 import { generateMealImage, getRecipeCatalog, resetRecipeEdit, saveRecipeEdit, setRecipeHidden } from '../lib/api';
 import { RECIPE_BASE_PORTIONS } from '../lib/portions';
 import MealModal from './MealModal';
@@ -77,6 +78,7 @@ export default function MainDishesView({
   const [notice, setNotice] = useState<string | null>(null);
   const [editing, setEditing] = useState<CatalogRecipe | null>(null);
   const [showUnsuitable, setShowUnsuitable] = useState(false);
+  const [showAi, setShowAi] = useState(false);
 
   useEffect(() => {
     getRecipeCatalog()
@@ -161,6 +163,14 @@ export default function MainDishesView({
             </button>
           )}
         </label>
+
+        <button
+          onClick={() => setShowAi(true)}
+          className="w-full h-11 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-brand-300 bg-brand-50/50 text-sm font-semibold text-brand-800 hover:bg-brand-50"
+        >
+          <Sparkles size={16} />
+          Rezept mit KI erstellen
+        </button>
 
         <div className="flex gap-1.5 overflow-x-auto -mx-4 px-4 pb-1" role="group" aria-label="Art">
           {FILTERS.map((f) => (
@@ -322,6 +332,19 @@ export default function MainDishesView({
             </div>
           }
           onClose={() => setSelected(null)}
+        />
+      )}
+
+      {showAi && (
+        <AiRecipeModal
+          onSaved={(result, favorite) => {
+            setShowAi(false);
+            setCatalog(result.catalog);
+            setSelected(result.catalog.recipes.find((r) => r.name === result.name) ?? null);
+            if (favorite) onRecipesChanged?.();
+            flash(`„${result.name}“ ist jetzt in der Sammlung – das Bild entsteht gerade.`);
+          }}
+          onClose={() => setShowAi(false)}
         />
       )}
 

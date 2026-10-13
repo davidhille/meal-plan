@@ -108,7 +108,7 @@ export type ImageResult =
   | { error: string; quota?: boolean };
 
 /** Tageskontingent von Workers AI aufgebraucht? (Fehler 4006 „daily free allocation“) */
-function isQuotaError(err: unknown) {
+export function isQuotaError(err: unknown) {
   return /4006|daily free allocation|neurons/i.test(String((err as Error)?.message ?? err));
 }
 

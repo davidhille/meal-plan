@@ -2,7 +2,8 @@
 // Prompt-Idee übernommen aus der Juli-Version (lib/aiRecipes.ts), aber serverseitig und
 // mit Nachprüfung durch unsere eigenen Filter – die KI hält sich nicht immer an Vorgaben.
 import type { Sql } from "./db";
-import type { AiEnv } from "./images";
+import { isQuotaError, type AiEnv } from "./images";
+import { guessType } from "./recipeImport";
 import { type Recipe, violatesHealthConditions, dislikeMatches, isSimilarDish } from "./meals";
 
 
@@ -72,13 +73,27 @@ function describeFamily(ctx: RecipeRequestContext): string {
   return `Die Familie: ${parts.join(" und ")} – kinderfreundlich, nicht zu scharf.`;
 }
 
-function buildPrompt(type: Recipe["type"], cuisine: string, ctx: RecipeRequestContext, avoid: string[]): string {
+/** Freitext-Wunsch der Familie bereinigen (kurz, ohne Steuerzeichen) */
+export function cleanWish(raw: unknown): string {
+  return String(raw ?? "")
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u001f]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 200);
+}
+
+const WISH_TYPE_LABEL = "passend zum Wunsch – unter der Woche schnell (max. 40 Minuten), außer der Wunsch verlangt etwas Aufwendigeres";
+
+function buildPrompt(type: Recipe["type"] | null, cuisine: string, ctx: RecipeRequestContext, avoid: string[], wish = ""): string {
   const dislikes = [...new Set(ctx.familyMembers.flatMap((m) => m.disliked_foods ?? []).map((d) => d.trim()).filter(Boolean))];
   const likes = [...new Set(ctx.familyMembers.flatMap((m) => m.favorite_foods ?? []).map((d) => d.trim()).filter(Boolean))];
   const conditions = ctx.healthConditions.map((c) => CONDITION_LABEL[c] ?? c);
   return [
     `Erstelle ein neues, alltagstaugliches Familien-Abendessen auf Deutsch.`,
-    `Art: ${TYPE_LABEL[type]}. Küchenrichtung: ${cuisine}.`,
+    wish
+      ? `Wunsch der Familie (umsetzen, solange er nicht gegen die Vorgaben unten verstößt): ${wish}. Art: ${type ? TYPE_LABEL[type] : WISH_TYPE_LABEL}.`
+      : `Art: ${TYPE_LABEL[type ?? "vegetarisch"]}. Küchenrichtung: ${cuisine}.`,
     describeFamily(ctx),
     conditions.length ? `STRIKT einzuhalten: ${conditions.join("; ")}.` : "",
     dislikes.length ? `Diese Zutaten mag niemand – NICHT verwenden: ${dislikes.join(", ")}.` : "",
@@ -117,9 +132,18 @@ function parse(raw: unknown): { name: string; duration_min: number; ingredients:
   return { name, duration_min: Math.max(5, Math.min(240, Math.round(Number(d.duration_min) || 30))), ingredients, steps };
 }
 
-async function generateOne(env: AiEnv, type: Recipe["type"], cuisine: string, ctx: RecipeRequestContext, avoid: string[]): Promise<Recipe | null> {
-  if (!env.AI) return null;
-  const prompt = buildPrompt(type, cuisine, ctx, avoid);
+type GenerateResult = { recipe: Recipe } | { error: "quota" | "failed" };
+
+async function generateOne(
+  env: AiEnv,
+  type: Recipe["type"] | null,
+  cuisine: string,
+  ctx: RecipeRequestContext,
+  avoid: string[],
+  wish = ""
+): Promise<GenerateResult> {
+  if (!env.AI) return { error: "failed" };
+  const prompt = buildPrompt(type, cuisine, ctx, avoid, wish);
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const raw = await env.AI.run(MODEL, {
@@ -133,18 +157,22 @@ async function generateOne(env: AiEnv, type: Recipe["type"], cuisine: string, ct
       });
       const r = parse(raw);
       if (!r) continue;
-      return {
+      const recipe: Recipe = {
         name: r.name,
-        type,
+        type: type ?? "vegetarisch",
         ingredients: r.ingredients,
         instructions: r.steps.join("\n"),
         durationMin: r.duration_min,
       };
+      // Ohne vorgegebene Art: aus Zutaten und Zeit schätzen
+      if (!type) recipe.type = guessType(recipe);
+      return { recipe };
     } catch (err) {
       console.error("KI-Rezept fehlgeschlagen:", err);
+      if (isQuotaError(err)) return { error: "quota" };
     }
   }
-  return null;
+  return { error: "failed" };
 }
 
 /**
@@ -161,7 +189,9 @@ export async function generateRecipes(
   if (!env.AI || types.length === 0) return [];
   const offset = Math.floor(Math.random() * CUISINES.length);
   const results = await Promise.all(
-    types.map((t, i) => generateOne(env, t, CUISINES[(offset + i) % CUISINES.length], ctx, avoidNames))
+    types.map((t, i) =>
+      generateOne(env, t, CUISINES[(offset + i) % CUISINES.length], ctx, avoidNames).then((g) => ("recipe" in g ? g.recipe : null))
+    )
   );
 
   const seen = new Set(avoidNames.map((n) => n.toLowerCase()));
@@ -183,4 +213,48 @@ export async function generateRecipes(
       ON CONFLICT (name) DO NOTHING`;
   }
   return valid;
+}
+
+/** Prüft eigene Regeln: Gesundheitsbedingungen und Abneigungen der Familie */
+function fitsFamily(r: Recipe, ctx: RecipeRequestContext) {
+  return (
+    !violatesHealthConditions(r, ctx.healthConditions) &&
+    !ctx.familyMembers.some((m) => (m.disliked_foods ?? []).some((d) => dislikeMatches(r, d)))
+  );
+}
+
+/**
+ * Ein Rezept nach Wunsch („etwas mit Kürbis, schnell“) – nur Vorschau, wird nicht gespeichert.
+ * Zwei Versuche, falls das Ergebnis nicht zu den Einstellungen passt oder den Namen schon gibt.
+ */
+export async function generateWishRecipe(
+  env: AiEnv,
+  wish: string,
+  type: Recipe["type"] | null,
+  ctx: RecipeRequestContext,
+  existingNames: string[]
+): Promise<{ recipe: Recipe } | { error: string; quota?: boolean }> {
+  if (!env.AI) return { error: "Die KI ist nicht eingerichtet." };
+  const taken = new Set(existingNames.map((n) => n.toLowerCase()));
+  let lastProblem = "Die KI hat kein brauchbares Rezept geliefert. Bitte nochmal versuchen.";
+  for (let attempt = 0; attempt < 2; attempt++) {
+    // Beim zweiten Versuch eine andere Küchenrichtung als Anstoß
+    const g = await generateOne(env, type, CUISINES[Math.floor(Math.random() * CUISINES.length)], ctx, [], wish);
+    if ("error" in g) {
+      if (g.error === "quota") {
+        return { error: "Das tägliche Gratis-Kontingent der KI ist aufgebraucht. Morgen früh geht es wieder.", quota: true };
+      }
+      continue;
+    }
+    if (taken.has(g.recipe.name.toLowerCase())) {
+      lastProblem = `„${g.recipe.name}“ gibt es schon in der Sammlung.`;
+      continue;
+    }
+    if (!fitsFamily(g.recipe, ctx)) {
+      lastProblem = "Das Ergebnis passte nicht zu euren Einstellungen (Gesundheit oder Abneigungen). Bitte den Wunsch anders formulieren.";
+      continue;
+    }
+    return { recipe: g.recipe };
+  }
+  return { error: lastProblem };
 }
