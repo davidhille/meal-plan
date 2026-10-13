@@ -1,11 +1,10 @@
 // KI-Rezepte über Cloudflare Workers AI (Llama 3.3 70B, JSON-Modus).
 // Prompt-Idee übernommen aus der Juli-Version (lib/aiRecipes.ts), aber serverseitig und
 // mit Nachprüfung durch unsere eigenen Filter – die KI hält sich nicht immer an Vorgaben.
-import type { neon } from "@neondatabase/serverless";
+import type { Sql } from "./db";
 import type { AiEnv } from "./images";
 import { type Recipe, violatesHealthConditions, dislikeMatches, isSimilarDish } from "./meals";
 
-type Sql = ReturnType<typeof neon>;
 
 const MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 
@@ -94,7 +93,8 @@ function buildPrompt(type: Recipe["type"], cuisine: string, ctx: RecipeRequestCo
 }
 
 function parse(raw: unknown): { name: string; duration_min: number; ingredients: string[]; steps: string[] } | null {
-  let data: any = (raw as any)?.response ?? raw;
+  // Workers AI liefert je nach Modell { response: {...} }, { response: "…" } oder direkt das Objekt
+  let data: unknown = raw && typeof raw === "object" && "response" in raw ? (raw as { response: unknown }).response : raw;
   if (typeof data === "string") {
     const m = data.match(/\{[\s\S]*\}/);
     try {
@@ -103,12 +103,18 @@ function parse(raw: unknown): { name: string; duration_min: number; ingredients:
       return null;
     }
   }
-  if (!data || typeof data.name !== "string" || !Array.isArray(data.ingredients) || !Array.isArray(data.steps)) return null;
-  const ingredients = data.ingredients.map((i: unknown) => String(i).trim()).filter(Boolean);
-  const steps = data.steps.map((st: unknown) => String(st).replace(/^\s*\d+[.)]\s*/, "").trim()).filter(Boolean);
-  const name = data.name.replace(/["„“]/g, "").trim();
+  const d = (data && typeof data === "object" ? data : {}) as {
+    name?: unknown;
+    duration_min?: unknown;
+    ingredients?: unknown;
+    steps?: unknown;
+  };
+  if (typeof d.name !== "string" || !Array.isArray(d.ingredients) || !Array.isArray(d.steps)) return null;
+  const ingredients = d.ingredients.map((i: unknown) => String(i).trim()).filter(Boolean);
+  const steps = d.steps.map((st: unknown) => String(st).replace(/^\s*\d+[.)]\s*/, "").trim()).filter(Boolean);
+  const name = d.name.replace(/["„“]/g, "").trim();
   if (!name || ingredients.length < 3 || steps.length < 2) return null;
-  return { name, duration_min: Math.max(5, Math.min(240, Math.round(Number(data.duration_min) || 30))), ingredients, steps };
+  return { name, duration_min: Math.max(5, Math.min(240, Math.round(Number(d.duration_min) || 30))), ingredients, steps };
 }
 
 async function generateOne(env: AiEnv, type: Recipe["type"], cuisine: string, ctx: RecipeRequestContext, avoid: string[]): Promise<Recipe | null> {

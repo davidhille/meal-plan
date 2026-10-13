@@ -4,6 +4,7 @@
 //   APP_PASSWORD  – Familien-Passwort für die App (Secret, optional; leer = kein Schutz)
 
 import { neon } from "@neondatabase/serverless";
+import type { Row, Sql } from "./db";
 import { pickMeal, pickReplacement, preferredTypeFor, scoreMeal, violatesHealthConditions, MEAL_DATABASE, type Recipe, type ScoringContext } from "./meals";
 import { buildPlanItems, familyPortions, mergeKey } from "./shopping";
 import { generateImage, fillMissingImages, serveImage, IMAGE_URL_SQL, IMAGE_CREDIT_SQL, type AiEnv } from "./images";
@@ -21,7 +22,6 @@ export interface Env extends AiEnv, ShopEnv {
   CREDENTIALS_KEY?: string;
 }
 
-type Sql = ReturnType<typeof neon>;
 
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
@@ -227,7 +227,7 @@ async function getShopping(sql: Sql, profileId: string, planId: string, range?: 
   const meatLabel = settings.metzger_auto !== false && labelIds.has("metzger") ? "metzger" : standard;
   const providerOf = new Map(labels.map((l) => [l.id as string, l.provider as string | null]));
   const linkBy = new Map(links.map((r) => [`${r.name_key}|${r.provider}`, r]));
-  const linkInfo = (link: Record<string, any>) => ({
+  const linkInfo = (link: Row) => ({
     productId: link.product_id as string,
     productName: link.product_name as string,
     productImage: (link.image_url as string | null) ?? undefined,
@@ -393,7 +393,7 @@ async function loadFavorites(sql: Sql, profileId: string) {
   return sql.query(`SELECT ${FAVORITE_COLS} FROM favorites WHERE profile_id = $1 ORDER BY created_at`, [profileId]);
 }
 
-function favoriteToRecipe(f: Record<string, any>): Recipe {
+function favoriteToRecipe(f: Row): Recipe {
   return {
     name: f.meal_name,
     type: f.meal_type,
@@ -404,7 +404,7 @@ function favoriteToRecipe(f: Record<string, any>): Recipe {
 }
 
 /** Alle Rezepte, aus denen geplant wird: feste Liste + KI-Rezepte + Favoriten */
-async function loadPool(sql: Sql, profileId: string): Promise<{ pool: Recipe[]; favorites: Record<string, any>[] }> {
+async function loadPool(sql: Sql, profileId: string): Promise<{ pool: Recipe[]; favorites: Row[] }> {
   const [favorites, dbRecipes] = await Promise.all([
     loadFavorites(sql, profileId),
     sql`SELECT name, type, ingredients, instructions, duration_min FROM recipes`,
@@ -727,7 +727,8 @@ export async function handleApi(
   await ensureSchema(sql);
   const parts = new URL(request.url).pathname.replace(/^\/api\/?/, "").split("/").filter(Boolean);
   const route = `${request.method} /${parts.join("/")}`;
-  const body = ["POST", "PUT", "PATCH"].includes(request.method) ? await request.json<any>().catch(() => ({})) : {};
+  // Der Body wird in jeder Route selbst geprüft (String(...), Number(...) usw.)
+  const body: Row = ["POST", "PUT", "PATCH"].includes(request.method) ? await request.json<Row>().catch(() => ({})) : {};
   const id = parts[1];
 
   try {
@@ -1188,11 +1189,14 @@ export async function handleApi(
         if (request.method === "POST") {
           // { items: [{ productId, quantity }] } oder (älter) { productIds: [...] }
           const wanted: { productId: string; quantity: number }[] = Array.isArray(body.items)
-            ? body.items.map((i: any) => ({ productId: String(i.productId), quantity: Math.min(Math.max(Math.round(Number(i.quantity) || 1), 1), 50) }))
+            ? body.items.map((i: { productId?: unknown; quantity?: unknown }) => ({ productId: String(i.productId), quantity: Math.min(Math.max(Math.round(Number(i.quantity) || 1), 1), 50) }))
             : (Array.isArray(body.productIds) ? body.productIds : []).map((pid: unknown) => ({ productId: String(pid), quantity: 1 }));
           let added = 0;
           const failed: string[] = [];
-          for (const w of wanted) (await cart.add(w.productId, w.quantity)) ? added++ : failed.push(w.productId);
+          for (const w of wanted) {
+            if (await cart.add(w.productId, w.quantity)) added++;
+            else failed.push(w.productId);
+          }
           return json({ added, failed });
         }
 

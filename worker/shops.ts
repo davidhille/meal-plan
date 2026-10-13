@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Antworten der inoffiziellen Shop-APIs sind undokumentiert und werden defensiv gelesen */
 // Anbindung an Online-Shops (inoffizielle, reverse-engineerte Schnittstellen – können sich jederzeit ändern).
 // Übernommen aus der Juli-Version (Supabase Edge Functions knuspr-* / picnic-*), angepasst an Cloudflare Workers.
 //   Knuspr: rohlik-mcp / knuspr-api (GitHub)   Picnic: MRVDH/picnic-api (GitHub)
@@ -60,8 +61,10 @@ export async function knusprLogin(email: string, password: string): Promise<stri
     headers: { "Content-Type": "application/json", "User-Agent": BROWSER_UA },
     body: JSON.stringify({ email, password, name: "" }),
   });
-  const cookies = res.headers.getSetCookie?.() ?? [];
-  const cookieHeader = cookies.map((c) => c.split(";")[0]).join("; ") || res.headers.get("set-cookie") || "";
+  // getSetCookie liefert jedes Cookie einzeln (headers.get würde sie mit Komma zusammenkleben)
+  const headers = res.headers as Headers & { getSetCookie?: () => string[] };
+  const cookies = headers.getSetCookie?.() ?? [];
+  const cookieHeader = cookies.map((c: string) => c.split(";")[0]).join("; ") || res.headers.get("set-cookie") || "";
   if (!res.ok || !cookieHeader) throw new ShopError("Knuspr-Login fehlgeschlagen – bitte Zugangsdaten prüfen", "login_failed");
   return cookieHeader;
 }
@@ -191,7 +194,7 @@ async function md5Hex(value: string): Promise<string> {
     const hash = await crypto.subtle.digest("MD5", new TextEncoder().encode(value));
     return [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, "0")).join("");
   } catch {
-    // @ts-ignore – node:crypto ist über nodejs_compat verfügbar
+    // @ts-expect-error – node:crypto ist über nodejs_compat verfügbar, aber nicht in den Worker-Typen
     const nodeCrypto: any = await import("node:crypto");
     return nodeCrypto.createHash("md5").update(value, "utf8").digest("hex");
   }
