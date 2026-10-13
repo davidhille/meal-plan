@@ -1,7 +1,5 @@
 import { useEffect, useRef } from 'react';
-
-// Offene Fenster von unten nach oben – Escape schließt nur das oberste
-const stack: symbol[] = [];
+import { isTopDialog, popDialog, pushDialog } from './dialogStack';
 
 /**
  * Für alle Fenster (Modals): Escape schließt, Fokus springt ins Fenster und danach zurück,
@@ -14,20 +12,17 @@ export function useDialog<T extends HTMLElement = HTMLDivElement>(onClose: () =>
 
   useEffect(() => {
     const id = Symbol();
-    stack.push(id);
+    pushDialog(id);
     const previousFocus = document.activeElement as HTMLElement | null;
     ref.current?.focus();
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && stack[stack.length - 1] === id) closeRef.current();
+      if (e.key === 'Escape' && isTopDialog(id)) closeRef.current();
     };
     window.addEventListener('keydown', onKey);
     return () => {
       window.removeEventListener('keydown', onKey);
-      stack.splice(stack.indexOf(id), 1);
-      document.body.style.overflow = prevOverflow;
+      popDialog(id);
       previousFocus?.focus?.();
     };
   }, []);
