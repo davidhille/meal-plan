@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Package, X, Loader2, ShoppingCart } from 'lucide-react';
+import { Plus, Package, X, Loader2, ShoppingCart, FileDown } from 'lucide-react';
 import { MealPlan, ProductLink, ShopProvider, ShopRule, PlanMeal, ShoppingItem, ShoppingLabel, DEFAULT_LABELS, BASICS_ITEMS, ProductResult } from '../types';
 import { PlanWeek, currentWeekIndex, formatShortDate, toIso } from '../lib/dateUtils';
 import ShoppingRangePicker from './ShoppingRangePicker';
@@ -22,6 +22,7 @@ import {
   removeFromPantry,
 } from '../lib/api';
 import ShoppingSection from './ShoppingSection';
+import { buildShoppingPdf, downloadPdf, pdfFileName, type PdfList } from '../lib/shoppingPdf';
 import ProductSearchModal from './ProductSearchModal';
 import CartPreviewSheet from './CartPreviewSheet';
 import CartBar from './CartBar';
@@ -373,6 +374,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
   // Benötigte Basics zuerst
   availableBasics.sort((a, b) => Number(neededSet.has(lc(b))) - Number(neededSet.has(lc(a))));
 
+  const shopLabelIdsForPdf = new Set(productShops.map((s) => s.label.id));
   const itemsByLabel = labels.reduce<Record<string, ShoppingItem[]>>((acc, label) => {
     acc[label.id] = items
       .filter((i) => i.label === label.id)
@@ -392,6 +394,18 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
       : `Zutaten für ${inRange.length} ${inRange.length === 1 ? 'Gericht' : 'Gerichte'}` +
         (firstDay && lastDay ? ` · ${formatShortDate(firstDay)} – ${formatShortDate(lastDay)}` : '') +
         (past ? ` · davon ${past} schon vorbei` : '');
+
+  // PDF: nur Listen ohne Shop (Metzger, Aldi …), nur offene Einträge
+  const pdfListFor = (label: ShoppingLabel): PdfList => ({
+    name: label.name,
+    color: label.color,
+    items: (itemsByLabel[label.id] || []).filter((i) => !i.checked).map((i) => i.name),
+  });
+  const offlineLists = labels.filter((l) => !shopLabelIdsForPdf.has(l.id)).map(pdfListFor).filter((l) => l.items.length > 0);
+  const savePdf = (lists: PdfList[], namePart: string) => {
+    const created = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    downloadPdf(buildShoppingPdf(lists, 'Einkaufsliste', `${summary} · erstellt am ${created}`), pdfFileName(namePart, today));
+  };
 
   // Dem Shop zugeordnet, aber noch nicht im Warenkorb – so sieht man, was die Bestellung kosten wird
   const pending = Object.fromEntries(
@@ -422,6 +436,16 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
           />
         ) : (
           <p className="px-1 text-xs text-gray-600">{summary}</p>
+        )}
+
+        {offlineLists.length > 0 && (
+          <button
+            onClick={() => savePdf(offlineLists, offlineLists.length === 1 ? offlineLists[0].name : 'Listen')}
+            className="w-full h-10 flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50"
+          >
+            <FileDown size={15} />
+            {offlineLists.length === 1 ? `${offlineLists[0].name} als PDF` : `Listen ohne Shop als PDF (${offlineLists.map((l) => l.name).join(', ')})`}
+          </button>
         )}
 
         {/* Eigenen Artikel hinzufügen */}
@@ -482,6 +506,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
               onLabelChange={changeLabel}
               onRemove={removeItem}
               onMoveToPantry={moveToPantry}
+              onDownloadPdf={() => savePdf([pdfListFor(label)], label.name)}
             />
           )
         )}

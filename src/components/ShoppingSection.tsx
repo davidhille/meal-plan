@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Copy, Check, ShoppingCart, ChevronDown, X, Tag, Link2, Package } from 'lucide-react';
+import { Copy, Check, ShoppingCart, ChevronDown, X, Tag, Link2, Package, FileDown } from 'lucide-react';
 import { ShopProvider, ShoppingItem, ShoppingLabel } from '../types';
 import { packagesNeeded } from '../lib/unitPrice';
 
@@ -21,6 +21,8 @@ interface ShoppingSectionProps {
   onRemove?: (item: ShoppingItem) => void;
   /** Plan-Zutat dauerhaft in den Vorrat legen */
   onMoveToPantry?: (item: ShoppingItem) => void;
+  /** Offene Einträge als PDF herunterladen (nur Listen ohne Shop) */
+  onDownloadPdf?: () => void;
 }
 
 export default function ShoppingSection({
@@ -35,6 +37,7 @@ export default function ShoppingSection({
   onAssignShop,
   onRemove,
   onMoveToPantry,
+  onDownloadPdf,
 }: ShoppingSectionProps) {
   const [copied, setCopied] = useState(false);
   // Auf-/zugeklappt pro Liste auf diesem Gerät merken
@@ -112,6 +115,19 @@ export default function ShoppingSection({
           )}
         </button>
         <div className="flex items-center gap-1.5 flex-shrink-0">
+          {onDownloadPdf && (
+            <button
+              onClick={onDownloadPdf}
+              disabled={open.length === 0}
+              title="Offene Einträge als PDF"
+              aria-label={`${label.name}: offene Einträge als PDF herunterladen`}
+              className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+                open.length === 0 ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <FileDown size={14} />
+            </button>
+          )}
           <button
             onClick={handleCopy}
             disabled={open.length === 0}
