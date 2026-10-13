@@ -1,5 +1,5 @@
 -- Einmaliger Import aus dem Supabase-Backup (Profil mail@davidhille.de)
--- Erst neon/schema.sql ausführen, dann dieses Skript im Neon SQL Editor.
+-- Erst die App einmal öffnen (legt die Tabellen an), dann dieses Skript im Neon SQL Editor.
 -- Die 9 KI-Rezepte stecken direkt im Code (functions/_lib/meals.ts).
 
 INSERT INTO profiles (id, health_goal, health_conditions)

@@ -39,7 +39,15 @@ Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHu
 | Datei | Inhalt |
 |---|---|
 | `index.ts` | Einstieg: `/api/*` → `handleApi`, sonst Assets; `scheduled` (Cron alle 15 Min) → `runRoutines` |
-| `api.ts` | **Alle** Routen (ein großer Router über `route === "GET /…"` bzw. `parts[0]`), Schema-Migration, Plan-Erstellung, Einkaufsliste, Shops, Routinen-Cron |
+| `api.ts` | Einstieg der API: Passwort, Datenbank, Migration, verteilt an die Routen; Fehler → JSON |
+| `http.ts` | `Env`, Anfrage-Kontext `Ctx`, `json()` |
+| `routes/*.ts` | Routen nach Bereich (`profile`, `plans`, `recipes`, `shopping`, `shops`). Jede Datei prüft `route`/`parts` und gibt eine `Response` oder `null` (nicht zuständig) zurück |
+| `repo.ts` | Gemeinsame DB-Zugriffe: `getProfile`, `loadContext`, `loadPool`, Favoriten, Spaltenlisten (`PLAN_COLS` …) |
+| `planning.ts` | Plan erstellen, Gericht austauschen/ersetzen, Rezept-Übersicht |
+| `shoppingList.ts` | Einkaufsliste eines Plans aus DB-Daten (Labels, Zustand, Produkt-Verknüpfungen, Shop-Regeln) |
+| `shopAccounts.ts` | Shop-Verbindungen speichern/laden (verschlüsselt), Shop-Zustand für die Einstellungen |
+| `routines.ts` | Cron: fällige Routinen → neuer Plan, fehlende Bilder nachziehen |
+| `migrate.ts`, `migrations/` | Datenbank-Migrationen (siehe unten) |
 | `meals.ts` | Rezept-Typ, Grundsammlung `MEAL_DATABASE`, Scoring (`scoreMeal`), Auswahl (`pickMeal`, `pickReplacement`), Gesundheitsfilter, Ähnlichkeit (`isSimilarDish`) |
 | `recipes/*.ts` | Feste Rezeptsammlung (vegetarisch, fleisch, wochenende, `mealdb` = 231 übersetzte TheMealDB-Rezepte mit Foto-URL) |
 | `aiRecipes.ts` | KI-Rezepte erzeugen, mit eigenen Filtern nachprüfen, in Tabelle `recipes` speichern |
@@ -67,14 +75,18 @@ Kontraste auf WCAG AA; Icon-Knöpfe brauchen `aria-label`.
 
 ## Datenbank
 
-Schema-Referenz: `neon/schema.sql`. Der Worker zieht Änderungen selbst nach (`migrate()` in `api.ts`).
+Das Schema steht vollständig in `worker/migrations/` (`0001_basis.ts` = alles bis Oktober 2026). Der Worker führt
+fehlende Migrationen beim ersten Aufruf nach einem Deploy aus (`migrate.ts`), eine leere Datenbank bekommt so alle Tabellen.
 
-**Wichtig bei Schema-Änderungen:**
-1. Befehl in `runMigrations()` ergänzen (immer idempotent: `IF NOT EXISTS`).
-2. `SCHEMA_VERSION` hochzählen – sonst läuft die Migration nie. Der Stand steht als Kommentar an `profiles`.
-3. Grund: `ALTER TABLE` sperrt die Tabelle auch, wenn die Spalte schon existiert. Liefen die Befehle bei jedem Kaltstart,
-   hängt die App (so geschehen, siehe PR #5). Mit gleichem `SCHEMA_VERSION` führt ein Kaltstart gar keine DDL aus.
-4. Auch in `neon/schema.sql` nachtragen.
+**Schema ändern:**
+1. Neue Datei `worker/migrations/000N_kurzname.ts` (`export default ["ALTER TABLE … ADD COLUMN IF NOT EXISTS …"]`)
+   und in `migrations/index.ts` unten anhängen. Ausgelieferte Migrationen nie mehr ändern.
+2. Befehle idempotent schreiben (`IF NOT EXISTS`); laufen zwei Worker gleichzeitig an, kann eine Migration doppelt laufen.
+   Kein `CONCURRENTLY` (eine Migration läuft in einer Transaktion). `bun test` prüft beides grob.
+3. Hintergrund: `ALTER TABLE` sperrt die Tabelle auch, wenn die Spalte schon existiert (App hing deshalb schon mal, PR #5).
+   Darum steht der Name der neuesten Migration als Kommentar an `profiles` (bei nur `0001_basis` der alte Wert
+   `schema:2026101207`); stimmt er, führt ein Kaltstart keine DDL aus.
+   Ausgeführte Migrationen stehen in `schema_migrations`.
 
 Ein Familienprofil (`getProfile` nimmt das erste), kein Mehrbenutzer-Login. Fast alle Tabellen hängen an `profile_id`;
 `recipes` (KI-/Import-Rezepte) und `meal_images` sind geteilt.

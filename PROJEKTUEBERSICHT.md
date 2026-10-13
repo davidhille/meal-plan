@@ -91,14 +91,15 @@ Auf- und zuklappbare Karten:
 
 | Bereich | Wo |
 |---|---|
-| API, Planung, Einkaufsliste, Shops, Cron | `worker/api.ts` |
+| API-Routen (nach Bereich) | `worker/api.ts` → `worker/routes/` |
+| Planung, Einkaufsliste, Shop-Konten, Cron | `worker/planning.ts`, `worker/shoppingList.ts`, `worker/shopAccounts.ts`, `worker/routines.ts` |
 | Rezepte, Auswahl, Filter | `worker/meals.ts`, `worker/recipes/` |
 | KI-Rezepte / Import / Bilder | `worker/aiRecipes.ts`, `worker/recipeImport.ts`, `worker/images.ts` |
 | Einkaufsliste berechnen | `worker/shopping.ts` |
 | Knuspr/Picnic | `worker/shops.ts` |
 | Frontend-Zustand / Serveraufrufe | `src/App.tsx`, `src/lib/api.ts` |
 | Nachtische | `src/data/desserts.ts` |
-| Datenbank-Schema | `neon/schema.sql` (der Worker migriert selbst, siehe `CLAUDE.md`) |
+| Datenbank-Schema | `worker/migrations/` (der Worker migriert selbst, siehe `CLAUDE.md`) |
 | App installierbar | `public/manifest.webmanifest`, `public/sw.js` |
 
 ## 7. Bekannte Grenzen
