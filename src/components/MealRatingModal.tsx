@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { X, Star } from 'lucide-react';
+import { X, Star, Loader2 } from 'lucide-react';
 import { useDialog } from '../lib/useDialog';
 
 interface MealRatingModalProps {
   mealName: string;
   currentRating?: number;
-  onSave: (rating: number, notes: string) => void;
+  /** Darf ein Promise liefern; Fehler werden im Fenster angezeigt */
+  onSave: (rating: number, notes: string) => void | Promise<void>;
   onClose: () => void;
 }
 
@@ -18,10 +19,18 @@ export default function MealRatingModal({
   const [rating, setRating] = useState(currentRating);
   const [notes, setNotes] = useState('');
   const dialogRef = useDialog(onClose);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSave = () => {
-    if (rating > 0) {
-      onSave(rating, notes);
+  const handleSave = async () => {
+    if (rating === 0 || saving) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave(rating, notes);
+    } catch (e) {
+      setError((e as Error).message || 'Die Bewertung konnte nicht gespeichert werden.');
+      setSaving(false);
     }
   };
 
@@ -110,6 +119,12 @@ export default function MealRatingModal({
           )}
         </div>
 
+        {error && (
+          <p role="alert" className="px-4 pb-3 text-xs text-center text-red-600">
+            {error}
+          </p>
+        )}
+
         {/* Actions */}
         <div className="flex gap-2 px-4 py-4 border-t border-gray-100 bg-gray-50">
           <button
@@ -120,9 +135,10 @@ export default function MealRatingModal({
           </button>
           <button
             onClick={handleSave}
-            disabled={rating === 0}
-            className="flex-1 h-11 px-4 rounded-xl text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={rating === 0 || saving}
+            className="flex-1 h-11 px-4 rounded-xl text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
+            {saving && <Loader2 size={14} className="animate-spin" />}
             Speichern
           </button>
         </div>

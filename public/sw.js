@@ -1,6 +1,6 @@
 // Service Worker: macht die App installierbar und lädt die Oberfläche schneller.
 // Daten (/api) kommen immer live vom Server und werden nie zwischengespeichert.
-const CACHE = 'speiseplaner-v3';
+const CACHE = 'speiseplaner-v4';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(['/', '/manifest.webmanifest', '/icons/icon-192.png'])));
@@ -75,12 +75,19 @@ self.addEventListener('push', (event) => {
 // Tipp auf die Benachrichtigung: offene App nach vorne holen, sonst öffnen
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = new URL(event.notification.data?.url || '/', self.location.origin).href;
+  const target = new URL(event.notification.data?.url || '/', self.location.origin);
+  const rateName = target.searchParams.get('bewerten');
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (list) => {
       const open = list.find((c) => new URL(c.url).origin === self.location.origin);
-      if (open) return open.navigate(url).then((c) => (c || open).focus()).catch(() => open.focus());
-      return self.clients.openWindow(url);
+      if (!open) return self.clients.openWindow(target.href);
+      // App ist schon offen: nach vorne holen und das Bewerten-Fenster per Nachricht öffnen (kein Neuladen)
+      await open.focus().catch(() => {});
+      if (rateName) {
+        open.postMessage({ type: 'bewerten', name: rateName });
+        return;
+      }
+      return open.navigate(target.href).catch(() => {});
     })
   );
 });

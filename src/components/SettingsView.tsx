@@ -28,6 +28,8 @@ interface SettingsViewProps {
   ) => Promise<void>;
   onDeleteRoutine: (id: string) => Promise<void>;
   onCreatePlan: (startDate: string, endDate: string) => Promise<void>;
+  /** Uhrzeit der Erinnerung geändert */
+  onReminderTimeChange?: (time: string) => void;
 }
 
 export default function SettingsView({
@@ -41,6 +43,7 @@ export default function SettingsView({
   onCreateRoutine,
   onDeleteRoutine,
   onCreatePlan,
+  onReminderTimeChange,
 }: SettingsViewProps) {
   const [showFamilyModal, setShowFamilyModal] = useState(false);
   const [editingMember, setEditingMember] = useState<FamilyMember | null>(null);
@@ -148,7 +151,7 @@ export default function SettingsView({
         <FilterSettings />
 
         {/* Push-Erinnerung zum Bewerten */}
-        <ReminderSettings />
+        <ReminderSettings onTimeChange={onReminderTimeChange} />
 
         {/* Routines Section */}
         <CollapsibleCard
