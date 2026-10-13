@@ -1,248 +1,113 @@
-# Projektübersicht — Meal-Planning-App
+# Projektübersicht – Familien-Speiseplaner
 
-Eine deutschsprachige App zur automatisierten Essensplanung für Familien mit Wochenplan, Einkaufsliste und persönlichen Einstellungen.
+Deutschsprachige App für die Essensplanung einer Familie: Speiseplan, Rezepte, Nachtische, Einkaufsliste mit
+Preisvergleich und Warenkorb bei Knuspr und Picnic. Läuft unter https://meal-plan.davidshille.workers.dev/ und lässt
+sich auf dem Handy als App installieren.
 
-**Technologie-Stack:** React + Vite + TypeScript, Tailwind CSS, Lucide React (Icons), Neon (Postgres) + Cloudflare Worker (`/api`), geschützt per Familien-Passwort
+**Technik:** React + Vite + TypeScript + Tailwind · Cloudflare Worker (API, Zeitplan, KI) · Neon Postgres.
+Entwickler-Infos stehen in `CLAUDE.md`, die Einrichtung in `SETUP_NEON_CLOUDFLARE.md`.
 
----
+**Zugang:** ein gemeinsames Familien-Passwort (Secret `APP_PASSWORD`), kein Login mit Konten.
 
-## 1. Hauptfunktionen
-
-Aussehen wie in der Juli-Version: Kopfzeile mit Logo, darunter KW-Auswahl (nur bei Plänen über mehrere Wochen) und Reiter **Speiseplan · Einkaufsliste · ♥ Favoriten · ⚙ Einstellungen**. Gerichtkarten mit Farbbalken (grün = vegetarisch, orange = Fleisch, blau = Wochenende) und Aktionen rechts (♥ Merken, ↻ Neu generieren, ✕ Ablehnen).
-
-### 1.1 Speiseplan (Tab: „speiseplan")
-
-- Wochenansicht mit Gerichten für jeden Tag; bei längeren Plänen per KW-Auswahl gefiltert (`lib/dateUtils.ts`, aus der Juli-Version); die Einkaufsliste folgt der gewählten KW (eigene Häkchen pro Woche)
-- Drei Gericht-Typen:
-  - `vegetarisch` — vegetarische Gerichte
-  - `fleisch` — Fleischgerichte
-  - `wochenende` — aufwendigere Gerichte fürs Wochenende
-- Klick auf ein Gericht öffnet ein Detail-Fenster (MealModal) mit:
-  - Zutatenliste
-  - Zubereitungsanleitung
-  - Sterne-Bewertung (1–5)
-- Pro Gericht: **Merken** (Favorit), **Ablehnen** (kommt nie wieder, Ersatz wird eingesetzt) und **Neu generieren** (nur austauschen)
-- **Komplett neuen Plan generieren** ersetzt den Plan für denselben Zeitraum
-- Bilder werden automatisch erzeugt (siehe Abschnitt 3) und lassen sich im Detail-Fenster neu generieren
-- Der zuletzt erstellte Plan wird beim Öffnen geladen; über „Plan löschen“ (mit Bestätigung) lässt er sich entfernen
-- **Portionen:** Alle Rezepte sind für 4 Portionen geschrieben. Im Detail-Fenster werden die Mengen auf die Familie umgerechnet (Erwachsene 1, Kinder bis 6 Jahre ½, 7–12 Jahre ¾, ab 13 Jahre 1 Portion) und lassen sich per +/− anpassen
-
-### 1.2 Einkaufsliste (Tab: „einkaufsliste")
-
-- Wird automatisch aus dem aktuellen Plan berechnet (`worker/shopping.ts`):
-  - Zutaten aller nicht abgelehnten Gerichte, auf die Familienportionen umgerechnet
-  - Gleiche Zutaten werden zusammengefasst (z. B. 2× Zwiebel → „6 Zwiebeln"), Stückware wird aufgerundet
-  - Fleisch landet standardmäßig beim „Metzger", alles andere bei „Knuspr"
-  - Vorrat (Salz, Pfeffer, Öl, Gewürze, Brühe …) kommt nicht auf die Liste, sondern unter „Basics & Vorrat" – gelb markiert, wenn der Plan ihn braucht
-- Ersatzgerichte (nach Ablehnung) fließen automatisch ein
-- Abhaken, Liste wechseln, eigene Listen (Aldi, Rewe, DM …) mit Farbe – antippen zum Umbenennen –, eigene Artikel („Klopapier"), Basics bei Bedarf auf eine Liste setzen
-- **Eigener Vorrat:** Kisten-Symbol an einer Zutat → „haben wir immer da", landet künftig nicht mehr auf der Liste (Tabelle `pantry_items`); unter „Basics & Vorrat" wieder entfernbar
-- **Gemerkte Zuordnungen:** Wird eine Zutat einmal auf eine andere Liste gesetzt oder mit einem Amazon-Produkt verknüpft, gilt das auch für künftige Pläne
-- „Kopieren" kopiert alle offenen Einträge einer Liste als Text
-- **Shops** (Profil → Einkaufen & Shops, Code aus der Juli-Version übernommen, `worker/shops.ts`):
-  - **Knuspr:** Konto verbinden → Zutat antippen → Produkt suchen (mit Bild/Preis) → verknüpfen; „Warenkorb“ legt alle offenen verknüpften Artikel in den echten Knuspr-Warenkorb
-  - **Picnic:** Konto verbinden (ggf. SMS-Code) → Produkte suchen und verknüpfen (kein Warenkorb)
-  - **Amazon:** nur An/Aus – Zutat antippen öffnet die Amazon-Suche (Amazon blockiert Live-Suchen aus Apps)
-  - Standard-Liste für neue Zutaten wählbar; Metzger-Automatik für Fleisch abschaltbar
-  - Zugangsdaten AES-verschlüsselt in `shop_connections` (Secret `CREDENTIALS_KEY` im Worker empfohlen)
-  - Inoffizielle Schnittstellen – können sich jederzeit ändern
-- **Persistierung:** komplett in Neon (Tabellen `shopping_labels`, `shopping_item_state`, `shopping_extras`, `ingredient_prefs`) – auf allen Geräten gleich
-
-### 1.3 Favoriten (Tab: „favoriten")
-
-- Gemerkte Gerichte mit eigenem Rezept (auch wenn es nicht in der festen Liste steht)
-- **Turnus:** kein Turnus / jede Woche / alle 2, 3 oder 4 Wochen
-  - Mit Turnus: wird bei jeder Planung fest eingeplant, sobald es wieder „dran“ ist (bevorzugt an einem passenden Tag)
-  - Ohne Turnus: bekommt bei der Planung einen Bonus
-- `favorites.last_planned` merkt sich, wann das Gericht zuletzt im Plan stand
-
-### 1.4 Einstellungen / Profil (Tab: „einstellungen")
-
-#### Gesundheitsprofil
-- Gesundheitsziel (`health_goal`):
-  - `balanced` — Ausgewogene Ernährung
-  - `weight_loss` — Gewichtsabnahme
-  - `muscle_gain` — Muskelaufbau
-  - `healthy_lifestyle` — Gesunder Lebensstil
-- Gesundheitsbedingungen (`health_conditions`, mehrere wählbar):
-  - Diabetes, glutenfrei, laktoseintolerant, Nussallergie, vegetarisch, vegan, koscher, halal
-
-#### Familienmitglieder
-- Name, Typ (Erwachsener/Kind), Alter – nachträglich bearbeitbar
-- Gemochte Speisen (`favorite_foods`) — beeinflusst die automatische Auswahl positiv
-- Unbeliebte Speisen (`disliked_foods`) — führt zu Abzug bei der Bewertung
-- Hinzufügen und Löschen möglich
-
-#### Routinen
-- Wiederkehrende automatische Plan-Erstellung – läuft per Cloudflare-Cron (alle 15 Min geprüft)
-- Wöchentlich am gewählten Wochentag bzw. monatlich am 1., sobald die Uhrzeit (deutsche Zeit) erreicht ist
-- Erzeugt einen Plan ab dem Folgetag über die eingestellte Dauer; pro Tag höchstens einmal (`last_run_at`)
-- Einstellbar:
-  - Name (z. B. „Wochenplan")
-  - Häufigkeit: wöchentlich oder monatlich
-  - Wochentag (0–6) und Uhrzeit
-  - Planungsdauer in Tagen
-- Routinen können gelöscht werden
-
-#### Plan erstellen
-- Start- und Enddatum wählen
-- Edge Function generiert einen personalisierten Plan
-- Nach Erstellung wird automatisch zum Speiseplan-Tab gewechselt
+**Aufbau:** Kopfzeile mit Logo, darunter die Bereiche **Speiseplan · Einkaufsliste · Rezepte · Favoriten · Einstellungen**
+als Segment-Leiste. Der gewählte Bereich bleibt beim Neuladen erhalten (URL-Hash, z. B. `#einkaufsliste`).
+Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus Jakarta Sans.
 
 ---
 
-## 2a. KI-Rezepte
+## 1. Speiseplan
 
-- **Modell:** Llama 3.3 70B über Cloudflare Workers AI im JSON-Modus (`worker/aiRecipes.ts`), Prompt-Idee aus der Juli-Version
-- **Rezept-Pool:** feste Liste im Code (31) + `recipes`-Tabelle (wächst mit jedem Plan) + Favoriten
-- **Bei jeder Planung:** pro benötigtem Typ mindestens 1 neues Rezept; fehlen gültige Kandidaten (z. B. vegan, glutenfrei), entsprechend mehr (max. 6, parallel erzeugt)
-- **„Neu generieren“** auf einer Gerichtkarte erzeugt ein frisches KI-Rezept für diesen Tag; „Ablehnen“ nimmt das beste vorhandene und erzeugt nur notfalls ein neues
-- **Vorgaben im Prompt:** Typ/Zeitrahmen, Küchenrichtung (für Abwechslung), Familie mit Kinderalter, Gesundheitsbedingungen, Abneigungen, Vorlieben, Ziel, keine Wiederholungen; Mengen immer für 4 Portionen im Format „Menge Einheit Zutat“
-- **Nachprüfung:** Jedes KI-Rezept läuft durch unsere Filter (Gesundheitsbedingungen, Abneigungen inkl. Oberbegriffen) – die KI hält sich nicht immer an Vorgaben
-- **Abwechslung:** Gerichte der letzten 3 Wochen bekommen einen Abzug, frische KI-Rezepte einen Bonus
-- **Kosten:** ca. 150–200 Neurons pro Rezept (Free-Plan: 10.000/Tag, geteilt mit den Bildern)
+- **Plan erstellen** für einen Zeitraum (nächster Tag, nächste Woche, nächster Monat oder frei gewählt). Bei Plänen über mehrere Wochen
+  filtert eine **KW-Auswahl** die Ansicht.
+- Tagesrhythmus: Sa/So aufwendigere **Wochenend**-Gerichte, unter der Woche abwechselnd **vegetarisch** und **Fleisch/Fisch**.
+- Gerichtkarte: Bild, Typ, Zubereitungszeit, Bewertung, ggf. Nachtisch. Aktionen:
+  - **♥ Merken** (Favorit) · **↻ Neu generieren** (nur austauschen) · **✕ Ablehnen** (kommt nie wieder) · **Kuchen** (Nachtisch dazu)
+- **Komplett neuen Plan generieren** für denselben Zeitraum; **Plan löschen** mit Bestätigung.
+- **Rezept-Ansicht:** Bild mit Quellenangabe, Zutaten mit **Portionen-Umrechnung** (Familie: Erwachsene 1, Kinder je nach Alter
+  ½ bis 1 Portion; per +/− änderbar), Zubereitung Schritt für Schritt, Bewertung.
 
-## Gesundheitsbedingungen (alle 8 aktiv)
+### Wie die Gerichte ausgewählt werden
 
-`worker/meals.ts` → `violatesHealthConditions()`: vegetarisch, vegan, glutenfrei, laktosefrei, Nussallergie, koscher, halal schließen hart aus; Diabetes gibt einen Abzug bei Zucker. Zutaten mit „…frei“ (z. B. „laktosefreier Joghurt“, „glutenfreie Nudeln“) gelten als erlaubt, Kokos-/Hafermilch zählt nicht als Milch. **Heuristik, keine zertifizierte Allergie-Absicherung.**
+- **Rezept-Pool:** feste Grundsammlung (383 Gerichte, davon 231 übersetzte TheMealDB-Rezepte mit Originalfoto)
+  + KI-Rezepte + importierte Rezepte + Favoriten.
+- **Bewertung je Gericht:** Sterne, Vorlieben und Abneigungen der Familie (mit Oberbegriffen: „Fisch“ trifft auch Lachs),
+  Gesundheitsziel, Favoriten-Bonus, Abzug für Gerichte der letzten 3 Wochen.
+- **Gesundheitsbedingungen** schließen hart aus: vegetarisch, vegan, glutenfrei, laktosefrei, Nussallergie, koscher, halal;
+  Diabetes gibt einen Abzug bei Zucker. *Heuristik auf Zutatentext, keine Allergie-Garantie.*
+- **Abwechslung:** ähnliche Gerichte (z. B. mehrere „Quinoa-Pfannen“) werden im Plan verteilt statt gehäuft.
+- **Favoriten mit Turnus** werden fest eingeplant, sobald sie wieder dran sind.
+- **KI-Rezepte** (Workers AI, Llama 3.3 70B): pro Plan einige neue Rezepte für Abwechslung bzw. wenn passende Kandidaten
+  fehlen (z. B. bei vegan). Jedes wird von unseren Filtern nachgeprüft und landet im Pool.
 
-## 2. Automatische Essensplanung (Server)
+### Bilder
 
-Die Logik liegt in `worker/meals.ts` und wird von `worker/api.ts` genutzt (Routen `POST /api/plans`, `POST /api/plan-meals/:id/reject`). Abschnitte 2.1–2.3 beschreiben die fachliche Logik (ursprünglich Supabase Edge Functions).
+Reihenfolge: Originalfoto (TheMealDB-Rezepte) → KI-Bild (FLUX.1, mit englischer Bildbeschreibung aus Name, Typ und Zutaten)
+→ Ersatzfoto aus Pexels/Pixabay/Openverse, wenn das tägliche KI-Kontingent aufgebraucht ist. Fotos aus Datenbanken
+werden nur übernommen, wenn sie wirklich zum Gericht passen, und mit Quellenangabe gezeigt. Gespeichert in Neon.
 
-### 2.1 `generate-plan`
-Erstellt für einen Zeitraum einen individuellen Speiseplan.
+## 2. Einkaufsliste
 
-**Ablauf:**
-1. Profil, Familienmitglieder, Bewertungen und abgelehnte Gerichte laden
-2. Für jeden Tag im Zeitraum ein Gericht auswählen
-3. Bewertungsscoring (`scoreMeal`) pro Gericht:
-   - Basiswert: 50 Punkte
-   - Abgelehnte Gerichte: sofort ausgeschlossen (−1)
-   - Hohe Bewertung: +10 pro Stern
-   - Familien-Favoriten: +15 pro Treffer
-   - Unbeliebte Speisen: −30 pro Treffer
-   - Kinderfreundlichkeit: Bonus für einfache Fleischgerichte bei kleinen Kindern
-   - Vegetarisch/Vegan-Bedingungen: Gerichte mit Fleisch oder Fisch werden ausgeschlossen
-   - Glutenfrei: Gerichte mit glutenhaltigen Zutaten (Nudeln, Brot, Mehl, Teig, Sojasoße …) werden ausgeschlossen
-   - Abneigungen verstehen Oberbegriffe (z. B. „Fisch“ trifft Lachs, „Pilze“ trifft Champignons)
-   - Gewichtsabnahme: Bonus für vegetarische Gerichte, Abzug für Sahne/Butter/Käse
-   - Muskelaufbau: Bonus für Fleischgerichte und proteinreiche Zutaten
-4. Tagesabhängige Typ-Auswahl:
-   - Samstag/Sonntag → `wochenende`
-   - Gerade Wochentage → `fleisch`
-   - Ungerade Wochentage → `vegetarisch`
-5. Vermeidung von Wiederholungen innerhalb eines Plans
-6. Plan und Gerichte in der Datenbank speichern
+- Entsteht automatisch aus dem Plan: Zutaten auf die Familienportionen umgerechnet und zusammengefasst
+  („6 Zwiebeln“, „2 Dosen Kokosmilch“), Stückware aufgerundet.
+- **„Einkauf für“:** eigene Wochenauswahl („Diese Woche“, „Nächste Woche“ …), mehrere Wochen kombinierbar; Häkchen je Woche.
+- **Listen:** Lieferdienst (Knuspr/Picnic), Metzger (Fleisch automatisch, abschaltbar), eigene Listen (Aldi, DM …).
+  Zuordnungen pro Zutat werden für künftige Pläne gemerkt. Listen sind auf- und zuklappbar.
+- **Basics & Vorrat:** Salz, Gewürze, Öl usw. kommen nicht auf die Liste; gelb markiert, wenn der Plan sie braucht.
+  Eigener Vorrat per Kisten-Symbol („haben wir immer da“). Eigene Artikel per Eingabefeld.
+- **Lieferdienst-Liste:** pro Artikel ein Preis-Knopf je Shop, der günstigere ist markiert; Antippen ordnet den Artikel zu.
+- **Produkt-Dialog:** sucht gleichzeitig bei Knuspr und Picnic, zeigt Packung, Preis und **Grundpreis** (€/kg, €/l, €/Stk.)
+  und wie viele Packungen nötig sind.
+- **Preisvergleich der ganzen Liste** mit Empfehlung unter Berücksichtigung von **Mindestbestellwert** und **Liefergebühr**;
+  Artikel lassen sich gesammelt zum günstigeren Shop verschieben.
+- **Warenkorb-Leiste** unten: aktueller Warenkorbwert je Shop und Fortschritt zum Mindestbestellwert.
+- **Warenkorb bei Knuspr und Picnic:** Artikel mit Menge übertragen, im Warenkorb Mengen ändern, entfernen, leeren;
+  Artikel, die schon im Warenkorb liegen, sind markiert.
 
-**Gerichtedatenbank:** 31 fest hinterlegte Rezepte (inkl. 9 KI-Rezepte aus dem Backup) mit Zutaten und Zubereitungsanleitung.
+## 3. Rezepte
 
-### 2.2 `replace-meal`
-Lehnt ein Gericht ab und ersetzt es automatisch.
+- **Hauptgerichte:** Kachel-Übersicht aller planbaren Gerichte (nur die, die zum Profil passen), Suche und Filter
+  (Typ, eigene Filter). Gericht einem Tag im Plan zuordnen; Gerichte ausblenden.
+- **Nachtische:** 124 übersetzte Desserts mit Fotos (Kuchen & Torten, Gebäck, Cremes & Pudding …), mit fester Menge;
+  im Speiseplan per Kuchen-Knopf an ein Gericht hängen (erst Rezept ansehen, dann hinzufügen).
 
-**Ablauf:**
-1. Kontext laden (Profil, Familie, Bewertungen, Ablehnungen, Plan-Gerichte)
-2. Das abgelehnte Gericht als `rejected = true` markieren
-3. Gericht in `rejected_meals` eintragen (zukünftiger Ausschluss)
-4. Neue Bewertung mit angepasstem Scoring durchführen (vermeidet Dubletten im selben Plan)
-5. Ersatzgericht in die Datenbank einfügen und zurückgeben
+## 4. Favoriten
 
-### 2.3 Bilder
-Siehe Abschnitt 3.
+- Gemerkte Gerichte mit eigenem Rezept, **Turnus** (kein / 1–4 Wochen) und „zuletzt geplant“.
+- **Rezept aus dem Web importieren:** Link einfügen (Chefkoch & Co., schema.org-Rezeptdaten) → Vorschau prüfen → speichern.
+  Mengen werden auf 4 Portionen umgerechnet, der Typ geschätzt.
 
----
+## 5. Einstellungen
 
-## 3. Bildgenerierung
+Auf- und zuklappbare Karten:
+- **Gesundheit & Ernährung:** Ziel und Einschränkungen.
+- **Familienmitglieder:** Name, Erwachsener/Kind mit Alter, mag/mag nicht – anlegen, bearbeiten, löschen (mit Bestätigung).
+- **Routinen:** wöchentlich oder monatlich automatisch einen neuen Plan erstellen (Cron alle 15 Minuten, deutsche Zeit).
+- **Einkaufslisten verwalten:** eigene Listen anlegen, umbenennen, umfärben, löschen.
+- **Eigene Rezept-Filter:** Name, Suchbegriffe und/oder maximale Zubereitungszeit, für Gerichte, Nachtische oder beide.
+- **Einkaufen & Shops:** Standard-Liste, Metzger-Automatik, Knuspr und Picnic verbinden (Picnic ggf. mit SMS-Code),
+  Mindestbestellwert und Liefergebühr je Shop. Zugangsdaten werden verschlüsselt gespeichert.
 
-- **Modell:** FLUX.1 schnell über **Cloudflare Workers AI** (Binding `AI` in `wrangler.jsonc`, `worker/images.ts`)
-- **Kosten:** Im Cloudflare-Free-Plan sind 10.000 Neurons/Tag enthalten; ein Bild braucht grob 60 → ca. 150 Bilder/Tag. Ist das Kontingent aufgebraucht, wird es beim nächsten Lauf erneut versucht.
-- **Automatisch:** Nach „Plan erstellen“ und nach dem Ersetzen eines Gerichts im Hintergrund; zusätzlich füllt der 15-Minuten-Cron fehlende Bilder auf (max. 5 pro Lauf)
-- **Ein Bild pro Gericht:** gespeichert in Neon (`meal_images.image_data`, JPEG), ausgeliefert über `/api/images/<Gericht>` (ohne Passwort, mit langem Browser-Cache)
-- **Manuell:** Im Rezept „Bild generieren“ bzw. „Neues Bild“
-- Die App lädt die Plan-Ansicht nach dem Erstellen einige Male nach, bis alle Bilder da sind
+## 6. Technik im Überblick
 
----
+| Bereich | Wo |
+|---|---|
+| API, Planung, Einkaufsliste, Shops, Cron | `worker/api.ts` |
+| Rezepte, Auswahl, Filter | `worker/meals.ts`, `worker/recipes/` |
+| KI-Rezepte / Import / Bilder | `worker/aiRecipes.ts`, `worker/recipeImport.ts`, `worker/images.ts` |
+| Einkaufsliste berechnen | `worker/shopping.ts` |
+| Knuspr/Picnic | `worker/shops.ts` |
+| Frontend-Zustand / Serveraufrufe | `src/App.tsx`, `src/lib/api.ts` |
+| Nachtische | `src/data/desserts.ts` |
+| Datenbank-Schema | `neon/schema.sql` (der Worker migriert selbst, siehe `CLAUDE.md`) |
+| App installierbar | `public/manifest.webmanifest`, `public/sw.js` |
 
-## 4. Datenbank (Neon)
+## 7. Bekannte Grenzen
 
-Schema: `neon/schema.sql`. Ein gemeinsames Familienprofil, kein RLS – Zugriff nur über die API mit Familien-Passwort.
-
-### Tabellenübersicht
-
-| Tabelle | Zweck | Schlüsselfelder |
-|---|---|---|
-| `profiles` | Gesundheitsprofil pro Nutzer | `user_id`, `health_goal`, `health_conditions` |
-| `family_members` | Familienmitglieder mit Vorlieben | `profile_id`, `name`, `type`, `age`, `favorite_foods`, `disliked_foods` |
-| `meal_ratings` | Bewertungen pro Gericht (1–5) | `profile_id`, `meal_name`, `rating`, `notes` |
-| `meal_plans` | Generierte Speisepläne | `profile_id`, `start_date`, `end_date`, `status` |
-| `plan_meals` | Einzelne Gerichte in einem Plan | `plan_id`, `meal_date`, `meal_name`, `meal_type`, `ingredients`, `instructions`, `rejected`, `image_url` |
-| `routines` | Automatische Plan-Erstellungen | `profile_id`, `name`, `frequency`, `day_of_week`, `time`, `duration_days` |
-| `rejected_meals` | Abgelehnte Gerichte (Ausschlussliste) | `profile_id`, `meal_name`, `reason` |
-| `meal_images` | Bild-Cache pro Gericht | `meal_name`, `image_url` |
-
-Setup-Anleitung: `SETUP_NEON_CLOUDFLARE.md`.
-
----
-
-## 5. Zugang
-
-- Kein Nutzer-Login, ein gemeinsames Familienprofil
-- Familien-Passwort (`APP_PASSWORD` im Worker) wird beim ersten Öffnen abgefragt und im Browser gespeichert
-- Jede API-Anfrage schickt es im Header `X-App-Password` mit
-
----
-
-## 6. Projektstruktur
-
-```
-src/
-├── App.tsx                      # Hauptkomponente, State-Management, Tab-Steuerung
-├── main.tsx                     # Einstiegspunkt
-├── index.css                    # Globale Styles
-├── types/
-│   └── index.ts                 # Alle TypeScript-Typen & Konstanten
-├── lib/
-│   ├── api.ts                   # API-Aufrufe an /api (Cloudflare → Neon)
-│   └── amazon.ts                # Amazon-Suche & Warenkorb-URL-Builder
-└── components/
-    ├── Header.tsx               # Kopfzeile
-    ├── TabSwitcher.tsx          # Tab-Navigation
-    ├── MealPlanView.tsx         # Speiseplan-Ansicht
-    ├── DayCard.tsx              # Tageskarte im Speiseplan
-    ├── MealModal.tsx            # Gericht-Detailfenster
-    ├── MealRatingModal.tsx      # Bewertungs-Fenster
-    ├── ShoppingListView.tsx     # Einkaufslisten-Ansicht
-    ├── ShoppingSection.tsx      # Einkaufslisten-Bereich pro Label
-    ├── AmazonPreviewModal.tsx   # Amazon-Suchvorschau
-    ├── SettingsView.tsx         # Einstellungs-Ansicht
-    ├── PreferencesModal.tsx     # Gesundheitsprofil-Bearbeitung
-    ├── FamilyMemberModal.tsx    # Familienmitglied hinzufügen
-    ├── RoutineModal.tsx         # Routine anlegen
-    └── PlanCreationModal.tsx    # Plan erstellen
-
-worker/
-├── index.ts                     # Einstieg: /api → API, sonst statische App
-├── meals.ts                     # Rezeptdatenbank + Scoring
-├── shopping.ts                  # Einkaufsliste aus Plan berechnen
-├── images.ts                    # Rezeptbilder (Workers AI → Neon)
-└── api.ts                       # Komplette API (Profil, Familie, Pläne, Bilder …)
-
-neon/schema.sql                  # Datenbank-Schema
-wrangler.jsonc                   # Cloudflare-Konfiguration
-```
-
----
-
-## 7. Bekannte Lücken & Hinweise
-
-- **Gerichtedatenbank** ist fest in den Edge Functions hinterlegt (~23 Rezepte), nicht in der Datenbank — Änderungen erfordern Code-Anpassungen.
-- **Routinen** können angelegt, aber nicht bearbeitet werden (kein Edit, nur Löschen).
-
----
-
-## 8. Potentielle Erweiterungen
-
-- Gerichtedatenbank in eine eigene Tabelle auslagern
-- Eigene Gerichte hinzufügen können
-- Nährwertberechnung pro Gericht und Tag
-- Einkaufsliste teilen (z. B. als Link oder mit anderen Haushaltsmitgliedern)
+- **Knuspr und Picnic** nutzen inoffizielle Schnittstellen und können jederzeit ausfallen. Läuft die Picnic-Sitzung ab,
+  muss neu verbunden werden (ggf. mit SMS-Code).
+- **Workers-AI-Kontingent** (Free: 10.000 Neurons/Tag) teilen sich KI-Rezepte und Bilder. Ist es aufgebraucht, kommen Bilder
+  aus Fotodatenbanken und es entstehen bis zum nächsten Tag keine neuen KI-Rezepte.
+- **Amazon** ist bewusst nicht angebunden (keine Suche/Warenkorb aus Apps möglich).
+- **Gesundheitsfilter** sind eine Heuristik, keine zertifizierte Allergie-Absicherung.
+- Routinen lassen sich nur anlegen und löschen, nicht bearbeiten.
+- Keine automatischen Tests (in Arbeit).
