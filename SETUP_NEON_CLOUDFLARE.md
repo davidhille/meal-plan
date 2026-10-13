@@ -1,9 +1,9 @@
 # Setup: Neon + Cloudflare Workers
 
 ## 1. Datenbank (Neon) – einmalig
-Neon Console → Projekt „Meal Plan" → **SQL Editor**:
-1. `neon/schema.sql` einfügen → **Run**
-2. `neon/import_backup.sql` einfügen → **Run** (Profil + „Papa" aus dem Supabase-Backup)
+Die Tabellen legt der Worker beim ersten Aufruf selbst an (Migrationen in `worker/migrations/`).
+Optional danach in Neon Console → Projekt „Meal Plan" → **SQL Editor**:
+`neon/import_backup.sql` einfügen → **Run** (Profil + „Papa" aus dem Supabase-Backup)
 
 ## 2. Cloudflare Worker anlegen
 Workers & Pages → Create → Import a repository → `davidhille/meal-plan`
