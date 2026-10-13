@@ -4,6 +4,7 @@
 //   APP_PASSWORD  – Familien-Passwort für die App (Secret, optional; leer = kein Schutz)
 
 import { neon } from "@neondatabase/serverless";
+import type { Sql } from "./db";
 import { pickMeal, pickReplacement, preferredTypeFor, scoreMeal, violatesHealthConditions, MEAL_DATABASE, type Recipe, type ScoringContext } from "./meals";
 import { buildPlanItems, familyPortions, mergeKey } from "./shopping";
 import { generateImage, fillMissingImages, serveImage, IMAGE_URL_SQL, IMAGE_CREDIT_SQL, type AiEnv } from "./images";
@@ -21,7 +22,6 @@ export interface Env extends AiEnv, ShopEnv {
   CREDENTIALS_KEY?: string;
 }
 
-type Sql = ReturnType<typeof neon>;
 
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });

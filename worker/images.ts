@@ -1,10 +1,9 @@
 // Rezeptbilder: zuerst Cloudflare Workers AI (FLUX.1 schnell); ist das Tageskontingent aufgebraucht
 // oder klappt die KI nicht, ein passendes Foto aus einer freien Bilddatenbank
 // (Pexels/Pixabay mit Schlüssel, Openverse ohne Schlüssel). Speicherung in Neon.
-import type { neon } from "@neondatabase/serverless";
+import type { Sql } from "./db";
 import { MEAL_DATABASE } from "./meals";
 
-type Sql = ReturnType<typeof neon>;
 
 export interface AiEnv {
   AI?: { run(model: string, input: Record<string, unknown>): Promise<unknown> };

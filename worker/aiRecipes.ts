@@ -1,11 +1,10 @@
 // KI-Rezepte über Cloudflare Workers AI (Llama 3.3 70B, JSON-Modus).
 // Prompt-Idee übernommen aus der Juli-Version (lib/aiRecipes.ts), aber serverseitig und
 // mit Nachprüfung durch unsere eigenen Filter – die KI hält sich nicht immer an Vorgaben.
-import type { neon } from "@neondatabase/serverless";
+import type { Sql } from "./db";
 import type { AiEnv } from "./images";
 import { type Recipe, violatesHealthConditions, dislikeMatches, isSimilarDish } from "./meals";
 
-type Sql = ReturnType<typeof neon>;
 
 const MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 

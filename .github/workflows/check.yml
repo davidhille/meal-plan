@@ -60,7 +60,7 @@ jobs:
                 echo "<details open><summary><code>$f</code></summary>"
                 echo ""
                 echo '```'
-                grep -E "error|✖|warning" "$f" | head -150
+                grep -E "^/|error|✖" "$f" | sed "s#$GITHUB_WORKSPACE/##" | head -200
                 echo '```'
                 echo "</details>"
               fi
