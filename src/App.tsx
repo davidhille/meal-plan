@@ -14,6 +14,8 @@ import {
   deleteRoutine,
   createMealPlan,
   getPlanMeals,
+  movePlanMeal,
+  removePlanMeal,
   getLatestPlan,
   deletePlan,
   regenerateMeal,
@@ -274,6 +276,18 @@ export default function App() {
     }
   };
 
+  const handleMoveMeal = async (pm: PlanMeal, date: string) => {
+    const result = await movePlanMeal(pm.id, date);
+    // Plan verlängert (z. B. auf nächste Woche verschoben) → neue Grenzen übernehmen
+    if (result.plan) setCurrentPlan(result.plan);
+    if (currentPlan) setPlanMeals(await getPlanMeals(currentPlan.id));
+  };
+
+  const handleRemoveMeal = async (pm: PlanMeal) => {
+    await removePlanMeal(pm.id);
+    setPlanMeals((prev) => prev.filter((m) => m.id !== pm.id));
+  };
+
   const handleSetDessert = async (pm: PlanMeal, dessert: Dessert | null) => {
     const saved = await setMealDessert(pm.id, dessert ? toPlanDessert(dessert) : null);
     setPlanMeals((prev) => prev.map((m) => (m.id === pm.id ? { ...m, dessert: saved } : m)));
@@ -366,6 +380,8 @@ export default function App() {
             allPlanMeals={currentPlan ? planMeals : undefined}
             reminderTime={profile?.reminder_time}
             dayRules={profile?.day_rules}
+            onMove={currentPlan ? handleMoveMeal : undefined}
+            onRemove={currentPlan ? handleRemoveMeal : undefined}
             visibleRange={selectedWeek ? { from: selectedWeek.weekStart, to: selectedWeek.weekEnd } : undefined}
           />
         ) : activeTab === 'einkaufsliste' ? (
