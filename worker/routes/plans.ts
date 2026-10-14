@@ -14,7 +14,7 @@ function parseDessert(raw: unknown) {
     .map((i) => String(i).trim().slice(0, 200))
     .filter(Boolean)
     .slice(0, 40);
-  const imageUrl = typeof d.imageUrl === "string" && /^https:\/\/www\.themealdb\.com\//.test(d.imageUrl) ? d.imageUrl : null;
+  const imageUrl = typeof d.imageUrl === "string" && /^(https:\/\/www\.themealdb\.com\/|\/api\/images\/)/.test(d.imageUrl) ? d.imageUrl : null;
   const yieldText = String(d.yield ?? "").trim().slice(0, 100);
   const instructions = String(d.instructions ?? "").trim().slice(0, 5000);
   const durationMin = Number(d.durationMin) > 0 ? Math.round(Number(d.durationMin)) : null;

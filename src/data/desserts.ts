@@ -1,8 +1,9 @@
 // Nachtische aus TheMealDB (www.themealdb.com), ins Deutsche übersetzt.
 // Automatisch erzeugt – Mengen beziehen sich auf die angegebene Menge (yield), ein Schritt pro Zeile.
 import type { Dessert } from '../types';
+import { FAMILY_DESSERTS } from './dessertsFamily';
 
-export const DESSERTS: Dessert[] = [
+const MEALDB_DESSERTS: Dessert[] = [
   {
     name: "Alfajores – Doppelkekse mit Dulce de Leche",
     category: "gebaeck",
@@ -1120,3 +1121,6 @@ export const DESSERTS: Dessert[] = [
     imageUrl: "https://www.themealdb.com/images/media/meals/e756bf1761848342.jpg",
   },
 ];
+
+/** Alle Nachtische: TheMealDB (mit Foto) + eigene Alltags-Nachtische, alphabetisch */
+export const DESSERTS: Dessert[] = [...MEALDB_DESSERTS, ...FAMILY_DESSERTS].sort((a, b) => a.name.localeCompare(b.name, 'de'));

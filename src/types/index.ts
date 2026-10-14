@@ -54,7 +54,7 @@ export interface RecipeCatalog {
   healthConditions?: string[];
 }
 
-export type DessertCategory = 'kuchen' | 'gebaeck' | 'creme' | 'pfanne' | 'obst';
+export type DessertCategory = 'kuchen' | 'gebaeck' | 'creme' | 'pfanne' | 'obst' | 'eis';
 
 /** Nachtisch aus der festen Sammlung (src/data/desserts.ts) */
 export interface Dessert {
@@ -65,7 +65,8 @@ export interface Dessert {
   durationMin: number;
   ingredients: string[];
   instructions: string;
-  imageUrl: string;
+  /** Foto aus TheMealDB; fehlt es, gibt es ein generiertes Bild unter /api/images/<Name> (siehe lib/desserts.ts) */
+  imageUrl?: string;
 }
 
 export type FamilyMemberType = 'adult' | 'child';

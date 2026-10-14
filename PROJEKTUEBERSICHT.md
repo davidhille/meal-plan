@@ -88,7 +88,9 @@ werden nur übernommen, wenn sie wirklich zum Gericht passen, und mit Quellenang
 - **Rezept-Ansicht in der Übersicht:** Bild erzeugen bzw. neues Bild, **Gericht bearbeiten** (Stift: Name, Art, Zeit,
   Zutaten, Zubereitung; gilt auch für kommende Plan-Tage und den Favoriten; Gerichte der Sammlung lassen sich auf das
   Original zurücksetzen) und **eigene Filter zuordnen** (Filter-Knöpfe unter dem Bild).
-- **Nachtische:** 124 übersetzte Desserts mit Fotos (Kuchen & Torten, Gebäck, Cremes & Pudding …), mit fester Menge;
+- **Nachtische:** 161 Rezepte – 124 übersetzte Desserts aus TheMealDB mit Fotos und 37 Alltags-Nachtische (Cremes &
+  Pudding, Obst, warme Süßspeisen, neue Kategorie „Eis & Kaltes“). Deren Bilder entstehen im Hintergrund (2 pro Cron-Lauf)
+  oder per „Bild generieren“ im Rezept. Mit fester Menge;
   im Speiseplan per Kuchen-Knopf an ein Gericht hängen (erst Rezept ansehen, dann hinzufügen).
 - **Nachtische löschen:** in der Sammlung über den Papierkorb an der Kachel (mit Rückfrage); „Gelöschte Nachtische“ unten
   holt sie zurück. Im Speiseplan nimmt das ✕ in der Nachtisch-Zeile (oder „Nachtisch von diesem Tag entfernen“ im Rezept)

@@ -3,12 +3,12 @@ import { CakeSlice, ChevronDown, Clock, Loader2, RotateCcw, Search, Trash2, X } 
 import { Dessert, DessertCategory, Meal, PlanMeal, RecipeFilter } from '../types';
 import { matchesRecipeFilter } from '../lib/recipeFilters';
 import CustomFilterChips from './CustomFilterChips';
-import { DESSERT_CREDIT as CREDIT, dessertPreview as preview } from '../lib/desserts';
+import { dessertCredit, dessertImage, dessertPreview as preview } from '../lib/desserts';
 import MealModal from './MealModal';
 import RecipeFilterAssign from './RecipeFilterAssign';
 import DayAssignSheet from './DayAssignSheet';
 import ConfirmDialog from './ConfirmDialog';
-import { getOrCreateProfile, setDessertHidden } from '../lib/api';
+import { generateMealImage, getOrCreateProfile, setDessertHidden } from '../lib/api';
 
 interface DessertsViewProps {
   /** Gerichte des Plans – der Nachtisch lässt sich an einen Tag hängen */
@@ -29,6 +29,7 @@ const CATEGORIES: { id: DessertCategory | 'alle'; label: string }[] = [
   { id: 'creme', label: 'Cremes & Pudding' },
   { id: 'pfanne', label: 'Pfannkuchen & Co.' },
   { id: 'obst', label: 'Mit Obst' },
+  { id: 'eis', label: 'Eis & Kaltes' },
 ];
 
 const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.label])) as Record<DessertCategory, string>;
@@ -43,7 +44,7 @@ function formatDuration(min: number) {
   return `${Math.floor(h)}${h % 1 ? '½' : ''} Std`;
 }
 
-function toMeal(d: Dessert): Meal {
+function toMeal(d: Dessert, generated?: string): Meal {
   return {
     day: CATEGORY_LABEL[d.category],
     dayShort: '',
@@ -52,8 +53,8 @@ function toMeal(d: Dessert): Meal {
     type: 'vegetarisch',
     ingredients: d.ingredients,
     instructions: d.instructions,
-    imageUrl: d.imageUrl,
-    imageCredit: CREDIT,
+    imageUrl: generated ?? dessertImage(d),
+    imageCredit: dessertCredit(d.imageUrl),
     durationMin: d.durationMin,
   };
 }
@@ -67,6 +68,8 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
   const [selected, setSelected] = useState<Dessert | null>(null);
   const [assign, setAssign] = useState<Dessert | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Eigene Nachtische ohne Foto: frisch erzeugte Bilder sofort zeigen (Name → Bild-URL)
+  const [generated, setGenerated] = useState<Record<string, string>>({});
   // Ausgeblendete Nachtische (pro Familie gespeichert)
   const [hidden, setHidden] = useState<string[]>([]);
   const [hideCandidate, setHideCandidate] = useState<Dessert | null>(null);
@@ -188,12 +191,13 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
                   <div className="relative aspect-[4/3] bg-gray-100">
                     <CakeSlice size={28} aria-hidden="true" className="absolute inset-0 m-auto text-gray-300" />
                     <img
-                      src={preview(d.imageUrl)}
+                      src={generated[d.name] ?? preview(dessertImage(d))}
                       alt=""
                       loading="lazy"
                       onError={(e) => {
                         const img = e.currentTarget;
-                        if (img.src !== d.imageUrl) img.src = d.imageUrl;
+                        // TheMealDB: erst Vorschau, dann Original; eigenes Bild noch nicht da → Symbol zeigen
+                        if (d.imageUrl && !img.src.endsWith(d.imageUrl)) img.src = d.imageUrl;
                         else img.style.visibility = 'hidden';
                       }}
                       className="relative w-full h-full object-cover"
@@ -274,8 +278,18 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
 
       {selected && (
         <MealModal
-          meal={toMeal(selected)}
+          key={selected.name}
+          meal={toMeal(selected, generated[selected.name])}
           yieldLabel={selected.yield}
+          onGenerateImage={
+            selected.imageUrl
+              ? undefined
+              : async (name) => {
+                  const image = await generateMealImage(name, true);
+                  setGenerated((g) => ({ ...g, [name]: image.url }));
+                  return image;
+                }
+          }
           onChoose={onPick ? () => onPick(selected) : onAssign ? async () => setAssign(selected) : undefined}
           chooseLabel={onPick ? 'Zum Gericht hinzufügen' : 'An einen Tag hängen'}
           extra={

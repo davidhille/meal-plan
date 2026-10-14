@@ -234,7 +234,7 @@ export default function MainDishesView({
                         loading="lazy"
                         onError={(e) => {
                           const img = e.currentTarget;
-                          if (r.imageUrl && img.src !== r.imageUrl) img.src = r.imageUrl;
+                          if (r.imageUrl && !img.src.endsWith(r.imageUrl)) img.src = r.imageUrl;
                           else img.style.visibility = 'hidden';
                         }}
                         className="relative w-full h-full object-cover"

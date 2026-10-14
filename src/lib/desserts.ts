@@ -3,8 +3,16 @@ import { Meal, PlanDessert, Dessert } from '../types';
 /** Quellenangabe für die Nachtisch-Fotos */
 export const DESSERT_CREDIT = { name: 'TheMealDB', url: 'https://www.themealdb.com/' };
 
-/** Kleinere Vorschau von TheMealDB (bei Fehlern auf das Originalbild zurückfallen) */
-export const dessertPreview = (url: string) => `${url}/small`;
+const isMealDb = (url: string | null | undefined) => !!url && url.startsWith('https://www.themealdb.com/');
+
+/** Kleinere Vorschau von TheMealDB (bei Fehlern auf das Originalbild zurückfallen); eigene Bilder bleiben, wie sie sind */
+export const dessertPreview = (url: string) => (isMealDb(url) ? `${url}/small` : url);
+
+/** Bild eines Nachtischs: TheMealDB-Foto oder das (evtl. noch nicht erzeugte) eigene Bild */
+export const dessertImage = (d: Pick<Dessert, 'name' | 'imageUrl'>) => d.imageUrl ?? `/api/images/${encodeURIComponent(d.name)}`;
+
+/** Quellenangabe nur bei Fotos von TheMealDB */
+export const dessertCredit = (url: string | null | undefined) => (isMealDb(url) ? DESSERT_CREDIT : null);
 
 /** Nachtisch zum Speichern am Gericht */
 export function toPlanDessert(d: Dessert): PlanDessert {
@@ -13,7 +21,7 @@ export function toPlanDessert(d: Dessert): PlanDessert {
     ingredients: d.ingredients,
     instructions: d.instructions,
     durationMin: d.durationMin,
-    imageUrl: d.imageUrl,
+    imageUrl: dessertImage(d),
     yield: d.yield,
   };
 }
@@ -29,7 +37,7 @@ export function planDessertToMeal(d: PlanDessert): Meal {
     ingredients: d.ingredients,
     instructions: d.instructions,
     imageUrl: d.imageUrl ?? undefined,
-    imageCredit: d.imageUrl ? DESSERT_CREDIT : null,
+    imageCredit: dessertCredit(d.imageUrl),
     durationMin: d.durationMin,
   };
 }

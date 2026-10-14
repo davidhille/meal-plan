@@ -168,6 +168,7 @@ export default function MealModal({
             <img
               src={imageUrl}
               alt={meal.meal}
+              onError={() => setImageUrl(undefined)}
               className="w-full h-full object-cover"
             />
           ) : (

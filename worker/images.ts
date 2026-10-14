@@ -3,6 +3,7 @@
 // (Pexels/Pixabay mit Schlüssel, Openverse ohne Schlüssel). Speicherung in Neon.
 import type { Sql } from "./db";
 import { MEAL_DATABASE } from "./meals";
+import { FAMILY_DESSERTS } from "../src/data/dessertsFamily";
 
 
 export interface AiEnv {
@@ -74,13 +75,14 @@ async function describeDish(env: AiEnv, mealName: string, type?: string, ingredi
 }
 
 function prompt(mealName: string, description: string | null, type?: string, ingredients?: string[]) {
-  const veg = type === "vegetarisch" ? "Vegetarian, no meat, no fish. " : "";
+  const veg = type === "vegetarisch" || type === "nachtisch" ? "Vegetarian, no meat, no fish. " : "";
+  const what = type === "nachtisch" ? "a homemade dessert" : "a homemade family dinner";
   const subject = description
     ? description
     : `"${mealName}"${ingredients?.length ? ` made with ${mainIngredients(ingredients)}` : ""}`;
   return (
-    `Realistic food photograph of a homemade family dinner: ${subject} ${veg}` +
-    `Served on a simple ceramic plate on a wooden kitchen table, soft natural daylight, 45-degree angle, ` +
+    `Realistic food photograph of ${what}: ${subject} ${veg}` +
+    `Served on a simple ceramic plate or in a glass bowl on a wooden kitchen table, soft natural daylight, 45-degree angle, ` +
     `close-up, shallow depth of field, appetizing, true-to-life colors, no text, no people, no hands`
   );
 }
@@ -95,7 +97,10 @@ async function dishInfo(sql: Sql, mealName: string): Promise<{ type?: string; in
   const r = rows[0] as { type?: string; ingredients?: string[] } | undefined;
   if (r) return r;
   const builtIn = MEAL_DATABASE.find((m) => m.name === mealName);
-  return builtIn ? { type: builtIn.type, ingredients: builtIn.ingredients } : {};
+  if (builtIn) return { type: builtIn.type, ingredients: builtIn.ingredients };
+  // Eigene Nachtische (Frontend-Sammlung ohne Foto)
+  const dessert = FAMILY_DESSERTS.find((d) => d.name === mealName);
+  return dessert ? { type: "nachtisch", ingredients: dessert.ingredients } : {};
 }
 
 export type PhotoSource = "pexels" | "pixabay" | "openverse";
@@ -345,9 +350,19 @@ export async function fillMissingImages(env: AiEnv, sql: Sql, limit = 5, planId?
     const res = await generateImage(env, sql, r.meal_name);
     if ("error" in res) return; // auch kein Foto → beim nächsten Lauf weiter
   }
+  let left = limit - rows.length;
+  if (left <= 0 || planId) return;
+  // Eigene Nachtische ohne Foto: pro Lauf höchstens zwei Bilder (schont das Tageskontingent)
+  const dessertNames = FAMILY_DESSERTS.map((d) => d.name);
+  const done = await sql`SELECT meal_name FROM meal_images WHERE meal_name = ANY(${dessertNames}) AND image_data IS NOT NULL`;
+  const doneSet = new Set(done.map((r) => r.meal_name as string));
+  for (const name of dessertNames.filter((n) => !doneSet.has(n)).slice(0, Math.min(2, left))) {
+    const res = await generateImage(env, sql, name);
+    left--;
+    if ("error" in res) return;
+  }
   // Ist die KI wieder verfügbar, Ersatzfotos aus aktiven Plänen nach und nach durch KI-Bilder ersetzen
-  const left = limit - rows.length;
-  if (left <= 0 || planId || !aiAvailable(env)) return;
+  if (left <= 0 || !aiAvailable(env)) return;
   const fallbacks = await sql`SELECT DISTINCT mi.meal_name FROM meal_images mi
     JOIN plan_meals pm ON pm.meal_name = mi.meal_name AND NOT pm.rejected
     JOIN meal_plans mp ON mp.id = pm.plan_id AND mp.status = 'active'
