@@ -8,6 +8,7 @@ import {
   deleteFamilyMember,
   updateFamilyMember,
   getMealRatings,
+  getRatingNotes,
   addMealRating,
   getRoutines,
   createRoutine,
@@ -44,6 +45,8 @@ import MealPlanView from './components/MealPlanView';
 import ShoppingListView from './components/ShoppingListView';
 import SettingsView from './components/SettingsView';
 import MealRatingModal from './components/MealRatingModal';
+import { RatingsContext } from './lib/ratings';
+import { RatingNote } from './types';
 import ReplacePlanDialog from './components/ReplacePlanDialog';
 
 const VIEW_TABS: ViewTab[] = ['speiseplan', 'einkaufsliste', 'rezepte', 'favoriten', 'einstellungen'];
@@ -95,6 +98,7 @@ export default function App() {
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [mealRatings, setMealRatings] = useState<Record<string, number>>({});
+  const [ratingNotes, setRatingNotes] = useState<Record<string, RatingNote>>({});
   const [currentPlan, setCurrentPlan] = useState<MealPlan | null>(null);
   const [planMeals, setPlanMeals] = useState<PlanMeal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,8 +139,9 @@ export default function App() {
       setProfile(prof);
       const members = await getFamilyMembers(prof.id);
       setFamilyMembers(members);
-      const ratings = await getMealRatings(prof.id);
+      const [ratings, notes] = await Promise.all([getMealRatings(prof.id), getRatingNotes()]);
       setMealRatings(ratings);
+      setRatingNotes(notes);
       const routinesList = await getRoutines(prof.id);
       setRoutines(routinesList);
       const latest = await getLatestPlan();
@@ -203,6 +208,12 @@ export default function App() {
     const result = await addMealRating(profile.id, mealName, rating, notes);
     if (!result) throw new Error('Die Bewertung konnte nicht gespeichert werden.');
     setMealRatings((prev) => ({ ...prev, [mealName]: rating }));
+    setRatingNotes((prev) => {
+      const next = { ...prev };
+      if (notes.trim()) next[mealName] = { notes: notes.trim(), updatedAt: new Date().toISOString() };
+      else delete next[mealName];
+      return next;
+    });
   };
 
   const handleCreateRoutine = async (
@@ -368,6 +379,7 @@ export default function App() {
   const showWeeks = planWeeks.length > 1 && activeTab === 'speiseplan';
 
   return (
+    <RatingsContext.Provider value={{ ratings: mealRatings, notes: ratingNotes, rate: handleRateMeal }}>
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Sticky top bar */}
       <div className="sticky top-0 z-10 flex flex-col">
@@ -459,6 +471,7 @@ export default function App() {
         <MealRatingModal
           mealName={rateRequest}
           currentRating={mealRatings[rateRequest]}
+          currentNotes={ratingNotes[rateRequest]?.notes ?? ''}
           onSave={async (rating, notes) => {
             await handleRateMeal(rateRequest, rating, notes);
             setRateRequest(null);
@@ -482,5 +495,6 @@ export default function App() {
         />
       )}
     </div>
+    </RatingsContext.Provider>
   );
 }

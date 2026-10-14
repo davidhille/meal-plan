@@ -198,6 +198,12 @@ export interface DayRule {
 }
 export type DayRules = Partial<Record<string, DayRule>>;
 
+/** Kommentar zu einer Bewertung */
+export interface RatingNote {
+  notes: string;
+  updatedAt?: string;
+}
+
 export interface MealRating {
   id: string;
   profile_id: string;

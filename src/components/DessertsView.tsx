@@ -268,6 +268,7 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
           key={selected.name}
           meal={toMeal(selected, generated[selected.name])}
           yieldLabel={selected.yield}
+          allowRating={false}
           onGenerateImage={
             selected.imageUrl
               ? undefined

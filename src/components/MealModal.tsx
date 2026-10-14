@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useDialog } from '../lib/useDialog';
-import { X, Clock, ShoppingBasket, BookOpen, Star, ImageIcon, Loader2, Minus, Plus, Users, ListPlus, Pencil, ChefHat } from 'lucide-react';
+import { X, Clock, ShoppingBasket, BookOpen, Star, ImageIcon, Loader2, Minus, Plus, Users, ListPlus, Pencil, ChefHat, MessageSquare } from 'lucide-react';
+import { formatRatingDate, useRatings } from '../lib/ratings';
 import { ImageCredit, Meal } from '../types';
 import MealRatingModal from './MealRatingModal';
 import CookingMode from './CookingMode';
@@ -9,8 +10,12 @@ import { RECIPE_BASE_PORTIONS, scaleIngredient, formatPortions } from '../lib/po
 
 interface MealModalProps {
   meal: Meal;
+  /** Sterne (ohne Angabe: aus den Bewertungen der Familie) */
   currentRating?: number;
+  /** Bewerten (ohne Angabe: über die Bewertungen der Familie) */
   onRate?: (rating: number, notes: string) => Promise<void>;
+  /** false bei Nachtischen: keine Bewertung anzeigen oder speichern */
+  allowRating?: boolean;
   onGenerateImage?: (mealName: string) => Promise<{ url: string; credit: ImageCredit | null }>;
   /** Portionen der Familie (Standard für die Mengenanzeige) */
   defaultPortions?: number;
@@ -37,8 +42,9 @@ type ModalTab = 'zutaten' | 'zubereitung';
 
 export default function MealModal({
   meal,
-  currentRating = 0,
-  onRate,
+  currentRating: ratingProp,
+  onRate: onRateProp,
+  allowRating = true,
   onGenerateImage,
   defaultPortions = RECIPE_BASE_PORTIONS,
   yieldLabel,
@@ -60,6 +66,13 @@ export default function MealModal({
   const dialogRef = useDialog(onClose);
   const [activeTab, setActiveTab] = useState<ModalTab>('zutaten');
   const [showRating, setShowRating] = useState(false);
+  // Bewertung und Kommentar der Familie (aus App.tsx über den Kontext)
+  const family = useRatings();
+  const currentRating = allowRating ? ratingProp ?? family.ratings[meal.meal] ?? 0 : 0;
+  const note = allowRating ? family.notes[meal.meal] : undefined;
+  const familyRate = family.rate;
+  const onRate =
+    onRateProp ?? (allowRating && familyRate ? (rating: number, notes: string) => familyRate(meal.meal, rating, notes) : undefined);
   const [cooking, setCooking] = useState(startCooking && steps.length > 0);
   const [generating, setGenerating] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
@@ -231,6 +244,38 @@ export default function MealModal({
           <p role="alert" className="mx-4 mt-3 text-xs text-red-600">
             {imageError}
           </p>
+        )}
+
+        {(currentRating > 0 || note) && (
+          <section aria-label="Eure Bewertung" className="mx-4 mt-4 px-3 py-2.5 rounded-xl bg-amber-50/70 border border-amber-100">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-amber-900">Eure Bewertung</span>
+              {currentRating > 0 && (
+                <span className="flex items-center gap-0.5" role="img" aria-label={`${currentRating} von 5 Sternen`}>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star key={n} size={13} className={n <= currentRating ? 'fill-yellow-400 text-yellow-500' : 'text-amber-200'} />
+                  ))}
+                </span>
+              )}
+              {formatRatingDate(note?.updatedAt) && (
+                <span className="ml-auto text-[11px] text-amber-800/80">{formatRatingDate(note?.updatedAt)}</span>
+              )}
+              {onRate && (
+                <button
+                  onClick={() => setShowRating(true)}
+                  className={`${formatRatingDate(note?.updatedAt) ? '' : 'ml-auto '}text-xs font-semibold text-brand-700 hover:underline`}
+                >
+                  Ändern
+                </button>
+              )}
+            </div>
+            {note && (
+              <p className="mt-1.5 flex gap-1.5 text-sm text-gray-800">
+                <MessageSquare size={14} className="flex-shrink-0 mt-0.5 text-amber-700" aria-hidden="true" />
+                <span className="whitespace-pre-line">{note.notes}</span>
+              </p>
+            )}
+          </section>
         )}
 
         {extra && <div className="mx-4 mt-4">{extra}</div>}
@@ -429,6 +474,7 @@ export default function MealModal({
         <MealRatingModal
           mealName={meal.meal}
           currentRating={currentRating}
+          currentNotes={note?.notes ?? ''}
           onSave={async (rating, notes) => {
             await onRate(rating, notes);
             setShowRating(false);

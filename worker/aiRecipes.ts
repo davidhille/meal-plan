@@ -14,6 +14,8 @@ export interface RecipeRequestContext {
   healthFocus: string[];
   healthConditions: string[];
   familyMembers: { type: string; age: number | null; favorite_foods: string[] | null; disliked_foods: string[] | null }[];
+  /** Kommentare zu früheren Gerichten, z. B. „„Chili con Carne“ (2 von 5 Sternen): zu scharf für die Kinder“ */
+  feedback?: string[];
 }
 
 const TYPE_LABEL: Record<Recipe["type"], string> = {
@@ -94,6 +96,11 @@ function buildPrompt(type: Recipe["type"] | null, cuisine: string, ctx: RecipeRe
     likes.length ? `Beliebt in der Familie (gern einbauen, wenn passend): ${likes.join(", ")}.` : "",
     ctx.healthFocus?.length
       ? `Schwerpunkte: ${ctx.healthFocus.map((f) => FOCUS_PROMPT[f as Focus]).filter(Boolean).join("; ")}.`
+      : "",
+    ctx.feedback?.length
+      ? `Rückmeldungen der Familie zu früheren Gerichten – daraus lernen (z. B. Schärfe, Zutaten, Konsistenz, Aufwand), die Gerichte selbst nicht wiederholen:\n- ${ctx.feedback
+          .slice(0, 12)
+          .join("\n- ")}`
       : "",
     avoid.length ? `Nicht wiederholen (gibt es schon): ${avoid.slice(0, 60).join(", ")}.` : "",
     `Mengen für GENAU 4 Portionen. Jede Zutat als eigener Eintrag im Format "Menge Einheit Zutat", z. B. "400 g Spaghetti", "2 EL Olivenöl", "1 Zwiebel". Gewürze ohne Menge sind ok ("Salz", "Pfeffer").`,

@@ -8,6 +8,7 @@ import tagesRegeln from "./0005_tages_regeln";
 import neuGenerierenVerlauf from "./0006_neu_generieren_verlauf";
 import nachtischeAusblenden from "./0007_nachtische_ausblenden";
 import nachtischeLoeschen from "./0008_nachtische_loeschen";
+import bewertungDatum from "./0009_bewertung_datum";
 
 export interface Migration {
   /** Eindeutig und aufsteigend, z. B. "0002_kochmodus" */
@@ -25,4 +26,5 @@ export const MIGRATIONS: Migration[] = [
   { id: "0006_neu_generieren_verlauf", statements: neuGenerierenVerlauf },
   { id: "0007_nachtische_ausblenden", statements: nachtischeAusblenden },
   { id: "0008_nachtische_loeschen", statements: nachtischeLoeschen },
+  { id: "0009_bewertung_datum", statements: bewertungDatum },
 ];

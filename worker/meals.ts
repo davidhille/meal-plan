@@ -221,6 +221,8 @@ export interface ScoringContext {
   meatMaxPerWeek?: number | null;
   /** Monat 1–12 für „saisonal“ */
   month?: number;
+  /** Kommentare der Familie zu bewerteten Gerichten (für KI-Rezepte) */
+  feedback?: string[];
   /** Regeln pro Wochentag (frei / höchstens X Minuten), siehe dayRules.ts */
   dayRules?: DayRules;
   /** Gerichte, die schon im Plan sind (nur beim Ersetzen: −20) */

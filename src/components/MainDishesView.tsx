@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChefHat, Clock, Loader2, Search, EyeOff, X, ShieldAlert, Sparkles } from 'lucide-react';
+import { ChefHat, Clock, Loader2, Search, EyeOff, X, ShieldAlert, Sparkles, MessageSquare, Star } from 'lucide-react';
+import { useRatings } from '../lib/ratings';
 import { CatalogRecipe, Meal, MealType, PlanMeal, RecipeCatalog, RecipeFilter } from '../types';
 import { matchesRecipeFilter } from '../lib/recipeFilters';
 import { CONDITION_LABELS, swapExample } from '../lib/health';
@@ -66,6 +67,7 @@ export default function MainDishesView({
   onRecipesChanged,
 }: MainDishesViewProps) {
   const [catalog, setCatalog] = useState<RecipeCatalog | null>(null);
+  const { ratings, notes } = useRatings();
   const [loadError, setLoadError] = useState<string | null>(null);
   const [filter, setFilter] = useState<MealType | 'alle'>('alle');
   const [customId, setCustomId] = useState<string | null>(null);
@@ -247,6 +249,13 @@ export default function MainDishesView({
                           {r.durationMin} Min
                         </span>
                       ) : null}
+                      {ratings[r.name] ? (
+                        <span className="flex items-center gap-0.5 whitespace-nowrap text-amber-700" aria-label={`${ratings[r.name]} von 5 Sternen`}>
+                          <Star size={11} className="fill-yellow-400 text-yellow-500" aria-hidden="true" />
+                          {ratings[r.name]}
+                        </span>
+                      ) : null}
+                      {notes[r.name] && <MessageSquare size={12} className="text-amber-700" aria-label="mit Kommentar" />}
                     </p>
                     {r.unsuitable && (
                       <p className="flex items-center gap-1 mt-1 text-[11px] font-medium text-amber-800">

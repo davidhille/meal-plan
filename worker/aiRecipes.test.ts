@@ -78,3 +78,17 @@ describe("generateWishRecipe", () => {
     expect(r).toEqual({ error: expect.stringMatching(/Kontingent/), quota: true });
   });
 });
+
+describe("Rückmeldungen im Prompt", () => {
+  test("Kommentare zu Bewertungen gehen an die KI", async () => {
+    const { env, prompts } = fakeAi(recipe("Mildes Kürbis-Curry", ["500 g Kürbis", "400 ml Kokosmilch", "1 Zwiebel"]));
+    await generateWishRecipe(env, "Curry", null, ctx({ feedback: ["„Chili con Carne“ (2 von 5 Sternen): zu scharf für die Kinder"] }), []);
+    expect(prompts[0]).toContain("Rückmeldungen der Familie");
+    expect(prompts[0]).toContain("zu scharf für die Kinder");
+  });
+  test("ohne Kommentare kein Abschnitt", async () => {
+    const { env, prompts } = fakeAi(recipe("Kürbissuppe", ["1 Kürbis", "1 Zwiebel", "1 l Brühe"]));
+    await generateWishRecipe(env, "Suppe", null, ctx(), []);
+    expect(prompts[0]).not.toContain("Rückmeldungen");
+  });
+});
