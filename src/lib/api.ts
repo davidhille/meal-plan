@@ -388,6 +388,11 @@ export async function generateMealImage(
   return { url: r.imageUrl, credit };
 }
 
+/** Unpassendes Bild entfernen: das Gericht hat dann kein Bild, dieses Foto kommt nicht wieder */
+export async function removeMealImage(mealName: string): Promise<void> {
+  await request('POST', '/meal-images/remove', { mealName });
+}
+
 // ---------- Einkaufsliste ----------
 
 export interface ShoppingData {
