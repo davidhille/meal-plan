@@ -90,7 +90,9 @@ werden nur übernommen, wenn sie wirklich zum Gericht passen, und mit Quellenang
   Original zurücksetzen) und **eigene Filter zuordnen** (Filter-Knöpfe unter dem Bild).
 - **Nachtische:** 124 übersetzte Desserts mit Fotos (Kuchen & Torten, Gebäck, Cremes & Pudding …), mit fester Menge;
   im Speiseplan per Kuchen-Knopf an ein Gericht hängen (erst Rezept ansehen, dann hinzufügen).
-
+- **Nachtische löschen:** in der Sammlung über den Papierkorb an der Kachel (mit Rückfrage); „Gelöschte Nachtische“ unten
+  holt sie zurück. Im Speiseplan nimmt das ✕ in der Nachtisch-Zeile (oder „Nachtisch von diesem Tag entfernen“ im Rezept)
+  den Nachtisch vom Tag.
 ## 4. Favoriten
 
 - Gemerkte Gerichte mit eigenem Rezept, **Turnus** (kein / 1–4 Wochen) und „zuletzt geplant“.

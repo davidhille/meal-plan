@@ -183,6 +183,8 @@ export interface Profile {
   updated_at: string;
   /** Uhrzeit der Erinnerung zum Bewerten, z. B. „20:00“ */
   reminder_time?: string;
+  /** In der Nachtisch-Sammlung ausgeblendet */
+  hidden_desserts?: string[];
   /** Regeln pro Wochentag (Schlüssel 0–6, 0 = Sonntag): frei oder höchstens X Minuten */
   day_rules?: DayRules;
 }

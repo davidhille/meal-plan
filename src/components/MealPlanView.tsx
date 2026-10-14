@@ -12,6 +12,7 @@ import DayCard from './DayCard';
 import MealModal from './MealModal';
 import { exportPlan } from '../lib/planExport';
 import ReplacePlanDialog from './ReplacePlanDialog';
+import ConfirmDialog from './ConfirmDialog';
 
 interface MealPlanViewProps {
   onCreatePlan: () => void;
@@ -98,7 +99,8 @@ export default function MealPlanView({
   const [cookOnOpen, setCookOnOpen] = useState(false);
   const [moving, setMoving] = useState<PlanMeal | null>(null);
   const [pickDessertFor, setPickDessertFor] = useState<PlanMeal | null>(null);
-  const [openDessert, setOpenDessert] = useState<PlanDessert | null>(null);
+  const [openDessert, setOpenDessert] = useState<{ pm: PlanMeal; dessert: PlanDessert } | null>(null);
+  const [removeDessertFor, setRemoveDessertFor] = useState<PlanMeal | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmRegenerate, setConfirmRegenerate] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -248,7 +250,8 @@ export default function MealPlanView({
               isFavorite={favoriteNames?.has(pm.meal_name)}
               dessert={pm.dessert}
               onPickDessert={onSetDessert ? () => setPickDessertFor(pm) : undefined}
-              onOpenDessert={() => pm.dessert && setOpenDessert(pm.dessert)}
+              onOpenDessert={() => pm.dessert && setOpenDessert({ pm, dessert: pm.dessert })}
+              onRemoveDessert={onSetDessert && pm.dessert ? () => setRemoveDessertFor(pm) : undefined}
             />
           );
         })}
@@ -326,7 +329,41 @@ export default function MealPlanView({
       )}
 
       {openDessert && (
-        <MealModal meal={planDessertToMeal(openDessert)} yieldLabel={openDessert.yield} onClose={() => setOpenDessert(null)} />
+        <MealModal
+          meal={planDessertToMeal(openDessert.dessert)}
+          yieldLabel={openDessert.dessert.yield}
+          extra={
+            onSetDessert ? (
+              <button
+                onClick={() => setRemoveDessertFor(openDessert.pm)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-red-600 hover:text-red-700"
+              >
+                <Trash2 size={13} />
+                Nachtisch von diesem Tag entfernen
+              </button>
+            ) : undefined
+          }
+          onClose={() => setOpenDessert(null)}
+        />
+      )}
+
+      {removeDessertFor && onSetDessert && (
+        <ConfirmDialog
+          title="Nachtisch entfernen?"
+          message={
+            <>
+              <strong>{removeDessertFor.dessert?.name}</strong> kommt vom {planMealToMeal(removeDessertFor).day} weg, die Zutaten
+              verschwinden von der Einkaufsliste.
+            </>
+          }
+          confirmLabel="Entfernen"
+          danger
+          onConfirm={async () => {
+            await onSetDessert(removeDessertFor, null);
+            setOpenDessert(null);
+          }}
+          onClose={() => setRemoveDessertFor(null)}
+        />
       )}
 
       {selectedMeal && (
