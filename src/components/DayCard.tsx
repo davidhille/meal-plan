@@ -128,7 +128,8 @@ export default function DayCard({
               loading="lazy"
               onError={(e) => {
                 const img = e.currentTarget;
-                if (img.src !== dessert.imageUrl) img.src = dessert.imageUrl!;
+                // Vorschau → Original; schlägt auch das fehl (z. B. eigenes Bild noch nicht erzeugt), ausblenden
+                if (!img.src.endsWith(dessert.imageUrl!)) img.src = dessert.imageUrl!;
                 else img.style.visibility = 'hidden';
               }}
               className="flex-shrink-0 w-8 h-8 rounded-md object-cover bg-amber-50"

@@ -67,7 +67,7 @@ Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHu
 - `lib/api.ts`: **alle** Serveraufrufe. Komponenten rufen nie selbst `fetch` auf.
 - Jede Ansicht/jedes Fenster ist eine eigene Komponente (`…View`, `…Modal`, `…Sheet`).
 - Fenster nutzen `useDialog` (Escape schließt das oberste, Fokus, Scroll-Sperre); Bestätigungen über `ConfirmDialog`, nie `alert()`/`confirm()`.
-- Nachtische sind reine Frontend-Daten (`data/desserts.ts`, eigener Chunk); am Gericht gespeichert in `plan_meals.dessert` (jsonb).
+- Nachtische sind reine Frontend-Daten (`data/desserts.ts` = TheMealDB mit Foto + `data/dessertsFamily.ts` = eigene ohne Foto, eigener Chunk); am Gericht gespeichert in `plan_meals.dessert` (jsonb). Eigene Nachtische haben ihr Bild unter `/api/images/<Name>` (`lib/desserts.ts` → `dessertImage`); der Cron erzeugt fehlende nach und nach.
 - Preisvergleich/Grundpreis: `lib/unitPrice.ts`. Portionen: `lib/portions.ts`.
 - Eigene Rezept-Filter: `lib/recipeFilters.ts` – Regeln (Suchbegriffe/Zeit) plus Hand-Zuordnung (`includeNames`/`excludeNames`).
 - `localStorage` nur für Komfort (Passwort, auf-/zugeklappt, gewählte Einkaufswochen), immer in `try/catch`.
