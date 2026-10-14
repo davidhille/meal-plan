@@ -244,7 +244,7 @@ export async function recipeCatalog(sql: Sql, profileId: string) {
   const [{ pool, favorites }, ctx, images, dbRecipes] = await Promise.all([
     loadPool(sql, profileId),
     loadContext(sql, profileId),
-    sql`SELECT meal_name, image_url, source, credit_name, credit_url FROM meal_images WHERE image_data IS NOT NULL`,
+    sql`SELECT meal_name, image_url, source, credit_name, credit_url FROM meal_images WHERE image_data IS NOT NULL OR source = 'removed'`,
     sql`SELECT name, source, replaces FROM recipes`,
   ]);
   const imageBy = new Map(images.map((r) => [r.meal_name as string, r]));
@@ -275,9 +275,10 @@ export async function recipeCatalog(sql: Sql, profileId: string) {
         ingredients: r.ingredients,
         instructions: r.instructions,
         durationMin: r.durationMin ?? null,
-        imageUrl: (img?.image_url as string | undefined) ?? r.imageUrl ?? null,
+        // Entferntes Bild (source = 'removed'): auch kein Originalfoto der Sammlung mehr
+        imageUrl: img ? (img.source === "removed" ? null : (img.image_url as string)) : r.imageUrl ?? null,
         imageCredit: img
-          ? img.source !== "ai" && img.credit_name ? { name: img.credit_name, url: img.credit_url } : null
+          ? img.source !== "ai" && img.source !== "removed" && img.credit_name ? { name: img.credit_name, url: img.credit_url } : null
           : r.imageUrl ? { name: "TheMealDB", url: "https://www.themealdb.com/" } : null,
         origin: origin(r.name),
         /** Gericht der Grundsammlung, das bearbeitet wurde (lässt sich zurücksetzen) */

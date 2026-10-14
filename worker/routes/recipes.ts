@@ -1,7 +1,7 @@
 // Rezept-Übersicht, Import, eigene Rezepte, Favoriten, Rezept-Filter, Bilder
 import type { Ctx } from "../http";
 import { json } from "../http";
-import { generateImage } from "../images";
+import { generateImage, removeImage } from "../images";
 import { importRecipeFromUrl, ImportError } from "../recipeImport";
 import { PLAN_MEAL_COLS, getProfile, loadContext, loadFavorites, loadPool } from "../repo";
 import { cleanWish, generateWishRecipe } from "../aiRecipes";
@@ -239,6 +239,13 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
     if ("error" in res) return json({ error: res.error, quota: !!res.quota }, res.quota ? 429 : 502);
     const credit = await sql`SELECT source, credit_name, credit_url FROM meal_images WHERE meal_name = ${name}`;
     return json({ imageUrl: res.url, source: res.source, creditName: credit[0]?.credit_name, creditUrl: credit[0]?.credit_url });
+  }
+  // Bild entfernen, weil es nicht passt (kommt nicht wieder; später ggf. KI-Bild)
+  if (route === "POST /meal-images/remove") {
+    const name = String(body.mealName ?? "").trim();
+    if (!name) return json({ error: "mealName fehlt" }, 400);
+    await removeImage(sql, name);
+    return json({ ok: true });
   }
 
   return null;

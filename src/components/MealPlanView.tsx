@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Trash2, CalendarPlus, RefreshCw, Loader2, Download } from 'lucide-react';
 import { DayRules, Dessert, ImageCredit, Meal, MealPlan, MealType, PlanDessert, PlanMeal } from '../types';
-import { generateMealImage } from '../lib/api';
+import { generateMealImage, removeMealImage } from '../lib/api';
 import { planDessertToMeal } from '../lib/desserts';
 import DessertPickerModal from './DessertPickerModal';
 import { formatShortDate, toIso } from '../lib/dateUtils';
@@ -386,6 +386,11 @@ export default function MealPlanView({
             setImageOverrides((prev) => ({ ...prev, [mealName]: image }));
             setSelectedMeal((prev) => (prev ? { ...prev, imageUrl: image.url, imageCredit: image.credit } : prev));
             return image;
+          }}
+          onRemoveImage={async (mealName) => {
+            await removeMealImage(mealName);
+            setImageOverrides((prev) => ({ ...prev, [mealName]: { url: '', credit: null } }));
+            setSelectedMeal((prev) => (prev ? { ...prev, imageUrl: undefined, imageCredit: null } : prev));
           }}
           onClose={() => setSelectedMeal(null)}
         />

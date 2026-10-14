@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import type { Env } from "./http";
 import { ensureSchema } from "./migrate";
-import { fillMissingImages } from "./images";
+import { fillMissingImages, recheckStockPhotos } from "./images";
 import { addDaysIso, createPlan } from "./planning";
 import { sendRatingReminders } from "./push";
 
@@ -57,6 +57,7 @@ export async function runRoutines(env: Env) {
   // Erinnerung zum Bewerten (Fehler hier sollen die Bilder nicht aufhalten)
   await sendRatingReminders(env, sql, now).catch((e) => console.error("Bewertungs-Erinnerung fehlgeschlagen:", e));
 
-  // Fehlende Rezeptbilder nachziehen
+  // Einmalig: unpassende Ersatzfotos verwerfen (werden dann neu gesucht), danach fehlende Rezeptbilder nachziehen
+  await recheckStockPhotos(sql).catch((e) => console.error("Foto-Nachprüfung fehlgeschlagen:", e));
   await fillMissingImages(env, sql, 5);
 }

@@ -178,6 +178,95 @@ export function photoMatches(mealName: string, photoText: string): boolean {
     .some((t) => t === head || (t.length >= 4 && head.endsWith(t)) || t.endsWith(head));
 }
 
+/** Schlagworte lesbar machen (Pixabay-Links enthalten sie URL-kodiert: „k%C3%BCrbissuppe“) */
+function readable(text: string): string {
+  try {
+    return decodeURIComponent(text).toLowerCase();
+  } catch {
+    return text.toLowerCase();
+  }
+}
+
+/**
+ * Auffällige Zutaten/Gerichte (deutsch und englisch). Zeigt ein Foto eines davon, das Rezept enthält es aber nicht,
+ * passt das Foto nicht: Pommes beim Kartoffelsalat, Brokkoli oder Tofu in der Hähnchenpfanne, Kürbis in der Cheeseburger-Suppe.
+ */
+const CONFLICTS: string[][] = [
+  ["pommes", "fries", "frites"],
+  ["brokkoli", "broccoli"],
+  ["tofu"],
+  ["kürbis", "pumpkin", "squash"],
+  ["lachs", "salmon"],
+  ["garnele", "shrimp", "prawn", "scampi"],
+  ["pizza"],
+  ["sushi"],
+  ["burger"],
+  ["spaghetti", "nudel", "pasta", "noodle", "penne", "linguine", "fusilli", "tagliatelle", "makkaroni", "maccheroni", "rigatoni", "farfalle", "lasagne", "spätzle"],
+  ["reis", "rice", "risotto"],
+  ["hähnchen", "chicken", "huhn", "hühn", "geflügel", "pute", "truthahn", "turkey"],
+  ["rind", "beef", "steak"],
+  ["schwein", "pork", "speck", "bacon", "schinken"],
+  ["fisch", "fish", "thunfisch", "tuna", "kabeljau", "seelachs"],
+  ["frühstück", "breakfast", "müsli", "granola", "porridge"],
+  ["kuchen", "cake", "torte", "dessert", "cupcake", "muffin", "cookie", "keks"],
+  ["avocado", "guacamole"],
+  ["erdbeer", "strawberr", "himbeer", "raspberr", "heidelbeer", "blueberr", "brombeer", "blackberr", "granatapfel", "pomegranate"],
+];
+
+/** Text, gegen den Fotos geprüft werden: Name und Zutaten (Nachtische dürfen „Dessert“, „Kuchen“ … zeigen) */
+export function recipeText(mealName: string, ingredients: string[] = [], type?: string): string {
+  return `${mealName} ${ingredients.join(" ")}${type === "nachtisch" ? " dessert kuchen" : ""}`;
+}
+
+/** Erste Gruppe aus CONFLICTS, die das Foto zeigt, das Rezept aber nicht hat (sonst null) */
+export function photoConflict(recipeText: string, photoText: string): string | null {
+  const recipe = recipeText.toLowerCase();
+  const photo = readable(photoText);
+  for (const group of CONFLICTS) {
+    const shown = group.find((t) => photo.includes(t));
+    if (shown && !group.some((t) => recipe.includes(t))) return shown.trim();
+  }
+  return null;
+}
+
+/** Allgemeine Gerichtsformen – das Foto muss dann auch den eigentlichen Inhalt zeigen („Falafel“, nicht nur „Teller“) */
+const GENERIC_HEADS = new Set(
+  ["teller", "pfanne", "suppe", "salat", "bowl", "auflauf", "eintopf", "gratin", "curry", "platte", "spieß", "wrap", "gemüse", "pfännchen", "topf", "toast", "brot", "mahlzeit", "gericht"].map(stem)
+);
+const FILLER_WORDS = new Set(
+  ["cremige", "cremiger", "cremiges", "herzhafte", "herzhafter", "schnelle", "schneller", "einfache", "einfacher", "bunte", "bunter", "leichte", "leichter", "würzige", "würziger", "klassische", "klassischer", "omas", "frische", "frischer", "knusprige", "knuspriger", "gebratene", "gebratener", "überbackene", "überbackener"].map(stem)
+);
+
+/** Wörter des Hauptgerichts (ohne Beilagen und Füllwörter): „Cremige Hähnchen-Gemüse-Pfanne mit Reis“ → hähnch, gemüs, pfann */
+function mainWords(mealName: string): string[] {
+  return mainDish(mealName)
+    .split(/[^a-zäöüß]+/i)
+    .filter((w) => w.length >= 4)
+    .map(stem)
+    .filter((w) => !FILLER_WORDS.has(w));
+}
+
+/**
+ * Wie gut passt ein Foto zum Rezept? -1 = passt nicht, sonst Anzahl Treffer (mehr = besser).
+ * Bedingungen: das Gericht selbst ist zu sehen (photoMatches), bei allgemeinen Formen („Suppe“, „Teller“, „Pfanne“)
+ * auch das Besondere daran, und nichts Auffälliges, was gar nicht im Rezept ist.
+ */
+export function photoFit(mealName: string, ingredients: string[], photoText: string, type?: string): number {
+  const text = readable(photoText);
+  if (!photoMatches(mealName, text)) return -1;
+  if (photoConflict(recipeText(mealName, ingredients, type), text)) return -1;
+  const tokens = text.split(/[^a-zäöüß]+/).filter((w) => w.length >= 4).map(stem);
+  const has = (w: string) => tokens.some((t) => t === w || t.endsWith(w) || (t.length >= 4 && w.endsWith(t)) || t.startsWith(w));
+  const words = mainWords(mealName);
+  const head = dishHead(mealName);
+  const specific = words.filter((w) => w !== head && !GENERIC_HEADS.has(w));
+  if (GENERIC_HEADS.has(head) && specific.length && !specific.some(has)) return -1;
+  // Pluspunkte: Wörter aus dem ganzen Namen (auch Beilagen) und Hauptzutaten
+  const nameWords = mealName.split(/[^a-zäöüß]+/i).filter((w) => w.length >= 4).map(stem);
+  const ingWords = mainIngredients(ingredients).split(/[^a-zäöüß]+/i).filter((w) => w.length >= 4).map(stem);
+  return [...new Set([...nameWords, ...ingWords])].filter(has).length;
+}
+
 interface PhotoHit {
   imageUrl: string;
   /** Schlagworte und Titel, um die Passung zu prüfen */
@@ -242,7 +331,8 @@ const PROVIDERS: { id: PhotoSource; enabled: (env: AiEnv) => boolean; search: (e
  * Originalfoto aus der Rezeptsammlung (TheMealDB) laden. Nicht, wenn das Gericht es schon hat –
  * dann soll „Neues Bild“ wirklich ein anderes liefern.
  */
-async function libraryPhoto(sql: Sql, mealName: string) {
+async function libraryPhoto(sql: Sql, mealName: string, rejected: Set<string>) {
+  if (rejected.has("mealdb")) return null;
   // Bearbeitete Gerichte der Sammlung behalten ihr Originalfoto
   const edited = await sql`SELECT replaces FROM recipes WHERE name = ${mealName} AND replaces IS NOT NULL`;
   const original = (edited[0]?.replaces as string | undefined) ?? mealName;
@@ -267,13 +357,23 @@ async function libraryPhoto(sql: Sql, mealName: string) {
   }
 }
 
-/** Passendes Foto suchen (Anbieter der Reihe nach, nur Treffer, die wirklich zum Gericht passen) und laden */
-async function stockPhoto(env: AiEnv, mealName: string) {
+/**
+ * Passendes Foto suchen und laden: Anbieter der Reihe nach, je Anbieter das am besten passende (photoFit).
+ * `exclude` = Links von Fotos, die nicht (wieder) kommen sollen (aktuelles Foto, entfernte Fotos).
+ */
+async function stockPhoto(env: AiEnv, mealName: string, info: { type?: string; ingredients?: string[] }, exclude: Set<string>) {
   for (const provider of PROVIDERS.filter((p) => p.enabled(env))) {
     try {
+      const scored: { hit: PhotoHit; score: number }[] = [];
       for (const q of photoQueries(mealName)) {
-        const hit = (await provider.search(env, q)).find((h) => photoMatches(mealName, h.text));
-        if (!hit) continue;
+        for (const hit of await provider.search(env, q)) {
+          if (exclude.has(hit.creditUrl) || scored.some((s) => s.hit.creditUrl === hit.creditUrl)) continue;
+          const score = photoFit(mealName, info.ingredients ?? [], hit.text, info.type);
+          if (score >= 0) scored.push({ hit, score });
+        }
+      }
+      scored.sort((a, b) => b.score - a.score);
+      for (const { hit } of scored.slice(0, 3)) {
         const img = await fetch(hit.imageUrl, { headers: UA });
         const type = img.headers.get("content-type") || "";
         if (!img.ok || !type.startsWith("image/")) continue;
@@ -311,14 +411,33 @@ async function storeImage(
   return url;
 }
 
+/** Gespeicherter Stand: Herkunft, Link des aktuellen Fotos und entfernte Fotos */
+async function imageState(sql: Sql, mealName: string) {
+  const rows = await sql`SELECT source, credit_url, rejected_photos, image_data IS NOT NULL AS has_image
+    FROM meal_images WHERE meal_name = ${mealName}`;
+  const r = rows[0] as { source?: string; credit_url?: string; rejected_photos?: string[] | string; has_image?: boolean } | undefined;
+  const rejected = new Set(parseTextArray(r?.rejected_photos));
+  const exclude = new Set(rejected);
+  if (r?.has_image && r.credit_url) exclude.add(r.credit_url);
+  return { rejected, exclude };
+}
+
+/** text[] kommt von Neon als Array, lokal teils als „{a,b}“ */
+function parseTextArray(value: string[] | string | null | undefined): string[] {
+  if (Array.isArray(value)) return value;
+  if (!value) return [];
+  return value.replace(/^\{|\}$/g, "").split(",").map((v) => v.replace(/^"|"$/g, "")).filter(Boolean);
+}
+
 /**
  * Bild erzeugen und speichern: Originalfoto aus der Rezeptsammlung, sonst KI,
- * sonst ein Foto aus einer freien Bilddatenbank.
- * aiOnly = nur KI (zum späteren Ersetzen der Ersatzfotos).
+ * sonst ein Foto aus einer freien Bilddatenbank (nie das aktuelle oder ein entferntes).
+ * aiOnly = nur KI (zum späteren Ersetzen der Ersatzfotos und entfernter Bilder).
  */
 export async function generateImage(env: AiEnv, sql: Sql, mealName: string, aiOnly = false): Promise<ImageResult> {
+  const { rejected, exclude } = await imageState(sql, mealName);
   if (!aiOnly) {
-    const original = await libraryPhoto(sql, mealName);
+    const original = await libraryPhoto(sql, mealName, rejected);
     if (original) return { url: await storeImage(sql, mealName, original), source: "mealdb" };
   }
   let aiError: { error: string; quota?: boolean } = { error: "Die Bild-KI ist nicht eingerichtet." };
@@ -331,9 +450,52 @@ export async function generateImage(env: AiEnv, sql: Sql, mealName: string, aiOn
   }
   if (aiOnly) return aiError;
 
-  const photo = await stockPhoto(env, mealName);
+  const info = await dishInfo(sql, mealName);
+  const photo = await stockPhoto(env, mealName, info, exclude);
   if (photo) return { url: await storeImage(sql, mealName, photo), source: photo.source };
   return { ...aiError, error: `${aiError.error} Ein passendes Ersatzfoto gab es auch nicht.` };
+}
+
+/**
+ * Bild entfernen, weil es nicht passt: Gericht hat dann kein Bild (source = 'removed'). Das Foto kommt nicht wieder;
+ * der Cron ersetzt es nur durch ein KI-Bild, sobald die KI wieder kann.
+ */
+export async function removeImage(sql: Sql, mealName: string): Promise<void> {
+  const rows = await sql`SELECT source, credit_url, image_data IS NOT NULL AS has_image FROM meal_images WHERE meal_name = ${mealName}`;
+  const r = rows[0] as { source?: string; credit_url?: string; has_image?: boolean } | undefined;
+  // Ohne gespeichertes Bild zeigt die Übersicht das Originalfoto der Sammlung – das ist dann gemeint
+  const key =
+    r?.source === "removed" || r?.source === "ai" ? null
+    : !r?.has_image || r.source === "mealdb" ? "mealdb"
+    : r.credit_url ?? null;
+  const add = key ? [key] : [];
+  await sql`INSERT INTO meal_images (meal_name, image_url, image_data, source, credit_name, credit_url, rejected_photos, updated_at)
+    VALUES (${mealName}, '', NULL, 'removed', NULL, NULL, ${add}, now())
+    ON CONFLICT (meal_name) DO UPDATE SET image_url = '', image_data = NULL, content_type = NULL, source = 'removed',
+      credit_name = NULL, credit_url = NULL, updated_at = now(),
+      rejected_photos = (SELECT array_agg(DISTINCT x) FROM unnest(COALESCE(meal_images.rejected_photos, '{}') || EXCLUDED.rejected_photos) AS x)`;
+}
+
+/**
+ * Einmalig: vorhandene Ersatzfotos mit den strengeren Regeln nachprüfen. Pixabay-Links enthalten die Schlagworte
+ * („cordon-bleu-pommes-frites“); zeigt ein Foto etwas, das nicht im Rezept ist, wird es verworfen und nachgesucht.
+ */
+export async function recheckStockPhotos(sql: Sql): Promise<number> {
+  const done = await sql`SELECT 1 FROM app_settings WHERE key = 'photo_recheck_v1'`;
+  if (done[0]) return 0;
+  await sql`INSERT INTO app_settings (key, value) VALUES ('photo_recheck_v1', '1') ON CONFLICT (key) DO NOTHING`;
+  const rows = await sql`SELECT meal_name, credit_url FROM meal_images
+    WHERE image_data IS NOT NULL AND source = ANY(${PHOTO_SOURCES}) AND credit_url IS NOT NULL`;
+  let cleared = 0;
+  for (const r of rows) {
+    const info = await dishInfo(sql, r.meal_name);
+    if (!photoConflict(recipeText(r.meal_name, info.ingredients, info.type), r.credit_url)) continue;
+    await sql`UPDATE meal_images SET image_data = NULL, image_url = '', source = NULL, credit_name = NULL, credit_url = NULL,
+      rejected_photos = array_append(COALESCE(rejected_photos, '{}'), ${r.credit_url}), updated_at = now()
+      WHERE meal_name = ${r.meal_name}`;
+    cleared++;
+  }
+  return cleared;
 }
 
 /** Fehlende Bilder für Gerichte in Plänen erzeugen (höchstens `limit` pro Aufruf) */
@@ -341,11 +503,12 @@ export async function fillMissingImages(env: AiEnv, sql: Sql, limit = 5, planId?
   const rows = planId
     ? await sql`SELECT DISTINCT pm.meal_name FROM plan_meals pm
         LEFT JOIN meal_images mi ON mi.meal_name = pm.meal_name
-        WHERE pm.plan_id = ${planId} AND NOT pm.rejected AND mi.image_data IS NULL LIMIT ${limit}`
+        WHERE pm.plan_id = ${planId} AND NOT pm.rejected AND mi.image_data IS NULL
+          AND mi.source IS DISTINCT FROM 'removed' LIMIT ${limit}`
     : await sql`SELECT DISTINCT pm.meal_name FROM plan_meals pm
         JOIN meal_plans mp ON mp.id = pm.plan_id AND mp.status = 'active'
         LEFT JOIN meal_images mi ON mi.meal_name = pm.meal_name
-        WHERE NOT pm.rejected AND mi.image_data IS NULL LIMIT ${limit}`;
+        WHERE NOT pm.rejected AND mi.image_data IS NULL AND mi.source IS DISTINCT FROM 'removed' LIMIT ${limit}`;
   for (const r of rows) {
     const res = await generateImage(env, sql, r.meal_name);
     if ("error" in res) return; // auch kein Foto → beim nächsten Lauf weiter
@@ -354,19 +517,19 @@ export async function fillMissingImages(env: AiEnv, sql: Sql, limit = 5, planId?
   if (left <= 0 || planId) return;
   // Eigene Nachtische ohne Foto: pro Lauf höchstens zwei Bilder (schont das Tageskontingent)
   const dessertNames = FAMILY_DESSERTS.map((d) => d.name);
-  const done = await sql`SELECT meal_name FROM meal_images WHERE meal_name = ANY(${dessertNames}) AND image_data IS NOT NULL`;
+  const done = await sql`SELECT meal_name FROM meal_images WHERE meal_name = ANY(${dessertNames}) AND (image_data IS NOT NULL OR source = 'removed')`;
   const doneSet = new Set(done.map((r) => r.meal_name as string));
   for (const name of dessertNames.filter((n) => !doneSet.has(n)).slice(0, Math.min(2, left))) {
     const res = await generateImage(env, sql, name);
     left--;
     if ("error" in res) return;
   }
-  // Ist die KI wieder verfügbar, Ersatzfotos aus aktiven Plänen nach und nach durch KI-Bilder ersetzen
+  // Ist die KI wieder verfügbar, Ersatzfotos und entfernte Bilder aus aktiven Plänen nach und nach durch KI-Bilder ersetzen
   if (left <= 0 || !aiAvailable(env)) return;
   const fallbacks = await sql`SELECT DISTINCT mi.meal_name FROM meal_images mi
     JOIN plan_meals pm ON pm.meal_name = mi.meal_name AND NOT pm.rejected
     JOIN meal_plans mp ON mp.id = pm.plan_id AND mp.status = 'active'
-    WHERE mi.source = ANY(${PHOTO_SOURCES}) LIMIT ${left}`;
+    WHERE mi.source = ANY(${PHOTO_SOURCES}) OR mi.source = 'removed' LIMIT ${left}`;
   for (const r of fallbacks) {
     const res = await generateImage(env, sql, r.meal_name, true);
     if ("error" in res) break;

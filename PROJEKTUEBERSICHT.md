@@ -61,7 +61,15 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
 
 Reihenfolge: Originalfoto (TheMealDB-Rezepte) → KI-Bild (FLUX.1, mit englischer Bildbeschreibung aus Name, Typ und Zutaten)
 → Ersatzfoto aus Pexels/Pixabay/Openverse, wenn das tägliche KI-Kontingent aufgebraucht ist. Fotos aus Datenbanken
-werden nur übernommen, wenn sie wirklich zum Gericht passen, und mit Quellenangabe gezeigt. Gespeichert in Neon.
+werden mit Quellenangabe gezeigt und nur übernommen, wenn sie zum Rezept passen: das Gericht selbst ist zu sehen (bei
+„Suppe“, „Pfanne“, „Teller“ … auch das Besondere, z. B. „Falafel“), und das Foto zeigt nichts Auffälliges, das nicht im
+Rezept ist (Pommes beim Kartoffelsalat, Brokkoli/Tofu, Kürbis, Frühstück …). Von mehreren Treffern gewinnt der mit den
+meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Gespeichert in Neon.
+
+- **Bild entfernen** (Symbol neben „Neues Bild“, mit Rückfrage): Das Gericht hat dann kein Bild, das Foto kommt nicht
+  wieder. „Bild generieren“ sucht ein anderes; bei Gerichten im Speiseplan erstellt der Cron ein KI-Bild, sobald wieder
+  Kontingent da ist (kein Ersatzfoto mehr).
+- Beim ersten Cron-Lauf nach dem Update werden vorhandene Ersatzfotos einmal mit den neuen Regeln nachgeprüft.
 
 ## 2. Einkaufsliste
 

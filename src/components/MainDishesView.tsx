@@ -9,7 +9,7 @@ import RecipeFilterAssign from './RecipeFilterAssign';
 import RecipeEditModal from './RecipeEditModal';
 import AiRecipeModal from './AiRecipeModal';
 import HiddenItemsList from './HiddenItemsList';
-import { deleteRecipe, generateMealImage, getRecipeCatalog, resetRecipeEdit, saveRecipeEdit, setRecipeHidden } from '../lib/api';
+import { deleteRecipe, generateMealImage, removeMealImage, getRecipeCatalog, resetRecipeEdit, saveRecipeEdit, setRecipeHidden } from '../lib/api';
 import { RECIPE_BASE_PORTIONS } from '../lib/portions';
 import MealModal from './MealModal';
 import DayAssignSheet from './DayAssignSheet';
@@ -298,9 +298,10 @@ export default function MainDishesView({
           onChoose={onReplace ? async () => setAssign(selected) : undefined}
           chooseLabel="In den Speiseplan übernehmen"
           onGenerateImage={async (name) => generateMealImage(name, !!selected.imageUrl)}
+          onRemoveImage={removeMealImage}
           onImageChange={(url, credit) =>
             setCatalog((c) =>
-              c ? { ...c, recipes: c.recipes.map((r) => (r.name === selected.name ? { ...r, imageUrl: url, imageCredit: credit } : r)) } : c
+              c ? { ...c, recipes: c.recipes.map((r) => (r.name === selected.name ? { ...r, imageUrl: url || null, imageCredit: credit } : r)) } : c
             )
           }
           onEdit={() => setEditing(selected)}

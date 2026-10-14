@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useDialog } from '../lib/useDialog';
-import { X, Clock, ShoppingBasket, BookOpen, Star, ImageIcon, Loader2, Minus, Plus, Users, ListPlus, Pencil, ChefHat, MessageSquare } from 'lucide-react';
+import { X, Clock, ShoppingBasket, BookOpen, Star, ImageIcon, ImageOff, Loader2, Minus, Plus, Users, ListPlus, Pencil, ChefHat, MessageSquare } from 'lucide-react';
 import { formatRatingDate, useRatings } from '../lib/ratings';
 import { ImageCredit, Meal } from '../types';
 import MealRatingModal from './MealRatingModal';
+import ConfirmDialog from './ConfirmDialog';
 import CookingMode from './CookingMode';
 import { toSteps } from '../lib/cooking';
 import { RECIPE_BASE_PORTIONS, scaleIngredient, formatPortions } from '../lib/portions';
@@ -17,6 +18,8 @@ interface MealModalProps {
   /** false bei Nachtischen: keine Bewertung anzeigen oder speichern */
   allowRating?: boolean;
   onGenerateImage?: (mealName: string) => Promise<{ url: string; credit: ImageCredit | null }>;
+  /** Unpassendes Bild entfernen (kommt nicht wieder); wirft bei Fehlern */
+  onRemoveImage?: (mealName: string) => Promise<void>;
   /** Portionen der Familie (Standard für die Mengenanzeige) */
   defaultPortions?: number;
   /** Feste Menge statt Portionsrechner (z. B. „1 Kuchen (12 Stücke)“) */
@@ -46,6 +49,7 @@ export default function MealModal({
   onRate: onRateProp,
   allowRating = true,
   onGenerateImage,
+  onRemoveImage,
   defaultPortions = RECIPE_BASE_PORTIONS,
   yieldLabel,
   onAddToShopping,
@@ -78,6 +82,7 @@ export default function MealModal({
   const [imageError, setImageError] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState(meal.imageUrl);
   const [imageCredit, setImageCredit] = useState(meal.imageCredit ?? null);
+  const [confirmRemoveImage, setConfirmRemoveImage] = useState(false);
   const isWeekend = meal.type === 'wochenende';
 
   const [choosing, setChoosing] = useState(false);
@@ -219,24 +224,39 @@ export default function MealModal({
               Foto: {imageCredit.name}
             </a>
           )}
-          {imageUrl && onGenerateImage && (
-            <button
-              onClick={handleGenerateImage}
-              disabled={generating}
-              className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-black/60 text-white hover:bg-black/70 backdrop-blur-sm transition-all active:scale-95"
-            >
-              {generating ? (
-                <>
-                  <Loader2 size={12} className="animate-spin" />
-                  Neu …
-                </>
-              ) : (
-                <>
-                  <ImageIcon size={12} />
-                  Neues Bild
-                </>
+          {imageUrl && (onRemoveImage || onGenerateImage) && (
+            <div className="absolute bottom-3 right-3 flex gap-2">
+              {onRemoveImage && (
+                <button
+                  onClick={() => setConfirmRemoveImage(true)}
+                  disabled={generating}
+                  aria-label="Bild entfernen"
+                  title="Bild entfernen"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-black/60 text-white hover:bg-black/70 backdrop-blur-sm transition-all active:scale-95"
+                >
+                  <ImageOff size={14} aria-hidden="true" />
+                </button>
               )}
-            </button>
+              {onGenerateImage && (
+                <button
+                  onClick={handleGenerateImage}
+                  disabled={generating}
+                  className="h-8 flex items-center gap-1.5 px-3 rounded-lg text-xs font-medium bg-black/60 text-white hover:bg-black/70 backdrop-blur-sm transition-all active:scale-95"
+                >
+                  {generating ? (
+                    <>
+                      <Loader2 size={12} className="animate-spin" />
+                      Neu …
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon size={12} />
+                      Neues Bild
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
           )}
         </div>
 
@@ -467,6 +487,28 @@ export default function MealModal({
               : undefined
           }
           onClose={() => setCooking(false)}
+        />
+      )}
+
+      {confirmRemoveImage && onRemoveImage && (
+        <ConfirmDialog
+          title="Bild entfernen?"
+          message={
+            <>
+              Das Bild passt nicht zu „{meal.meal}“? Es wird entfernt und kommt nicht wieder. Ein anderes Bild gibt es über
+              „Bild generieren“; bei Gerichten im Speiseplan erstellt die App später automatisch ein KI-Bild.
+            </>
+          }
+          confirmLabel="Entfernen"
+          danger
+          onConfirm={async () => {
+            await onRemoveImage(meal.meal);
+            setImageUrl(undefined);
+            setImageCredit(null);
+            setImageError(null);
+            onImageChange?.('', null);
+          }}
+          onClose={() => setConfirmRemoveImage(false)}
         />
       )}
 
