@@ -6,6 +6,7 @@ import pushErinnerung from "./0003_push_erinnerung";
 import schwerpunkte from "./0004_schwerpunkte";
 import tagesRegeln from "./0005_tages_regeln";
 import neuGenerierenVerlauf from "./0006_neu_generieren_verlauf";
+import nachtischeAusblenden from "./0007_nachtische_ausblenden";
 
 export interface Migration {
   /** Eindeutig und aufsteigend, z. B. "0002_kochmodus" */
@@ -21,4 +22,5 @@ export const MIGRATIONS: Migration[] = [
   { id: "0004_schwerpunkte", statements: schwerpunkte },
   { id: "0005_tages_regeln", statements: tagesRegeln },
   { id: "0006_neu_generieren_verlauf", statements: neuGenerierenVerlauf },
+  { id: "0007_nachtische_ausblenden", statements: nachtischeAusblenden },
 ];

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CakeSlice, Clock, Loader2, Search, X } from 'lucide-react';
+import { CakeSlice, ChevronDown, Clock, Loader2, RotateCcw, Search, Trash2, X } from 'lucide-react';
 import { Dessert, DessertCategory, Meal, PlanMeal, RecipeFilter } from '../types';
 import { matchesRecipeFilter } from '../lib/recipeFilters';
 import CustomFilterChips from './CustomFilterChips';
@@ -7,6 +7,8 @@ import { DESSERT_CREDIT as CREDIT, dessertPreview as preview } from '../lib/dess
 import MealModal from './MealModal';
 import RecipeFilterAssign from './RecipeFilterAssign';
 import DayAssignSheet from './DayAssignSheet';
+import ConfirmDialog from './ConfirmDialog';
+import { getOrCreateProfile, setDessertHidden } from '../lib/api';
 
 interface DessertsViewProps {
   /** Gerichte des Plans – der Nachtisch lässt sich an einen Tag hängen */
@@ -65,6 +67,31 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
   const [selected, setSelected] = useState<Dessert | null>(null);
   const [assign, setAssign] = useState<Dessert | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Ausgeblendete Nachtische (pro Familie gespeichert)
+  const [hidden, setHidden] = useState<string[]>([]);
+  const [hideCandidate, setHideCandidate] = useState<Dessert | null>(null);
+  const [showHidden, setShowHidden] = useState(false);
+  const [restoring, setRestoring] = useState<string | null>(null);
+  useEffect(() => {
+    getOrCreateProfile()
+      .then((p) => setHidden(p?.hidden_desserts ?? []))
+      .catch(() => setHidden([]));
+  }, []);
+  const flash = (text: string) => {
+    setNotice(text);
+    setTimeout(() => setNotice(null), 4000);
+  };
+  const restore = async (name: string) => {
+    setRestoring(name);
+    try {
+      setHidden(await setDessertHidden(name, false));
+      flash(`„${name}“ ist wieder in der Sammlung.`);
+    } catch (e) {
+      flash((e as Error).message || 'Das hat nicht geklappt.');
+    } finally {
+      setRestoring(null);
+    }
+  };
 
   // Die Sammlung erst laden, wenn der Reiter geöffnet wird
   useEffect(() => {
@@ -80,13 +107,15 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
   const visible = useMemo(() => {
     if (!desserts) return [];
     const q = normalize(query.trim());
+    const hiddenSet = new Set(hidden);
     return desserts.filter(
       (d) =>
+        !hiddenSet.has(d.name) &&
         (category === 'alle' || d.category === category) &&
         (!custom || matchesRecipeFilter(custom, d)) &&
         (!q || normalize(d.name).includes(q) || d.ingredients.some((i) => normalize(i).includes(q)))
     );
-  }, [desserts, category, query, custom]);
+  }, [desserts, category, query, custom, hidden]);
 
   if (!desserts) {
     return (
@@ -138,7 +167,9 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
         <CustomFilterChips filters={customFilters} activeId={customId} onChange={setCustomId} />
 
         <p className="text-xs text-gray-500 px-1" aria-live="polite">
-          {visible.length === desserts.length ? `${desserts.length} Nachtische` : `${visible.length} von ${desserts.length} Nachtischen`}
+          {visible.length === desserts.length - hidden.length
+            ? `${visible.length} Nachtische`
+            : `${visible.length} von ${desserts.length - hidden.length} Nachtischen`}
         </p>
 
         {visible.length === 0 ? (
@@ -149,7 +180,7 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
         ) : (
           <ul className="grid grid-cols-2 gap-3">
             {visible.map((d) => (
-              <li key={d.name}>
+              <li key={d.name} className="relative">
                 <button
                   onClick={() => setSelected(d)}
                   className="w-full h-full text-left bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
@@ -176,11 +207,70 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
                     </p>
                   </div>
                 </button>
+                {!onPick && (
+                  <button
+                    onClick={() => setHideCandidate(d)}
+                    aria-label={`${d.name} löschen`}
+                    title="Aus der Sammlung löschen"
+                    className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full bg-white/90 text-gray-600 shadow-sm hover:text-red-600 hover:bg-white"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
               </li>
             ))}
           </ul>
         )}
+
+        {hidden.length > 0 && !onPick && (
+          <div className="pt-2">
+            <button
+              onClick={() => setShowHidden((v) => !v)}
+              aria-expanded={showHidden}
+              className="flex items-center gap-1.5 px-1 text-xs font-medium text-gray-600 hover:text-gray-800"
+            >
+              <ChevronDown size={14} className={`transition-transform ${showHidden ? 'rotate-180' : ''}`} />
+              Gelöschte Nachtische ({hidden.length})
+            </button>
+            {showHidden && (
+              <ul className="mt-2 bg-white rounded-xl border border-gray-100 divide-y divide-gray-100">
+                {hidden.map((name) => (
+                  <li key={name} className="flex items-center gap-3 px-3 py-2">
+                    <span className="flex-1 min-w-0 text-sm text-gray-700 truncate">{name}</span>
+                    <button
+                      onClick={() => restore(name)}
+                      disabled={restoring === name}
+                      className="flex items-center gap-1 px-2.5 h-8 rounded-lg text-xs font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100"
+                    >
+                      {restoring === name ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
+                      Wiederherstellen
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </div>
+
+      {hideCandidate && (
+        <ConfirmDialog
+          title="Nachtisch löschen?"
+          message={
+            <>
+              <strong>{hideCandidate.name}</strong> verschwindet aus der Sammlung. Unten unter „Gelöschte Nachtische“ kannst du
+              ihn jederzeit zurückholen. Schon geplante Tage behalten ihren Nachtisch.
+            </>
+          }
+          confirmLabel="Löschen"
+          danger
+          onConfirm={async () => {
+            setHidden(await setDessertHidden(hideCandidate.name, true));
+            flash(`„${hideCandidate.name}“ ist gelöscht.`);
+          }}
+          onClose={() => setHideCandidate(null)}
+        />
+      )}
 
       {selected && (
         <MealModal

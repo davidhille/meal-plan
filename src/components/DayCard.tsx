@@ -19,6 +19,8 @@ interface DayCardProps {
   isToday?: boolean;
   /** Verschieben oder Tag leeren */
   onMove?: () => void;
+  /** Nachtisch vom Tag entfernen */
+  onRemoveDessert?: () => void;
 }
 
 const typeConfig: Record<MealType, { bar: string; label: string; icon: React.ReactNode }> = {
@@ -54,6 +56,7 @@ export default function DayCard({
   onOpenDessert,
   isToday,
   onMove,
+  onRemoveDessert,
 }: DayCardProps) {
   const config = typeConfig[meal.type];
   const hasActions = !!(onReject || onRegenerate || onToggleFavorite || onPickDessert || onMove);
@@ -113,9 +116,10 @@ export default function DayCard({
         </div>
       </button>
       {dessert && (
+        <div className="flex items-stretch border-t border-gray-100">
         <button
           onClick={onOpenDessert}
-          className="flex items-center gap-3 pl-5 pr-4 py-2 border-t border-gray-100 text-left hover:bg-amber-50/50"
+          className="flex-1 min-w-0 flex items-center gap-3 pl-5 pr-2 py-2 text-left hover:bg-amber-50/50"
         >
           {dessert.imageUrl ? (
             <img
@@ -138,6 +142,18 @@ export default function DayCard({
           </span>
           <ChevronRight size={14} className="text-gray-300 flex-shrink-0" />
         </button>
+        {onRemoveDessert && (
+          <button
+            onClick={onRemoveDessert}
+            disabled={busy}
+            aria-label={`Nachtisch ${dessert.name} entfernen`}
+            title="Nachtisch entfernen"
+            className="w-10 flex-shrink-0 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50"
+          >
+            <X size={15} />
+          </button>
+        )}
+        </div>
       )}
       </div>
 

@@ -72,6 +72,12 @@ export async function updateProfile(
   }
 }
 
+/** Nachtisch in der Sammlung aus- oder einblenden; liefert die neue Liste der ausgeblendeten. Wirft bei Fehlern. */
+export async function setDessertHidden(name: string, hidden: boolean): Promise<string[]> {
+  const r = await request<{ hiddenDesserts: string[] }>('PUT', '/profile/hidden-desserts', { name, hidden });
+  return r.hiddenDesserts;
+}
+
 /** Regeln pro Wochentag speichern; wirft bei Fehlern */
 export function saveDayRules(dayRules: DayRules): Promise<Profile> {
   return request<Profile>('PUT', '/profile/day-rules', { day_rules: dayRules });
