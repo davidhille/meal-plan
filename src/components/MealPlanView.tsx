@@ -332,6 +332,7 @@ export default function MealPlanView({
         <MealModal
           meal={planDessertToMeal(openDessert.dessert)}
           yieldLabel={openDessert.dessert.yield}
+          allowRating={false}
           extra={
             onSetDessert ? (
               <button

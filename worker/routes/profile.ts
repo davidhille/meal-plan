@@ -85,11 +85,19 @@ export async function profileRoutes({ request, sql, body, parts, route, id }: Ct
     const rows = await sql`SELECT meal_name, rating FROM meal_ratings WHERE profile_id = ${p.id}`;
     return json(Object.fromEntries(rows.map((r) => [r.meal_name, r.rating])));
   }
+  // Kommentare zu Bewertungen: { Gericht: { notes, updatedAt } } (nur Gerichte mit Kommentar)
+  if (route === "GET /ratings/notes") {
+    const p = await getProfile(sql);
+    const rows = await sql`SELECT meal_name, notes, COALESCE(updated_at, created_at)::text AS updated_at FROM meal_ratings
+      WHERE profile_id = ${p.id} AND notes IS NOT NULL AND notes <> ''`;
+    return json(Object.fromEntries(rows.map((r) => [r.meal_name, { notes: r.notes, updatedAt: r.updated_at }])));
+  }
   if (route === "PUT /ratings") {
     const p = await getProfile(sql);
-    const rows = await sql`INSERT INTO meal_ratings (profile_id, meal_name, rating, notes)
-      VALUES (${p.id}, ${body.meal_name}, ${body.rating}, ${body.notes ?? null})
-      ON CONFLICT (profile_id, meal_name) DO UPDATE SET rating = EXCLUDED.rating, notes = EXCLUDED.notes
+    const notes = String(body.notes ?? "").trim().slice(0, 500) || null;
+    const rows = await sql`INSERT INTO meal_ratings (profile_id, meal_name, rating, notes, updated_at)
+      VALUES (${p.id}, ${body.meal_name}, ${body.rating}, ${notes}, now())
+      ON CONFLICT (profile_id, meal_name) DO UPDATE SET rating = EXCLUDED.rating, notes = EXCLUDED.notes, updated_at = now()
       RETURNING *`;
     return json(rows[0]);
   }

@@ -1,6 +1,6 @@
 import {
   Profile, FamilyMember, MealRating, MealPlan, PlanMeal, Routine, ShoppingItem, ShoppingLabel, Favorite, MealType, ImageCredit,
-  ShopState, ShopProvider, ProductResult, CartItem, ShopRule, PlanDessert, RecipeCatalog, RecipeFilter, RecipeFilterInput, RecipeDraft, DayRules,
+  ShopState, ShopProvider, ProductResult, CartItem, ShopRule, PlanDessert, RecipeCatalog, RecipeFilter, RecipeFilterInput, RecipeDraft, DayRules, RatingNote,
 } from '../types';
 
 // Alle Daten laufen über die Cloudflare-Functions unter /api (→ Neon).
@@ -125,6 +125,16 @@ export async function deleteFamilyMember(id: string): Promise<boolean> {
   } catch (error) {
     console.error('Error deleting family member:', error);
     return false;
+  }
+}
+
+/** Kommentare zu Bewertungen (nur Gerichte mit Kommentar) */
+export async function getRatingNotes(): Promise<Record<string, RatingNote>> {
+  try {
+    return await request<Record<string, RatingNote>>('GET', '/ratings/notes');
+  } catch (error) {
+    console.error('Error fetching rating notes:', error);
+    return {};
   }
 }
 

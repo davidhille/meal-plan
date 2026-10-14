@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Heart, Clock, Trash2, Repeat, Link2 } from 'lucide-react';
+import { Heart, Clock, Trash2, Repeat, Link2, MessageSquare } from 'lucide-react';
+import { useRatings } from '../lib/ratings';
 import { Favorite, Meal } from '../types';
 import MealModal from './MealModal';
 import RecipeImportModal from './RecipeImportModal';
@@ -42,6 +43,7 @@ function toMeal(f: Favorite): Meal {
 
 export default function FavoritesView({ favorites, ratings, defaultPortions, onSetTurnus, onRemove, onFavoritesChange }: FavoritesViewProps) {
   const [selected, setSelected] = useState<Favorite | null>(null);
+  const { notes } = useRatings();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [showImport, setShowImport] = useState(false);
@@ -128,6 +130,12 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
                   ) : null}
                   {f.last_planned && <span>Zuletzt geplant: {formatDate(f.last_planned)}</span>}
                 </div>
+                {notes[f.meal_name] && (
+                  <p className="flex gap-1.5 mt-1.5 text-xs text-gray-600">
+                    <MessageSquare size={12} className="flex-shrink-0 mt-0.5 text-amber-700" aria-hidden="true" />
+                    <span className="line-clamp-2">{notes[f.meal_name].notes}</span>
+                  </p>
+                )}
               </button>
               {confirmId === f.id ? (
                 <button

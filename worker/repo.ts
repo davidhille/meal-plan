@@ -76,7 +76,8 @@ export async function loadContext(sql: Sql, profileId: string): Promise<ScoringC
   const [profiles, members, ratings, rejected] = await Promise.all([
     sql`SELECT health_focus, health_conditions, meat_max_per_week, day_rules FROM profiles WHERE id = ${profileId}`,
     sql`SELECT type, age, favorite_foods, disliked_foods FROM family_members WHERE profile_id = ${profileId}`,
-    sql`SELECT meal_name, rating FROM meal_ratings WHERE profile_id = ${profileId}`,
+    sql`SELECT meal_name, rating, notes FROM meal_ratings WHERE profile_id = ${profileId}
+      ORDER BY COALESCE(updated_at, created_at) DESC`,
     sql`SELECT meal_name FROM rejected_meals WHERE profile_id = ${profileId}`,
   ]);
   const p = profiles[0] ?? {};
@@ -88,6 +89,11 @@ export async function loadContext(sql: Sql, profileId: string): Promise<ScoringC
     month: new Date().getMonth() + 1,
     familyMembers: members as ScoringContext["familyMembers"],
     mealRatings: Object.fromEntries(ratings.map((r) => [r.meal_name, r.rating])),
+    // Neueste Kommentare zu Bewertungen – gehen als Rückmeldung in die KI-Rezepte
+    feedback: ratings
+      .filter((r) => r.notes && String(r.notes).trim())
+      .slice(0, 12)
+      .map((r) => `„${r.meal_name}“ (${r.rating} von 5 Sternen): ${String(r.notes).trim().slice(0, 200)}`),
     rejectedMeals: rejected.map((r) => r.meal_name),
   };
 }

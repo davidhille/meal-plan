@@ -34,6 +34,10 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
   mit „Vorher herunterladen“, damit die Rezepte zum schon erledigten Einkauf nicht verloren gehen.
 - **Rezept-Ansicht:** Bild mit Quellenangabe, Zutaten mit **Portionen-Umrechnung** (Familie: Erwachsene 1, Kinder je nach Alter
   ½ bis 1 Portion; per +/− änderbar), Zubereitung Schritt für Schritt, Bewertung.
+- **Eure Bewertung mit Kommentar:** In jeder Rezept-Ansicht (Plan, Rezepte, Favoriten) stehen unter „Eure Bewertung“
+  Sterne, Datum und Kommentar („zu scharf für die Kinder“). „Ändern“ öffnet das Bewerten-Fenster mit Sternen und
+  Kommentar vorausgefüllt. In der Rezept-Übersicht zeigen Kacheln Sterne und ein Sprechblasen-Symbol, bei den Favoriten
+  steht der Kommentar direkt unter dem Gericht.
 - **Kochmodus** (Knopf in jeder Rezept-Ansicht): Vollbild mit großer Schrift, erst Zutaten zum Abhaken, dann ein Schritt
   pro Seite. Zeitangaben im Text („15–20 Min.“) werden zu Timer-Knöpfen; laufende Timer bleiben sichtbar und klingeln/
   vibrieren. Der Bildschirm bleibt an (wo der Browser das kann). Am Ende: „Gericht bewerten“.
@@ -49,7 +53,9 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
 - **Abwechslung:** ähnliche Gerichte (z. B. mehrere „Quinoa-Pfannen“) werden im Plan verteilt statt gehäuft.
 - **Favoriten mit Turnus** werden fest eingeplant, sobald sie wieder dran sind.
 - **KI-Rezepte** (Workers AI, Llama 3.3 70B): pro Plan einige neue Rezepte für Abwechslung bzw. wenn passende Kandidaten
-  fehlen (z. B. bei vegan). Jedes wird von unseren Filtern nachgeprüft und landet im Pool.
+  fehlen (z. B. bei vegan). Jedes wird von unseren Filtern nachgeprüft und landet im Pool. Die neuesten Kommentare
+  aus euren Bewertungen (bis zu 12) gehen als Rückmeldung mit in die Anfrage – die KI lernt daraus (Schärfe, Zutaten,
+  Aufwand …), auch beim Rezept nach Wunsch.
 
 ### Bilder
 
@@ -96,6 +102,7 @@ werden nur übernommen, wenn sie wirklich zum Gericht passen, und mit Quellenang
   (mit Rückfrage). Unten unter „Ausgeblendete Gerichte/Nachtische“: „Einblenden“ oder Papierkorb = **endgültig löschen**
   (nicht wiederherstellbar; eigene/KI-/importierte Rezepte verschwinden aus der Datenbank, Gerichte und Nachtische der
   festen Sammlung werden dauerhaft ausgeschlossen). Im Speiseplan nimmt das ✕ in der Nachtisch-Zeile den Nachtisch vom Tag.
+
 ## 4. Favoriten
 
 - Gemerkte Gerichte mit eigenem Rezept, **Turnus** (kein / 1–4 Wochen) und „zuletzt geplant“.

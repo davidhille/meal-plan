@@ -5,6 +5,8 @@ import { useDialog } from '../lib/useDialog';
 interface MealRatingModalProps {
   mealName: string;
   currentRating?: number;
+  /** Bisheriger Kommentar (zum Bearbeiten) */
+  currentNotes?: string;
   /** Darf ein Promise liefern; Fehler werden im Fenster angezeigt */
   onSave: (rating: number, notes: string) => void | Promise<void>;
   onClose: () => void;
@@ -13,11 +15,12 @@ interface MealRatingModalProps {
 export default function MealRatingModal({
   mealName,
   currentRating = 0,
+  currentNotes = '',
   onSave,
   onClose,
 }: MealRatingModalProps) {
   const [rating, setRating] = useState(currentRating);
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState(currentNotes);
   const dialogRef = useDialog(onClose);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
