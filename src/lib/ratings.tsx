@@ -18,6 +18,7 @@ export const useRatings = () => useContext(RatingsContext);
 /** „2026-10-14 18:03:…“ → „14.10.2026“ */
 export function formatRatingDate(value: string | undefined): string | null {
   if (!value) return null;
-  const d = new Date(value.replace(' ', 'T'));
+  // Postgres schreibt die Zeitzone als „+00“, Browser verstehen nur „+00:00“
+  const d = new Date(value.replace(' ', 'T').replace(/([+-]\d{2})$/, '$1:00'));
   return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
