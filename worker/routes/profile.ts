@@ -42,12 +42,17 @@ export async function profileRoutes({ request, sql, body, parts, route, id }: Ct
     const p = await getProfile(sql);
     const name = String(body.name ?? "").trim().slice(0, 200);
     if (!name) return json({ error: "Name fehlt" }, 400);
-    const rows = body.hidden
-      ? await sql`UPDATE profiles SET hidden_desserts = array_append(array_remove(hidden_desserts, ${name}), ${name})
-          WHERE id = ${p.id} RETURNING hidden_desserts`
-      : await sql`UPDATE profiles SET hidden_desserts = array_remove(hidden_desserts, ${name})
-          WHERE id = ${p.id} RETURNING hidden_desserts`;
-    return json({ hiddenDesserts: rows[0]?.hidden_desserts ?? [] });
+    // deleted: endgültig – raus aus „Ausgeblendet“, bleibt aber unsichtbar
+    const rows = body.deleted
+      ? await sql`UPDATE profiles SET hidden_desserts = array_remove(hidden_desserts, ${name}),
+            deleted_desserts = array_append(array_remove(deleted_desserts, ${name}), ${name})
+          WHERE id = ${p.id} RETURNING hidden_desserts, deleted_desserts`
+      : body.hidden
+        ? await sql`UPDATE profiles SET hidden_desserts = array_append(array_remove(hidden_desserts, ${name}), ${name})
+            WHERE id = ${p.id} RETURNING hidden_desserts, deleted_desserts`
+        : await sql`UPDATE profiles SET hidden_desserts = array_remove(hidden_desserts, ${name})
+            WHERE id = ${p.id} RETURNING hidden_desserts, deleted_desserts`;
+    return json({ hiddenDesserts: rows[0]?.hidden_desserts ?? [], deletedDesserts: rows[0]?.deleted_desserts ?? [] });
   }
 
   // ---------- Familie ----------

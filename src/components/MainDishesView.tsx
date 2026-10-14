@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChefHat, Clock, Loader2, Search, Trash2, X, RotateCcw, ChevronDown, ShieldAlert, Sparkles } from 'lucide-react';
+import { ChefHat, Clock, Loader2, Search, EyeOff, X, ShieldAlert, Sparkles } from 'lucide-react';
 import { CatalogRecipe, Meal, MealType, PlanMeal, RecipeCatalog, RecipeFilter } from '../types';
 import { matchesRecipeFilter } from '../lib/recipeFilters';
 import { CONDITION_LABELS, swapExample } from '../lib/health';
@@ -7,7 +7,8 @@ import CustomFilterChips from './CustomFilterChips';
 import RecipeFilterAssign from './RecipeFilterAssign';
 import RecipeEditModal from './RecipeEditModal';
 import AiRecipeModal from './AiRecipeModal';
-import { generateMealImage, getRecipeCatalog, resetRecipeEdit, saveRecipeEdit, setRecipeHidden } from '../lib/api';
+import HiddenItemsList from './HiddenItemsList';
+import { deleteRecipe, generateMealImage, getRecipeCatalog, resetRecipeEdit, saveRecipeEdit, setRecipeHidden } from '../lib/api';
 import { RECIPE_BASE_PORTIONS } from '../lib/portions';
 import MealModal from './MealModal';
 import DayAssignSheet from './DayAssignSheet';
@@ -73,8 +74,6 @@ export default function MainDishesView({
   const [selected, setSelected] = useState<CatalogRecipe | null>(null);
   const [assign, setAssign] = useState<CatalogRecipe | null>(null);
   const [hideCandidate, setHideCandidate] = useState<CatalogRecipe | null>(null);
-  const [showHidden, setShowHidden] = useState(false);
-  const [restoring, setRestoring] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [editing, setEditing] = useState<CatalogRecipe | null>(null);
   const [showUnsuitable, setShowUnsuitable] = useState(false);
@@ -129,14 +128,11 @@ export default function MainDishesView({
   };
 
   const restore = async (name: string) => {
-    setRestoring(name);
     try {
       setCatalog(await setRecipeHidden(name, false));
       flash(`„${name}“ wird wieder vorgeschlagen.`);
     } catch (e) {
       flash((e as Error).message || 'Das hat nicht geklappt.');
-    } finally {
-      setRestoring(null);
     }
   };
 
@@ -266,42 +262,23 @@ export default function MainDishesView({
                   title="Ausblenden – wird nicht mehr vorgeschlagen"
                   className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full bg-white/90 text-gray-600 shadow-sm hover:text-red-600 hover:bg-white"
                 >
-                  <Trash2 size={14} />
+                  <EyeOff size={14} />
                 </button>
               </li>
             ))}
           </ul>
         )}
 
-        {catalog.hidden.length > 0 && (
-          <div className="pt-2">
-            <button
-              onClick={() => setShowHidden((v) => !v)}
-              aria-expanded={showHidden}
-              className="flex items-center gap-1.5 px-1 text-xs font-medium text-gray-600 hover:text-gray-800"
-            >
-              <ChevronDown size={14} className={`transition-transform ${showHidden ? 'rotate-180' : ''}`} />
-              Ausgeblendete Gerichte ({catalog.hidden.length})
-            </button>
-            {showHidden && (
-              <ul className="mt-2 bg-white rounded-xl border border-gray-100 divide-y divide-gray-100">
-                {catalog.hidden.map((name) => (
-                  <li key={name} className="flex items-center gap-3 px-3 py-2">
-                    <span className="flex-1 min-w-0 text-sm text-gray-700 truncate">{name}</span>
-                    <button
-                      onClick={() => restore(name)}
-                      disabled={restoring === name}
-                      className="flex items-center gap-1 px-2.5 h-8 rounded-lg text-xs font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100"
-                    >
-                      {restoring === name ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
-                      Wiederherstellen
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
+        <HiddenItemsList
+          title="Ausgeblendete Gerichte"
+          names={catalog.hidden}
+          onShow={restore}
+          onDelete={async (name) => {
+            setCatalog(await deleteRecipe(name));
+            flash(`„${name}“ ist endgültig gelöscht.`);
+          }}
+          deleteHint="Selbst erstellte, importierte und KI-Rezepte verschwinden aus der Datenbank, Gerichte der Grundsammlung werden nie mehr vorgeschlagen."
+        />
       </div>
 
       {selected && (
@@ -379,7 +356,7 @@ export default function MainDishesView({
           message={
             <>
               <strong>{hideCandidate.name}</strong> wird nicht mehr vorgeschlagen. Unten unter „Ausgeblendete Gerichte“ kannst du es
-              jederzeit zurückholen.
+              wieder einblenden oder endgültig löschen.
             </>
           }
           confirmLabel="Ausblenden"

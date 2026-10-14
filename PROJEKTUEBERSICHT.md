@@ -92,9 +92,10 @@ werden nur übernommen, wenn sie wirklich zum Gericht passen, und mit Quellenang
   Pudding, Obst, warme Süßspeisen, neue Kategorie „Eis & Kaltes“). Deren Bilder entstehen im Hintergrund (2 pro Cron-Lauf)
   oder per „Bild generieren“ im Rezept. Mit fester Menge;
   im Speiseplan per Kuchen-Knopf an ein Gericht hängen (erst Rezept ansehen, dann hinzufügen).
-- **Nachtische löschen:** in der Sammlung über den Papierkorb an der Kachel (mit Rückfrage); „Gelöschte Nachtische“ unten
-  holt sie zurück. Im Speiseplan nimmt das ✕ in der Nachtisch-Zeile (oder „Nachtisch von diesem Tag entfernen“ im Rezept)
-  den Nachtisch vom Tag.
+- **Ausblenden und endgültig löschen** (Hauptgerichte und Nachtische gleich): Auge-Symbol an der Kachel blendet aus
+  (mit Rückfrage). Unten unter „Ausgeblendete Gerichte/Nachtische“: „Einblenden“ oder Papierkorb = **endgültig löschen**
+  (nicht wiederherstellbar; eigene/KI-/importierte Rezepte verschwinden aus der Datenbank, Gerichte und Nachtische der
+  festen Sammlung werden dauerhaft ausgeschlossen). Im Speiseplan nimmt das ✕ in der Nachtisch-Zeile den Nachtisch vom Tag.
 ## 4. Favoriten
 
 - Gemerkte Gerichte mit eigenem Rezept, **Turnus** (kein / 1–4 Wochen) und „zuletzt geplant“.

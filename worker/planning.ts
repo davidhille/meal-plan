@@ -249,6 +249,12 @@ export async function recipeCatalog(sql: Sql, profileId: string) {
   ]);
   const imageBy = new Map(images.map((r) => [r.meal_name as string, r]));
   const hidden = new Set(ctx.rejectedMeals);
+  // Endgültig gelöscht: bleibt ausgeschlossen, taucht aber nicht mehr unter „Ausgeblendet“ auf
+  const deleted = new Set(
+    (await sql`SELECT meal_name FROM rejected_meals WHERE profile_id = ${profileId} AND reason = 'geloescht'`).map(
+      (r) => r.meal_name as string
+    )
+  );
   const builtIn = new Set(MEAL_DATABASE.map((m) => m.name));
   const rowBy = new Map(dbRecipes.map((r) => [r.name as string, r]));
   const favoriteNames = new Set(favorites.map((f) => f.meal_name as string));
@@ -280,7 +286,11 @@ export async function recipeCatalog(sql: Sql, profileId: string) {
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, "de"));
-  return { recipes, hidden: [...hidden].sort((a, b) => a.localeCompare(b, "de")), healthConditions: ctx.healthConditions };
+  return {
+    recipes,
+    hidden: [...hidden].filter((n) => !deleted.has(n)).sort((a, b) => a.localeCompare(b, "de")),
+    healthConditions: ctx.healthConditions,
+  };
 }
 
 /** Gericht im Plan gezielt durch ein Rezept aus der Übersicht ersetzen (Nachtisch bleibt am Tag) */
