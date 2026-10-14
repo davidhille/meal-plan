@@ -104,6 +104,25 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
     return json(await recipeCatalog(sql, p.id));
   }
 
+  // Gericht endgültig löschen: eigene/KI-/importierte Rezepte verschwinden aus der Datenbank, Gerichte der
+  // Grundsammlung bleiben dauerhaft ausgeschlossen. In beiden Fällen nicht mehr unter „Ausgeblendet“.
+  if (route === "POST /recipes/delete") {
+    const p = await getProfile(sql);
+    const name = String(body.name ?? "").trim();
+    if (!name) return json({ error: "Name fehlt" }, 400);
+    const removed = await sql`DELETE FROM recipes WHERE name = ${name} RETURNING replaces`;
+    // Bearbeitetes Gericht der Sammlung: auch das Original nicht wieder auftauchen lassen
+    const names = [name, ...removed.map((r) => r.replaces as string | null).filter((n): n is string => !!n)];
+    for (const n of names) {
+      await sql`UPDATE rejected_meals SET reason = 'geloescht' WHERE profile_id = ${p.id} AND meal_name = ${n}`;
+      await sql`INSERT INTO rejected_meals (profile_id, meal_name, reason)
+        SELECT ${p.id}, ${n}, 'geloescht'
+        WHERE NOT EXISTS (SELECT 1 FROM rejected_meals WHERE profile_id = ${p.id} AND meal_name = ${n})`;
+    }
+    await sql`DELETE FROM favorites WHERE profile_id = ${p.id} AND meal_name = ${name}`;
+    return json(await recipeCatalog(sql, p.id));
+  }
+
   // ---------- Eigene Rezepte (Import per Link) ----------
   if (route === "POST /recipes/import") {
     try {

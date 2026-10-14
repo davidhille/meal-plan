@@ -72,10 +72,12 @@ export async function updateProfile(
   }
 }
 
-/** Nachtisch in der Sammlung aus- oder einblenden; liefert die neue Liste der ausgeblendeten. Wirft bei Fehlern. */
-export async function setDessertHidden(name: string, hidden: boolean): Promise<string[]> {
-  const r = await request<{ hiddenDesserts: string[] }>('PUT', '/profile/hidden-desserts', { name, hidden });
-  return r.hiddenDesserts;
+/** Nachtisch ausblenden, wieder einblenden oder endgültig löschen; liefert beide Listen. Wirft bei Fehlern. */
+export function setDessertVisibility(
+  name: string,
+  action: 'hide' | 'show' | 'delete'
+): Promise<{ hiddenDesserts: string[]; deletedDesserts: string[] }> {
+  return request('PUT', '/profile/hidden-desserts', { name, hidden: action === 'hide', deleted: action === 'delete' });
 }
 
 /** Regeln pro Wochentag speichern; wirft bei Fehlern */
@@ -300,6 +302,11 @@ export async function saveAiRecipe(recipe: RecipeDraft, favorite: boolean): Prom
 /** Bearbeitetes Gericht der Grundsammlung auf das Original zurücksetzen. Wirft bei Fehlern. */
 export async function resetRecipeEdit(name: string): Promise<{ name: string; catalog: RecipeCatalog }> {
   return request('POST', '/recipes/reset', { name });
+}
+
+/** Gericht endgültig löschen (eigene/KI-Rezepte aus der Datenbank, Grundsammlung dauerhaft ausgeschlossen) */
+export async function deleteRecipe(name: string): Promise<RecipeCatalog> {
+  return request<RecipeCatalog>('POST', '/recipes/delete', { name });
 }
 
 /** Gericht im Plan durch ein bestimmtes Rezept ersetzen; wirft bei Fehlern */
