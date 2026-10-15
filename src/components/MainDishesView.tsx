@@ -3,6 +3,8 @@ import { ChefHat, Clock, Loader2, Search, EyeOff, X, ShieldAlert, Sparkles, Mess
 import { useRatings } from '../lib/ratings';
 import { CatalogRecipe, Meal, MealType, PlanMeal, RecipeCatalog, RecipeFilter } from '../types';
 import { matchesRecipeFilter } from '../lib/recipeFilters';
+import { DISH_KINDS, MAIN_INGREDIENTS, matchesCategory } from '../lib/recipeCategories';
+import CategoryFilters from './CategoryFilters';
 import { CONDITION_LABELS, swapExample } from '../lib/health';
 import CustomFilterChips from './CustomFilterChips';
 import RecipeFilterAssign from './RecipeFilterAssign';
@@ -80,6 +82,11 @@ export default function MainDishesView({
   const [notice, setNotice] = useState<string | null>(null);
   const [editing, setEditing] = useState<CatalogRecipe | null>(null);
   const [showUnsuitable, setShowUnsuitable] = useState(false);
+  // Speiseart und Hauptzutat (je eine Auswahl, kombinierbar)
+  const [kindId, setKindId] = useState<string | null>(null);
+  const [ingredientId, setIngredientId] = useState<string | null>(null);
+  const kind = DISH_KINDS.find((c) => c.id === kindId) ?? null;
+  const mainIngredient = MAIN_INGREDIENTS.find((c) => c.id === ingredientId) ?? null;
   const [showAi, setShowAi] = useState(false);
   const [showChefkoch, setShowChefkoch] = useState(false);
 
@@ -102,9 +109,11 @@ export default function MainDishesView({
         (showUnsuitable || !r.unsuitable) &&
         (filter === 'alle' || r.type === filter) &&
         (!custom || matchesRecipeFilter(custom, r)) &&
+        (!kind || matchesCategory(kind, r)) &&
+        (!mainIngredient || matchesCategory(mainIngredient, r)) &&
         (!q || normalize(r.name).includes(q) || r.ingredients.some((i) => normalize(i).includes(q)))
     );
-  }, [catalog, filter, query, custom, showUnsuitable]);
+  }, [catalog, filter, query, custom, showUnsuitable, kind, mainIngredient]);
 
   if (loadError) {
     return <p className="px-4 py-12 text-sm text-center text-red-600">{loadError}</p>;
@@ -207,6 +216,13 @@ export default function MainDishesView({
           ))}
         </div>
         <CustomFilterChips filters={customFilters} activeId={customId} onChange={setCustomId} />
+        <CategoryFilters
+          recipes={catalog.recipes.filter((r) => showUnsuitable || !r.unsuitable)}
+          kindId={kindId}
+          ingredientId={ingredientId}
+          onKind={setKindId}
+          onIngredient={setIngredientId}
+        />
 
         <p className="text-xs text-gray-500 px-1" aria-live="polite">
           {visible.length === shownTotal ? `${shownTotal} Gerichte` : `${visible.length} von ${shownTotal} Gerichten`}
