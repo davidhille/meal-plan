@@ -8,6 +8,7 @@ import CustomFilterChips from './CustomFilterChips';
 import RecipeFilterAssign from './RecipeFilterAssign';
 import RecipeEditModal from './RecipeEditModal';
 import AiRecipeModal from './AiRecipeModal';
+import ChefkochSearchModal from './ChefkochSearchModal';
 import HiddenItemsList from './HiddenItemsList';
 import { deleteRecipe, generateMealImage, removeMealImage, getRecipeCatalog, resetRecipeEdit, saveRecipeEdit, setRecipeHidden } from '../lib/api';
 import { RECIPE_BASE_PORTIONS } from '../lib/portions';
@@ -80,6 +81,7 @@ export default function MainDishesView({
   const [editing, setEditing] = useState<CatalogRecipe | null>(null);
   const [showUnsuitable, setShowUnsuitable] = useState(false);
   const [showAi, setShowAi] = useState(false);
+  const [showChefkoch, setShowChefkoch] = useState(false);
 
   useEffect(() => {
     getRecipeCatalog()
@@ -173,13 +175,22 @@ export default function MainDishesView({
           )}
         </label>
 
-        <button
-          onClick={() => setShowAi(true)}
-          className="w-full h-11 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-brand-300 bg-brand-50/50 text-sm font-semibold text-brand-800 hover:bg-brand-50"
-        >
-          <Sparkles size={16} />
-          Rezept mit KI erstellen
-        </button>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => setShowChefkoch(true)}
+            className="h-11 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-brand-300 bg-brand-50/50 text-sm font-semibold text-brand-800 hover:bg-brand-50"
+          >
+            <ChefHat size={16} />
+            Bei Chefkoch suchen
+          </button>
+          <button
+            onClick={() => setShowAi(true)}
+            className="h-11 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-brand-300 bg-brand-50/50 text-sm font-semibold text-brand-800 hover:bg-brand-50"
+          >
+            <Sparkles size={16} />
+            Rezept mit KI
+          </button>
+        </div>
 
         <div className="flex gap-1.5 overflow-x-auto -mx-4 px-4 pb-1" role="group" aria-label="Art">
           {FILTERS.map((f) => (
@@ -333,6 +344,21 @@ export default function MainDishesView({
             </div>
           }
           onClose={() => setSelected(null)}
+        />
+      )}
+
+      {showChefkoch && (
+        <ChefkochSearchModal
+          existingNames={new Set((catalog?.recipes ?? []).map((r) => r.name))}
+          onSaved={async (name, favorite) => {
+            setShowChefkoch(false);
+            const next = await getRecipeCatalog();
+            setCatalog(next);
+            setSelected(next.recipes.find((r) => r.name === name) ?? null);
+            if (favorite) onRecipesChanged?.();
+            flash(`„${name}“ ist jetzt in deiner Sammlung.`);
+          }}
+          onClose={() => setShowChefkoch(false)}
         />
       )}
 

@@ -106,7 +106,7 @@ async function dishInfo(sql: Sql, mealName: string): Promise<{ type?: string; in
 export type PhotoSource = "pexels" | "pixabay" | "openverse";
 export const PHOTO_SOURCES: PhotoSource[] = ["pexels", "pixabay", "openverse"];
 
-export type ImageSource = "ai" | "mealdb" | PhotoSource;
+export type ImageSource = "ai" | "mealdb" | "chefkoch" | PhotoSource;
 
 export type ImageResult =
   | { url: string; source: ImageSource }
@@ -550,4 +550,19 @@ export async function serveImage(sql: Sql, mealName: string): Promise<Response> 
       "Cache-Control": "public, max-age=31536000, immutable",
     },
   });
+}
+
+/** Foto der Rezept-Quelle (z. B. Chefkoch) übernehmen – mit Nennung und Link zum Original */
+export async function storeSourcePhoto(sql: Sql, mealName: string, photoUrl: string, creditName: string, creditUrl: string): Promise<string | null> {
+  try {
+    const img = await fetch(photoUrl, { headers: UA });
+    const type = img.headers.get("content-type") || "";
+    if (!img.ok || !type.startsWith("image/")) return null;
+    const buf = await img.arrayBuffer();
+    if (buf.byteLength > 4_000_000) return null;
+    return await storeImage(sql, mealName, { base64: toBase64(buf), contentType: type, source: "chefkoch", creditName, creditUrl });
+  } catch (err) {
+    console.warn(`Foto für ${mealName} nicht übernommen:`, err);
+    return null;
+  }
 }

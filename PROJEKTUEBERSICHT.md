@@ -99,6 +99,11 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
 - **Rezept mit KI erstellen** (Knopf oben in der Übersicht): Wunsch eingeben („etwas mit Kürbis, schnell“), Art wählen
   oder „Egal“ → Vorschau. „Anderer Vorschlag“, über den Stift anpassen, dann „In die Sammlung“ (optional als Favorit).
   Gesundheitseinstellungen und Abneigungen werden beachtet und geprüft; das Bild entsteht im Hintergrund.
+- **Bei Chefkoch suchen** (Knopf oben in der Übersicht): Suchbegriff plus Filter (Hauptspeise, Vegetarisch, Vegan,
+  bis 30 Min, ab 4 ★, beste zuerst) → bis zu 12 Treffer mit Foto, Bewertung und Zeit. Antippen zeigt die Vorschau
+  (Zutaten auf 4 Portionen umgerechnet, Zubereitung, Hinweis bei unpassenden Gesundheitseinstellungen, „schon da“);
+  „In meine Rezepte übernehmen“ speichert es mit Chefkoch-Foto und Link zum Original (optional als Favorit).
+  Abgerufen wird nur bei einer Suche (je Suche die Ergebnisseite plus bis zu 12 Rezepte, in Vierergruppen).
 - **Rezept-Ansicht in der Übersicht:** Bild erzeugen bzw. neues Bild, **Gericht bearbeiten** (Stift: Name, Art, Zeit,
   Zutaten, Zubereitung; gilt auch für kommende Plan-Tage und den Favoriten; Gerichte der Sammlung lassen sich auf das
   Original zurücksetzen) und **eigene Filter zuordnen** (Filter-Knöpfe unter dem Bild).

@@ -670,13 +670,52 @@ export async function previewRecipeImport(url: string): Promise<ImportedRecipe> 
   return result.recipe;
 }
 
-/** Rezept in den Rezept-Pool speichern, optional zusätzlich als Favorit */
+/** Rezept in den Rezept-Pool speichern, optional zusätzlich als Favorit (imageUrl: Foto der Quelle übernehmen) */
 export async function saveImportedRecipe(
-  recipe: Omit<ImportedRecipe, 'sourcePortions'>,
+  recipe: Omit<ImportedRecipe, 'sourcePortions'> & { imageUrl?: string | null },
   favorite: boolean
 ): Promise<Favorite[]> {
   const result = await request<{ favorites: Favorite[] }>('POST', '/recipes', { ...recipe, favorite });
   return result.favorites;
+}
+
+// ---------- Chefkoch-Suche – werfen mit Klartext-Meldung ----------
+
+export interface ChefkochFilters {
+  main?: boolean;
+  vegetarian?: boolean;
+  vegan?: boolean;
+  maxMinutes?: number | null;
+  topRated?: boolean;
+  sort?: 'relevance' | 'rating' | 'new';
+}
+
+export interface ChefkochHit {
+  url: string;
+  name: string;
+  imageUrl: string | null;
+  rating: number | null;
+  ratingCount: number | null;
+  durationMin: number | null;
+  type: MealType | null;
+}
+
+export interface ChefkochDetails {
+  recipe: ImportedRecipe;
+  imageUrl: string | null;
+  rating: number | null;
+  ratingCount: number | null;
+  tags: string[];
+  /** Passt nicht zu den Gesundheitseinstellungen (Allergien, vegetarisch …) */
+  unsuitable: boolean;
+}
+
+export async function searchChefkoch(query: string, filters: ChefkochFilters): Promise<ChefkochHit[]> {
+  return (await request<{ hits: ChefkochHit[] }>('POST', '/recipes/chefkoch/search', { query, filters })).hits;
+}
+
+export function previewChefkoch(url: string): Promise<ChefkochDetails> {
+  return request<ChefkochDetails>('POST', '/recipes/chefkoch/preview', { url });
 }
 
 // ---------- Erinnerung zum Bewerten (Push) – werfen bei Fehlern ----------
