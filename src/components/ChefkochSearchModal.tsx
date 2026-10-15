@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { X, Search, Loader2, Star, Clock, ChefHat, ArrowLeft, ExternalLink, ShieldAlert, Check } from 'lucide-react';
 import { MealType } from '../types';
 import { ChefkochDetails, ChefkochFilters, ChefkochHit, previewChefkoch, saveImportedRecipe, searchChefkoch } from '../lib/api';
@@ -7,6 +7,7 @@ import { useDialog } from '../lib/useDialog';
 interface ChefkochSearchModalProps {
   /** Namen, die schon in der Sammlung sind */
   existingNames: Set<string>;
+  /** Rezept übernommen – das Fenster bleibt offen (weitere Rezepte übernehmen) */
   onSaved: (name: string, favorite: boolean) => void;
   onClose: () => void;
 }
@@ -41,7 +42,20 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
   const [type, setType] = useState<MealType>('vegetarisch');
   const [favorite, setFavorite] = useState(false);
   const [saving, setSaving] = useState(false);
-  const dialogRef = useDialog(() => !saving && (detail ? setDetail(null) : onClose()));
+  const [notice, setNotice] = useState<string | null>(null);
+  /** In dieser Sitzung übernommene Rezepte (Markierung in der Trefferliste) */
+  const [taken, setTaken] = useState<Set<string>>(new Set());
+  const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
+  const listRef = useRef<HTMLDivElement>(null);
+  const listScroll = useRef(0);
+
+  /** Zurück zur Trefferliste, an dieselbe Stelle */
+  const backToList = () => {
+    setDetail(null);
+    requestAnimationFrame(() => listRef.current?.scrollTo({ top: listScroll.current }));
+  };
+  const dialogRef = useDialog(() => !saving && (detail ? backToList() : onClose()));
+  const imgFailed = (url: string) => setBrokenImages((prev) => new Set(prev).add(url));
 
   const toggle = (id: ChipId) =>
     setChips((prev) => {
@@ -77,6 +91,8 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
   const open = async (hit: ChefkochHit) => {
     setLoadingUrl(hit.url);
     setError(null);
+    setNotice(null);
+    listScroll.current = listRef.current?.scrollTop ?? 0;
     try {
       const d = await previewChefkoch(hit.url);
       setDetail(d);
@@ -100,8 +116,12 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
         favorite
       );
       onSaved(r.name, favorite);
+      setTaken((prev) => new Set(prev).add(r.name));
+      setNotice(`„${r.name}“ ist jetzt in deinen Rezepten.`);
+      backToList();
     } catch (e) {
       setError((e as Error).message || 'Das Rezept konnte nicht gespeichert werden.');
+    } finally {
       setSaving(false);
     }
   };
@@ -111,7 +131,7 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-gray-900/40" onClick={() => !saving && onClose()} />
+      <div className="absolute inset-0 bg-gray-900/40" onClick={() => !saving && (detail ? backToList() : onClose())} />
       <div
         ref={dialogRef}
         role="dialog"
@@ -123,8 +143,8 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
         <div className="flex items-center gap-2 px-4 pt-4 pb-3">
           {detail ? (
             <button
-              onClick={() => setDetail(null)}
-              aria-label="Zurück zu den Ergebnissen"
+              onClick={backToList}
+              aria-label="Zurück zur Trefferliste"
               className="w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-600"
             >
               <ArrowLeft size={16} />
@@ -135,14 +155,15 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
           <h2 id="chefkoch-title" className="flex-1 text-lg font-bold text-gray-900 truncate">
             {detail ? detail.recipe.name : 'Bei Chefkoch suchen'}
           </h2>
-          <button
-            onClick={onClose}
-            disabled={saving}
-            aria-label="Schließen"
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-600"
-          >
-            <X size={16} />
-          </button>
+          {!detail && (
+            <button
+              onClick={onClose}
+              aria-label="Schließen"
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-600"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
 
         {!detail && (
@@ -194,12 +215,23 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
             {error}
           </p>
         )}
+        {notice && !detail && (
+          <p role="status" className="mx-4 mb-2 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand-50 text-sm text-brand-900">
+            <Check size={14} aria-hidden="true" /> {notice}
+          </p>
+        )}
 
-        <div className="flex-1 overflow-y-auto px-4 pb-5">
+        <div ref={listRef} className="flex-1 overflow-y-auto px-4 pb-5">
           {detail ? (
             <div className="space-y-4">
-              {detail.imageUrl && (
-                <img src={detail.imageUrl} alt="" className="w-full aspect-[3/2] object-cover rounded-2xl bg-gray-100" />
+              {detail.imageUrl && !brokenImages.has(detail.imageUrl) && (
+                <img
+                  src={detail.imageUrl}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  onError={() => imgFailed(detail.imageUrl!)}
+                  className="w-full aspect-[3/2] object-cover rounded-2xl bg-gray-100"
+                />
               )}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600">
                 {detail.rating != null && (
@@ -298,8 +330,15 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
                     className="w-full text-left rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
                   >
                     <div className="relative aspect-[4/3] bg-gray-100 flex items-center justify-center">
-                      {h.imageUrl ? (
-                        <img src={h.imageUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
+                      {h.imageUrl && !brokenImages.has(h.imageUrl) ? (
+                        <img
+                          src={h.imageUrl}
+                          alt=""
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                          onError={() => imgFailed(h.imageUrl!)}
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <ChefHat size={22} className="text-gray-300" aria-hidden="true" />
                       )}
@@ -308,7 +347,7 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
                           <Loader2 size={20} className="animate-spin text-brand-700" />
                         </span>
                       )}
-                      {existingNames.has(h.name) && (
+                      {(existingNames.has(h.name) || taken.has(h.name)) && (
                         <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/95 text-[10px] font-semibold text-brand-800">
                           <Check size={10} aria-hidden="true" /> schon da
                         </span>
