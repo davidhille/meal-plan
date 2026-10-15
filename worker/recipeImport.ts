@@ -69,6 +69,39 @@ export function parseRecipeHtml(html: string, sourceUrl: string): ImportedRecipe
   return { ...base, type: guessType(base), sourceUrl, sourcePortions };
 }
 
+export interface RecipeDetails {
+  recipe: ImportedRecipe;
+  imageUrl: string | null;
+  rating: number | null;
+  ratingCount: number | null;
+  /** Kategorie/Schlagwörter laut Quelle (z. B. „Hauptspeise“, „Kuchen“) */
+  tags: string[];
+}
+
+/** Rezept plus Bild, Bewertung und Schlagwörter (für die Chefkoch-Suche) */
+export function parseRecipeDetails(html: string, sourceUrl: string): RecipeDetails | null {
+  const recipe = parseRecipeHtml(html, sourceUrl);
+  const node = recipe && findRecipeNode(html);
+  if (!recipe || !node) return null;
+  const img = toArray(node.image)[0];
+  const imageUrl = typeof img === "string" ? img : img && typeof img === "object" ? text((img as Json).url) || null : null;
+  const agg = (node.aggregateRating ?? {}) as Json;
+  const num = (v: unknown) => {
+    const n = Number(String(v ?? "").replace(",", "."));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  };
+  const tags = [...toArray(node.recipeCategory), ...String(text(node.keywords) || "").split(",")]
+    .map((t) => clean(text(t)))
+    .filter(Boolean);
+  return {
+    recipe,
+    imageUrl: imageUrl && /^https:\/\//.test(imageUrl) ? imageUrl : null,
+    rating: num(agg.ratingValue),
+    ratingCount: num(agg.ratingCount ?? agg.reviewCount),
+    tags: [...new Set(tags)].slice(0, 12),
+  };
+}
+
 /** Lange Gerichte gehören aufs Wochenende, sonst nach Zutaten Fleisch/Fisch oder vegetarisch */
 export function guessType(r: Recipe): Recipe["type"] {
   if ((r.durationMin ?? 0) > 75) return "wochenende";

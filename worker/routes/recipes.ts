@@ -1,8 +1,10 @@
 // Rezept-Übersicht, Import, eigene Rezepte, Favoriten, Rezept-Filter, Bilder
 import type { Ctx } from "../http";
 import { json } from "../http";
-import { generateImage, removeImage } from "../images";
+import { generateImage, removeImage, storeSourcePhoto } from "../images";
 import { importRecipeFromUrl, ImportError } from "../recipeImport";
+import { loadChefkochRecipe, searchChefkoch, type ChefkochFilters } from "../chefkoch";
+import { violatesHealthConditions } from "../meals";
 import { PLAN_MEAL_COLS, getProfile, loadContext, loadFavorites, loadPool } from "../repo";
 import { cleanWish, generateWishRecipe } from "../aiRecipes";
 import { recipeCatalog } from "../planning";
@@ -123,6 +125,32 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
     return json(await recipeCatalog(sql, p.id));
   }
 
+  // ---------- Chefkoch-Suche ----------
+  if (route === "POST /recipes/chefkoch/search" || route === "POST /recipes/chefkoch/preview") {
+    try {
+      if (route === "POST /recipes/chefkoch/search") {
+        const f = (body.filters ?? {}) as Record<string, unknown>;
+        const filters: ChefkochFilters = {
+          main: f.main !== false,
+          vegetarian: f.vegetarian === true,
+          vegan: f.vegan === true,
+          maxMinutes: Number(f.maxMinutes) > 0 ? Number(f.maxMinutes) : null,
+          topRated: f.topRated === true,
+          sort: ["relevance", "rating", "new"].includes(f.sort as string) ? (f.sort as ChefkochFilters["sort"]) : "relevance",
+        };
+        return json({ hits: await searchChefkoch(String(body.query ?? "").slice(0, 80), filters) });
+      }
+      const details = await loadChefkochRecipe(String(body.url ?? ""));
+      const p = await getProfile(sql);
+      const rows = await sql`SELECT health_conditions FROM profiles WHERE id = ${p.id}`;
+      const unsuitable = violatesHealthConditions(details.recipe, (rows[0]?.health_conditions as string[]) ?? []);
+      return json({ ...details, unsuitable });
+    } catch (e) {
+      if (e instanceof ImportError) return json({ error: e.message }, 422);
+      throw e;
+    }
+  }
+
   // ---------- Eigene Rezepte (Import per Link) ----------
   if (route === "POST /recipes/import") {
     try {
@@ -151,6 +179,11 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
         VALUES (${p.id}, ${name}, ${type}, ${ingredients}, ${instructions}, ${duration})
         ON CONFLICT (profile_id, meal_name) DO UPDATE SET meal_type = EXCLUDED.meal_type,
           ingredients = EXCLUDED.ingredients, instructions = EXCLUDED.instructions, duration_min = EXCLUDED.duration_min`;
+    }
+    // Foto der Quelle übernehmen (nur von Chefkoch, mit Link zum Original)
+    const photo = String(body.imageUrl ?? "");
+    if (/^https:\/\/([a-z0-9-]+\.)*chefkoch-cdn\.de\//i.test(photo) || /^https:\/\/([a-z0-9-]+\.)*chefkoch\.de\//i.test(photo)) {
+      await storeSourcePhoto(sql, name, photo, "Chefkoch", String(body.sourceUrl || "https://www.chefkoch.de/"));
     }
     return json({ ok: true, favorites: await loadFavorites(sql, p.id) });
   }
