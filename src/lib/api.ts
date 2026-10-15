@@ -710,8 +710,18 @@ export interface ChefkochDetails {
   unsuitable: boolean;
 }
 
-export async function searchChefkoch(query: string, filters: ChefkochFilters): Promise<ChefkochHit[]> {
-  return (await request<{ hits: ChefkochHit[] }>('POST', '/recipes/chefkoch/search', { query, filters })).hits;
+/** Position für „Mehr laden“ (null = keine weiteren Treffer) */
+export interface ChefkochCursor {
+  page: number;
+  index: number;
+}
+
+export function searchChefkoch(
+  query: string,
+  filters: ChefkochFilters,
+  cursor?: ChefkochCursor
+): Promise<{ hits: ChefkochHit[]; next: ChefkochCursor | null }> {
+  return request('POST', '/recipes/chefkoch/search', { query, filters, cursor });
 }
 
 export function previewChefkoch(url: string): Promise<ChefkochDetails> {

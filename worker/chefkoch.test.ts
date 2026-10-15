@@ -93,3 +93,38 @@ describe("parseRecipeDetails", () => {
     );
   });
 });
+
+describe("searchChefkoch – weiterblättern", () => {
+  const recipePage = (id: number) =>
+    ld({ "@type": "Recipe", name: `Rezept ${id}`, recipeIngredient: ["1 Zwiebel"], image: `https://img.chefkoch-cdn.de/${id}.jpg` });
+  const searchPage = (ids: number[]) =>
+    ld({ "@type": "ItemList", itemListElement: ids.map((id) => ({ url: `https://www.chefkoch.de/rezepte/${id}/R.html` })) });
+
+  test("12 je Ladung, Rest der Seite, dann nächste Seite, dann Ende", async () => {
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      const m = url.match(/\/rezepte\/(\d+)\//);
+      if (m) return new Response(recipePage(Number(m[1])));
+      if (url.includes("/rs/s0")) return new Response(searchPage(Array.from({ length: 15 }, (_, i) => i + 1)));
+      if (url.includes("/rs/s1")) return new Response(searchPage([16, 17]));
+      return new Response("<html></html>");
+    }) as typeof fetch;
+    try {
+      const { searchChefkoch } = await import("./chefkoch");
+      const a = await searchChefkoch("Test", {});
+      expect(a.hits.length).toBe(12);
+      expect(a.next).toEqual({ page: 0, index: 12 });
+      const b = await searchChefkoch("Test", {}, a.next!);
+      expect(b.hits.map((h) => h.name)).toEqual(["Rezept 13", "Rezept 14", "Rezept 15"]);
+      expect(b.next).toEqual({ page: 1, index: 0 });
+      const c = await searchChefkoch("Test", {}, b.next!);
+      expect(c.hits.length).toBe(2);
+      const d = await searchChefkoch("Test", {}, c.next!);
+      expect(d.hits).toEqual([]);
+      expect(d.next).toBeNull();
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+});
