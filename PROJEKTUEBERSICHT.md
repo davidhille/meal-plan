@@ -96,6 +96,11 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
 - **Hauptgerichte:** Kachel-Übersicht aller planbaren Gerichte, Suche und Filter (Typ, eigene Filter). Gericht einem Tag
   im Plan zuordnen; Gerichte ausblenden. Gerichte, die nicht zu den Gesundheitseinstellungen passen (z. B. Nudeln bei
   glutenfrei), sind standardmäßig versteckt und lassen sich einblenden – sie werden nie automatisch geplant.
+- **Speiseart & Hauptzutat:** aufklappbare Filter-Knöpfe wie bei Rezeptseiten – Speiseart (Auflauf, Eintopf, Suppe,
+  Pasta, Pizza, Salat, Curry, Pfanne & Wok, Burger & Wraps, Braten & Schnitzel, Eierspeise, Mehlspeisen) und Hauptzutat
+  (Nudeln, Reis, Kartoffeln, Fleisch, Fisch, Krustentiere & Muscheln, Gemüse, Hülsenfrüchte, Käse). Je Gruppe einer
+  wählbar, kombinierbar mit Typ, Suche und eigenen Filtern. Die Zuordnung erkennt die App automatisch an Name und
+  Zutaten (`lib/recipeCategories.ts`); angezeigt werden nur Knöpfe mit Treffern, die Zahl nennt die Anzahl.
 - **Rezept mit KI erstellen** (Knopf oben in der Übersicht): Wunsch eingeben („etwas mit Kürbis, schnell“), Art wählen
   oder „Egal“ → Vorschau. „Anderer Vorschlag“, über den Stift anpassen, dann „In die Sammlung“ (optional als Favorit).
   Gesundheitseinstellungen und Abneigungen werden beachtet und geprüft; das Bild entsteht im Hintergrund.
