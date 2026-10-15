@@ -101,7 +101,7 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
   Gesundheitseinstellungen und Abneigungen werden beachtet und geprüft; das Bild entsteht im Hintergrund.
 - **Bei Chefkoch suchen** (Knopf oben in der Übersicht): Suchbegriff plus Filter (Hauptspeise, Vegetarisch, Vegan,
   bis 30 Min, ab 4 ★, beste zuerst) → je 12 Treffer mit Foto, Bewertung und Zeit, „Mehr laden“ holt die nächsten 12. Antippen zeigt die Vorschau
-  (Zutaten auf 4 Portionen umgerechnet, Zubereitung, Hinweis bei unpassenden Gesundheitseinstellungen, „schon da“);
+  (Name änderbar, Zutaten auf 4 Portionen umgerechnet, Zubereitung, Hinweis bei unpassenden Gesundheitseinstellungen, „schon da“);
   „In meine Rezepte übernehmen“ speichert es mit Chefkoch-Foto und Link zum Original (optional als Favorit) und führt
   zurück zur Trefferliste (weitere Rezepte übernehmen). Pfeil, Escape oder Tipp daneben = zurück zur Liste.
   Abgerufen wird nur bei einer Suche (je Suche die Ergebnisseite plus bis zu 12 Rezepte, in Vierergruppen).

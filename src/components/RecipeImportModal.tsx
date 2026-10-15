@@ -27,7 +27,7 @@ export default function RecipeImportModal({ onSaved, onClose }: RecipeImportModa
   const [recipe, setRecipe] = useState<ImportedRecipe | null>(null);
   const [ingredientsText, setIngredientsText] = useState('');
   const [stepsText, setStepsText] = useState('');
-  const [favorite, setFavorite] = useState(true);
+  const [favorite, setFavorite] = useState(false);
   const dialogRef = useDialog(() => !saving && onClose());
 
   const load = async () => {

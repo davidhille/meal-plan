@@ -68,6 +68,8 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
   const [type, setType] = useState<MealType>('vegetarisch');
   const [favorite, setFavorite] = useState(false);
   const [category, setCategory] = useState<DessertCategory>('creme');
+  /** Name zum Speichern – lässt sich vor dem Übernehmen ändern */
+  const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   /** In dieser Sitzung übernommene Rezepte (Markierung in der Trefferliste) */
@@ -153,6 +155,7 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
     try {
       const d = await previewChefkoch(hit.url);
       setDetail(d);
+      setName(d.recipe.name);
       setType(d.recipe.type);
       setCategory(guessDessertCategory(`${d.recipe.name} ${d.tags.join(' ')}`));
       setFavorite(false);
@@ -169,9 +172,10 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
     setError(null);
     try {
       const r = detail.recipe;
+      const finalName = name.trim() || r.name;
       if (isDessert) {
         await saveCustomDessert({
-          name: r.name,
+          name: finalName,
           category,
           yield: detail.yieldText ?? '4 Portionen',
           durationMin: r.durationMin ?? null,
@@ -183,7 +187,7 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
       } else {
         await saveImportedRecipe(
           {
-            name: r.name,
+            name: finalName,
             type,
             ingredients: r.ingredients,
             instructions: r.instructions,
@@ -194,9 +198,9 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
           favorite
         );
       }
-      onSaved(r.name, favorite);
-      setTaken((prev) => new Set(prev).add(r.name));
-      setNotice(`„${r.name}“ ist jetzt ${isDessert ? 'bei deinen Nachtischen' : 'in deinen Rezepten'}.`);
+      onSaved(finalName, favorite);
+      setTaken((prev) => new Set(prev).add(r.name).add(finalName));
+      setNotice(`„${finalName}“ ist jetzt ${isDessert ? 'bei deinen Nachtischen' : 'in deinen Rezepten'}.`);
       backToList();
     } catch (e) {
       setError((e as Error).message || 'Das Rezept konnte nicht gespeichert werden.');
@@ -206,7 +210,7 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
   };
 
   const steps = detail ? detail.recipe.instructions.split('\n').filter(Boolean) : [];
-  const already = detail ? existingNames.has(detail.recipe.name) : false;
+  const already = detail ? existingNames.has(name.trim() || detail.recipe.name) : false;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -335,6 +339,15 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
                 </a>
               </div>
 
+              <label className="block">
+                <span className="block text-sm font-bold text-gray-900 mb-1">Name</span>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full h-11 px-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
+                />
+              </label>
               {detail.unsuitable && (
                 <p className="flex gap-2 p-3 rounded-xl bg-amber-50 text-sm text-amber-900">
                   <ShieldAlert size={16} className="flex-shrink-0 mt-0.5" aria-hidden="true" />

@@ -237,6 +237,9 @@ const ENTITIES: Record<string, string> = {
 /** HTML-Tags und -Entities entfernen, Leerraum zusammenfassen */
 function clean(s: string): string {
   return s
+    .normalize("NFC")
+    // Weiche Trennzeichen und unsichtbare Zeichen stören die Erkennung („Hähn\u00adchen“)
+    .replace(/[\u00ad\u200b-\u200d\u2060\ufeff]/g, "")
     .replace(/<[^>]+>/g, " ")
     .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
     .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
