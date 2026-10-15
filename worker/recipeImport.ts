@@ -53,7 +53,10 @@ export function parseRecipeHtml(html: string, sourceUrl: string): ImportedRecipe
   const node = findRecipeNode(html);
   if (!node) return null;
 
-  const name = clean(text(node.name));
+  // Chefkoch hängt den Autor an den Namen („Paprika-Hähnchen von Sister“) – für die Sammlung weglassen
+  const author = clean(text((toArray(node.author)[0] as Json | undefined)?.name ?? toArray(node.author)[0]));
+  const rawName = clean(text(node.name));
+  const name = author && rawName.endsWith(` von ${author}`) ? rawName.slice(0, -` von ${author}`.length).trim() : rawName;
   const rawIngredients = toArray(node.recipeIngredient ?? node.ingredients).map((i) => clean(text(i))).filter(Boolean);
   if (!name || rawIngredients.length === 0) return null;
 
@@ -83,8 +86,13 @@ export function parseRecipeDetails(html: string, sourceUrl: string): RecipeDetai
   const recipe = parseRecipeHtml(html, sourceUrl);
   const node = recipe && findRecipeNode(html);
   if (!recipe || !node) return null;
+  // Bild: schema.org „image“ (Text, Liste oder ImageObject), sonst das Vorschaubild der Seite (og:image)
   const img = toArray(node.image)[0];
-  const imageUrl = typeof img === "string" ? img : img && typeof img === "object" ? text((img as Json).url) || null : null;
+  const fromLd =
+    typeof img === "string" ? img : img && typeof img === "object" ? text((img as Json).url ?? (img as Json).contentUrl) : "";
+  const og = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)?.[1]
+    ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i)?.[1];
+  const imageUrl = [fromLd, og].map((u) => (u ?? "").replace(/^\/\//, "https://").replace(/^http:\/\//, "https://")).find((u) => /^https:\/\//.test(u)) ?? null;
   const agg = (node.aggregateRating ?? {}) as Json;
   const num = (v: unknown) => {
     const n = Number(String(v ?? "").replace(",", "."));
@@ -95,7 +103,7 @@ export function parseRecipeDetails(html: string, sourceUrl: string): RecipeDetai
     .filter(Boolean);
   return {
     recipe,
-    imageUrl: imageUrl && /^https:\/\//.test(imageUrl) ? imageUrl : null,
+    imageUrl,
     rating: num(agg.ratingValue),
     ratingCount: num(agg.ratingCount ?? agg.reviewCount),
     tags: [...new Set(tags)].slice(0, 12),

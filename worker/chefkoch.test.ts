@@ -77,4 +77,19 @@ describe("parseRecipeDetails", () => {
   });
   test("ohne Zutaten (z. B. Plus-Rezept): null", () =>
     expect(parseRecipeDetails(ld({ "@type": "Recipe", name: "Plus" }), "https://www.chefkoch.de/rezepte/9/x.html")).toBeNull());
+  test("Autor wird vom Namen abgeschnitten", () => {
+    const d2 = parseRecipeDetails(
+      ld({ "@type": "Recipe", name: "Paprika-Sahne-Hähnchen von Sister", author: { "@type": "Person", name: "Sister" }, recipeIngredient: ["1 Hähnchen"] }),
+      "https://www.chefkoch.de/rezepte/5/x.html"
+    );
+    expect(d2?.recipe.name).toBe("Paprika-Sahne-Hähnchen");
+  });
+  test("ohne Bild in den Rezeptdaten: Vorschaubild der Seite (og:image)", () => {
+    const html2 =
+      '<meta property="og:image" content="https://img.chefkoch-cdn.de/rezepte/7/bilder/1/crop-960x720/x.jpg">' +
+      ld({ "@type": "Recipe", name: "Dal", recipeIngredient: ["200 g Linsen"] });
+    expect(parseRecipeDetails(html2, "https://www.chefkoch.de/rezepte/7/x.html")?.imageUrl).toBe(
+      "https://img.chefkoch-cdn.de/rezepte/7/bilder/1/crop-960x720/x.jpg"
+    );
+  });
 });

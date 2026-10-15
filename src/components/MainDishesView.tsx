@@ -350,13 +350,10 @@ export default function MainDishesView({
       {showChefkoch && (
         <ChefkochSearchModal
           existingNames={new Set((catalog?.recipes ?? []).map((r) => r.name))}
-          onSaved={async (name, favorite) => {
-            setShowChefkoch(false);
-            const next = await getRecipeCatalog();
-            setCatalog(next);
-            setSelected(next.recipes.find((r) => r.name === name) ?? null);
+          onSaved={async (_name, favorite) => {
+            // Fenster bleibt offen – nur die Sammlung im Hintergrund aktualisieren
+            setCatalog(await getRecipeCatalog());
             if (favorite) onRecipesChanged?.();
-            flash(`„${name}“ ist jetzt in deiner Sammlung.`);
           }}
           onClose={() => setShowChefkoch(false)}
         />
