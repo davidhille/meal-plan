@@ -21,7 +21,7 @@ export default function RecipeFilterAssign({ filters, recipe, onChange }: Recipe
     return (
       <p className="flex items-center gap-1.5 text-xs text-gray-500">
         <Filter size={12} aria-hidden="true" />
-        Eigene Filter (z. B. „Fisch“, „Nudeln“) legst du in den Einstellungen an und kannst sie hier zuordnen.
+        Eigene Filter (z. B. „Lieblingsessen der Kinder“) legst du in den Einstellungen an und kannst sie hier zuordnen.
       </p>
     );
   }
@@ -43,7 +43,7 @@ export default function RecipeFilterAssign({ filters, recipe, onChange }: Recipe
     <div>
       <p className="flex items-center gap-1.5 mb-2 text-xs font-semibold text-gray-500">
         <Filter size={12} aria-hidden="true" />
-        Filter
+        Meine Filter
       </p>
       <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter zuordnen">
         {filters.map((f) => {
@@ -54,8 +54,8 @@ export default function RecipeFilterAssign({ filters, recipe, onChange }: Recipe
               aria-pressed={on}
               disabled={!!busy}
               onClick={() => toggle(f)}
-              className={`flex items-center gap-1 px-3 h-8 rounded-lg text-xs font-semibold transition-colors ${
-                on ? 'bg-amber-700 text-white' : 'bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100'
+              className={`flex items-center gap-1 px-3 h-8 rounded-full text-xs font-semibold transition-colors ${
+                on ? 'bg-brand-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-brand-50'
               }`}
             >
               {busy === f.id ? <Loader2 size={11} className="animate-spin" /> : on ? <Check size={11} /> : <Plus size={11} />}
