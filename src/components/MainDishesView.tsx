@@ -1,18 +1,36 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChefHat, Clock, Loader2, Search, EyeOff, X, ShieldAlert, Sparkles, MessageSquare, Star } from 'lucide-react';
+import { ChefHat, Clock, Loader2, Search, EyeOff, X, ShieldAlert, Sparkles, MessageSquare, Star, SlidersHorizontal } from 'lucide-react';
 import { useRatings } from '../lib/ratings';
 import { CatalogRecipe, Meal, MealType, PlanMeal, RecipeCatalog, RecipeFilter } from '../types';
-import { matchesRecipeFilter } from '../lib/recipeFilters';
-import { DISH_KINDS, MAIN_INGREDIENTS, matchesCategory } from '../lib/recipeCategories';
-import CategoryFilters from './CategoryFilters';
+import { CategoryOverride, toOverrideMap } from '../lib/recipeCategories';
+import {
+  EMPTY_SELECTION,
+  FacetGroup,
+  FacetSelection,
+  matchesSelection,
+  optionLabel,
+  selectionSize,
+  toggleOption,
+} from '../lib/recipeFacets';
+import RecipeFilterSheet from './RecipeFilterSheet';
+import RecipeCategoryAssign from './RecipeCategoryAssign';
 import { CONDITION_LABELS, swapExample } from '../lib/health';
-import CustomFilterChips from './CustomFilterChips';
 import RecipeFilterAssign from './RecipeFilterAssign';
 import RecipeEditModal from './RecipeEditModal';
 import AiRecipeModal from './AiRecipeModal';
 import ChefkochSearchModal from './ChefkochSearchModal';
 import HiddenItemsList from './HiddenItemsList';
-import { deleteRecipe, moveRecipeToDessert, generateMealImage, removeMealImage, getRecipeCatalog, resetRecipeEdit, saveRecipeEdit, setRecipeHidden } from '../lib/api';
+import {
+  deleteRecipe,
+  getCategoryOverrides,
+  moveRecipeToDessert,
+  generateMealImage,
+  removeMealImage,
+  getRecipeCatalog,
+  resetRecipeEdit,
+  saveRecipeEdit,
+  setRecipeHidden,
+} from '../lib/api';
 import { RECIPE_BASE_PORTIONS } from '../lib/portions';
 import MealModal from './MealModal';
 import DayAssignSheet from './DayAssignSheet';
@@ -30,13 +48,6 @@ interface MainDishesViewProps {
   /** Gericht bearbeitet – Plan und Favoriten neu laden */
   onRecipesChanged?: () => void;
 }
-
-const FILTERS: { id: MealType | 'alle'; label: string }[] = [
-  { id: 'alle', label: 'Alle' },
-  { id: 'vegetarisch', label: 'Vegetarisch' },
-  { id: 'fleisch', label: 'Fleisch & Fisch' },
-  { id: 'wochenende', label: 'Wochenende' },
-];
 
 const TYPE_LABEL: Record<MealType, string> = { vegetarisch: 'Vegetarisch', fleisch: 'Fleisch & Fisch', wochenende: 'Wochenende' };
 
@@ -72,9 +83,11 @@ export default function MainDishesView({
   const [catalog, setCatalog] = useState<RecipeCatalog | null>(null);
   const { ratings, notes } = useRatings();
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<MealType | 'alle'>('alle');
-  const [customId, setCustomId] = useState<string | null>(null);
-  const custom = customFilters.find((f) => f.id === customId) ?? null;
+  // Filter-Auswahl (Art, Speiseart, Hauptzutat, eigene Filter) – im Filter-Fenster
+  const [selection, setSelection] = useState<FacetSelection>(EMPTY_SELECTION);
+  const [showFilters, setShowFilters] = useState(false);
+  const [overrideList, setOverrideList] = useState<CategoryOverride[]>([]);
+  const overrides = useMemo(() => toOverrideMap(overrideList), [overrideList]);
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<CatalogRecipe | null>(null);
   const [assign, setAssign] = useState<CatalogRecipe | null>(null);
@@ -82,11 +95,6 @@ export default function MainDishesView({
   const [notice, setNotice] = useState<string | null>(null);
   const [editing, setEditing] = useState<CatalogRecipe | null>(null);
   const [showUnsuitable, setShowUnsuitable] = useState(false);
-  // Speiseart und Hauptzutat (je eine Auswahl, kombinierbar)
-  const [kindId, setKindId] = useState<string | null>(null);
-  const [ingredientId, setIngredientId] = useState<string | null>(null);
-  const kind = DISH_KINDS.find((c) => c.id === kindId) ?? null;
-  const mainIngredient = MAIN_INGREDIENTS.find((c) => c.id === ingredientId) ?? null;
   const [showAi, setShowAi] = useState(false);
   const [showChefkoch, setShowChefkoch] = useState(false);
 
@@ -94,6 +102,10 @@ export default function MainDishesView({
     getRecipeCatalog()
       .then(setCatalog)
       .catch((e) => setLoadError((e as Error).message || 'Die Gerichte konnten nicht geladen werden.'));
+    // Ohne Korrekturen geht es auch – dann gilt nur die automatische Erkennung
+    getCategoryOverrides()
+      .then(setOverrideList)
+      .catch(() => {});
   }, []);
 
   const flash = (text: string) => {
@@ -101,19 +113,26 @@ export default function MainDishesView({
     setTimeout(() => setNotice(null), 4000);
   };
 
-  const visible = useMemo(() => {
+  // Gerichte nach Suche und Gesundheits-Einstellung; darauf beziehen sich die Zahlen im Filter-Fenster
+  const searched = useMemo(() => {
     if (!catalog) return [];
     const q = normalize(query.trim());
     return catalog.recipes.filter(
       (r) =>
-        (showUnsuitable || !r.unsuitable) &&
-        (filter === 'alle' || r.type === filter) &&
-        (!custom || matchesRecipeFilter(custom, r)) &&
-        (!kind || matchesCategory(kind, r)) &&
-        (!mainIngredient || matchesCategory(mainIngredient, r)) &&
-        (!q || normalize(r.name).includes(q) || r.ingredients.some((i) => normalize(i).includes(q)))
+        (showUnsuitable || !r.unsuitable) && (!q || normalize(r.name).includes(q) || r.ingredients.some((i) => normalize(i).includes(q)))
     );
-  }, [catalog, filter, query, custom, showUnsuitable, kind, mainIngredient]);
+  }, [catalog, query, showUnsuitable]);
+
+  // Eigene Filter, die es nicht mehr gibt, nicht mitzählen
+  const activeSelection = useMemo(
+    () => ({ ...selection, custom: selection.custom.filter((id) => customFilters.some((f) => f.id === id)) }),
+    [selection, customFilters]
+  );
+  const visible = useMemo(
+    () => searched.filter((r) => matchesSelection(r, activeSelection, { customFilters, overrides })),
+    [searched, activeSelection, customFilters, overrides]
+  );
+  const activeCount = selectionSize(activeSelection);
 
   if (loadError) {
     return <p className="px-4 py-12 text-sm text-center text-red-600">{loadError}</p>;
@@ -162,27 +181,44 @@ export default function MainDishesView({
   return (
     <>
       <div className="px-4 py-4 space-y-3">
-        <label className="relative block">
-          <span className="sr-only">Gericht suchen</span>
-          <Search size={16} aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            enterKeyHint="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Suchen, z. B. Curry oder Hähnchen"
-            className="w-full h-11 pl-9 pr-9 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
-          />
-          {query && (
-            <button
-              onClick={() => setQuery('')}
-              aria-label="Suche leeren"
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100"
-            >
-              <X size={14} />
-            </button>
-          )}
-        </label>
+        <div className="flex gap-2">
+          <label className="relative block flex-1 min-w-0">
+            <span className="sr-only">Gericht suchen</span>
+            <Search size={16} aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              enterKeyHint="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Gericht oder Zutat suchen"
+              className="w-full h-11 pl-9 pr-9 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            />
+            {query && (
+              <button
+                onClick={() => setQuery('')}
+                aria-label="Suche leeren"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </label>
+          <button
+            onClick={() => setShowFilters(true)}
+            aria-label={activeCount ? `Filter, ${activeCount} aktiv` : 'Filter'}
+            className={`relative h-11 px-3.5 flex items-center gap-1.5 rounded-xl border text-sm font-semibold transition-colors ${
+              activeCount ? 'bg-brand-700 border-brand-700 text-white' : 'bg-white border-gray-200 text-gray-700 hover:bg-brand-50'
+            }`}
+          >
+            <SlidersHorizontal size={16} aria-hidden="true" />
+            Filter
+            {activeCount > 0 && (
+              <span className="min-w-5 h-5 px-1 flex items-center justify-center rounded-full bg-white text-brand-800 text-xs font-bold">
+                {activeCount}
+              </span>
+            )}
+          </button>
+        </div>
 
         <div className="grid grid-cols-2 gap-2">
           <button
@@ -201,28 +237,29 @@ export default function MainDishesView({
           </button>
         </div>
 
-        <div className="flex gap-1.5 overflow-x-auto -mx-4 px-4 pb-1" role="group" aria-label="Art">
-          {FILTERS.map((f) => (
-            <button
-              key={f.id}
-              aria-pressed={filter === f.id}
-              onClick={() => setFilter(f.id)}
-              className={`flex-none px-3 h-8 rounded-lg text-xs font-semibold transition-colors ${
-                filter === f.id ? 'bg-brand-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              {f.label}
+        {activeCount > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Aktive Filter">
+            {(Object.keys(activeSelection) as FacetGroup[]).flatMap((g) =>
+              activeSelection[g].map((id) => {
+                const label = optionLabel(g, id, customFilters);
+                return (
+                  <button
+                    key={g + id}
+                    onClick={() => setSelection((s) => toggleOption(s, g, id))}
+                    aria-label={`Filter ${label} entfernen`}
+                    className="h-8 pl-3 pr-2 flex items-center gap-1 rounded-full bg-brand-100 text-xs font-semibold text-brand-800 hover:bg-brand-200"
+                  >
+                    {label}
+                    <X size={13} aria-hidden="true" />
+                  </button>
+                );
+              })
+            )}
+            <button onClick={() => setSelection(EMPTY_SELECTION)} className="h-8 px-2 text-xs font-semibold text-brand-700 hover:underline">
+              Alle löschen
             </button>
-          ))}
-        </div>
-        <CustomFilterChips filters={customFilters} activeId={customId} onChange={setCustomId} />
-        <CategoryFilters
-          recipes={catalog.recipes.filter((r) => showUnsuitable || !r.unsuitable)}
-          kindId={kindId}
-          ingredientId={ingredientId}
-          onKind={setKindId}
-          onIngredient={setIngredientId}
-        />
+          </div>
+        )}
 
         <p className="text-xs text-gray-500 px-1" aria-live="polite">
           {visible.length === shownTotal ? `${shownTotal} Gerichte` : `${visible.length} von ${shownTotal} Gerichten`}
@@ -236,8 +273,8 @@ export default function MainDishesView({
               className="mt-0.5 accent-amber-700"
             />
             <span>
-              {unsuitableCount} weitere Gerichte passen nicht zu euren Einstellungen{conditions ? ` (${conditions})` : ''} und werden
-              nie geplant. <strong>Auch diese zeigen</strong> – z. B. um Zutaten auszutauschen{example ? ` (${example})` : ''}.
+              {unsuitableCount} weitere Gerichte passen nicht zu euren Einstellungen{conditions ? ` (${conditions})` : ''} und werden nie
+              geplant. <strong>Auch diese zeigen</strong> – z. B. um Zutaten auszutauschen{example ? ` (${example})` : ''}.
             </span>
           </label>
         )}
@@ -287,7 +324,10 @@ export default function MainDishesView({
                         </span>
                       ) : null}
                       {ratings[r.name] ? (
-                        <span className="flex items-center gap-0.5 whitespace-nowrap text-amber-700" aria-label={`${ratings[r.name]} von 5 Sternen`}>
+                        <span
+                          className="flex items-center gap-0.5 whitespace-nowrap text-amber-700"
+                          aria-label={`${ratings[r.name]} von 5 Sternen`}
+                        >
                           <Star size={11} className="fill-yellow-400 text-yellow-500" aria-hidden="true" />
                           {ratings[r.name]}
                         </span>
@@ -338,7 +378,12 @@ export default function MainDishesView({
           onRemoveImage={removeMealImage}
           onImageChange={(url, credit) =>
             setCatalog((c) =>
-              c ? { ...c, recipes: c.recipes.map((r) => (r.name === selected.name ? { ...r, imageUrl: url || null, imageCredit: credit } : r)) } : c
+              c
+                ? {
+                    ...c,
+                    recipes: c.recipes.map((r) => (r.name === selected.name ? { ...r, imageUrl: url || null, imageCredit: credit } : r)),
+                  }
+                : c
             )
           }
           onEdit={() => setEditing(selected)}
@@ -354,12 +399,23 @@ export default function MainDishesView({
                   Stift lassen sich die Zutaten anpassen.
                 </p>
               )}
-              {onFiltersChange && (
-                <RecipeFilterAssign filters={customFilters} recipe={selected} onChange={onFiltersChange} />
-              )}
+              <RecipeCategoryAssign recipe={selected} overrides={overrides} onChange={setOverrideList} />
+              {onFiltersChange && <RecipeFilterAssign filters={customFilters} recipe={selected} onChange={onFiltersChange} />}
             </div>
           }
           onClose={() => setSelected(null)}
+        />
+      )}
+
+      {showFilters && (
+        <RecipeFilterSheet
+          recipes={searched}
+          selection={activeSelection}
+          onChange={setSelection}
+          resultCount={visible.length}
+          customFilters={customFilters}
+          overrides={overrides}
+          onClose={() => setShowFilters(false)}
         />
       )}
 
@@ -425,8 +481,8 @@ export default function MainDishesView({
           title="Gericht ausblenden?"
           message={
             <>
-              <strong>{hideCandidate.name}</strong> wird nicht mehr vorgeschlagen. Unten unter „Ausgeblendete Gerichte“ kannst du es
-              wieder einblenden oder endgültig löschen.
+              <strong>{hideCandidate.name}</strong> wird nicht mehr vorgeschlagen. Unten unter „Ausgeblendete Gerichte“ kannst du es wieder
+              einblenden oder endgültig löschen.
             </>
           }
           confirmLabel="Ausblenden"
@@ -440,7 +496,10 @@ export default function MainDishesView({
       )}
 
       {notice && (
-        <div role="status" className="fixed bottom-6 inset-x-4 z-40 max-w-md mx-auto px-4 py-3 rounded-2xl bg-gray-800 text-white text-sm shadow-lg">
+        <div
+          role="status"
+          className="fixed bottom-6 inset-x-4 z-40 max-w-md mx-auto px-4 py-3 rounded-2xl bg-gray-800 text-white text-sm shadow-lg"
+        >
           {notice}
         </div>
       )}

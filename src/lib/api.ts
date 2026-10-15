@@ -2,6 +2,7 @@ import {
   Profile, FamilyMember, MealRating, MealPlan, PlanMeal, Routine, ShoppingItem, ShoppingLabel, Favorite, MealType, ImageCredit,
   ShopState, ShopProvider, ProductResult, CartItem, ShopRule, PlanDessert, Dessert, DessertCategory, RecipeCatalog, RecipeFilter, RecipeFilterInput, RecipeDraft, DayRules, RatingNote,
 } from '../types';
+import type { CategoryOverride } from './recipeCategories';
 
 // Alle Daten laufen über die Cloudflare-Functions unter /api (→ Neon).
 // Das Familien-Passwort wird im Browser gemerkt und bei jeder Anfrage mitgeschickt.
@@ -504,6 +505,17 @@ export async function assignRecipeFilter(filterId: string, name: string, state: 
 
 export async function deleteRecipeFilter(id: string): Promise<RecipeFilter[]> {
   return request<RecipeFilter[]>('DELETE', `/recipe-filters/${enc(id)}`);
+}
+
+// ---------- Speiseart/Hauptzutat korrigieren (werfen bei Fehlern) ----------
+
+export async function getCategoryOverrides(): Promise<CategoryOverride[]> {
+  return request<CategoryOverride[]>('GET', '/category-overrides');
+}
+
+/** Gericht einer Kategorie zuordnen (include), ausnehmen (exclude) oder wieder der Erkennung überlassen (auto) */
+export async function setCategoryOverride(name: string, categoryId: string, state: 'include' | 'exclude' | 'auto'): Promise<CategoryOverride[]> {
+  return request<CategoryOverride[]>('POST', '/category-overrides', { name, categoryId, state });
 }
 
 export async function createLabel(name: string, color: string): Promise<ShoppingLabel[] | null> {

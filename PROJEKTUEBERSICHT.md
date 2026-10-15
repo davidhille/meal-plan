@@ -93,14 +93,20 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
 
 ## 3. Rezepte
 
-- **Hauptgerichte:** Kachel-Übersicht aller planbaren Gerichte, Suche und Filter (Typ, eigene Filter). Gericht einem Tag
-  im Plan zuordnen; Gerichte ausblenden. Gerichte, die nicht zu den Gesundheitseinstellungen passen (z. B. Nudeln bei
-  glutenfrei), sind standardmäßig versteckt und lassen sich einblenden – sie werden nie automatisch geplant.
-- **Speiseart & Hauptzutat:** aufklappbare Filter-Knöpfe wie bei Rezeptseiten – Speiseart (Auflauf, Eintopf, Suppe,
-  Pasta, Pizza, Salat, Curry, Pfanne & Wok, Burger & Wraps, Braten & Schnitzel, Eierspeise, Mehlspeisen) und Hauptzutat
-  (Nudeln, Reis, Kartoffeln, Fleisch, Fisch, Krustentiere & Muscheln, Gemüse, Hülsenfrüchte, Käse). Je Gruppe einer
-  wählbar, kombinierbar mit Typ, Suche und eigenen Filtern. Die Zuordnung erkennt die App automatisch an Name und
-  Zutaten (`lib/recipeCategories.ts`); angezeigt werden nur Knöpfe mit Treffern, die Zahl nennt die Anzahl.
+- **Hauptgerichte:** Kachel-Übersicht aller planbaren Gerichte mit Suche und Filter. Gericht einem Tag im Plan zuordnen;
+  Gerichte ausblenden. Gerichte, die nicht zu den Gesundheitseinstellungen passen (z. B. Nudeln bei glutenfrei), sind
+  standardmäßig versteckt und lassen sich einblenden – sie werden nie automatisch geplant.
+- **Filter-Fenster** (Knopf „Filter“ neben der Suche, Zahl = aktive Filter): alle Filter an einer Stelle, in Gruppen –
+  **Art** (Vegetarisch, Fleisch & Fisch, Wochenende), **Speiseart** (Auflauf, Eintopf, Suppe, Pasta, Pizza, Salat, Curry,
+  Pfanne & Wok, Burger & Wraps, Braten & Schnitzel, Eierspeise, Mehlspeisen), **Hauptzutat** (Nudeln, Reis, Kartoffeln,
+  Geflügel, Rind, Schwein, Lamm, Fisch, Krustentiere & Muscheln, Gemüse, Hülsenfrüchte, Käse) und **Meine Filter**.
+  In einer Gruppe darf man mehreres wählen (Rind *oder* Schwein), die Gruppen gelten zusammen (Pasta *und* Rind). Die Zahl
+  am Knopf sagt, wie viele Gerichte es damit gäbe; Knöpfe ohne Treffer sind ausgegraut. Gewählte Filter stehen als
+  Chips unter der Suche (einzeln entfernen oder „Alle löschen“).
+- **Kategorien:** Speiseart und Hauptzutat erkennt die App an Name und Zutaten (`lib/recipeCategories.ts`; Würzzutaten wie
+  Hühnerbrühe oder Fischsauce zählen nicht, Hackfleisch ohne Angabe zählt zu Rind und Schwein). Liegt sie daneben, im
+  Rezept unter „Kategorien“ → „Korrigieren“ an- oder abwählen (gespeichert in `recipe_category_overrides`, zieht beim
+  Umbenennen mit).
 - **Rezept mit KI erstellen** (Knopf oben in der Übersicht): Wunsch eingeben („etwas mit Kürbis, schnell“), Art wählen
   oder „Egal“ → Vorschau. „Anderer Vorschlag“, über den Stift anpassen, dann „In die Sammlung“ (optional als Favorit).
   Gesundheitseinstellungen und Abneigungen werden beachtet und geprüft; das Bild entsteht im Hintergrund.
@@ -152,8 +158,9 @@ Auf- und zuklappbare Karten:
 - **Einkaufslisten verwalten:** eigene Listen anlegen, umbenennen, umfärben, löschen.
 - **Eigene Rezept-Filter:** Name, Suchbegriffe und/oder maximale Zubereitungszeit, für Gerichte, Nachtische oder beide;
   bearbeiten und löschen. Einzelne Gerichte werden im Rezept zugeordnet oder ausgenommen (auch ganz ohne Suchbegriffe).
-  Vorschläge u. a. „Fisch“ und „Fleisch“ – die festen Arten „Vegetarisch / Fleisch & Fisch / Wochenende“ steuern den
-  Wochenrhythmus und bleiben unverändert.
+  Gedacht für alles, was Art/Speiseart/Hauptzutat nicht abdecken (Vorschläge „Schnell“, „Lieblingsessen der Kinder“,
+  „Für Gäste“, „Schokolade“). Die früheren eigenen Filter Nudeln, Reis, Huhn, Rind und Schwein wurden mit Migration 0012
+  durch die festen Hauptzutaten ersetzt; ihre Hand-Zuordnungen wurden dabei als Korrekturen übernommen.
 - **Wochentage:** pro Wochentag „Normal“, „Frei – nicht planen“ (auswärts essen, Reste) oder „höchstens 15/20/30/45/60 Min“.
   Freie Tage bleiben im Plan leer (schmale Zeile „frei“, Heute-Karte „Heute ist frei“); an Tagen mit Zeitlimit kommen
   nur Gerichte, die reinpassen (bekannte Zeit zuerst). Gilt für neue Pläne, Routinen und „Neu generieren“.

@@ -65,6 +65,12 @@ async function deleteMainDish(sql: Sql, profileId: string, name: string) {
       WHERE NOT EXISTS (SELECT 1 FROM rejected_meals WHERE profile_id = ${profileId} AND meal_name = ${n})`;
   }
   await sql`DELETE FROM favorites WHERE profile_id = ${profileId} AND meal_name = ${name}`;
+  await sql`DELETE FROM recipe_category_overrides WHERE profile_id = ${profileId} AND recipe_name = ${name}`;
+}
+
+function listCategoryOverrides(sql: Sql, profileId: string) {
+  return sql`SELECT recipe_name AS name, category_id AS "categoryId", included FROM recipe_category_overrides
+    WHERE profile_id = ${profileId}`;
 }
 
 async function listRecipeFilters(sql: Sql, profileId: string) {
@@ -333,6 +339,30 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
     const p = await getProfile(sql);
     await sql`DELETE FROM recipe_filters WHERE id = ${id} AND profile_id = ${p.id}`;
     return json(await listRecipeFilters(sql, p.id));
+  }
+
+  // ---------- Speiseart/Hauptzutat von Hand korrigieren ----------
+  if (route === "GET /category-overrides") {
+    const p = await getProfile(sql);
+    return json(await listCategoryOverrides(sql, p.id));
+  }
+  // include = immer dabei, exclude = nie, auto = wieder der Erkennung überlassen
+  if (route === "POST /category-overrides") {
+    const p = await getProfile(sql);
+    const name = String(body.name ?? "").trim().slice(0, 200);
+    const categoryId = String(body.categoryId ?? "");
+    const state = body.state as string;
+    if (!name || !/^[a-z]{2,30}$/.test(categoryId) || !["include", "exclude", "auto"].includes(state)) {
+      return json({ error: "Angaben fehlen" }, 400);
+    }
+    if (state === "auto") {
+      await sql`DELETE FROM recipe_category_overrides WHERE profile_id = ${p.id} AND recipe_name = ${name} AND category_id = ${categoryId}`;
+    } else {
+      await sql`INSERT INTO recipe_category_overrides (profile_id, recipe_name, category_id, included)
+        VALUES (${p.id}, ${name}, ${categoryId}, ${state === "include"})
+        ON CONFLICT (profile_id, recipe_name, category_id) DO UPDATE SET included = EXCLUDED.included`;
+    }
+    return json(await listCategoryOverrides(sql, p.id));
   }
 
   // ---------- Bilder ----------

@@ -38,6 +38,8 @@ async function renameReferences(sql: Sql, profileId: string, from: string, to: s
   await sql`UPDATE rejected_meals SET meal_name = ${to} WHERE profile_id = ${profileId} AND meal_name = ${from}`;
   await sql`UPDATE recipe_filters SET include_names = array_replace(include_names, ${from}, ${to}),
     exclude_names = array_replace(exclude_names, ${from}, ${to}) WHERE profile_id = ${profileId}`;
+  await sql`UPDATE recipe_category_overrides o SET recipe_name = ${to} WHERE profile_id = ${profileId} AND recipe_name = ${from}
+    AND NOT EXISTS (SELECT 1 FROM recipe_category_overrides x WHERE x.profile_id = o.profile_id AND x.recipe_name = ${to} AND x.category_id = o.category_id)`;
   // Bild mitnehmen (die Bild-URL enthält den Namen)
   const img = await sql`SELECT extract(epoch FROM updated_at)::bigint AS v FROM meal_images WHERE meal_name = ${from}
     AND NOT EXISTS (SELECT 1 FROM meal_images WHERE meal_name = ${to})`;

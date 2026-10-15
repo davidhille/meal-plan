@@ -14,21 +14,8 @@ const SCOPES: { id: RecipeFilter['scope']; label: string }[] = [
 /** Vorschläge zum schnellen Anlegen */
 const SUGGESTIONS: RecipeFilterInput[] = [
   { name: 'Schnell', scope: 'beide', keywords: [], maxMinutes: 30 },
-  {
-    name: 'Fisch',
-    scope: 'gerichte',
-    keywords: ['Fisch', 'Lachs', 'Forelle', 'Kabeljau', 'Seelachs', 'Dorsch', 'Zander', 'Garnele', 'Shrimp', 'Scampi', 'Muschel', 'Tintenfisch', 'Hering', 'Makrele', 'Sardine'],
-    maxMinutes: null,
-  },
-  {
-    name: 'Fleisch',
-    scope: 'gerichte',
-    keywords: ['Hähnchen', 'Huhn', 'Hühner', 'Pute', 'Rind', 'Schwein', 'Hack', 'Kalb', 'Lamm', 'Speck', 'Schinken', 'Wurst', 'Würstchen', 'Bacon', 'Chorizo', 'Salami', 'Kassler', 'Gulasch', 'Schnitzel'],
-    maxMinutes: null,
-  },
-  { name: 'Nudeln', scope: 'gerichte', keywords: ['Nudel', 'Pasta', 'Spaghetti', 'Penne', 'Lasagne', 'Tortellini'], maxMinutes: null },
-  { name: 'Mit Reis', scope: 'gerichte', keywords: ['Reis', 'Risotto'], maxMinutes: null },
-  { name: 'Suppen & Eintöpfe', scope: 'gerichte', keywords: ['Suppe', 'Eintopf'], maxMinutes: null },
+  { name: 'Lieblingsessen der Kinder', scope: 'beide', keywords: [], maxMinutes: null },
+  { name: 'Für Gäste', scope: 'beide', keywords: [], maxMinutes: null },
   { name: 'Schokolade', scope: 'nachtische', keywords: ['Schoko', 'Kakao'], maxMinutes: null },
 ];
 
@@ -109,12 +96,10 @@ export default function FilterSettings() {
       summary={filters ? (filters.length ? filters.map((f) => f.name).join(', ') : 'Noch keine eigenen Filter') : undefined}
     >
       <p className="px-4 pb-3 text-xs text-gray-500">
-        Eigene Filter erscheinen in der Rezept-Übersicht neben „Vegetarisch“ &amp; Co. Ein Gericht passt, wenn einer der Begriffe im
-        Namen oder in den Zutaten vorkommt. Einzelne Gerichte ordnest du im Rezept selbst zu oder nimmst sie aus (Filter-Knöpfe
-        unter dem Bild) – ganz ohne Suchbegriffe geht es auch.
-        <br />
-        „Vegetarisch“, „Fleisch &amp; Fisch“ und „Wochenende“ steuern den Wochenrhythmus und bleiben fest. Um Fisch und Fleisch
-        getrennt zu sehen, die Vorschläge „Fisch“ und „Fleisch“ unten anlegen.
+        Art, Speiseart (Auflauf, Suppe, Pasta …) und Hauptzutat (Nudeln, Reis, Rind, Fisch …) sind in der Rezept-Übersicht schon
+        eingebaut. Eigene Filter sind für alles andere – z. B. „Lieblingsessen der Kinder“. Sie stehen im Filter-Fenster unter „Meine
+        Filter“. Ein Gericht passt, wenn einer der Begriffe im Namen oder in den Zutaten vorkommt; einzelne Gerichte ordnest du im
+        Rezept selbst zu oder nimmst sie aus – ganz ohne Suchbegriffe geht es auch.
       </p>
 
       {!filters ? (

@@ -71,6 +71,7 @@ Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHu
 - Nachtische: feste Sammlung als Frontend-Daten (`data/desserts.ts` = TheMealDB mit Foto + `data/dessertsFamily.ts` = eigene ohne Foto, eigener Chunk) plus **eigene Nachtische** aus der Tabelle `custom_desserts` (`GET/POST /desserts/custom`, `POST /recipes/to-dessert` macht aus einem Hauptgericht einen Nachtisch); `DessertsView` mischt beide. Am Gericht gespeichert in `plan_meals.dessert` (jsonb). Eigene Nachtische haben ihr Bild unter `/api/images/<Name>` (`lib/desserts.ts` → `dessertImage`); der Cron erzeugt fehlende nach und nach.
 - Preisvergleich/Grundpreis: `lib/unitPrice.ts`. Portionen: `lib/portions.ts`.
 - Eigene Rezept-Filter: `lib/recipeFilters.ts` – Regeln (Suchbegriffe/Zeit) plus Hand-Zuordnung (`includeNames`/`excludeNames`).
+- Filter der Rezept-Übersicht: `RecipeFilterSheet` (ein Fenster), Gruppen-Logik `lib/recipeFacets.ts` (in der Gruppe oder, zwischen Gruppen und). Speiseart/Hauptzutat: `lib/recipeCategories.ts` (Heuristik) plus Korrekturen pro Gericht (`recipe_category_overrides`, `GET/POST /category-overrides`).
 - `localStorage` nur für Komfort (Passwort, auf-/zugeklappt, gewählte Einkaufswochen), immer in `try/catch`.
 
 ### Design „Aubergine“

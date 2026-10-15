@@ -20,7 +20,7 @@ export default function CustomFilterChips({ filters, activeId, onChange }: Custo
             aria-pressed={active}
             onClick={() => onChange(active ? null : f.id)}
             className={`flex-none flex items-center gap-1 px-3 h-8 rounded-lg text-xs font-semibold transition-colors ${
-              active ? 'bg-amber-700 text-white' : 'bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100'
+              active ? 'bg-brand-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-brand-50'
             }`}
           >
             <Filter size={11} aria-hidden="true" />
