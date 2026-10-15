@@ -11,6 +11,62 @@ import { recipeCatalog } from "../planning";
 import { RecipeEditError, parseRecipeInput, resetRecipe, saveRecipeEdit } from "../recipeEdits";
 import type { Sql } from "../db";
 
+const DESSERT_CATEGORIES = ["kuchen", "gebaeck", "creme", "pfanne", "obst", "eis"];
+
+/** Eingaben für einen eigenen Nachtisch prüfen (null = Name oder Zutaten fehlen) */
+function parseDessertInput(raw: Record<string, unknown>) {
+  const name = String(raw.name ?? "").trim().slice(0, 120);
+  const ingredients = (Array.isArray(raw.ingredients) ? raw.ingredients : [])
+    .map((i) => String(i).trim())
+    .filter(Boolean)
+    .slice(0, 60);
+  if (!name || ingredients.length === 0) return null;
+  return {
+    name,
+    ingredients,
+    category: DESSERT_CATEGORIES.includes(raw.category as string) ? (raw.category as string) : "creme",
+    yield: String(raw.yield ?? "").trim().slice(0, 60) || "4 Portionen",
+    durationMin: Number(raw.durationMin) > 0 ? Math.min(Math.round(Number(raw.durationMin)), 10_000) : null,
+    instructions: String(raw.instructions ?? "").trim().slice(0, 20_000),
+    sourceUrl: typeof raw.sourceUrl === "string" && /^https:\/\//.test(raw.sourceUrl) ? raw.sourceUrl : null,
+  };
+}
+
+async function listCustomDesserts(sql: Sql, profileId: string) {
+  return sql`SELECT name, category, yield, COALESCE(duration_min, 0) AS "durationMin", ingredients, instructions,
+      source_url AS "sourceUrl", true AS custom
+    FROM custom_desserts WHERE profile_id = ${profileId} ORDER BY name`;
+}
+
+async function saveCustomDessert(sql: Sql, profileId: string, d: NonNullable<ReturnType<typeof parseDessertInput>>) {
+  await sql`INSERT INTO custom_desserts (profile_id, name, category, yield, duration_min, ingredients, instructions, source_url)
+    VALUES (${profileId}, ${d.name}, ${d.category}, ${d.yield}, ${d.durationMin}, ${d.ingredients}, ${d.instructions}, ${d.sourceUrl})
+    ON CONFLICT (profile_id, name) DO UPDATE SET category = EXCLUDED.category, yield = EXCLUDED.yield,
+      duration_min = EXCLUDED.duration_min, ingredients = EXCLUDED.ingredients, instructions = EXCLUDED.instructions,
+      source_url = EXCLUDED.source_url`;
+  // Falls der Name vorher gelöscht/ausgeblendet war: wieder sichtbar
+  await sql`UPDATE profiles SET hidden_desserts = array_remove(hidden_desserts, ${d.name}),
+      deleted_desserts = array_remove(deleted_desserts, ${d.name}) WHERE id = ${profileId}`;
+}
+
+/**
+ * Gericht endgültig löschen: eigene/KI-/importierte Rezepte verschwinden aus der Datenbank, Gerichte der
+ * Grundsammlung bleiben dauerhaft ausgeschlossen. In beiden Fällen nicht mehr unter „Ausgeblendet“.
+ * Das Bild (meal_images) bleibt – es gehört zum Namen, z. B. wenn das Gericht zum Nachtisch wird.
+ */
+async function deleteMainDish(sql: Sql, profileId: string, name: string) {
+  const removed = await sql`DELETE FROM recipes WHERE name = ${name} RETURNING replaces`;
+  // Bearbeitetes Gericht der Sammlung: auch das Original nicht wieder auftauchen lassen
+  const names = [name, ...removed.map((r) => r.replaces as string | null).filter((n): n is string => !!n)];
+  for (const n of names) {
+    await sql`UPDATE rejected_meals SET reason = 'geloescht' WHERE profile_id = ${profileId} AND meal_name = ${n}`;
+    await sql`INSERT INTO rejected_meals (profile_id, meal_name, reason)
+      SELECT ${profileId}, ${n}, 'geloescht'
+      WHERE NOT EXISTS (SELECT 1 FROM rejected_meals WHERE profile_id = ${profileId} AND meal_name = ${n})`;
+  }
+  await sql`DELETE FROM favorites WHERE profile_id = ${profileId} AND meal_name = ${name}`;
+}
+
 async function listRecipeFilters(sql: Sql, profileId: string) {
   return sql`SELECT id, name, scope, keywords, max_minutes AS "maxMinutes",
       include_names AS "includeNames", exclude_names AS "excludeNames" FROM recipe_filters
@@ -106,23 +162,40 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
     return json(await recipeCatalog(sql, p.id));
   }
 
-  // Gericht endgültig löschen: eigene/KI-/importierte Rezepte verschwinden aus der Datenbank, Gerichte der
-  // Grundsammlung bleiben dauerhaft ausgeschlossen. In beiden Fällen nicht mehr unter „Ausgeblendet“.
   if (route === "POST /recipes/delete") {
     const p = await getProfile(sql);
     const name = String(body.name ?? "").trim();
     if (!name) return json({ error: "Name fehlt" }, 400);
-    const removed = await sql`DELETE FROM recipes WHERE name = ${name} RETURNING replaces`;
-    // Bearbeitetes Gericht der Sammlung: auch das Original nicht wieder auftauchen lassen
-    const names = [name, ...removed.map((r) => r.replaces as string | null).filter((n): n is string => !!n)];
-    for (const n of names) {
-      await sql`UPDATE rejected_meals SET reason = 'geloescht' WHERE profile_id = ${p.id} AND meal_name = ${n}`;
-      await sql`INSERT INTO rejected_meals (profile_id, meal_name, reason)
-        SELECT ${p.id}, ${n}, 'geloescht'
-        WHERE NOT EXISTS (SELECT 1 FROM rejected_meals WHERE profile_id = ${p.id} AND meal_name = ${n})`;
-    }
-    await sql`DELETE FROM favorites WHERE profile_id = ${p.id} AND meal_name = ${name}`;
+    await deleteMainDish(sql, p.id, name);
     return json(await recipeCatalog(sql, p.id));
+  }
+
+  // ---------- Eigene Nachtische ----------
+  if (route === "GET /desserts/custom") {
+    const p = await getProfile(sql);
+    return json(await listCustomDesserts(sql, p.id));
+  }
+  if (route === "POST /desserts/custom") {
+    const p = await getProfile(sql);
+    const d = parseDessertInput(body);
+    if (!d) return json({ error: "Name und Zutaten fehlen" }, 400);
+    await saveCustomDessert(sql, p.id, d);
+    // Foto der Quelle übernehmen (nur von Chefkoch)
+    const photo = String(body.imageUrl ?? "");
+    if (/^https:\/\/([a-z0-9-]+\.)*chefkoch(-cdn)?\.de\//i.test(photo)) {
+      await storeSourcePhoto(sql, d.name, photo, "Chefkoch", d.sourceUrl ?? "https://www.chefkoch.de/");
+    }
+    return json(await listCustomDesserts(sql, p.id));
+  }
+  // Hauptgericht zum Nachtisch machen: als eigener Nachtisch speichern, bei den Hauptgerichten löschen (Bild bleibt)
+  if (route === "POST /recipes/to-dessert") {
+    const p = await getProfile(sql);
+    const d = parseDessertInput(body);
+    if (!d) return json({ error: "Name und Zutaten fehlen" }, 400);
+    const from = String(body.from ?? d.name).trim();
+    await saveCustomDessert(sql, p.id, d);
+    await deleteMainDish(sql, p.id, from);
+    return json({ catalog: await recipeCatalog(sql, p.id), desserts: await listCustomDesserts(sql, p.id) });
   }
 
   // ---------- Chefkoch-Suche ----------
@@ -131,7 +204,8 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
       if (route === "POST /recipes/chefkoch/search") {
         const f = (body.filters ?? {}) as Record<string, unknown>;
         const filters: ChefkochFilters = {
-          main: f.main !== false,
+          main: f.main !== false && f.dessert !== true,
+          dessert: f.dessert === true,
           vegetarian: f.vegetarian === true,
           vegan: f.vegan === true,
           maxMinutes: Number(f.maxMinutes) > 0 ? Number(f.maxMinutes) : null,

@@ -42,7 +42,8 @@ export async function profileRoutes({ request, sql, body, parts, route, id }: Ct
     const p = await getProfile(sql);
     const name = String(body.name ?? "").trim().slice(0, 200);
     if (!name) return json({ error: "Name fehlt" }, 400);
-    // deleted: endgültig – raus aus „Ausgeblendet“, bleibt aber unsichtbar
+    // deleted: endgültig – raus aus „Ausgeblendet“, bleibt aber unsichtbar; eigene Nachtische verschwinden ganz
+    if (body.deleted) await sql`DELETE FROM custom_desserts WHERE profile_id = ${p.id} AND name = ${name}`;
     const rows = body.deleted
       ? await sql`UPDATE profiles SET hidden_desserts = array_remove(hidden_desserts, ${name}),
             deleted_desserts = array_append(array_remove(deleted_desserts, ${name}), ${name})

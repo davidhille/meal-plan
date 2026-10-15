@@ -17,6 +17,18 @@ describe("chefkochSearchUrl", () => {
     ));
 });
 
+test("Desserts statt Hauptspeisen", () =>
+  expect(chefkochSearchUrl("Tiramisu", { main: true, dessert: true })).toBe("https://www.chefkoch.de/rs/s0t90pr1o2/Tiramisu/Rezepte.html"));
+
+test("Nachtisch: Zutaten in Originalmenge und Menge laut Quelle", () => {
+  const d = parseRecipeDetails(
+    ld({ "@type": "Recipe", name: "Apfelkuchen", recipeYield: ["12", "1 Kuchen (12 Stücke)"], recipeIngredient: ["3 Äpfel", "200 g Mehl"] }),
+    "https://www.chefkoch.de/rezepte/8/x.html"
+  );
+  expect(d?.originalIngredients).toEqual(["3 Äpfel", "200 g Mehl"]);
+  expect(d?.yieldText).toBe("1 Kuchen (12 Stücke)");
+});
+
 describe("isChefkochRecipeUrl", () => {
   test("Rezeptseite", () => expect(isChefkochRecipeUrl("https://www.chefkoch.de/rezepte/745721177147257/Lasagne.html")).toBe(true));
   test("andere Seite oder fremde Domain", () => {

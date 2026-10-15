@@ -10,7 +10,7 @@ import RecipeEditModal from './RecipeEditModal';
 import AiRecipeModal from './AiRecipeModal';
 import ChefkochSearchModal from './ChefkochSearchModal';
 import HiddenItemsList from './HiddenItemsList';
-import { deleteRecipe, generateMealImage, removeMealImage, getRecipeCatalog, resetRecipeEdit, saveRecipeEdit, setRecipeHidden } from '../lib/api';
+import { deleteRecipe, moveRecipeToDessert, generateMealImage, removeMealImage, getRecipeCatalog, resetRecipeEdit, saveRecipeEdit, setRecipeHidden } from '../lib/api';
 import { RECIPE_BASE_PORTIONS } from '../lib/portions';
 import MealModal from './MealModal';
 import DayAssignSheet from './DayAssignSheet';
@@ -378,6 +378,14 @@ export default function MainDishesView({
           canReset={editing.edited}
           onSave={async (draft) => applyEdit(await saveRecipeEdit(editing.name, draft))}
           onReset={async () => applyEdit(await resetRecipeEdit(editing.name))}
+          onMoveToDessert={async (d) => {
+            const r = await moveRecipeToDessert(editing.name, d);
+            setCatalog(r.catalog);
+            setEditing(null);
+            setSelected(null);
+            onRecipesChanged?.();
+            flash(`„${d.name}“ ist jetzt bei den Nachtischen.`);
+          }}
           onClose={() => setEditing(null)}
         />
       )}

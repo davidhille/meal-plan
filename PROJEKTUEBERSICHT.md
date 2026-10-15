@@ -114,6 +114,13 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
   Pudding, Obst, warme Süßspeisen, neue Kategorie „Eis & Kaltes“). Deren Bilder entstehen im Hintergrund (2 pro Cron-Lauf)
   oder per „Bild generieren“ im Rezept. Mit fester Menge;
   im Speiseplan per Kuchen-Knopf an ein Gericht hängen (erst Rezept ansehen, dann hinzufügen).
+- **Eigene Nachtische:**
+  - „Nachtisch bei Chefkoch suchen“ (oben in den Nachtischen): wie die Chefkoch-Suche, mit Filter „Dessert“. Zutaten
+    bleiben in Originalmenge, „Menge“ laut Rezept (z. B. „1 Kuchen“). Kategorie wird geschätzt und lässt sich ändern;
+    mit Foto und Link zum Original.
+  - Falsch einsortiertes Hauptgericht: „Gericht bearbeiten“ → Art **„Nachtisch“** → Kategorie und Menge →
+    „Zu den Nachtischen verschieben“. Es verschwindet aus den Hauptgerichten, Bild und Rezept kommen mit.
+  - Eigene Nachtische stehen zwischen den übrigen, lassen sich an Gerichte hängen, ausblenden und endgültig löschen.
 - **Ausblenden und endgültig löschen** (Hauptgerichte und Nachtische gleich): Auge-Symbol an der Kachel blendet aus
   (mit Rückfrage). Unten unter „Ausgeblendete Gerichte/Nachtische“: „Einblenden“ oder Papierkorb = **endgültig löschen**
   (nicht wiederherstellbar; eigene/KI-/importierte Rezepte verschwinden aus der Datenbank, Gerichte und Nachtische der

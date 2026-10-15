@@ -67,6 +67,9 @@ export interface Dessert {
   instructions: string;
   /** Foto aus TheMealDB; fehlt es, gibt es ein generiertes Bild unter /api/images/<Name> (siehe lib/desserts.ts) */
   imageUrl?: string;
+  /** Eigener Nachtisch (Datenbank, z. B. von Chefkoch oder aus einem Hauptgericht) */
+  custom?: boolean;
+  sourceUrl?: string | null;
 }
 
 export type FamilyMemberType = 'adult' | 'child';

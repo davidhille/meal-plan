@@ -19,6 +19,8 @@ const RESULT_LIMIT = 12;
 export interface ChefkochFilters {
   /** Nur Hauptspeisen */
   main?: boolean;
+  /** Nur Desserts (statt Hauptspeisen) */
+  dessert?: boolean;
   vegetarian?: boolean;
   vegan?: boolean;
   /** Höchstens … Minuten Arbeitszeit (15, 30, 60, 120) */
@@ -40,6 +42,7 @@ export interface ChefkochHit {
 
 // Kennungen aus Chefkochs Such-Adressen (siehe python-chefkoch)
 const TAG_MAIN = "21";
+const TAG_DESSERT = "90";
 const TAG_VEGETARIAN = "32";
 const TAG_VEGAN = "57";
 const PREP_TIMES = [15, 30, 60, 120];
@@ -47,7 +50,7 @@ const SORT: Record<NonNullable<ChefkochFilters["sort"]>, string> = { relevance: 
 
 /** Such-Adresse: /rs/s{Seite}t{Kennungen}p{Zeit}r{Bewertung}o{Sortierung}/{Suchbegriff}/Rezepte.html */
 export function chefkochSearchUrl(query: string, f: ChefkochFilters = {}, page = 0): string {
-  const tags = [f.main ? TAG_MAIN : null, f.vegan ? TAG_VEGAN : f.vegetarian ? TAG_VEGETARIAN : null].filter(Boolean);
+  const tags = [f.dessert ? TAG_DESSERT : f.main ? TAG_MAIN : null, f.vegan ? TAG_VEGAN : f.vegetarian ? TAG_VEGETARIAN : null].filter(Boolean);
   const prep = f.maxMinutes ? PREP_TIMES.find((p) => p >= f.maxMinutes!) ?? "" : "";
   const rating = f.topRated ? "4" : "1";
   const sort = SORT[f.sort ?? "relevance"];

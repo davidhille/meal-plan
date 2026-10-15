@@ -1,10 +1,22 @@
 import { useRef, useState } from 'react';
 import { X, Search, Loader2, Star, Clock, ChefHat, ArrowLeft, ExternalLink, ShieldAlert, Check } from 'lucide-react';
-import { MealType } from '../types';
-import { ChefkochCursor, ChefkochDetails, ChefkochFilters, ChefkochHit, previewChefkoch, saveImportedRecipe, searchChefkoch } from '../lib/api';
+import { DessertCategory, MealType } from '../types';
+import { DESSERT_CATEGORIES, guessDessertCategory } from '../lib/desserts';
+import {
+  ChefkochCursor,
+  ChefkochDetails,
+  ChefkochFilters,
+  ChefkochHit,
+  previewChefkoch,
+  saveCustomDessert,
+  saveImportedRecipe,
+  searchChefkoch,
+} from '../lib/api';
 import { useDialog } from '../lib/useDialog';
 
 interface ChefkochSearchModalProps {
+  /** Hauptgerichte (Standard) oder Nachtische: Filter „Dessert“, Zutaten in Originalmenge, Kategorie statt Art */
+  mode?: 'main' | 'dessert';
   /** Namen, die schon in der Sammlung sind */
   existingNames: Set<string>;
   /** Rezept übernommen – das Fenster bleibt offen (weitere Rezepte übernehmen) */
@@ -18,9 +30,10 @@ const TYPES: { id: MealType; label: string }[] = [
   { id: 'wochenende', label: 'Wochenende' },
 ];
 
-type ChipId = 'main' | 'vegetarian' | 'vegan' | 'quick' | 'topRated' | 'best';
+type ChipId = 'main' | 'dessert' | 'vegetarian' | 'vegan' | 'quick' | 'topRated' | 'best';
 const CHIPS: { id: ChipId; label: string }[] = [
   { id: 'main', label: 'Hauptspeise' },
+  { id: 'dessert', label: 'Dessert' },
   { id: 'vegetarian', label: 'Vegetarisch' },
   { id: 'vegan', label: 'Vegan' },
   { id: 'quick', label: 'Bis 30 Min' },
@@ -28,16 +41,25 @@ const CHIPS: { id: ChipId; label: string }[] = [
   { id: 'best', label: 'Beste zuerst' },
 ];
 
-const formatRating = (r: number) => r.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const formatRating = (r: number) =>
+  r.toLocaleString('de-DE', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
 
 /** Rezepte bei Chefkoch suchen, ansehen und in die eigene Sammlung übernehmen */
-export default function ChefkochSearchModal({ existingNames, onSaved, onClose }: ChefkochSearchModalProps) {
+export default function ChefkochSearchModal({ mode = 'main', existingNames, onSaved, onClose }: ChefkochSearchModalProps) {
+  const isDessert = mode === 'dessert';
+  const chipList = CHIPS.filter((c) => (isDessert ? c.id !== 'main' && c.id !== 'vegetarian' : c.id !== 'dessert'));
   const [query, setQuery] = useState('');
-  const [chips, setChips] = useState<Set<ChipId>>(new Set(['main']));
+  const [chips, setChips] = useState<Set<ChipId>>(new Set([isDessert ? 'dessert' : 'main']));
   const [hits, setHits] = useState<ChefkochHit[] | null>(null);
   /** Weiter bei … (null = keine weiteren Treffer); gilt für die Suche in `searched` */
   const [next, setNext] = useState<ChefkochCursor | null>(null);
-  const [searched, setSearched] = useState<{ query: string; filters: ChefkochFilters } | null>(null);
+  const [searched, setSearched] = useState<{
+    query: string;
+    filters: ChefkochFilters;
+  } | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +67,7 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
   const [loadingUrl, setLoadingUrl] = useState<string | null>(null);
   const [type, setType] = useState<MealType>('vegetarisch');
   const [favorite, setFavorite] = useState(false);
+  const [category, setCategory] = useState<DessertCategory>('creme');
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   /** In dieser Sitzung übernommene Rezepte (Markierung in der Trefferliste) */
@@ -71,6 +94,7 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
 
   const filters = (): ChefkochFilters => ({
     main: chips.has('main'),
+    dessert: chips.has('dessert'),
     vegetarian: chips.has('vegetarian'),
     vegan: chips.has('vegan'),
     maxMinutes: chips.has('quick') ? 30 : null,
@@ -130,6 +154,7 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
       const d = await previewChefkoch(hit.url);
       setDetail(d);
       setType(d.recipe.type);
+      setCategory(guessDessertCategory(`${d.recipe.name} ${d.tags.join(' ')}`));
       setFavorite(false);
     } catch (e) {
       setError((e as Error).message || 'Das Rezept konnte nicht geladen werden.');
@@ -144,13 +169,34 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
     setError(null);
     try {
       const r = detail.recipe;
-      await saveImportedRecipe(
-        { name: r.name, type, ingredients: r.ingredients, instructions: r.instructions, durationMin: r.durationMin, sourceUrl: r.sourceUrl, imageUrl: detail.imageUrl },
-        favorite
-      );
+      if (isDessert) {
+        await saveCustomDessert({
+          name: r.name,
+          category,
+          yield: detail.yieldText ?? '4 Portionen',
+          durationMin: r.durationMin ?? null,
+          ingredients: detail.originalIngredients.length ? detail.originalIngredients : r.ingredients,
+          instructions: r.instructions,
+          sourceUrl: r.sourceUrl,
+          imageUrl: detail.imageUrl,
+        });
+      } else {
+        await saveImportedRecipe(
+          {
+            name: r.name,
+            type,
+            ingredients: r.ingredients,
+            instructions: r.instructions,
+            durationMin: r.durationMin,
+            sourceUrl: r.sourceUrl,
+            imageUrl: detail.imageUrl,
+          },
+          favorite
+        );
+      }
       onSaved(r.name, favorite);
       setTaken((prev) => new Set(prev).add(r.name));
-      setNotice(`„${r.name}“ ist jetzt in deinen Rezepten.`);
+      setNotice(`„${r.name}“ ist jetzt ${isDessert ? 'bei deinen Nachtischen' : 'in deinen Rezepten'}.`);
       backToList();
     } catch (e) {
       setError((e as Error).message || 'Das Rezept konnte nicht gespeichert werden.');
@@ -186,7 +232,7 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
             <ChefHat size={18} className="text-brand-700 ml-1" aria-hidden="true" />
           )}
           <h2 id="chefkoch-title" className="flex-1 text-lg font-bold text-gray-900 truncate">
-            {detail ? detail.recipe.name : 'Bei Chefkoch suchen'}
+            {detail ? detail.recipe.name : isDessert ? 'Nachtisch bei Chefkoch suchen' : 'Bei Chefkoch suchen'}
           </h2>
           {!detail && (
             <button
@@ -212,7 +258,7 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 type="search"
-                placeholder="z. B. Kürbis, Lasagne, Curry"
+                placeholder={isDessert ? 'z. B. Tiramisu, Apfelkuchen, Mousse' : 'z. B. Kürbis, Lasagne, Curry'}
                 aria-label="Suchbegriff"
                 autoFocus
                 className="flex-1 h-11 px-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
@@ -227,7 +273,7 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
               </button>
             </form>
             <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter">
-              {CHIPS.map((c) => (
+              {chipList.map((c) => (
                 <button
                   key={c.id}
                   aria-pressed={chips.has(c.id)}
@@ -279,7 +325,12 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
                     <Clock size={14} aria-hidden="true" /> {detail.recipe.durationMin} Min
                   </span>
                 )}
-                <a href={detail.recipe.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-brand-700 hover:text-brand-800">
+                <a
+                  href={detail.recipe.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-brand-700 hover:text-brand-800"
+                >
                   Bei Chefkoch ansehen <ExternalLink size={12} aria-hidden="true" />
                 </a>
               </div>
@@ -287,8 +338,8 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
               {detail.unsuitable && (
                 <p className="flex gap-2 p-3 rounded-xl bg-amber-50 text-sm text-amber-900">
                   <ShieldAlert size={16} className="flex-shrink-0 mt-0.5" aria-hidden="true" />
-                  Passt nicht zu euren Gesundheitseinstellungen (z. B. Allergie oder vegetarisch). Du kannst es übernehmen, geplant wird es aber nie
-                  automatisch.
+                  Passt nicht zu euren Gesundheitseinstellungen (z. B. Allergie oder vegetarisch). Du kannst es übernehmen, geplant wird es
+                  aber nie automatisch.
                 </p>
               )}
               {already && (
@@ -299,13 +350,16 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
 
               <div>
                 <h3 className="text-sm font-bold text-gray-900 mb-1">
-                  Zutaten <span className="font-normal text-gray-500">· für 4 Portionen</span>
+                  Zutaten{' '}
+                  <span className="font-normal text-gray-500">
+                    · {isDessert ? (detail.yieldText ?? 'wie im Rezept') : 'für 4 Portionen'}
+                  </span>
                 </h3>
-                {detail.recipe.sourcePortions && detail.recipe.sourcePortions !== 4 && (
+                {!isDessert && detail.recipe.sourcePortions && detail.recipe.sourcePortions !== 4 && (
                   <p className="text-xs text-gray-500 mb-1">Umgerechnet vom Originalrezept für {detail.recipe.sourcePortions} Portionen.</p>
                 )}
                 <ul className="text-sm text-gray-800 space-y-0.5 list-disc pl-5">
-                  {detail.recipe.ingredients.map((i, n) => (
+                  {(isDessert && detail.originalIngredients.length ? detail.originalIngredients : detail.recipe.ingredients).map((i, n) => (
                     <li key={n}>{i}</li>
                   ))}
                 </ul>
@@ -319,28 +373,56 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
                 </ol>
               </div>
 
-              <div>
-                <span className="block text-sm font-bold text-gray-900 mb-1">Einordnen als</span>
-                <div className="grid grid-cols-3 gap-1.5" role="radiogroup" aria-label="Einordnen als">
-                  {TYPES.map((t) => (
-                    <button
-                      key={t.id}
-                      role="radio"
-                      aria-checked={type === t.id}
-                      onClick={() => setType(t.id)}
-                      className={`h-9 rounded-lg text-xs font-semibold border ${
-                        type === t.id ? 'bg-brand-700 border-brand-700 text-white' : 'bg-white border-gray-200 text-gray-700'
-                      }`}
-                    >
-                      {t.label}
-                    </button>
-                  ))}
+              {isDessert ? (
+                <div>
+                  <span className="block text-sm font-bold text-gray-900 mb-1">Kategorie</span>
+                  <div className="grid grid-cols-2 gap-1.5" role="radiogroup" aria-label="Kategorie">
+                    {DESSERT_CATEGORIES.map((c) => (
+                      <button
+                        key={c.id}
+                        role="radio"
+                        aria-checked={category === c.id}
+                        onClick={() => setCategory(c.id)}
+                        className={`h-9 rounded-lg text-xs font-semibold border ${
+                          category === c.id ? 'bg-brand-700 border-brand-700 text-white' : 'bg-white border-gray-200 text-gray-700'
+                        }`}
+                      >
+                        {c.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <label className="flex items-center gap-2 text-sm text-gray-800">
-                <input type="checkbox" checked={favorite} onChange={(e) => setFavorite(e.target.checked)} className="w-5 h-5 accent-brand-700" />
-                Als Favorit merken (wird beim Planen bevorzugt)
-              </label>
+              ) : (
+                <>
+                  <div>
+                    <span className="block text-sm font-bold text-gray-900 mb-1">Einordnen als</span>
+                    <div className="grid grid-cols-3 gap-1.5" role="radiogroup" aria-label="Einordnen als">
+                      {TYPES.map((t) => (
+                        <button
+                          key={t.id}
+                          role="radio"
+                          aria-checked={type === t.id}
+                          onClick={() => setType(t.id)}
+                          className={`h-9 rounded-lg text-xs font-semibold border ${
+                            type === t.id ? 'bg-brand-700 border-brand-700 text-white' : 'bg-white border-gray-200 text-gray-700'
+                          }`}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm text-gray-800">
+                    <input
+                      type="checkbox"
+                      checked={favorite}
+                      onChange={(e) => setFavorite(e.target.checked)}
+                      className="w-5 h-5 accent-brand-700"
+                    />
+                    Als Favorit merken (wird beim Planen bevorzugt)
+                  </label>
+                </>
+              )}
               <p className="text-xs text-gray-500">Rezept und Foto: chefkoch.de – der Link zum Original wird mitgespeichert.</p>
             </div>
           ) : searching ? (
@@ -435,7 +517,7 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
               className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 disabled:bg-brand-300"
             >
               {saving && <Loader2 size={15} className="animate-spin" />}
-              In meine Rezepte übernehmen
+              {isDessert ? 'Zu meinen Nachtischen' : 'In meine Rezepte übernehmen'}
             </button>
           </div>
         )}

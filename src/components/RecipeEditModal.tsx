@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Loader2, RotateCcw, X } from 'lucide-react';
-import { MealType, RecipeDraft } from '../types';
+import { DessertCategory, MealType, RecipeDraft } from '../types';
 import { useDialog } from '../lib/useDialog';
+import { DESSERT_CATEGORIES, guessDessertCategory } from '../lib/desserts';
+import type { DessertInput } from '../lib/api';
 import ConfirmDialog from './ConfirmDialog';
 
 interface RecipeEditModalProps {
@@ -12,6 +14,8 @@ interface RecipeEditModalProps {
   onReset?: () => Promise<void>;
   /** Hinweis unter den Feldern (Standard: gilt auch für Plan und Favorit) */
   note?: string;
+  /** Ist es eigentlich ein Nachtisch? → zu den Nachtischen verschieben (ohne: keine Auswahl „Nachtisch“) */
+  onMoveToDessert?: (dessert: DessertInput) => Promise<void>;
   onClose: () => void;
 }
 
@@ -30,12 +34,18 @@ export default function RecipeEditModal({
   canReset,
   onSave,
   onReset,
+  onMoveToDessert,
   note = 'Änderungen gelten auch für dieses Gericht in den kommenden Tagen des Speiseplans und für den Favoriten.',
   onClose,
 }: RecipeEditModalProps) {
   const dialogRef = useDialog(onClose);
   const [name, setName] = useState(recipe.name);
-  const [type, setType] = useState<MealType>(recipe.type);
+  const [type, setType] = useState<MealType | 'nachtisch'>(recipe.type);
+  const [category, setCategory] = useState<DessertCategory>(() =>
+    guessDessertCategory(`${recipe.name} ${recipe.ingredients.join(' ')}`)
+  );
+  const [yieldText, setYieldText] = useState('4 Portionen');
+  const asDessert = type === 'nachtisch';
   const [duration, setDuration] = useState(recipe.durationMin ? String(recipe.durationMin) : '');
   const [ingredients, setIngredients] = useState(recipe.ingredients.join('\n'));
   const [instructions, setInstructions] = useState(
@@ -61,6 +71,17 @@ export default function RecipeEditModal({
     setSaving(true);
     setError(null);
     try {
+      if (type === 'nachtisch') {
+        await onMoveToDessert?.({
+          name: name.trim(),
+          category,
+          yield: yieldText.trim() || '4 Portionen',
+          durationMin: Number(duration) > 0 ? Math.round(Number(duration)) : null,
+          ingredients: lines(ingredients),
+          instructions: lines(instructions).join('\n'),
+        });
+        return;
+      }
       await onSave({
         name: name.trim(),
         type,
@@ -106,8 +127,8 @@ export default function RecipeEditModal({
 
             <div>
               <span className="text-xs font-semibold text-gray-500">Art (bestimmt den Tag im Wochenrhythmus)</span>
-              <div className="mt-1 grid grid-cols-3 gap-1.5" role="radiogroup" aria-label="Art">
-                {TYPES.map((t) => (
+              <div className={`mt-1 grid ${onMoveToDessert ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'} gap-1.5`} role="radiogroup" aria-label="Art">
+                {[...TYPES, ...(onMoveToDessert ? [{ id: 'nachtisch' as const, label: 'Nachtisch' }] : [])].map((t) => (
                   <button
                     key={t.id}
                     role="radio"
@@ -123,6 +144,37 @@ export default function RecipeEditModal({
               </div>
             </div>
 
+            {asDessert && (
+              <div className="space-y-3 p-3 rounded-xl bg-brand-50">
+                <p className="text-xs text-brand-900">
+                  Wird zu den <strong>Nachtischen</strong> verschoben und bei den Hauptgerichten gelöscht. Bild und Rezept
+                  kommen mit; schon geplante Tage behalten das Gericht.
+                </p>
+                <div>
+                  <span className="text-xs font-semibold text-gray-600">Kategorie</span>
+                  <div className="mt-1 grid grid-cols-2 sm:grid-cols-3 gap-1.5" role="radiogroup" aria-label="Kategorie">
+                    {DESSERT_CATEGORIES.map((c) => (
+                      <button
+                        key={c.id}
+                        role="radio"
+                        aria-checked={category === c.id}
+                        onClick={() => setCategory(c.id)}
+                        className={`h-9 rounded-lg text-xs font-semibold border ${
+                          category === c.id ? 'bg-brand-700 border-brand-700 text-white' : 'bg-white border-gray-200 text-gray-600'
+                        }`}
+                      >
+                        {c.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <label className="block">
+                  <span className="text-xs font-semibold text-gray-600">Menge (z. B. „1 Kuchen“ oder „4 Portionen“)</span>
+                  <input type="text" value={yieldText} onChange={(e) => setYieldText(e.target.value)} className={inputClass} />
+                </label>
+              </div>
+            )}
+
             <label className="block">
               <span className="text-xs font-semibold text-gray-500">Zubereitungszeit in Minuten</span>
               <input
@@ -136,7 +188,9 @@ export default function RecipeEditModal({
             </label>
 
             <label className="block">
-              <span className="text-xs font-semibold text-gray-500">Zutaten für 4 Portionen – eine pro Zeile</span>
+              <span className="text-xs font-semibold text-gray-500">
+                {asDessert ? 'Zutaten – eine pro Zeile, Mengen wie im Rezept' : 'Zutaten für 4 Portionen – eine pro Zeile'}
+              </span>
               <textarea
                 value={ingredients}
                 onChange={(e) => setIngredients(e.target.value)}
@@ -157,7 +211,7 @@ export default function RecipeEditModal({
               />
             </label>
 
-            <p className="text-xs text-gray-500">{note}</p>
+            {!asDessert && <p className="text-xs text-gray-500">{note}</p>}
 
             {canReset && onReset && (
               <button
@@ -182,7 +236,7 @@ export default function RecipeEditModal({
               className="w-full h-10 rounded-lg text-sm font-semibold bg-brand-700 text-white hover:bg-brand-800 disabled:bg-gray-200 disabled:text-gray-500 flex items-center justify-center gap-2"
             >
               {saving && <Loader2 size={14} className="animate-spin" />}
-              Speichern
+              {asDessert ? 'Zu den Nachtischen verschieben' : 'Speichern'}
             </button>
           </div>
         </div>
