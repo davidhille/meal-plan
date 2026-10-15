@@ -138,7 +138,9 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
           topRated: f.topRated === true,
           sort: ["relevance", "rating", "new"].includes(f.sort as string) ? (f.sort as ChefkochFilters["sort"]) : "relevance",
         };
-        return json({ hits: await searchChefkoch(String(body.query ?? "").slice(0, 80), filters) });
+        const c = (body.cursor ?? {}) as Record<string, unknown>;
+        const cursor = { page: Number(c.page) || 0, index: Number(c.index) || 0 };
+        return json(await searchChefkoch(String(body.query ?? "").slice(0, 80), filters, cursor));
       }
       const details = await loadChefkochRecipe(String(body.url ?? ""));
       const p = await getProfile(sql);

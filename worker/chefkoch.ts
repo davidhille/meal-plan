@@ -131,10 +131,25 @@ export async function loadChefkochRecipe(url: string): Promise<RecipeDetails> {
 }
 
 /** Suchen und die ersten Treffer mit Bild, Bewertung und Zeit anreichern */
-export async function searchChefkoch(query: string, filters: ChefkochFilters): Promise<ChefkochHit[]> {
+/** Wo die nächste Ladung weitergeht: Ergebnisseite bei Chefkoch und Position darauf */
+export interface SearchCursor {
+  page: number;
+  index: number;
+}
+
+export async function searchChefkoch(
+  query: string,
+  filters: ChefkochFilters,
+  cursor: SearchCursor = { page: 0, index: 0 }
+): Promise<{ hits: ChefkochHit[]; next: SearchCursor | null }> {
   if (query.trim().length < 2) throw new ImportError("Bitte mindestens zwei Buchstaben eingeben.");
-  const urls = parseSearchResults(await fetchPage(chefkochSearchUrl(query, filters)));
-  const top = urls.slice(0, RESULT_LIMIT);
+  const page = Math.max(0, Math.min(Math.floor(cursor.page), 50));
+  const index = Math.max(0, Math.floor(cursor.index));
+  const urls = parseSearchResults(await fetchPage(chefkochSearchUrl(query, filters, page)));
+  const top = urls.slice(index, index + RESULT_LIMIT);
+  // Rest dieser Ergebnisseite zuerst, danach die nächste Seite; keine Treffer mehr → Ende
+  const next: SearchCursor | null =
+    index + RESULT_LIMIT < urls.length ? { page, index: index + RESULT_LIMIT } : urls.length > 0 ? { page: page + 1, index: 0 } : null;
   const hits: ChefkochHit[] = [];
   // In kleinen Gruppen laden, damit Chefkoch nicht mit Anfragen überhäuft wird
   for (let i = 0; i < top.length; i += 4) {
@@ -159,5 +174,5 @@ export async function searchChefkoch(query: string, filters: ChefkochFilters): P
     );
     hits.push(...(group.filter(Boolean) as ChefkochHit[]));
   }
-  return hits;
+  return { hits, next };
 }

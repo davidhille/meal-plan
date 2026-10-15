@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { X, Search, Loader2, Star, Clock, ChefHat, ArrowLeft, ExternalLink, ShieldAlert, Check } from 'lucide-react';
 import { MealType } from '../types';
-import { ChefkochDetails, ChefkochFilters, ChefkochHit, previewChefkoch, saveImportedRecipe, searchChefkoch } from '../lib/api';
+import { ChefkochCursor, ChefkochDetails, ChefkochFilters, ChefkochHit, previewChefkoch, saveImportedRecipe, searchChefkoch } from '../lib/api';
 import { useDialog } from '../lib/useDialog';
 
 interface ChefkochSearchModalProps {
@@ -35,6 +35,10 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
   const [query, setQuery] = useState('');
   const [chips, setChips] = useState<Set<ChipId>>(new Set(['main']));
   const [hits, setHits] = useState<ChefkochHit[] | null>(null);
+  /** Weiter bei … (null = keine weiteren Treffer); gilt für die Suche in `searched` */
+  const [next, setNext] = useState<ChefkochCursor | null>(null);
+  const [searched, setSearched] = useState<{ query: string; filters: ChefkochFilters } | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<ChefkochDetails | null>(null);
@@ -79,12 +83,41 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
     setSearching(true);
     setError(null);
     try {
-      setHits(await searchChefkoch(query.trim(), filters()));
+      const q = { query: query.trim(), filters: filters() };
+      const r = await searchChefkoch(q.query, q.filters);
+      setHits(r.hits);
+      setNext(r.next);
+      setSearched(q);
+      listRef.current?.scrollTo({ top: 0 });
     } catch (e) {
       setHits(null);
+      setNext(null);
       setError((e as Error).message || 'Die Suche hat nicht geklappt.');
     } finally {
       setSearching(false);
+    }
+  };
+
+  /** Nächste Treffer derselben Suche anhängen (ohne Doppelte); leere Seiten werden übersprungen */
+  const loadMore = async () => {
+    if (!searched || !next || loadingMore) return;
+    setLoadingMore(true);
+    setError(null);
+    try {
+      let cursor: ChefkochCursor | null = next;
+      let added: ChefkochHit[] = [];
+      for (let tries = 0; cursor && added.length === 0 && tries < 3; tries++) {
+        const r = await searchChefkoch(searched.query, searched.filters, cursor);
+        const known = new Set((hits ?? []).map((h) => h.url));
+        added = r.hits.filter((h) => !known.has(h.url));
+        cursor = r.next;
+      }
+      setHits((prev) => [...(prev ?? []), ...added]);
+      setNext(added.length ? cursor : null);
+    } catch (e) {
+      setError((e as Error).message || 'Weitere Rezepte konnten nicht geladen werden.');
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -374,6 +407,23 @@ export default function ChefkochSearchModal({ existingNames, onSaved, onClose }:
                 </li>
               ))}
             </ul>
+          )}
+          {!detail && !searching && hits && hits.length > 0 && (
+            <div className="pt-4 flex flex-col items-center gap-1">
+              {next ? (
+                <button
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="h-10 px-5 flex items-center gap-2 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-brand-800 hover:bg-brand-50"
+                >
+                  {loadingMore && <Loader2 size={14} className="animate-spin" />}
+                  {loadingMore ? 'Lädt …' : 'Mehr laden'}
+                </button>
+              ) : (
+                <p className="text-xs text-gray-500">Keine weiteren Treffer.</p>
+              )}
+              <p className="text-[11px] text-gray-500">{hits.length} Rezepte geladen</p>
+            </div>
           )}
         </div>
 
