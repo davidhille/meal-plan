@@ -50,3 +50,17 @@ describe("guessType", () => {
   });
   test("über 75 Minuten: Wochenende", () => expect(guessType(r(["300 g Tofu"], 90))).toBe("wochenende"));
 });
+
+describe("Schreibweisen aus Rezeptseiten", () => {
+  test("weiches Trennzeichen und zerlegte Umlaute stören die Fleisch-Erkennung nicht", () => {
+    const html = page({
+      "@type": "Recipe",
+      name: "Hähn­chen in Sahne".normalize("NFD"),
+      totalTime: "PT30M",
+      recipeIngredient: ["500 g Hähn­chenbrust".normalize("NFD")],
+    });
+    const r = parseRecipeHtml(html, "https://www.chefkoch.de/rezepte/1/x.html");
+    expect(r?.name).toBe("Hähnchen in Sahne");
+    expect(r?.type).toBe("fleisch");
+  });
+});
