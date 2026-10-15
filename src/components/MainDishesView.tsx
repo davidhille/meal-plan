@@ -115,6 +115,16 @@ export default function MainDishesView({
     );
   }
 
+  // Blättern in der Rezept-Ansicht: in der aktuell gefilterten Liste
+  const selectedIndex = selected ? visible.findIndex((r) => r.name === selected.name) : -1;
+  const goTo = (index: number) => {
+    const next = visible[index];
+    if (!next) return;
+    setSelected(next);
+    // Kachel im Hintergrund mitführen, damit man nach dem Schließen dort weitermacht
+    document.querySelector(`[data-recipe="${CSS.escape(next.name)}"]`)?.scrollIntoView({ block: 'center' });
+  };
+
   const suitableCount = catalog.recipes.filter((r) => !r.unsuitable).length;
   const unsuitableCount = catalog.recipes.length - suitableCount;
   const shownTotal = showUnsuitable ? catalog.recipes.length : suitableCount;
@@ -218,7 +228,7 @@ export default function MainDishesView({
         ) : (
           <ul className="grid grid-cols-2 gap-3">
             {visible.map((r) => (
-              <li key={r.name} className="relative">
+              <li key={r.name} data-recipe={r.name} className="relative">
                 <button
                   onClick={() => setSelected(r)}
                   className="w-full h-full text-left bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
@@ -305,6 +315,9 @@ export default function MainDishesView({
             )
           }
           onEdit={() => setEditing(selected)}
+          onPrev={selectedIndex > 0 ? () => goTo(selectedIndex - 1) : undefined}
+          onNext={selectedIndex >= 0 && selectedIndex < visible.length - 1 ? () => goTo(selectedIndex + 1) : undefined}
+          position={selectedIndex >= 0 ? `${selectedIndex + 1} / ${visible.length}` : undefined}
           extra={
             <div className="space-y-3">
               {selected.unsuitable && (

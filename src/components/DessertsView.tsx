@@ -124,6 +124,15 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
     );
   }, [desserts, category, query, custom, hidden, deleted]);
 
+  // Blättern in der Rezept-Ansicht: in der aktuell gefilterten Liste
+  const selectedIndex = selected ? visible.findIndex((d) => d.name === selected.name) : -1;
+  const goTo = (index: number) => {
+    const next = visible[index];
+    if (!next) return;
+    setSelected(next);
+    document.querySelector(`[data-dessert="${CSS.escape(next.name)}"]`)?.scrollIntoView({ block: 'center' });
+  };
+
   if (!desserts) {
     return (
       <div className="px-4 py-12 flex justify-center" role="status" aria-label="Nachtische werden geladen">
@@ -187,7 +196,7 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
         ) : (
           <ul className="grid grid-cols-2 gap-3">
             {visible.map((d) => (
-              <li key={d.name} className="relative">
+              <li key={d.name} data-dessert={d.name} className="relative">
                 <button
                   onClick={() => setSelected(d)}
                   className="w-full h-full text-left bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
@@ -285,6 +294,9 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
               <RecipeFilterAssign filters={customFilters} recipe={selected} onChange={onFiltersChange} />
             ) : undefined
           }
+          onPrev={selectedIndex > 0 ? () => goTo(selectedIndex - 1) : undefined}
+          onNext={selectedIndex >= 0 && selectedIndex < visible.length - 1 ? () => goTo(selectedIndex + 1) : undefined}
+          position={selectedIndex >= 0 ? `${selectedIndex + 1} / ${visible.length}` : undefined}
           onClose={() => setSelected(null)}
         />
       )}
