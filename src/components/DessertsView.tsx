@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CakeSlice, Clock, EyeOff, Loader2, Search, X } from 'lucide-react';
+import { CakeSlice, ChefHat, Clock, EyeOff, Loader2, Search, X } from 'lucide-react';
 import { Dessert, DessertCategory, Meal, PlanMeal, RecipeFilter } from '../types';
 import { matchesRecipeFilter } from '../lib/recipeFilters';
 import CustomFilterChips from './CustomFilterChips';
@@ -8,7 +8,8 @@ import MealModal from './MealModal';
 import RecipeFilterAssign from './RecipeFilterAssign';
 import DayAssignSheet from './DayAssignSheet';
 import ConfirmDialog from './ConfirmDialog';
-import { generateMealImage, getOrCreateProfile, setDessertVisibility } from '../lib/api';
+import { generateMealImage, getCustomDesserts, getOrCreateProfile, setDessertVisibility } from '../lib/api';
+import ChefkochSearchModal from './ChefkochSearchModal';
 import HiddenItemsList from './HiddenItemsList';
 
 interface DessertsViewProps {
@@ -62,6 +63,9 @@ function toMeal(d: Dessert, generated?: string): Meal {
 
 export default function DessertsView({ planMeals = [], onAssign, onPick, customFilters = [], onFiltersChange }: DessertsViewProps) {
   const [desserts, setDesserts] = useState<Dessert[] | null>(null);
+  // Eigene Nachtische (Datenbank) – kommen zur festen Sammlung dazu
+  const [customDesserts, setCustomDesserts] = useState<Dessert[]>([]);
+  const [showChefkoch, setShowChefkoch] = useState(false);
   const [category, setCategory] = useState<DessertCategory | 'alle'>('alle');
   const [customId, setCustomId] = useState<string | null>(null);
   const custom = customFilters.find((f) => f.id === customId) ?? null;
@@ -101,15 +105,27 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
   };
 
   // Die Sammlung erst laden, wenn der Reiter geöffnet wird
+  const [baseDesserts, setBaseDesserts] = useState<Dessert[] | null>(null);
   useEffect(() => {
     let cancelled = false;
     import('../data/desserts').then((m) => {
-      if (!cancelled) setDesserts(m.DESSERTS);
+      if (!cancelled) setBaseDesserts(m.DESSERTS);
     });
+    getCustomDesserts()
+      .then((c) => !cancelled && setCustomDesserts(c))
+      .catch(() => undefined);
     return () => {
       cancelled = true;
     };
   }, []);
+  // Eigene ersetzen gleichnamige aus der Sammlung
+  useEffect(() => {
+    if (!baseDesserts) return;
+    const own = new Set(customDesserts.map((d) => d.name));
+    setDesserts(
+      [...customDesserts, ...baseDesserts.filter((d) => !own.has(d.name))].sort((a, b) => a.name.localeCompare(b.name, 'de'))
+    );
+  }, [baseDesserts, customDesserts]);
 
   const visible = useMemo(() => {
     if (!desserts) return [];
@@ -165,6 +181,16 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
             </button>
           )}
         </label>
+
+        {!onPick && (
+          <button
+            onClick={() => setShowChefkoch(true)}
+            className="w-full h-11 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-brand-300 bg-brand-50/50 text-sm font-semibold text-brand-800 hover:bg-brand-50"
+          >
+            <ChefHat size={16} />
+            Nachtisch bei Chefkoch suchen
+          </button>
+        )}
 
         <div className="flex gap-1.5 overflow-x-auto -mx-4 px-4 pb-1" role="group" aria-label="Kategorie">
           {CATEGORIES.map((c) => (
@@ -252,6 +278,19 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
           />
         )}
       </div>
+
+      {showChefkoch && (
+        <ChefkochSearchModal
+          mode="dessert"
+          existingNames={new Set((desserts ?? []).map((d) => d.name))}
+          onSaved={() => {
+            getCustomDesserts()
+              .then(setCustomDesserts)
+              .catch(() => undefined);
+          }}
+          onClose={() => setShowChefkoch(false)}
+        />
+      )}
 
       {hideCandidate && (
         <ConfirmDialog

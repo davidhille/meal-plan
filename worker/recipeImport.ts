@@ -79,6 +79,10 @@ export interface RecipeDetails {
   ratingCount: number | null;
   /** Kategorie/Schlagwörter laut Quelle (z. B. „Hauptspeise“, „Kuchen“) */
   tags: string[];
+  /** Zutaten in Originalmenge (Nachtische werden nicht umgerechnet) */
+  originalIngredients: string[];
+  /** Menge laut Quelle, z. B. „1 Kuchen“ oder „6 Portionen“ */
+  yieldText: string | null;
 }
 
 /** Rezept plus Bild, Bewertung und Schlagwörter (für die Chefkoch-Suche) */
@@ -101,9 +105,17 @@ export function parseRecipeDetails(html: string, sourceUrl: string): RecipeDetai
   const tags = [...toArray(node.recipeCategory), ...String(text(node.keywords) || "").split(",")]
     .map((t) => clean(text(t)))
     .filter(Boolean);
+  const originalIngredients = toArray(node.recipeIngredient ?? node.ingredients)
+    .map((i) => clean(text(i)))
+    .filter(Boolean)
+    .map((i) => fixPlural(normalizeIngredient(i)));
+  const y = clean(text(toArray(node.recipeYield).find((v) => /\D/.test(String(v))) ?? toArray(node.recipeYield)[0]));
+  const yieldText = !y ? null : /^\d+([.,]\d+)?$/.test(y) ? `${y} Portionen` : y;
   return {
     recipe,
     imageUrl,
+    originalIngredients,
+    yieldText,
     rating: num(agg.ratingValue),
     ratingCount: num(agg.ratingCount ?? agg.reviewCount),
     tags: [...new Set(tags)].slice(0, 12),

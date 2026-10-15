@@ -10,6 +10,7 @@ import nachtischeAusblenden from "./0007_nachtische_ausblenden";
 import nachtischeLoeschen from "./0008_nachtische_loeschen";
 import bewertungDatum from "./0009_bewertung_datum";
 import bildEntfernen from "./0010_bild_entfernen";
+import eigeneNachtische from "./0011_eigene_nachtische";
 
 export interface Migration {
   /** Eindeutig und aufsteigend, z. B. "0002_kochmodus" */
@@ -29,4 +30,5 @@ export const MIGRATIONS: Migration[] = [
   { id: "0008_nachtische_loeschen", statements: nachtischeLoeschen },
   { id: "0009_bewertung_datum", statements: bewertungDatum },
   { id: "0010_bild_entfernen", statements: bildEntfernen },
+  { id: "0011_eigene_nachtische", statements: eigeneNachtische },
 ];

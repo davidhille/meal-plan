@@ -1,6 +1,6 @@
 import {
   Profile, FamilyMember, MealRating, MealPlan, PlanMeal, Routine, ShoppingItem, ShoppingLabel, Favorite, MealType, ImageCredit,
-  ShopState, ShopProvider, ProductResult, CartItem, ShopRule, PlanDessert, RecipeCatalog, RecipeFilter, RecipeFilterInput, RecipeDraft, DayRules, RatingNote,
+  ShopState, ShopProvider, ProductResult, CartItem, ShopRule, PlanDessert, Dessert, DessertCategory, RecipeCatalog, RecipeFilter, RecipeFilterInput, RecipeDraft, DayRules, RatingNote,
 } from '../types';
 
 // Alle Daten laufen über die Cloudflare-Functions unter /api (→ Neon).
@@ -683,6 +683,7 @@ export async function saveImportedRecipe(
 
 export interface ChefkochFilters {
   main?: boolean;
+  dessert?: boolean;
   vegetarian?: boolean;
   vegan?: boolean;
   maxMinutes?: number | null;
@@ -706,8 +707,38 @@ export interface ChefkochDetails {
   rating: number | null;
   ratingCount: number | null;
   tags: string[];
+  /** Zutaten in Originalmenge (für Nachtische) */
+  originalIngredients: string[];
+  /** Menge laut Quelle, z. B. „1 Kuchen“ */
+  yieldText: string | null;
   /** Passt nicht zu den Gesundheitseinstellungen (Allergien, vegetarisch …) */
   unsuitable: boolean;
+}
+
+// ---------- Eigene Nachtische – werfen mit Klartext-Meldung ----------
+
+export interface DessertInput {
+  name: string;
+  category: DessertCategory;
+  yield: string;
+  durationMin: number | null;
+  ingredients: string[];
+  instructions: string;
+  sourceUrl?: string | null;
+}
+
+export function getCustomDesserts(): Promise<Dessert[]> {
+  return request<Dessert[]>('GET', '/desserts/custom');
+}
+
+/** Eigenen Nachtisch speichern (imageUrl: Chefkoch-Foto übernehmen); liefert alle eigenen Nachtische */
+export function saveCustomDessert(d: DessertInput & { imageUrl?: string | null }): Promise<Dessert[]> {
+  return request<Dessert[]>('POST', '/desserts/custom', d);
+}
+
+/** Hauptgericht `from` zum Nachtisch machen (wird bei den Hauptgerichten gelöscht, Bild bleibt) */
+export function moveRecipeToDessert(from: string, d: DessertInput): Promise<{ catalog: RecipeCatalog; desserts: Dessert[] }> {
+  return request('POST', '/recipes/to-dessert', { ...d, from });
 }
 
 /** Position für „Mehr laden“ (null = keine weiteren Treffer) */
