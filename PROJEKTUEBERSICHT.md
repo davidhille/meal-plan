@@ -102,6 +102,8 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
 - **Rezept-Ansicht in der Übersicht:** Bild erzeugen bzw. neues Bild, **Gericht bearbeiten** (Stift: Name, Art, Zeit,
   Zutaten, Zubereitung; gilt auch für kommende Plan-Tage und den Favoriten; Gerichte der Sammlung lassen sich auf das
   Original zurücksetzen) und **eigene Filter zuordnen** (Filter-Knöpfe unter dem Bild).
+- **Blättern** in der Rezept-Ansicht (Hauptgerichte und Nachtische): Pfeile oben, Pfeiltasten ← → oder übers Bild
+  wischen; es geht durch die aktuell gefilterte Liste („12 / 383“), die Übersicht dahinter läuft mit.
 - **Nachtische:** 161 Rezepte – 124 übersetzte Desserts aus TheMealDB mit Fotos und 37 Alltags-Nachtische (Cremes &
   Pudding, Obst, warme Süßspeisen, neue Kategorie „Eis & Kaltes“). Deren Bilder entstehen im Hintergrund (2 pro Cron-Lauf)
   oder per „Bild generieren“ im Rezept. Mit fester Menge;

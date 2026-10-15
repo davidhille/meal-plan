@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useDialog } from '../lib/useDialog';
-import { X, Clock, ShoppingBasket, BookOpen, Star, ImageIcon, ImageOff, Loader2, Minus, Plus, Users, ListPlus, Pencil, ChefHat, MessageSquare } from 'lucide-react';
+import { X, Clock, ShoppingBasket, BookOpen, Star, ImageIcon, ImageOff, Loader2, Minus, Plus, Users, ListPlus, Pencil, ChefHat, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatRatingDate, useRatings } from '../lib/ratings';
 import { ImageCredit, Meal } from '../types';
 import MealRatingModal from './MealRatingModal';
@@ -35,6 +35,11 @@ interface MealModalProps {
   onImageChange?: (url: string, credit: ImageCredit | null) => void;
   /** Zusätzlicher Bereich unter dem Bild (z. B. Filter zuordnen) */
   extra?: React.ReactNode;
+  /** Blättern zum vorigen/nächsten Gericht der Liste (Pfeile, Pfeiltasten, Wischen übers Bild) */
+  onPrev?: () => void;
+  onNext?: () => void;
+  /** Position in der Liste, z. B. „12 / 383“ */
+  position?: string;
   /** Direkt im Kochmodus öffnen (z. B. aus der Heute-Karte) */
   startCooking?: boolean;
   onClose: () => void;
@@ -58,6 +63,9 @@ export default function MealModal({
   onEdit,
   onImageChange,
   extra,
+  onPrev,
+  onNext,
+  position,
   startCooking = false,
   onClose,
 }: MealModalProps) {
@@ -67,7 +75,27 @@ export default function MealModal({
   const [shoppingMsg, setShoppingMsg] = useState<string | null>(null);
   const steps = toSteps(meal.instructions);
 
-  const dialogRef = useDialog(onClose);
+  const dialogRef = useDialog(onClose, (e) => {
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('input, textarea, select, [contenteditable="true"]')) return;
+    if (e.key === 'ArrowLeft' && onPrev) onPrev();
+    else if (e.key === 'ArrowRight' && onNext) onNext();
+  });
+  // Wischen übers Bild: links = nächstes, rechts = voriges Gericht
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start) return;
+    const dx = e.changedTouches[0].clientX - start.x;
+    const dy = e.changedTouches[0].clientY - start.y;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx < 0) onNext?.();
+    else onPrev?.();
+  };
   const [activeTab, setActiveTab] = useState<ModalTab>('zutaten');
   const [showRating, setShowRating] = useState(false);
   // Bewertung und Kommentar der Familie (aus App.tsx über den Kontext)
@@ -152,9 +180,32 @@ export default function MealModal({
             <p className="text-xs text-gray-500 uppercase tracking-wider">
               {meal.day}
               {meal.durationMin ? ` · ${meal.durationMin} Min` : ''}
+              {position ? <span className="normal-case tracking-normal"> · {position}</span> : null}
             </p>
             <h2 id="meal-dialog-title" className="text-base font-semibold text-gray-900 leading-tight truncate">{meal.meal}</h2>
           </div>
+          {(onPrev || onNext) && (
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button
+                onClick={onPrev}
+                disabled={!onPrev}
+                aria-label="Voriges Gericht"
+                title="Voriges Gericht (←)"
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-40 disabled:hover:bg-gray-100 transition-colors"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                onClick={onNext}
+                disabled={!onNext}
+                aria-label="Nächstes Gericht"
+                title="Nächstes Gericht (→)"
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-40 disabled:hover:bg-gray-100 transition-colors"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
           {onEdit && (
             <button
               onClick={onEdit}
@@ -181,7 +232,11 @@ export default function MealModal({
         {/* Scrollbereich: Bild, Badge, Reiter, Inhalt */}
         <div className="flex-1 overflow-y-auto">
         {/* Hero Image (in der Höhe begrenzt) */}
-        <div className={`relative w-full bg-gray-100 overflow-hidden ${imageUrl ? 'aspect-[16/9] max-h-[35vh]' : 'h-36'}`}>
+        <div
+          onTouchStart={onPrev || onNext ? onTouchStart : undefined}
+          onTouchEnd={onPrev || onNext ? onTouchEnd : undefined}
+          className={`relative w-full bg-gray-100 overflow-hidden ${imageUrl ? 'aspect-[16/9] max-h-[35vh]' : 'h-36'}`}
+        >
           {imageUrl ? (
             <img
               src={imageUrl}
