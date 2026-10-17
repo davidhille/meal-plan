@@ -1,6 +1,7 @@
 import { Meal, MealType, PlanDessert } from '../types';
-import { ChevronRight, Leaf, Beef, Sunset, Star, X, Heart, RefreshCw, Clock, Loader2, CakeSlice, CalendarDays } from 'lucide-react';
+import { ChevronRight, Leaf, Beef, Fish, Sunset, Star, X, Heart, RefreshCw, Clock, Loader2, CakeSlice, CalendarDays } from 'lucide-react';
 import { dessertPreview } from '../lib/desserts';
+import { isFishDish } from '../lib/recipeCategories';
 
 interface DayCardProps {
   meal: Meal;
@@ -41,6 +42,12 @@ const typeConfig: Record<MealType, { bar: string; label: string; icon: React.Rea
   },
 };
 
+const fishConfig = {
+  bar: 'bg-sky-500',
+  label: 'Fisch',
+  icon: <Fish size={11} className="text-sky-700" aria-hidden="true" />,
+};
+
 /** Gerichtkarte im Stil der Juli-Version: Farbbalken, Bild, Typ; rechts die Aktionen */
 export default function DayCard({
   meal,
@@ -58,7 +65,9 @@ export default function DayCard({
   onMove,
   onRemoveDessert,
 }: DayCardProps) {
-  const config = typeConfig[meal.type];
+  // „Fleisch“-Tage mit Fisch oder Meeresfrüchten (ohne Fleisch) als „Fisch“ anzeigen
+  const config =
+    meal.type === 'fleisch' && isFishDish({ name: meal.meal, ingredients: meal.ingredients ?? [] }) ? fishConfig : typeConfig[meal.type];
   const hasActions = !!(onReject || onRegenerate || onToggleFavorite || onPickDessert || onMove);
 
   return (

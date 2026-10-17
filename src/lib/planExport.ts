@@ -1,5 +1,6 @@
 import { MealPlan, PlanMeal } from '../types';
 import { RECIPE_BASE_PORTIONS, formatPortions, scaleIngredient } from './portions';
+import { isFishDish } from './recipeCategories';
 
 const TYPE_LABEL: Record<string, string> = {
   vegetarisch: 'Vegetarisch',
@@ -54,7 +55,7 @@ export function buildPlanHtml(plan: MealPlan, meals: PlanMeal[], portions: numbe
   const recipes = list
     .map((m) => {
       const meta = [
-        TYPE_LABEL[m.meal_type] ?? '',
+        m.meal_type === 'fleisch' && isFishDish({ name: m.meal_name, ingredients: m.ingredients ?? [] }) ? 'Fisch' : TYPE_LABEL[m.meal_type] ?? '',
         m.duration_min ? `${m.duration_min} Min` : '',
         `für ${formatPortions(portions)} Portionen`,
       ].filter(Boolean);

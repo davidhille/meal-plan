@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { DISH_KINDS, MAIN_INGREDIENTS, inCategory, matchesCategory, toggleCategory } from './recipeCategories';
+import { DISH_KINDS, MAIN_INGREDIENTS, inCategory, isFishDish, matchesCategory, toggleCategory } from './recipeCategories';
 
 const kind = (id: string) => DISH_KINDS.find((c) => c.id === id)!;
 const main = (id: string) => MAIN_INGREDIENTS.find((c) => c.id === id)!;
@@ -55,5 +55,19 @@ describe('Korrekturen von Hand', () => {
     expect(toggleCategory(main('nudeln'), dish, { 'Omas Nudelpfanne': { nudeln: false } })).toBe('auto');
     expect(toggleCategory(main('reis'), dish, {})).toBe('include');
     expect(toggleCategory(main('reis'), dish, { 'Omas Nudelpfanne': { reis: true } })).toBe('auto');
+  });
+});
+
+describe('isFishDish – „Fleisch“-Tage mit Fisch als „Fisch“ anzeigen', () => {
+  test('Garnelen, Lachs, Thunfisch ohne Fleisch', () => {
+    expect(isFishDish({ name: 'Scharfe Thai-Garnelennudeln mit Kräutern', ingredients: ['300 g Garnelen', '250 g Reisnudeln'] })).toBe(true);
+    expect(isFishDish({ name: 'Poke Bowl mit Lachs', ingredients: ['400 g Lachs'] })).toBe(true);
+    expect(isFishDish({ name: 'Salat Niçoise mit Thunfisch und Ofenkartoffeln', ingredients: ['2 Dosen Thunfisch'] })).toBe(true);
+  });
+  test('Fleisch oder Fleisch mit Fisch bleibt Fleisch', () => {
+    expect(isFishDish({ name: 'Puten-Saltimbocca mit Rosmarinkartoffeln', ingredients: ['4 Putenschnitzel'] })).toBe(false);
+    expect(isFishDish({ name: 'Paella', ingredients: ['300 g Hähnchenbrust', '200 g Garnelen'] })).toBe(false);
+    // Fischsauce würzt nur
+    expect(isFishDish({ name: 'Thai-Rindfleischsalat', ingredients: ['400 g Rinderhüfte', '2 EL Fischsauce'] })).toBe(false);
   });
 });
