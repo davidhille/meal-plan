@@ -32,6 +32,10 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
   mit auf die Familie umgerechneten Zutaten und Zubereitung, Nachtische) → „Als PDF speichern“. Ohne Pop-up als HTML-Datei.
 - **Rückfrage vor dem Ersetzen:** Läuft der Plan noch, fragen „Komplett neuen Plan generieren“ und „Neuer Zeitraum“ nach –
   mit „Vorher herunterladen“, damit die Rezepte zum schon erledigten Einkauf nicht verloren gehen.
+- **Plan verlängern statt ersetzen** (in der Rückfrage bei „Neuer Zeitraum“): Der laufende Plan wird auf den neuen
+  Zeitraum erweitert. Geplante Tage bleiben – auch Gerichte, die man in die Zukunft verschoben hat –, ebenso bewusst
+  leere Tage („Tag leeren“ oder Gericht weg verschoben). Nur freie Tage bekommen ein Gericht; Abwechslung, Fleisch-Grenze
+  und Turnus-Favoriten berücksichtigen die schon geplanten Gerichte. „Neuen Plan erstellen“ ersetzt wie bisher alles.
 - **Rezept-Ansicht:** Bild mit Quellenangabe, Zutaten mit **Portionen-Umrechnung** (Familie: Erwachsene 1, Kinder je nach Alter
   ½ bis 1 Portion; per +/− änderbar), Zubereitung Schritt für Schritt, Bewertung.
 - **Eure Bewertung mit Kommentar:** In jeder Rezept-Ansicht (Plan, Rezepte, Favoriten) stehen unter „Eure Bewertung“

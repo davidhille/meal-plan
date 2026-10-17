@@ -9,21 +9,24 @@ interface ConfirmDialogProps {
   /** Rote Bestätigung für Löschen/Ausblenden */
   danger?: boolean;
   onConfirm: () => Promise<void>;
+  /** Zweite Möglichkeit über den beiden Knöpfen (z. B. „Plan verlängern“ statt „Ersetzen“) */
+  secondaryLabel?: string;
+  onSecondary?: () => Promise<void>;
   onClose: () => void;
 }
 
 /** Rückfrage vor dem Speichern */
-export default function ConfirmDialog({ title, message, confirmLabel, danger, onConfirm, onClose }: ConfirmDialogProps) {
+export default function ConfirmDialog({ title, message, confirmLabel, danger, onConfirm, secondaryLabel, onSecondary, onClose }: ConfirmDialogProps) {
   const dialogRef = useDialog(onClose);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const confirm = async () => {
+  const run = async (action: () => Promise<void>) => {
     if (busy) return;
     setBusy(true);
     setError(null);
     try {
-      await onConfirm();
+      await action();
       onClose();
     } catch (e) {
       setError((e as Error).message || 'Das hat nicht geklappt.');
@@ -50,6 +53,16 @@ export default function ConfirmDialog({ title, message, confirmLabel, danger, on
             {error}
           </p>
         )}
+        {secondaryLabel && onSecondary && (
+          <button
+            onClick={() => run(onSecondary)}
+            disabled={busy}
+            className="w-full h-11 rounded-xl text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 disabled:bg-brand-300 flex items-center justify-center gap-2"
+          >
+            {busy && <Loader2 size={14} className="animate-spin" />}
+            {secondaryLabel}
+          </button>
+        )}
         <div className="flex gap-2">
           <button
             onClick={onClose}
@@ -59,7 +72,7 @@ export default function ConfirmDialog({ title, message, confirmLabel, danger, on
             Abbrechen
           </button>
           <button
-            onClick={confirm}
+            onClick={() => run(onConfirm)}
             disabled={busy}
             className={`flex-1 h-11 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 ${
               danger ? 'bg-red-600 hover:bg-red-700 disabled:bg-red-300' : 'bg-brand-700 hover:bg-brand-800 disabled:bg-brand-300'

@@ -12,6 +12,7 @@ import bewertungDatum from "./0009_bewertung_datum";
 import bildEntfernen from "./0010_bild_entfernen";
 import eigeneNachtische from "./0011_eigene_nachtische";
 import kategorienKorrekturen from "./0012_kategorien_korrekturen";
+import geleerteTage from "./0013_geleerte_tage";
 
 export interface Migration {
   /** Eindeutig und aufsteigend, z. B. "0002_kochmodus" */
@@ -33,4 +34,5 @@ export const MIGRATIONS: Migration[] = [
   { id: "0010_bild_entfernen", statements: bildEntfernen },
   { id: "0011_eigene_nachtische", statements: eigeneNachtische },
   { id: "0012_kategorien_korrekturen", statements: kategorienKorrekturen },
+  { id: "0013_geleerte_tage", statements: geleerteTage },
 ];

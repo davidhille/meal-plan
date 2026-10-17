@@ -15,6 +15,7 @@ import {
   deleteRoutine,
   createMealPlan,
   getPlanMeals,
+  extendMealPlan,
   movePlanMeal,
   removePlanMeal,
   getLatestPlan,
@@ -251,6 +252,16 @@ export default function App() {
       setCurrentPlan(plan);
       setActiveTab('speiseplan');
     }
+  };
+
+  /** Laufenden Plan verlängern statt ersetzen (gleiche Plan-ID → Gerichte neu laden) */
+  const handleExtendPlan = async (startDate: string, endDate: string) => {
+    if (!currentPlan) return;
+    const plan = await extendMealPlan(currentPlan.id, startDate, endDate);
+    setCurrentPlan(plan);
+    setPlanMeals(await getPlanMeals(plan.id));
+    setFavorites(await getFavorites());
+    setActiveTab('speiseplan');
   };
 
   /** Läuft noch ein Plan mit Gerichten? Dann vor dem Ersetzen nachfragen */
@@ -491,6 +502,7 @@ export default function App() {
           portions={familyPortions(familyMembers)}
           confirmLabel="Neuen Plan erstellen"
           onConfirm={() => handleCreatePlan(pendingPlan.start, pendingPlan.end)}
+          onExtend={() => handleExtendPlan(pendingPlan.start, pendingPlan.end)}
           onClose={() => setPendingPlan(null)}
         />
       )}

@@ -216,6 +216,11 @@ export async function createMealPlan(
   }
 }
 
+/** Laufenden Plan auf einen Zeitraum verlängern: geplante und bewusst leere Tage bleiben, nur freie Tage werden befüllt */
+export async function extendMealPlan(planId: string, startDate: string, endDate: string): Promise<MealPlan> {
+  return request<MealPlan>('POST', `/plans/${planId}/extend`, { startDate, endDate });
+}
+
 export async function getLatestPlan(): Promise<MealPlan | null> {
   try {
     return await request<MealPlan | null>('GET', '/plans/latest');

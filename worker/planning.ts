@@ -80,23 +80,73 @@ export function pickDays(
   return meals;
 }
 
-/** Plan für [startDate, endDate] erzeugen und speichern */
-export async function createPlan(env: Env, sql: Sql, profileId: string, startDate: string, endDate: string) {
+/**
+ * Tage, die geplant werden sollen: alle im Zeitraum außer freien Wochentagen, schon belegten und bewusst
+ * leer gelassenen Tagen (beim Verlängern eines Plans).
+ */
+export function datesToFill(
+  startDate: string,
+  endDate: string,
+  dayRules: ScoringContext["dayRules"],
+  taken: Set<string> = new Set(),
+  cleared: Set<string> = new Set()
+): string[] {
+  const dates: string[] = [];
+  for (let d = startDate; d <= endDate; d = addDaysIso(d, 1)) {
+    if (!isOffDay(d, dayRules) && !taken.has(d) && !cleared.has(d)) dates.push(d);
+  }
+  return dates;
+}
+
+/** date[] kommt von Neon als Array, lokal teils als „{2026-10-20,…}“ */
+function parseDateArray(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map((v) => String(v).slice(0, 10));
+  if (typeof value === "string") return value.replace(/^\{|\}$/g, "").split(",").filter(Boolean);
+  return [];
+}
+
+/**
+ * Plan für [startDate, endDate] erzeugen und speichern.
+ * Mit extendPlanId wird stattdessen dieser Plan auf den Zeitraum erweitert: geplante Gerichte und bewusst leere
+ * Tage bleiben, nur freie Tage bekommen ein Gericht.
+ */
+export async function createPlan(env: Env, sql: Sql, profileId: string, startDate: string, endDate: string, extendPlanId?: string) {
   const ctx = await loadContext(sql, profileId);
   const { pool, favorites } = await loadPool(sql, profileId);
   ctx.favoriteNames = favorites.filter((f) => !f.turnus_weeks).map((f) => f.meal_name);
   ctx.recentNames = await recentMealNames(sql, profileId, startDate);
   ctx.month = Number(startDate.slice(5, 7));
 
+  // Beim Verlängern: vorhandene Gerichte (fest, zählen für Abwechslung und Fleisch-Grenze) und leere Tage
+  const existing = new Map<string, Recipe>();
+  let cleared = new Set<string>();
+  if (extendPlanId) {
+    const [rows, planRows] = await Promise.all([
+      sql`SELECT meal_date::text AS meal_date, meal_name, meal_type, ingredients, instructions, duration_min
+        FROM plan_meals WHERE plan_id = ${extendPlanId} AND NOT rejected`,
+      sql`SELECT cleared_dates FROM meal_plans WHERE id = ${extendPlanId}`,
+    ]);
+    for (const r of rows) {
+      existing.set(r.meal_date as string, {
+        name: r.meal_name as string,
+        type: r.meal_type as Recipe["type"],
+        ingredients: (r.ingredients as string[]) ?? [],
+        instructions: (r.instructions as string) ?? "",
+        durationMin: (r.duration_min as number | null) ?? undefined,
+      } as Recipe);
+    }
+    cleared = new Set(parseDateArray(planRows[0]?.cleared_dates));
+  }
+
   // Freie Wochentage (Einstellungen → Wochentage) werden gar nicht geplant
-  const dates: string[] = [];
-  for (let d = startDate; d <= endDate; d = addDaysIso(d, 1)) if (!isOffDay(d, ctx.dayRules)) dates.push(d);
+  const dates = datesToFill(startDate, endDate, ctx.dayRules, new Set(existing.keys()), cleared);
+  if (extendPlanId && dates.length === 0) return extendPlanRange(sql, extendPlanId, startDate, endDate);
 
   // 1) Fällige Turnus-Favoriten fest einplanen (am liebsten an einem passenden Tag)
   const assigned = new Map<string, Recipe>();
-  const used = new Set<string>();
+  const used = new Set<string>([...existing.values()].map((r) => r.name));
   const due = favorites
-    .filter((f) => f.turnus_weeks > 0 && !ctx.rejectedMeals.includes(f.meal_name))
+    .filter((f) => f.turnus_weeks > 0 && !ctx.rejectedMeals.includes(f.meal_name) && !used.has(f.meal_name))
     .filter((f) => !f.last_planned || addDaysIso(f.last_planned, f.turnus_weeks * 7) <= endDate)
     .sort((a, b) => String(a.last_planned ?? "").localeCompare(String(b.last_planned ?? "")));
   for (const f of due) {
@@ -118,14 +168,19 @@ export async function createPlan(env: Env, sql: Sql, profileId: string, startDat
   pool.push(...fresh);
   ctx.newNames = fresh.map((r) => r.name);
 
-  // 3) Restliche Tage planen
-  const meals = pickDays(dates, ctx, used, pool, assigned);
+  // 3) Restliche Tage planen – vorhandene Gerichte stehen fest und zählen für die Fleisch-Grenze mit
+  const allDates = [...new Set([...dates, ...existing.keys()])].sort();
+  const fixed = new Map([...existing, ...assigned]);
+  const meals = pickDays(allDates, ctx, used, pool, fixed).filter((m) => !existing.has(m.date));
 
-  const planRows = await sql.query(
-    `INSERT INTO meal_plans (profile_id, start_date, end_date, status) VALUES ($1, $2, $3, 'active') RETURNING ${PLAN_COLS}`,
-    [profileId, startDate, endDate]
-  );
-  const plan = planRows[0];
+  const plan = extendPlanId
+    ? await extendPlanRange(sql, extendPlanId, startDate, endDate)
+    : (
+        await sql.query(
+          `INSERT INTO meal_plans (profile_id, start_date, end_date, status) VALUES ($1, $2, $3, 'active') RETURNING ${PLAN_COLS}`,
+          [profileId, startDate, endDate]
+        )
+      )[0];
   if (meals.length) {
     await sql.query(
       `INSERT INTO plan_meals (plan_id, meal_date, meal_name, meal_type, ingredients, instructions, duration_min)
@@ -144,6 +199,16 @@ export async function createPlan(env: Env, sql: Sql, profileId: string, startDat
     await markFavoritesPlanned(sql, profileId, plan.id);
   }
   return plan;
+}
+
+/** Zeitraum eines Plans erweitern (nie verkleinern) */
+async function extendPlanRange(sql: Sql, planId: string, startDate: string, endDate: string) {
+  const rows = await sql.query(
+    `UPDATE meal_plans SET start_date = LEAST(start_date, $2::date), end_date = GREATEST(end_date, $3::date)
+     WHERE id = $1 RETURNING ${PLAN_COLS}`,
+    [planId, startDate, endDate]
+  );
+  return rows[0];
 }
 
 /** Turnus-Zähler: letztes geplantes Datum je Favorit aktualisieren */
