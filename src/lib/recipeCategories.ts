@@ -102,6 +102,15 @@ export const MAIN_INGREDIENTS: RecipeCategory[] = [
 
 export const ALL_CATEGORIES = [...DISH_KINDS, ...MAIN_INGREDIENTS];
 
+const byId = (id: string) => MAIN_INGREDIENTS.find((c) => c.id === id)!;
+const MEAT = ['gefluegel', 'rind', 'schwein', 'lamm'].map(byId);
+const SEAFOOD = ['fisch', 'krustentiere'].map(byId);
+
+/** Fisch oder Meeresfrüchte, aber kein Fleisch – Gerichte vom Typ „Fleisch & Fisch“ heißen dann „Fisch“ */
+export function isFishDish(r: RecipeText): boolean {
+  return SEAFOOD.some((c) => matchesCategory(c, r)) && !MEAT.some((c) => matchesCategory(c, r));
+}
+
 /** Was die App von sich aus erkennt (ohne Korrekturen) */
 export function matchesCategory(c: RecipeCategory, r: RecipeText): boolean {
   if (c.name.test(r.name.toLowerCase())) return true;
