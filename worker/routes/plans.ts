@@ -1,4 +1,5 @@
 // Pläne und Gerichte im Plan (austauschen, ablehnen, Nachtisch)
+import type { Sql } from "../db";
 import type { Ctx } from "../http";
 import { json } from "../http";
 import { IMAGE_URL_SQL, IMAGE_CREDIT_SQL, fillMissingImages } from "../images";
@@ -93,6 +94,9 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
     const other = await sql`SELECT id FROM plan_meals WHERE plan_id = ${pm.plan_id} AND meal_date = ${date}::date AND NOT rejected`;
     if (other[0]) await sql`UPDATE plan_meals SET meal_date = ${pm.meal_date}::date WHERE id = ${other[0].id}`;
     await sql`UPDATE plan_meals SET meal_date = ${date}::date WHERE id = ${id}`;
+    // Der Zieltag ist jetzt belegt; der alte Tag bleibt bewusst leer, wenn nicht getauscht wurde
+    await sql`UPDATE meal_plans SET cleared_dates = array_remove(cleared_dates, ${date}::date) WHERE id = ${pm.plan_id}`;
+    if (!other[0]) await markCleared(sql, pm.plan_id, pm.meal_date);
     // Abgelehnte Einträge am Zieltag stören nicht (bleiben unsichtbar)
     const plans = await sql.query(
       `UPDATE meal_plans SET start_date = LEAST(start_date, $2::date), end_date = GREATEST(end_date, $2::date)
@@ -106,8 +110,11 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
   if (parts[0] === "plan-meals" && id && !parts[2] && request.method === "DELETE") {
     const p = await getProfile(sql);
     const removed = await sql`DELETE FROM plan_meals pm USING meal_plans mp
-      WHERE pm.id = ${id} AND mp.id = pm.plan_id AND mp.profile_id = ${p.id} RETURNING pm.id`;
+      WHERE pm.id = ${id} AND mp.id = pm.plan_id AND mp.profile_id = ${p.id}
+      RETURNING pm.plan_id, pm.meal_date::text AS meal_date`;
     if (!removed[0]) return json({ error: "Gericht nicht gefunden" }, 404);
+    // Bewusst leer: „Plan verlängern“ befüllt den Tag nicht wieder
+    await markCleared(sql, removed[0].plan_id, removed[0].meal_date);
     return json({ ok: true });
   }
 
@@ -124,6 +131,18 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
   }
 
   // Kompletten Plan neu generieren (gleicher Zeitraum, alter Plan wird ersetzt)
+  // Plan verlängern: bis zu einem neuen Zeitraum erweitern, geplante und bewusst leere Tage bleiben, nur freie Tage werden befüllt
+  if (parts[0] === "plans" && id && parts[2] === "extend" && request.method === "POST") {
+    const { startDate, endDate } = body;
+    if (!isIsoDate(startDate) || !isIsoDate(endDate) || startDate > endDate) return json({ error: "Ungültiger Zeitraum" }, 400);
+    const p = await getProfile(sql);
+    const rows = await sql`SELECT id FROM meal_plans WHERE id = ${id} AND profile_id = ${p.id}`;
+    if (!rows[0]) return json({ error: "Plan nicht gefunden" }, 404);
+    const plan = await createPlan(env, sql, p.id, startDate, endDate, id);
+    waitUntil(fillMissingImages(env, sql, 7, plan.id));
+    return json(plan);
+  }
+
   if (parts[0] === "plans" && id && parts[2] === "regenerate" && request.method === "POST") {
     const p = await getProfile(sql);
     const rows = await sql.query(`SELECT ${PLAN_COLS} FROM meal_plans WHERE id = $1 AND profile_id = $2`, [id, p.id]);
@@ -138,4 +157,13 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
   }
 
   return null;
+}
+
+const isIsoDate = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v));
+
+/** Tag eines Plans als bewusst leer merken (nur wenn dort wirklich nichts mehr steht) */
+async function markCleared(sql: Sql, planId: string, date: string) {
+  await sql`UPDATE meal_plans SET cleared_dates = array_append(array_remove(cleared_dates, ${date}::date), ${date}::date)
+    WHERE id = ${planId}
+      AND NOT EXISTS (SELECT 1 FROM plan_meals WHERE plan_id = ${planId} AND meal_date = ${date}::date AND NOT rejected)`;
 }
