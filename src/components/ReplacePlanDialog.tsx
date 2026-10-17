@@ -12,11 +12,14 @@ interface ReplacePlanDialogProps {
   onConfirm: () => Promise<void>;
   /** Statt ersetzen: laufenden Plan auf den neuen Zeitraum verlängern (geplante Tage bleiben) */
   onExtend?: () => Promise<void>;
+  /** Beschriftung und Erklärung dafür (Standard: „Plan verlängern“ beim neuen Zeitraum) */
+  extendLabel?: string;
+  extendHint?: React.ReactNode;
   onClose: () => void;
 }
 
 /** Rückfrage, bevor ein neuer Plan den laufenden ersetzt – mit Möglichkeit, ihn vorher herunterzuladen */
-export default function ReplacePlanDialog({ plan, meals, portions, confirmLabel, onConfirm, onExtend, onClose }: ReplacePlanDialogProps) {
+export default function ReplacePlanDialog({ plan, meals, portions, confirmLabel, onConfirm, onExtend, extendLabel, extendHint, onClose }: ReplacePlanDialogProps) {
   const count = meals.filter((m) => !m.rejected).length;
   return (
     <ConfirmDialog
@@ -30,8 +33,12 @@ export default function ReplacePlanDialog({ plan, meals, portions, confirmLabel,
           </span>
           {onExtend && (
             <span className="block mt-2">
-              <strong>Plan verlängern</strong> behält alle geplanten Tage – auch verschobene Gerichte und bewusst leere Tage – und
-              füllt nur die freien Tage im neuen Zeitraum.
+              {extendHint ?? (
+                <>
+                  <strong>Plan verlängern</strong> behält alle geplanten Tage – auch verschobene Gerichte und bewusst leere Tage – und
+                  füllt nur die freien Tage im neuen Zeitraum.
+                </>
+              )}
             </span>
           )}
           <button
@@ -47,7 +54,7 @@ export default function ReplacePlanDialog({ plan, meals, portions, confirmLabel,
       confirmLabel={confirmLabel}
       onConfirm={onConfirm}
       danger={!!onExtend}
-      secondaryLabel={onExtend ? 'Plan verlängern – geplante Tage behalten' : undefined}
+      secondaryLabel={onExtend ? extendLabel ?? 'Plan verlängern – geplante Tage behalten' : undefined}
       onSecondary={onExtend}
       onClose={onClose}
     />

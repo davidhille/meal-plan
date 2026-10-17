@@ -22,6 +22,8 @@ interface MealPlanViewProps {
   onReject?: (planMealId: string, mealName: string) => Promise<void>;
   onRegenerate?: (planMealId: string) => Promise<void>;
   onRegeneratePlan?: () => Promise<void>;
+  /** Nur die leeren Tage des Plans befüllen (geplante und bewusst leere Tage bleiben) */
+  onFillEmptyDays?: () => Promise<void>;
   favoriteNames?: Set<string>;
   onToggleFavorite?: (pm: PlanMeal) => Promise<void>;
   plan?: MealPlan | null;
@@ -82,6 +84,7 @@ export default function MealPlanView({
   onReject,
   onRegenerate,
   onRegeneratePlan,
+  onFillEmptyDays,
   favoriteNames,
   onToggleFavorite,
   plan,
@@ -409,6 +412,14 @@ export default function MealPlanView({
               setRegeneratingPlan(false);
             }
           }}
+          onExtend={onFillEmptyDays}
+          extendLabel="Nur leere Tage füllen"
+          extendHint={
+            <>
+              <strong>Nur leere Tage füllen</strong> behält alle geplanten Gerichte (auch verschobene) und plant nur Tage ohne Gericht.
+              Tage, die du mit „Tag leeren“ freigemacht hast, bleiben frei.
+            </>
+          }
           onClose={() => setConfirmRegenerate(false)}
         />
       )}

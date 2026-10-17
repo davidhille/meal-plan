@@ -36,6 +36,9 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
   Zeitraum erweitert. Geplante Tage bleiben – auch Gerichte, die man in die Zukunft verschoben hat –, ebenso bewusst
   leere Tage („Tag leeren“ oder Gericht weg verschoben). Nur freie Tage bekommen ein Gericht; Abwechslung, Fleisch-Grenze
   und Turnus-Favoriten berücksichtigen die schon geplanten Gerichte. „Neuen Plan erstellen“ ersetzt wie bisher alles.
+- **Nur leere Tage füllen** (in der Rückfrage bei „Komplett neuen Plan generieren“): gleicher Zeitraum, aber nur Tage
+  ohne Gericht werden geplant – z. B. die Lücke, die ein in die Zukunft verschobenes Gericht hinterlässt. Mit „Tag leeren“
+  freigemachte Tage bleiben frei.
 - **Rezept-Ansicht:** Bild mit Quellenangabe, Zutaten mit **Portionen-Umrechnung** (Familie: Erwachsene 1, Kinder je nach Alter
   ½ bis 1 Portion; per +/− änderbar), Zubereitung Schritt für Schritt, Bewertung.
 - **Eure Bewertung mit Kommentar:** In jeder Rezept-Ansicht (Plan, Rezepte, Favoriten) stehen unter „Eure Bewertung“
