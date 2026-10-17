@@ -413,6 +413,7 @@ export default function App() {
             onReject={currentPlan ? handleRejectMeal : undefined}
             onRegenerate={currentPlan ? handleRegenerateMeal : undefined}
             onRegeneratePlan={currentPlan ? handleRegeneratePlan : undefined}
+            onFillEmptyDays={currentPlan ? () => handleExtendPlan(currentPlan.start_date, currentPlan.end_date) : undefined}
             favoriteNames={favoriteNames}
             onToggleFavorite={handleToggleFavorite}
             plan={currentPlan}
