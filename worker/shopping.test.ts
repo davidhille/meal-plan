@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildPlanItems, familyPortions, mergeKey } from "./shopping";
+import { DEFAULT_PANTRY, buildPlanItems, familyPortions, isPantry, mergeKey, pantryOverview } from "./shopping";
 
 const displays = (r: ReturnType<typeof buildPlanItems>) => r.items.map((i) => `${i.defaultLabel}:${i.display}`);
 
@@ -66,5 +66,27 @@ describe("buildPlanItems", () => {
   test("Nachtisch-Zutaten werden nicht umgerechnet", () => {
     const r = buildPlanItems([["400 g Spaghetti"]], 2, new Set(), [["250 g Quark"]]);
     expect(r.items.map((i) => i.display)).toEqual(["250 g Quark", "200 g Spaghetti"]);
+  });
+});
+
+describe("Vorrat", () => {
+  test("jeder Standard-Eintrag wird auch als Vorrat erkannt", () => {
+    for (const d of DEFAULT_PANTRY) expect(isPantry(d)).toBe(true);
+  });
+
+  test("herausgenommener Standard-Eintrag kommt wieder auf die Liste", () => {
+    const ing = [["1 TL Kurkuma", "1 TL Salz", "2 Zwiebeln"]];
+    expect(buildPlanItems(ing, 4).items.map((i) => i.baseName)).toEqual(["Zwiebeln"]);
+    const r = buildPlanItems(ing, 4, new Set(), [], new Set(["kurkuma"]));
+    expect(r.items.map((i) => i.baseName)).toEqual(["Kurkuma", "Zwiebeln"]);
+    expect(r.pantryNeeded).toEqual(["Salz"]);
+  });
+
+  test("Übersicht: Gebrauchtes zuerst, eigene Einträge, Plan-Zutaten ohne Eintrag", () => {
+    const list = pantryOverview(["Paprikapulver edelsüß", "Eier", "Italienische Kräuter"], ["Eier", "Reis"], new Set(["kurkuma"]));
+    const needed = list.filter((e) => e.needed).map((e) => `${e.kind}:${e.name}`);
+    expect(needed).toEqual(["custom:Eier", "plan:Italienische Kräuter", "default:Paprikapulver"]);
+    expect(list.some((e) => e.name === "Kurkuma")).toBe(false);
+    expect(list.find((e) => e.name === "Reis")).toEqual({ name: "Reis", needed: false, kind: "custom" });
   });
 });

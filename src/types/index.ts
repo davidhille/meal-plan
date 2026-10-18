@@ -152,16 +152,6 @@ export const LABEL_COLORS = [
   '#ef4444', '#06b6d4',
 ];
 
-export const BASICS_ITEMS: string[] = [
-  'Salz', 'Pfeffer', 'Zucker', 'Olivenöl', 'Sonnenblumenöl',
-  'Mehl', 'Butter', 'Milch', 'Eier', 'Zwiebeln',
-  'Knoblauch', 'Gemüsebrühe', 'Tomatenmark', 'Essig',
-  'Sojasoße', 'Senf', 'Ketchup', 'Mayonnaise',
-  'Paprikapulver', 'Oregano', 'Basilikum', 'Thymian', 'Rosmarin',
-  'Cayennepfeffer', 'Kreuzkümmel', 'Kurkuma', 'Muskatnuss',
-  'Petersilie', 'Dill', 'Chiliflocken', 'Worcestershiresoße',
-];
-
 export interface FamilyMember {
   id: string;
   profile_id: string;

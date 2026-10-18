@@ -1,7 +1,7 @@
 // Einkaufsliste, Produkt-Verknüpfungen, eigener Vorrat, Listen (Labels)
 import type { Ctx } from "../http";
 import { json } from "../http";
-import { mergeKey } from "../shopping";
+import { isPantry, mergeKey } from "../shopping";
 import { DEFAULT_LABELS, getLabels, getShopping, parsePrice, prefKey } from "../shoppingList";
 import { getProfile, planOwned } from "../repo";
 
@@ -88,18 +88,30 @@ export async function shoppingRoutes({ request, sql, body, parts, route, id }: C
     return json({ ok: true });
   }
 
-  // ---------- Eigener Vorrat (Zutaten, die nie auf die Liste sollen) ----------
+  // ---------- Vorrat (kommt nicht auf die Liste) ----------
+  // Hinzufügen: herausgenommenen Standard-Eintrag zurückholen, sonst eigener Eintrag
   if (route === "POST /pantry") {
     const p = await getProfile(sql);
-    const name = String(body.name ?? "").replace(/\(.*?\)/g, "").trim();
+    const name = String(body.name ?? "").replace(/\(.*?\)/g, "").trim().slice(0, 80);
     if (!name) return json({ error: "Name fehlt" }, 400);
-    await sql`INSERT INTO pantry_items (profile_id, name_key, name) VALUES (${p.id}, ${mergeKey(name)}, ${name})
-      ON CONFLICT DO NOTHING`;
+    const key = mergeKey(name);
+    const restored = await sql`DELETE FROM pantry_items WHERE profile_id = ${p.id} AND name_key = ${key} AND excluded RETURNING name_key`;
+    if (!restored[0] && !isPantry(name)) {
+      await sql`INSERT INTO pantry_items (profile_id, name_key, name, excluded) VALUES (${p.id}, ${key}, ${name}, false)
+        ON CONFLICT (profile_id, name_key) DO UPDATE SET excluded = false, name = EXCLUDED.name`;
+    }
     return json({ ok: true });
   }
+  // Aus dem Vorrat nehmen: eigener Eintrag wird gelöscht, Standard-Eintrag als herausgenommen gemerkt
   if (parts[0] === "pantry" && id && request.method === "DELETE") {
     const p = await getProfile(sql);
-    await sql`DELETE FROM pantry_items WHERE profile_id = ${p.id} AND name_key = ${mergeKey(decodeURIComponent(id))}`;
+    const name = decodeURIComponent(id).trim();
+    const key = mergeKey(name);
+    const removed = await sql`DELETE FROM pantry_items WHERE profile_id = ${p.id} AND name_key = ${key} AND NOT excluded RETURNING name_key`;
+    if (!removed[0]) {
+      await sql`INSERT INTO pantry_items (profile_id, name_key, name, excluded) VALUES (${p.id}, ${key}, ${name}, true)
+        ON CONFLICT (profile_id, name_key) DO UPDATE SET excluded = true`;
+    }
     return json({ ok: true });
   }
 

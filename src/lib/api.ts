@@ -401,12 +401,17 @@ export async function removeMealImage(mealName: string): Promise<void> {
 
 // ---------- Einkaufsliste ----------
 
+export interface PantryEntry {
+  name: string;
+  needed: boolean;
+  kind: 'default' | 'custom' | 'plan';
+}
+
 export interface ShoppingData {
   labels: ShoppingLabel[];
   items: ShoppingItem[];
-  pantryNeeded: string[];
-  /** Eigene Vorrats-Zutaten („In Basics legen“) */
-  customPantry: string[];
+  /** Vorrat: Standard-Einträge, eigene und vom Plan gebrauchte (needed = gelb markiert) */
+  pantry: PantryEntry[];
   portions: number;
   standardLabel: string;
   /** Mindestbestellwert und Liefergebühr je Shop */

@@ -88,8 +88,12 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
   Zuordnungen pro Zutat werden für künftige Pläne gemerkt. Listen sind auf- und zuklappbar.
 - **PDF:** Listen ohne Shop (Metzger, Aldi, DM …) einzeln über das PDF-Symbol in der Liste oder alle zusammen über
   „Listen ohne Shop als PDF“ herunterladen – nur offene Einträge, mit Kästchen zum Abhaken, Umlaute und € passen.
-- **Basics & Vorrat:** Salz, Gewürze, Öl usw. kommen nicht auf die Liste; gelb markiert, wenn der Plan sie braucht.
-  Eigener Vorrat per Kisten-Symbol („haben wir immer da“). Eigene Artikel per Eingabefeld.
+- **Vorrat** (ein Bereich unter den Listen): alles, was ihr immer im Haus habt – kommt nicht automatisch auf die Liste.
+  Vorbelegt mit Salz, Pfeffer, Öl, Mehl, Brühe, Tomatenmark und gängigen Gewürzen; eigene Einträge per Eingabefeld
+  „Zum Vorrat“ oder Kisten-Symbol an einer Zutat. Gelb = braucht der Plan, kurz nachschauen. **Antippen = ist alle** →
+  auf eine Liste setzen (abgehakt wandert es zurück in den Vorrat). **Bearbeiten** → Eintrag antippen nimmt ihn aus dem
+  Vorrat (auch Standard-Einträge); er kommt dann wieder auf die Liste, wenn ein Rezept ihn braucht. Wieder eintippen holt
+  ihn zurück. Eigene Artikel per Eingabefeld in den Listen.
 - **Lieferdienst-Liste:** pro Artikel ein Preis-Knopf je Shop, der günstigere ist markiert; Antippen ordnet den Artikel zu.
 - **Produkt-Dialog:** sucht gleichzeitig bei Knuspr und Picnic, zeigt Packung, Preis und **Grundpreis** (€/kg, €/l, €/Stk.)
   und wie viele Packungen nötig sind.
