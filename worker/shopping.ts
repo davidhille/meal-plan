@@ -33,7 +33,7 @@ const PANTRY_WORDS = new Set([
  * Die Familie kann Einträge herausnehmen (pantry_items.excluded) – dann kommen sie bei Bedarf wieder auf die Liste.
  */
 export const DEFAULT_PANTRY = [
-  "Salz", "Pfeffer", "Zucker", "Mehl", "Olivenöl", "Sonnenblumenöl", "Rapsöl", "Essig", "Balsamico", "Senf", "Ketchup",
+  "Salz", "Pfeffer", "Zucker", "Mehl", "Öl", "Olivenöl", "Sonnenblumenöl", "Rapsöl", "Essig", "Balsamico", "Senf", "Ketchup",
   "Mayonnaise", "Sojasoße", "Worcestershiresoße", "Gemüsebrühe", "Tomatenmark", "Honig", "Zitronensaft", "Speisestärke",
   "Backpulver", "Natron", "Vanillezucker", "Paprikapulver", "Oregano", "Basilikum", "Thymian", "Rosmarin", "Majoran",
   "Lorbeerblätter", "Cayennepfeffer", "Chiliflocken", "Chilipulver", "Kreuzkümmel", "Kurkuma", "Currypulver", "Zimt",
@@ -139,8 +139,11 @@ export function pantryOverview(pantryNeeded: string[], custom: string[], exclude
     hits.forEach((h) => covered.add(h.name));
     entries.push({ name: d, needed: hits.length > 0, kind: "default" });
   }
+  const defaultKeys = new Set(DEFAULT_PANTRY.map(mergeKey));
   for (const c of custom) {
     const key = mergeKey(c);
+    // Schon Standard-Vorrat (z. B. früher selbst angelegtes „Zucker“) – nicht doppelt zeigen
+    if (defaultKeys.has(key) && !excluded.has(c.toLowerCase())) continue;
     const hits = neededWords.filter((n) => n.key === key);
     hits.forEach((h) => covered.add(h.name));
     entries.push({ name: c, needed: hits.length > 0, kind: "custom" });

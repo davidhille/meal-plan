@@ -1,7 +1,7 @@
 // Einkaufsliste, Produkt-Verknüpfungen, eigener Vorrat, Listen (Labels)
 import type { Ctx } from "../http";
 import { json } from "../http";
-import { isPantry, mergeKey } from "../shopping";
+import { DEFAULT_PANTRY, isPantry, mergeKey } from "../shopping";
 import { DEFAULT_LABELS, getLabels, getShopping, parsePrice, prefKey } from "../shoppingList";
 import { getProfile, planOwned } from "../repo";
 
@@ -107,7 +107,11 @@ export async function shoppingRoutes({ request, sql, body, parts, route, id }: C
     const p = await getProfile(sql);
     const name = decodeURIComponent(id).trim();
     const key = mergeKey(name);
-    const removed = await sql`DELETE FROM pantry_items WHERE profile_id = ${p.id} AND name_key = ${key} AND NOT excluded RETURNING name_key`;
+    // Standard-Einträge immer als herausgenommen merken (überschreibt einen gleichnamigen eigenen Eintrag)
+    const isDefault = DEFAULT_PANTRY.some((d) => mergeKey(d) === key);
+    const removed = isDefault
+      ? []
+      : await sql`DELETE FROM pantry_items WHERE profile_id = ${p.id} AND name_key = ${key} AND NOT excluded RETURNING name_key`;
     if (!removed[0]) {
       await sql`INSERT INTO pantry_items (profile_id, name_key, name, excluded) VALUES (${p.id}, ${key}, ${name}, true)
         ON CONFLICT (profile_id, name_key) DO UPDATE SET excluded = true`;
