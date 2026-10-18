@@ -58,7 +58,7 @@ Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHu
 | `recipeImport.ts` | Rezept per Link (schema.org JSON-LD, z. B. Chefkoch) → auf 4 Portionen umrechnen |
 | `chefkoch.ts` | Chefkoch-Suche: Such-Adresse mit Filter-Kennungen, Treffer aus der `ItemList` (JSON-LD) der Ergebnisseite, Details per `parseRecipeDetails`; Seiten über den Cloudflare-Cache (6 Std.; wirkt nur mit eigener Domain, nicht auf workers.dev). Nur `chefkoch.de/rezepte/…` wird abgerufen |
 | `images.ts` | Bilder: TheMealDB-Originalfoto → KI-Bild → Ersatzfoto (Pexels/Pixabay/Openverse, geprüft mit `photoFit`: Gericht zu sehen, keine fremden Hauptzutaten `CONFLICTS`); gespeichert als `bytea` in `meal_images`. `removeImage`: `source = 'removed'`, Foto-Link bzw. `mealdb` in `rejected_photos` – kommt nicht wieder, Cron ersetzt nur per KI |
-| `shopping.ts` | Einkaufsliste aus Plan-Zutaten: parsen, auf Portionen skalieren, zusammenfassen, Vorrat aussortieren |
+| `shopping.ts` | Einkaufsliste aus Plan-Zutaten: parsen, auf Portionen skalieren, zusammenfassen, Vorrat aussortieren. Vorrat = `DEFAULT_PANTRY` (Wörter aus `PANTRY_WORDS`) + eigene `pantry_items`; herausgenommene Standard-Einträge = `pantry_items.excluded`; Anzeige über `pantryOverview` |
 | `shops.ts` | Knuspr/Picnic (inoffizielle APIs): Login, Suche, Warenkorb; AES-GCM-Verschlüsselung der Zugangsdaten |
 
 ### Frontend (`src/`)

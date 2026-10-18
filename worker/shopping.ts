@@ -14,7 +14,7 @@ export function familyPortions(members: { type: string; age: number | null }[]):
   return Math.max(1, Math.round(sum * 2) / 2);
 }
 
-/** Vorrat: kommt nicht auf die Einkaufsliste, sondern unter „Basics & Vorrat" */
+/** Vorrat: kommt nicht auf die Einkaufsliste, sondern steht unter „Vorrat“ */
 const PANTRY_WORDS = new Set([
   "salz", "pfeffer", "zucker", "öl", "olivenöl", "sonnenblumenöl", "rapsöl", "sesamöl", "mehl", "essig",
   "senf", "ketchup", "mayonnaise", "sojasoße", "sojasauce", "worcestershire", "worcestershiresoße",
@@ -28,6 +28,18 @@ const PANTRY_WORDS = new Set([
   "schwarzer", "schwarz", "gemahlen", "gemahlener", "getrocknet", "getrockneter", "getrocknete", "getrocknetes", "edelsüß",
   "rosenscharf", "prise", "etwas", "nach", "geschmack", "frisch", "gemahlenes",
 ]);
+/**
+ * Standard-Vorrat, wie er unter „Vorrat“ angezeigt wird (jeder Eintrag ist ein Wort aus PANTRY_WORDS).
+ * Die Familie kann Einträge herausnehmen (pantry_items.excluded) – dann kommen sie bei Bedarf wieder auf die Liste.
+ */
+export const DEFAULT_PANTRY = [
+  "Salz", "Pfeffer", "Zucker", "Mehl", "Olivenöl", "Sonnenblumenöl", "Rapsöl", "Essig", "Balsamico", "Senf", "Ketchup",
+  "Mayonnaise", "Sojasoße", "Worcestershiresoße", "Gemüsebrühe", "Tomatenmark", "Honig", "Zitronensaft", "Speisestärke",
+  "Backpulver", "Natron", "Vanillezucker", "Paprikapulver", "Oregano", "Basilikum", "Thymian", "Rosmarin", "Majoran",
+  "Lorbeerblätter", "Cayennepfeffer", "Chiliflocken", "Chilipulver", "Kreuzkümmel", "Kurkuma", "Currypulver", "Zimt",
+  "Muskatnuss", "Kardamom", "Nelken", "Piment",
+];
+
 // „frisch" steht oben nur, damit es bei z. B. „frisch gemahlener Pfeffer" nicht stört –
 // frische Kräuter/Zutaten bleiben trotzdem auf der Liste (siehe isPantry).
 
@@ -89,15 +101,52 @@ function parse(text: string): Parsed {
   return { qty: Number.isFinite(qty) ? qty : null, unit, name: rest.trim() };
 }
 
-function isPantry(name: string): boolean {
-  const words = name
+const nameWords = (name: string) =>
+  name
     .toLowerCase()
     .replace(/\(.*?\)/g, " ")
     .split(/[\s,/]+/)
     .filter(Boolean);
+
+/** Standard-Vorrat? excluded = Wörter, die die Familie aus dem Vorrat genommen hat */
+export function isPantry(name: string, excluded: Set<string> = new Set()): boolean {
+  const words = nameWords(name);
   if (words.length === 0) return false;
-  if (words.some((w) => w.startsWith("frisch"))) return false;
+  if (words.some((w) => w.startsWith("frisch") || excluded.has(w))) return false;
   return words.every((w) => PANTRY_WORDS.has(w));
+}
+
+export interface PantryEntry {
+  name: string;
+  /** Der Plan braucht es (gelb markiert) */
+  needed: boolean;
+  /** default = Standard-Vorrat, custom = eigener Eintrag, plan = vom Plan gebraucht, aber kein Eintrag in der Liste */
+  kind: "default" | "custom" | "plan";
+}
+
+/**
+ * Vorrat für die Anzeige: Standard-Einträge (ohne herausgenommene) und eigene, dazu Vorrats-Zutaten aus dem Plan,
+ * die zu keinem Eintrag passen. Gebrauchte zuerst.
+ */
+export function pantryOverview(pantryNeeded: string[], custom: string[], excluded: Set<string>): PantryEntry[] {
+  const neededWords = pantryNeeded.map((n) => ({ name: n, words: nameWords(n), key: mergeKey(n) }));
+  const covered = new Set<string>();
+  const entries: PantryEntry[] = [];
+  for (const d of DEFAULT_PANTRY) {
+    const w = d.toLowerCase();
+    if (excluded.has(w)) continue;
+    const hits = neededWords.filter((n) => n.words.includes(w));
+    hits.forEach((h) => covered.add(h.name));
+    entries.push({ name: d, needed: hits.length > 0, kind: "default" });
+  }
+  for (const c of custom) {
+    const key = mergeKey(c);
+    const hits = neededWords.filter((n) => n.key === key);
+    hits.forEach((h) => covered.add(h.name));
+    entries.push({ name: c, needed: hits.length > 0, kind: "custom" });
+  }
+  for (const n of pantryNeeded) if (!covered.has(n)) entries.push({ name: n, needed: true, kind: "plan" });
+  return entries.sort((a, b) => Number(b.needed) - Number(a.needed) || a.name.localeCompare(b.name, "de"));
 }
 
 /** „Salz, Pfeffer, Petersilie" → drei Einträge (nur ohne Mengenangabe) */
@@ -153,7 +202,7 @@ function formatAmount(qty: number, unit: string): string {
 
 export interface BuildResult {
   items: PlanItem[];
-  /** Vorrats-Zutaten, die der Plan braucht (für die Markierung bei Basics) */
+  /** Vorrats-Zutaten, die der Plan braucht (gelb markiert unter „Vorrat“) */
   pantryNeeded: string[];
 }
 
@@ -163,7 +212,9 @@ export function buildPlanItems(
   portions: number,
   extraPantry: Set<string> = new Set(),
   /** Zutaten mit fester Menge (Nachtische), nicht auf die Portionen umgerechnet */
-  unscaledIngredients: string[][] = []
+  unscaledIngredients: string[][] = [],
+  /** Aus dem Standard-Vorrat genommene Wörter (kommen wieder auf die Liste) */
+  excludedPantry: Set<string> = new Set()
 ): BuildResult {
   const agg = new Map<string, { name: string; unit: string; qty: number | null; count: number }>();
   const pantry = new Set<string>();
@@ -177,7 +228,7 @@ export function buildPlanItems(
       for (const part of splitCombined(raw)) {
         const p = parse(part.replace(/^optional:\s*/i, ""));
         if (!p.name) continue;
-        if (isPantry(p.name) || extraPantry.has(mergeKey(p.name))) {
+        if (isPantry(p.name, excludedPantry) || extraPantry.has(mergeKey(p.name))) {
           pantry.add(cap(p.name.replace(/\(.*?\)/g, "").trim()));
           continue;
         }

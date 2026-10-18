@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Package, X, Loader2, ShoppingCart, FileDown } from 'lucide-react';
-import { MealPlan, ProductLink, ShopProvider, ShopRule, PlanMeal, ShoppingItem, ShoppingLabel, DEFAULT_LABELS, BASICS_ITEMS, ProductResult } from '../types';
+import { Plus, Package, X, Loader2, ShoppingCart, FileDown, Check } from 'lucide-react';
+import { MealPlan, ProductLink, ShopProvider, ShopRule, PlanMeal, ShoppingItem, ShoppingLabel, DEFAULT_LABELS, ProductResult } from '../types';
 import { PlanWeek, currentWeekIndex, formatShortDate, toIso } from '../lib/dateUtils';
 import ShoppingRangePicker from './ShoppingRangePicker';
 import { packagesNeeded, parseEuro } from '../lib/unitPrice';
@@ -20,6 +20,7 @@ import {
   type CartSummary,
   addToPantry,
   removeFromPantry,
+  type PantryEntry,
 } from '../lib/api';
 import ShoppingSection from './ShoppingSection';
 import { buildShoppingPdf, downloadPdf, pdfFileName, type PdfList } from '../lib/shoppingPdf';
@@ -73,10 +74,10 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [labels, setLabels] = useState<ShoppingLabel[]>([...DEFAULT_LABELS]);
-  const [pantryNeeded, setPantryNeeded] = useState<string[]>([]);
-  const [customPantry, setCustomPantry] = useState<string[]>([]);
+  const [pantry, setPantry] = useState<PantryEntry[]>([]);
   const [newPantryName, setNewPantryName] = useState('');
   const [showBasics, setShowBasics] = useState(false);
+  const [editPantry, setEditPantry] = useState(false);
   const [basicPickerTarget, setBasicPickerTarget] = useState<string | null>(null);
   const [newItemName, setNewItemName] = useState('');
   const [productItem, setProductItem] = useState<ShoppingItem | null>(null);
@@ -101,8 +102,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
     if (data) {
       setItems(data.items);
       setLabels(data.labels);
-      setPantryNeeded(data.pantryNeeded);
-      setCustomPantry(data.customPantry);
+      setPantry(data.pantry);
       setStandardLabel(data.standardLabel);
       if (data.shopRules) setShopRules(data.shopRules);
     }
@@ -162,8 +162,9 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
     if (await addToPantry(item.baseName)) await load();
   };
 
+  /** Aus dem Vorrat nehmen: kommt dann wieder auf die Liste, wenn ein Rezept es braucht */
   const takeFromPantry = async (name: string) => {
-    setCustomPantry((prev) => prev.filter((n) => n !== name));
+    setPantry((prev) => prev.filter((e) => e.name !== name));
     if (await removeFromPantry(name)) await load();
   };
 
@@ -366,13 +367,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
   const stem = (s: string) => lc(s).replace(/\(.*?\)/g, '').trim().replace(/(en|n|e|s)$/, '');
   // Alles, was schon auf einer Liste steht (aus dem Plan oder als Basic), unten nicht noch einmal anbieten
   const onList = new Set(items.filter((i) => !i.checked || i.isBasic).map((i) => stem(i.baseName)));
-  const neededSet = new Set(pantryNeeded.map(lc));
-  const availableBasics = [
-    ...pantryNeeded.filter((b) => !BASICS_ITEMS.some((x) => lc(x) === lc(b))),
-    ...BASICS_ITEMS,
-  ].filter((b) => !onList.has(stem(b)));
-  // Benötigte Basics zuerst
-  availableBasics.sort((a, b) => Number(neededSet.has(lc(b))) - Number(neededSet.has(lc(a))));
+  const neededCount = pantry.filter((e) => e.needed).length;
 
   const shopLabelIdsForPdf = new Set(productShops.map((s) => s.label.id));
   const itemsByLabel = labels.reduce<Record<string, ShoppingItem[]>>((acc, label) => {
@@ -513,7 +508,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
 
         <p className="px-1 text-xs text-gray-500">Eigene Listen (z. B. Aldi, DM) legst du in den Einstellungen an.</p>
 
-        {/* Basics & Vorrat */}
+        {/* Vorrat */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <button
             onClick={() => setShowBasics(!showBasics)}
@@ -522,10 +517,10 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
           >
             <div className="flex items-center gap-2">
               <Package size={15} className="text-gray-500" />
-              <span className="text-sm font-semibold text-gray-600">Basics & Vorrat</span>
-              {pantryNeeded.length > 0 && (
+              <span className="text-sm font-semibold text-gray-600">Vorrat</span>
+              {neededCount > 0 && (
                 <span className="bg-amber-100 text-amber-700 text-xs font-medium px-2 py-0.5 rounded-full">
-                  {pantryNeeded.length} im Plan
+                  {neededCount} im Plan
                 </span>
               )}
             </div>
@@ -543,35 +538,75 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
 
           {showBasics && (
             <div className="px-4 py-3">
-              <p className="text-xs text-gray-500 mb-3">
-                Vorrat steht nicht automatisch auf der Liste. Gelb markiert: wird diese Woche gebraucht. Tippen, um
-                es auf eine Liste zu setzen, falls es ausgeht.
-              </p>
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <p className="text-xs text-gray-500">
+                  {editPantry
+                    ? 'Tippe auf einen Eintrag, um ihn aus dem Vorrat zu nehmen. Er kommt dann wieder auf die Liste, wenn ein Rezept ihn braucht.'
+                    : 'Was ihr immer im Haus habt – kommt nicht automatisch auf die Liste. Gelb: braucht der Plan, kurz nachschauen. Ist etwas alle, antippen und auf eine Liste setzen.'}
+                </p>
+                <button
+                  onClick={() => {
+                    setEditPantry(!editPantry);
+                    setBasicPickerTarget(null);
+                  }}
+                  className="flex-shrink-0 text-xs font-semibold text-brand-700 hover:text-brand-800"
+                >
+                  {editPantry ? 'Fertig' : 'Bearbeiten'}
+                </button>
+              </div>
               <div className="flex flex-wrap gap-2">
-                {availableBasics.map((basic) => {
-                  const needed = neededSet.has(lc(basic));
-                  return (
-                    <div key={basic} className="relative">
+                {pantry.map((entry) => {
+                  const listed = onList.has(stem(entry.name));
+                  if (editPantry) {
+                    return (
                       <button
-                        onClick={() => setBasicPickerTarget(basicPickerTarget === basic ? null : basic)}
+                        key={entry.name}
+                        onClick={() => takeFromPantry(entry.name)}
+                        aria-label={`${entry.name} aus dem Vorrat nehmen`}
+                        className="inline-flex items-center gap-1 pl-3 pr-2 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-600 hover:bg-red-50 hover:text-red-700"
+                      >
+                        {entry.name}
+                        <X size={12} aria-hidden="true" />
+                      </button>
+                    );
+                  }
+                  if (listed) {
+                    return (
+                      <span
+                        key={entry.name}
+                        title="Steht schon auf einer Liste"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-400"
+                      >
+                        <Check size={12} aria-hidden="true" />
+                        {entry.name}
+                      </span>
+                    );
+                  }
+                  return (
+                    <div key={entry.name} className="relative">
+                      <button
+                        onClick={() => setBasicPickerTarget(basicPickerTarget === entry.name ? null : entry.name)}
                         aria-haspopup="menu"
-                        aria-expanded={basicPickerTarget === basic}
+                        aria-expanded={basicPickerTarget === entry.name}
+                        aria-label={`${entry.name} ist alle – auf eine Liste setzen${entry.needed ? ' (braucht der Plan)' : ''}`}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium active:scale-95 transition-all ${
-                          needed
-                            ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
-                            : 'bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+                          entry.needed
+                            ? 'bg-amber-50 text-amber-800 hover:bg-amber-100'
+                            : 'bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-800'
                         }`}
                       >
-                        + {basic}
+                        {entry.name}
                       </button>
-                      {basicPickerTarget === basic && (
-                        <div className="absolute top-full left-0 mt-1 z-20 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[120px]">
+                      {basicPickerTarget === entry.name && (
+                        <div role="menu" className="absolute top-full left-0 mt-1 z-20 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[140px]">
+                          <p className="px-3 py-1 text-[11px] text-gray-500">Auf die Liste:</p>
                           {labels.map((l) => (
                             <button
                               key={l.id}
+                              role="menuitem"
                               onClick={async () => {
                                 setBasicPickerTarget(null);
-                                await addItem(basic, l.id, true);
+                                await addItem(entry.name, l.id, true);
                               }}
                               className="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs text-gray-600 hover:bg-gray-50 transition-colors"
                             >
@@ -584,61 +619,35 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
                     </div>
                   );
                 })}
-                {availableBasics.length === 0 && (
-                  <p className="text-xs text-gray-500">Alle Basics sind bereits auf einer Liste.</p>
-                )}
+                {pantry.length === 0 && <p className="text-xs text-gray-500">Noch nichts im Vorrat.</p>}
               </div>
 
-              {/* Eigener Vorrat */}
-              <div className="mt-4 pt-3 border-t border-gray-100">
-                <p className="text-xs font-semibold text-gray-600 mb-2">Haben wir immer da</p>
-                {customPantry.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5 mb-3">
-                    {customPantry.map((name) => (
-                      <span key={name} className="inline-flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full bg-amber-50 text-xs text-amber-900">
-                        {name}
-                        <button
-                          onClick={() => takeFromPantry(name)}
-                          title="Wieder auf die Einkaufsliste"
-                          aria-label={`${name} wieder auf die Einkaufsliste`}
-                          className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-amber-100"
-                        >
-                          <X size={10} />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-gray-500 mb-3">
-                    Tippe bei einer Zutat auf das Kisten-Symbol, damit sie nicht mehr auf der Liste landet.
-                  </p>
-                )}
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    const name = newPantryName.trim();
-                    if (!name) return;
-                    setNewPantryName('');
-                    if (await addToPantry(name)) await load();
-                  }}
-                  className="flex gap-2"
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const name = newPantryName.trim();
+                  if (!name) return;
+                  setNewPantryName('');
+                  if (await addToPantry(name)) await load();
+                }}
+                className="flex gap-2 mt-4 pt-3 border-t border-gray-100"
+              >
+                <input
+                  value={newPantryName}
+                  onChange={(e) => setNewPantryName(e.target.value)}
+                  placeholder="z. B. Reis, Nudeln, Eier"
+                  aria-label="Zum Vorrat hinzufügen"
+                  className="flex-1 h-9 px-3 rounded-xl border border-gray-200 text-xs"
+                />
+                <button
+                  type="submit"
+                  disabled={!newPantryName.trim()}
+                  className="px-3 h-9 rounded-xl text-xs font-semibold bg-gray-100 text-gray-700 disabled:text-gray-300"
                 >
-                  <input
-                    value={newPantryName}
-                    onChange={(e) => setNewPantryName(e.target.value)}
-                    placeholder="z. B. Reis, Nudeln, Eier"
-                    aria-label="Zutat, die immer da ist"
-                    className="flex-1 h-9 px-3 rounded-xl border border-gray-200 text-xs"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!newPantryName.trim()}
-                    className="px-3 h-9 rounded-xl text-xs font-semibold bg-gray-100 text-gray-700 disabled:text-gray-300"
-                  >
-                    Hinzufügen
-                  </button>
-                </form>
-              </div>
+                  Zum Vorrat
+                </button>
+              </form>
+              <p className="mt-2 text-[11px] text-gray-500">Tipp: Das Kisten-Symbol an einer Zutat in der Liste legt sie auch in den Vorrat.</p>
             </div>
           )}
         </div>

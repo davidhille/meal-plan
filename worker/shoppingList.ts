@@ -1,7 +1,7 @@
 // Einkaufsliste eines Plans zusammenstellen: berechnete Zutaten + gespeicherter Zustand + eigene Artikel,
 // dazu Listen (Labels), Produkt-Verknüpfungen und Shop-Regeln.
 import type { Row, Sql } from "./db";
-import { buildPlanItems, familyPortions } from "./shopping";
+import { buildPlanItems, familyPortions, pantryOverview } from "./shopping";
 
 export const DEFAULT_LABELS = [
   { id: "knuspr", name: "Knuspr", color: "#22c55e", provider: "knuspr" },
@@ -46,17 +46,21 @@ export async function getShopping(sql: Sql, profileId: string, planId: string, r
     sql`SELECT name_key, label FROM ingredient_prefs WHERE profile_id = ${profileId}`,
     sql`SELECT name_key, provider, product_id, product_name, image_url, price, amount FROM product_links WHERE profile_id = ${profileId}`,
     sql`SELECT standard_label, metzger_auto FROM profiles WHERE id = ${profileId}`,
-    sql`SELECT name_key, name FROM pantry_items WHERE profile_id = ${profileId} ORDER BY name`,
+    sql`SELECT name_key, name, excluded FROM pantry_items WHERE profile_id = ${profileId} ORDER BY name`,
   ]);
   const shopRules = await getShopRules(sql, profileId);
   const labelIds = new Set(labels.map((l) => l.id));
   const portions = familyPortions(members as { type: string; age: number | null }[]);
+  // Eigener Vorrat vs. aus dem Standard-Vorrat herausgenommen
+  const custom = pantry.filter((r) => !r.excluded);
+  const excluded = new Set(pantry.filter((r) => r.excluded).flatMap((r) => String(r.name).toLowerCase().split(/\s+/)));
   const built = buildPlanItems(
     meals.map((m) => m.ingredients as string[]),
     portions,
-    new Set(pantry.map((r) => r.name_key as string)),
+    new Set(custom.map((r) => r.name_key as string)),
     // Nachtische haben eine feste Menge (z. B. ein ganzer Kuchen) und werden nicht umgerechnet
-    meals.flatMap((m) => (m.dessert?.ingredients ? [m.dessert.ingredients as string[]] : []))
+    meals.flatMap((m) => (m.dessert?.ingredients ? [m.dessert.ingredients as string[]] : [])),
+    excluded
   );
   const stateBy = new Map(states.map((r) => [r.item_key, r]));
   const prefBy = new Map(prefs.map((r) => [r.name_key, r]));
@@ -129,9 +133,8 @@ export async function getShopping(sql: Sql, profileId: string, planId: string, r
   return {
     labels,
     items,
-    pantryNeeded: built.pantryNeeded,
+    pantry: pantryOverview(built.pantryNeeded, custom.map((r) => r.name as string), excluded),
     shopRules,
-    customPantry: pantry.map((r) => r.name as string),
     portions,
     standardLabel: standard,
   };
