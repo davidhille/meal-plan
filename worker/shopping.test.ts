@@ -89,4 +89,9 @@ describe("Vorrat", () => {
     expect(list.some((e) => e.name === "Kurkuma")).toBe(false);
     expect(list.find((e) => e.name === "Reis")).toEqual({ name: "Reis", needed: false, kind: "custom" });
   });
+
+  test("eigener Eintrag, der schon Standard ist, erscheint nur einmal", () => {
+    const list = pantryOverview(["Zucker"], ["Zucker", "Wasser"], new Set());
+    expect(list.filter((e) => e.name === "Zucker")).toEqual([{ name: "Zucker", needed: true, kind: "default" }]);
+  });
 });
