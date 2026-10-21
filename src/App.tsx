@@ -43,7 +43,7 @@ import Header from './components/Header';
 import TabSwitcher from './components/TabSwitcher';
 import RecipesView from './components/RecipesView';
 import WeekSelector from './components/WeekSelector';
-import { getWeeksInRange, isDateInWeek, currentWeekIndex } from './lib/dateUtils';
+import { getWeeksInRange, isDateInWeek, currentWeekIndex, upcomingWeeks } from './lib/dateUtils';
 import FavoritesView from './components/FavoritesView';
 import MealPlanView from './components/MealPlanView';
 import ShoppingListView from './components/ShoppingListView';
@@ -73,6 +73,8 @@ export default function App() {
   const [imagePolls, setImagePolls] = useState(0);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [selectedWeekKey, setSelectedWeekKey] = useState<string | null>(null);
+  // Vergangene Wochen des Plans sind ausgeblendet, bis man sie aufklappt
+  const [showPastWeeks, setShowPastWeeks] = useState(false);
   // Gericht, das bewertet werden soll (Tipp auf die Erinnerung)
   const [rateRequest, setRateRequest] = useState<string | null>(() => takeRateRequest());
   // App war schon offen: der Service Worker schickt den Wunsch als Nachricht
@@ -394,8 +396,12 @@ export default function App() {
 
   // KW-Auswahl (aus der Juli-Version): nur Wochen, die der Plan wirklich abdeckt
   const planWeeks = currentPlan ? getWeeksInRange(currentPlan.start_date, currentPlan.end_date) : [];
+  // Vergangene Wochen ausblenden (lassen sich mit „Frühere“ wieder einblenden)
+  const upcoming = upcomingWeeks(planWeeks);
+  const shownWeeks = showPastWeeks ? planWeeks : upcoming;
+  const pastCount = planWeeks.length - upcoming.length;
   // Ohne eigene Auswahl die Woche zeigen, in der heute liegt
-  const selectedWeek = planWeeks.find((w) => w.key === selectedWeekKey) ?? planWeeks[currentWeekIndex(planWeeks)];
+  const selectedWeek = shownWeeks.find((w) => w.key === selectedWeekKey) ?? shownWeeks[currentWeekIndex(shownWeeks)];
   const visiblePlanMeals = selectedWeek
     ? planMeals.filter((m) => isDateInWeek(m.meal_date, selectedWeek))
     : planMeals;
@@ -410,7 +416,17 @@ export default function App() {
         <Header />
         <TabSwitcher activeTab={activeTab} onTabChange={setActiveTab} />
         {showWeeks && (
-          <WeekSelector weeks={planWeeks} selectedWeekKey={selectedWeek?.key ?? null} onSelectWeek={setSelectedWeekKey} />
+          <WeekSelector
+            weeks={shownWeeks}
+            selectedWeekKey={selectedWeek?.key ?? null}
+            onSelectWeek={setSelectedWeekKey}
+            pastCount={pastCount}
+            showPast={showPastWeeks}
+            onTogglePast={() => {
+              setShowPastWeeks((v) => !v);
+              setSelectedWeekKey(null);
+            }}
+          />
         )}
       </div>
 
