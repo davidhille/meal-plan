@@ -55,7 +55,7 @@ async function saveCustomDessert(sql: Sql, profileId: string, d: NonNullable<Ret
  * Das Bild (meal_images) bleibt – es gehört zum Namen, z. B. wenn das Gericht zum Nachtisch wird.
  */
 async function deleteMainDish(sql: Sql, profileId: string, name: string) {
-  const removed = await sql`DELETE FROM recipes WHERE name = ${name} RETURNING replaces`;
+  const removed = await sql`DELETE FROM recipes WHERE profile_id = ${profileId} AND name = ${name} RETURNING replaces`;
   // Bearbeitetes Gericht der Sammlung: auch das Original nicht wieder auftauchen lassen
   const names = [name, ...removed.map((r) => r.replaces as string | null).filter((n): n is string => !!n)];
   for (const n of names) {
@@ -92,10 +92,10 @@ function parseRecipeFilter(raw: Record<string, unknown>) {
   return { name, scope, keywords, maxMinutes };
 }
 
-export async function recipeRoutes({ request, env, sql, body, parts, route, id, waitUntil }: Ctx): Promise<Response | null> {
+export async function recipeRoutes({ request, env, sql, body, parts, route, id, waitUntil, user }: Ctx): Promise<Response | null> {
   // ---------- Rezept-Übersicht ----------
   if (route === "GET /recipes/catalog") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     return json(await recipeCatalog(sql, p.id));
   }
   // KI-Rezept nach Wunsch: erst Vorschau (nicht gespeichert) …
@@ -103,7 +103,7 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
     const wish = cleanWish(body.wish);
     if (wish.length < 3) return json({ error: "Bitte kurz beschreiben, was ihr gern hättet." }, 400);
     const type = ["vegetarisch", "fleisch", "wochenende"].includes(body.type) ? body.type : null;
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     const [ctx, { pool }] = await Promise.all([loadContext(sql, p.id), loadPool(sql, p.id)]);
     const result = await generateWishRecipe(env, wish, type, ctx, pool.map((r) => r.name));
     if ("error" in result) return json({ error: result.error, quota: !!result.quota }, result.quota ? 429 : 422);
@@ -111,7 +111,7 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
   }
   // … dann speichern (als KI-Rezept in der Sammlung, auf Wunsch als Favorit; Bild entsteht im Hintergrund)
   if (route === "POST /recipes/ai-save") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     let recipe;
     try {
       recipe = parseRecipeInput(body.recipe ?? {});
@@ -123,9 +123,9 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
     if (pool.some((r) => r.name.toLowerCase() === recipe.name.toLowerCase())) {
       return json({ error: `„${recipe.name}“ gibt es schon in der Sammlung.` }, 409);
     }
-    await sql`INSERT INTO recipes (name, type, ingredients, instructions, duration_min, source)
-      VALUES (${recipe.name}, ${recipe.type}, ${recipe.ingredients}, ${recipe.instructions}, ${recipe.durationMin ?? null}, 'ai')
-      ON CONFLICT (name) DO NOTHING`;
+    await sql`INSERT INTO recipes (profile_id, name, type, ingredients, instructions, duration_min, source)
+      VALUES (${p.id}, ${recipe.name}, ${recipe.type}, ${recipe.ingredients}, ${recipe.instructions}, ${recipe.durationMin ?? null}, 'ai')
+      ON CONFLICT (profile_id, name) DO NOTHING`;
     if (body.favorite) {
       await sql`INSERT INTO favorites (profile_id, meal_name, meal_type, ingredients, instructions, duration_min)
         VALUES (${p.id}, ${recipe.name}, ${recipe.type}, ${recipe.ingredients}, ${recipe.instructions}, ${recipe.durationMin ?? null})
@@ -137,7 +137,7 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
 
   // Gericht bearbeiten (Name, Art, Zeit, Zutaten, Zubereitung) bzw. auf das Original zurücksetzen
   if (route === "PUT /recipes/edit" || route === "POST /recipes/reset") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     try {
       let name: string;
       if (route === "PUT /recipes/edit") {
@@ -155,7 +155,7 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
   }
   // Gericht ausblenden (wird nie mehr vorgeschlagen) bzw. wieder einblenden
   if (route === "POST /recipes/hide" || route === "POST /recipes/unhide") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     const name = String(body.name ?? "").trim();
     if (!name) return json({ error: "Name fehlt" }, 400);
     if (route === "POST /recipes/hide") {
@@ -169,7 +169,7 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
   }
 
   if (route === "POST /recipes/delete") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     const name = String(body.name ?? "").trim();
     if (!name) return json({ error: "Name fehlt" }, 400);
     await deleteMainDish(sql, p.id, name);
@@ -178,11 +178,11 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
 
   // ---------- Eigene Nachtische ----------
   if (route === "GET /desserts/custom") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     return json(await listCustomDesserts(sql, p.id));
   }
   if (route === "POST /desserts/custom") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     const d = parseDessertInput(body);
     if (!d) return json({ error: "Name und Zutaten fehlen" }, 400);
     await saveCustomDessert(sql, p.id, d);
@@ -195,7 +195,7 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
   }
   // Hauptgericht zum Nachtisch machen: als eigener Nachtisch speichern, bei den Hauptgerichten löschen (Bild bleibt)
   if (route === "POST /recipes/to-dessert") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     const d = parseDessertInput(body);
     if (!d) return json({ error: "Name und Zutaten fehlen" }, 400);
     const from = String(body.from ?? d.name).trim();
@@ -223,7 +223,7 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
         return json(await searchChefkoch(String(body.query ?? "").slice(0, 80), filters, cursor));
       }
       const details = await loadChefkochRecipe(String(body.url ?? ""));
-      const p = await getProfile(sql);
+      const p = await getProfile(sql, user);
       const rows = await sql`SELECT health_conditions FROM profiles WHERE id = ${p.id}`;
       const unsuitable = violatesHealthConditions(details.recipe, (rows[0]?.health_conditions as string[]) ?? []);
       return json({ ...details, unsuitable });
@@ -243,16 +243,16 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
     }
   }
   if (route === "POST /recipes") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     const name = String(body.name ?? "").trim();
     const type = ["vegetarisch", "fleisch", "wochenende"].includes(body.type) ? body.type : "vegetarisch";
     const ingredients = (Array.isArray(body.ingredients) ? body.ingredients : []).map((i: unknown) => String(i).trim()).filter(Boolean);
     const instructions = String(body.instructions ?? "").trim();
     const duration = Number(body.durationMin) > 0 ? Math.round(Number(body.durationMin)) : null;
     if (!name || ingredients.length === 0) return json({ error: "Name und Zutaten fehlen" }, 400);
-    await sql`INSERT INTO recipes (name, type, ingredients, instructions, duration_min, source, source_url)
-      VALUES (${name}, ${type}, ${ingredients}, ${instructions}, ${duration}, 'import', ${body.sourceUrl || null})
-      ON CONFLICT (name) DO UPDATE SET type = EXCLUDED.type, ingredients = EXCLUDED.ingredients,
+    await sql`INSERT INTO recipes (profile_id, name, type, ingredients, instructions, duration_min, source, source_url)
+      VALUES (${p.id}, ${name}, ${type}, ${ingredients}, ${instructions}, ${duration}, 'import', ${body.sourceUrl || null})
+      ON CONFLICT (profile_id, name) DO UPDATE SET type = EXCLUDED.type, ingredients = EXCLUDED.ingredients,
         instructions = EXCLUDED.instructions, duration_min = EXCLUDED.duration_min,
         source = 'import', source_url = EXCLUDED.source_url`;
     // Als Favorit: wird bei der Planung bevorzugt (ohne Turnus)
@@ -270,21 +270,23 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
     return json({ ok: true, favorites: await loadFavorites(sql, p.id) });
   }
   if (route === "GET /recipes") {
+    const p = await getProfile(sql, user);
     return json(await sql`SELECT id, name, type, duration_min, source, source_url, created_at::text AS created_at
-      FROM recipes WHERE source = 'import' ORDER BY created_at DESC`);
+      FROM recipes WHERE profile_id = ${p.id} AND source = 'import' ORDER BY created_at DESC`);
   }
   if (parts[0] === "recipes" && id && request.method === "DELETE") {
-    await sql`DELETE FROM recipes WHERE id = ${id} AND source = 'import'`;
+    const p = await getProfile(sql, user);
+    await sql`DELETE FROM recipes WHERE id = ${id} AND profile_id = ${p.id} AND source = 'import'`;
     return json({ ok: true });
   }
 
   // ---------- Favoriten ----------
   if (route === "GET /favorites") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     return json(await loadFavorites(sql, p.id));
   }
   if (route === "POST /favorites") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     const rows = await sql.query(`SELECT ${PLAN_MEAL_COLS} FROM plan_meals WHERE id = $1`, [body.planMealId]);
     const pm = rows[0];
     if (!pm) return json({ error: "Gericht nicht gefunden" }, 404);
@@ -294,24 +296,24 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
     return json(await loadFavorites(sql, p.id));
   }
   if (parts[0] === "favorites" && id && request.method === "PATCH") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     const weeks = Number(body.turnus_weeks) || null;
     await sql`UPDATE favorites SET turnus_weeks = ${weeks} WHERE id = ${id} AND profile_id = ${p.id}`;
     return json(await loadFavorites(sql, p.id));
   }
   if (parts[0] === "favorites" && id && request.method === "DELETE") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     await sql`DELETE FROM favorites WHERE id = ${id} AND profile_id = ${p.id}`;
     return json(await loadFavorites(sql, p.id));
   }
 
   // ---------- Eigene Rezept-Filter ----------
   if (route === "GET /recipe-filters") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     return json(await listRecipeFilters(sql, p.id));
   }
   if (route === "POST /recipe-filters" || (parts[0] === "recipe-filters" && id && request.method === "PUT")) {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     const f = parseRecipeFilter(body);
     if (!f) return json({ error: "Bitte einen Namen angeben" }, 400);
     if (request.method === "POST") {
@@ -325,7 +327,7 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
   }
   // Gericht einem Filter von Hand zuordnen: include = immer dabei, exclude = nie, auto = nach Suchbegriffen/Zeit
   if (parts[0] === "recipe-filters" && id && parts[2] === "assign" && request.method === "POST") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     const name = String(body.name ?? "").trim();
     const state = ["include", "exclude", "auto"].includes(body.state) ? (body.state as string) : null;
     if (!name || !state) return json({ error: "Angaben fehlen" }, 400);
@@ -336,19 +338,19 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
     return json(await listRecipeFilters(sql, p.id));
   }
   if (parts[0] === "recipe-filters" && id && request.method === "DELETE") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     await sql`DELETE FROM recipe_filters WHERE id = ${id} AND profile_id = ${p.id}`;
     return json(await listRecipeFilters(sql, p.id));
   }
 
   // ---------- Speiseart/Hauptzutat von Hand korrigieren ----------
   if (route === "GET /category-overrides") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     return json(await listCategoryOverrides(sql, p.id));
   }
   // include = immer dabei, exclude = nie, auto = wieder der Erkennung überlassen
   if (route === "POST /category-overrides") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     const name = String(body.name ?? "").trim().slice(0, 200);
     const categoryId = String(body.categoryId ?? "");
     const state = body.state as string;

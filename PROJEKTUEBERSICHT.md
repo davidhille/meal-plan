@@ -13,6 +13,14 @@ Familien-Passwort (Secret `APP_PASSWORD`) an – danach gilt nur noch die Anmeld
 Passwort ändern, abmelden; Admins legen Zugänge für die Familie an, setzen Passwörter zurück (meldet die Person überall ab)
 und entfernen Zugänge.
 
+**Mehrere Familien:** Der Betreiber (erster Zugang überhaupt) sieht in den Einstellungen die Karte **„Administration“**:
+Familie anlegen → **Einladungslink** (7 Tage gültig, einmal nutzbar; kopieren oder teilen). Wer ihn öffnet, legt den
+ersten Zugang an und ist Admin seiner Familie. Außerdem: neuer Link, umbenennen, sperren (Anmeldung geht nicht mehr,
+Routinen ruhen), endgültig löschen. Pro Familie getrennt: Pläne, Einkaufslisten, Favoriten, Bewertungen, Einstellungen,
+Shop-Zugänge **und eigene Rezepte** (KI, Import, Chefkoch, Bearbeitungen, eigene Nachtische). Gemeinsam: Grundsammlung
+(383 Gerichte, 161 Nachtische) und Bilder. Neue Familien starten mit den Listen „Einkauf“ (Standard) und „Metzger“
+(Automatik in den Einstellungen abschaltbar); Knuspr/Picnic erscheinen erst nach dem Verbinden.
+
 **Aufbau:** Kopfzeile mit Logo, darunter die Bereiche **Speiseplan · Einkaufsliste · Rezepte · Favoriten · Einstellungen**
 als Segment-Leiste. Der gewählte Bereich bleibt beim Neuladen erhalten (URL-Hash, z. B. `#einkaufsliste`).
 Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus Jakarta Sans.
@@ -99,6 +107,7 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
   Vorrat (auch Standard-Einträge); er kommt dann wieder auf die Liste, wenn ein Rezept ihn braucht. Wieder eintippen holt
   ihn zurück. Eigene Artikel per Eingabefeld in den Listen.
 - **Lieferdienst-Liste:** pro Artikel ein Preis-Knopf je Shop, der günstigere ist markiert; Antippen ordnet den Artikel zu.
+  Ist nur ein Shop verbunden, heißt die Liste wie der Shop (z. B. „Knuspr“).
 - **Produkt-Dialog:** sucht gleichzeitig bei Knuspr und Picnic, zeigt Packung, Preis und **Grundpreis** (€/kg, €/l, €/Stk.)
   und wie viele Packungen nötig sind.
 - **Preisvergleich der ganzen Liste** mit Empfehlung unter Berücksichtigung von **Mindestbestellwert** und **Liefergebühr**;

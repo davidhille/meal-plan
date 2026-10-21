@@ -3,8 +3,9 @@
 import type { Row, Sql } from "./db";
 import { buildPlanItems, familyPortions, pantryOverview } from "./shopping";
 
+/** Start-Listen einer neuen Familie; Knuspr/Picnic kommen erst beim Verbinden des Shops dazu */
 export const DEFAULT_LABELS = [
-  { id: "knuspr", name: "Knuspr", color: "#22c55e", provider: "knuspr" },
+  { id: "einkauf", name: "Einkauf", color: "#3b82f6", provider: null },
   { id: "metzger", name: "Metzger", color: "#f97316", provider: null },
 ];
 
@@ -66,7 +67,10 @@ export async function getShopping(sql: Sql, profileId: string, planId: string, r
   const prefBy = new Map(prefs.map((r) => [r.name_key, r]));
   const validLabel = (l: string | null | undefined, fallback: string) => (l && labelIds.has(l) ? l : fallback);
   const settings = settingsRows[0] ?? {};
-  const standard = validLabel(settings.standard_label, labelIds.has("knuspr") ? "knuspr" : (labels[0]?.id as string));
+  const standard = validLabel(
+    settings.standard_label,
+    labelIds.has("einkauf") ? "einkauf" : labelIds.has("knuspr") ? "knuspr" : (labels[0]?.id as string)
+  );
   const meatLabel = settings.metzger_auto !== false && labelIds.has("metzger") ? "metzger" : standard;
   const providerOf = new Map(labels.map((l) => [l.id as string, l.provider as string | null]));
   const linkBy = new Map(links.map((r) => [`${r.name_key}|${r.provider}`, r]));

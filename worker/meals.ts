@@ -223,6 +223,8 @@ export interface ScoringContext {
   month?: number;
   /** Kommentare der Familie zu bewerteten Gerichten (für KI-Rezepte) */
   feedback?: string[];
+  /** Familie (für eigene Rezepte in der Tabelle recipes) */
+  profileId?: string;
   /** Regeln pro Wochentag (frei / höchstens X Minuten), siehe dayRules.ts */
   dayRules?: DayRules;
   /** Gerichte, die schon im Plan sind (nur beim Ersetzen: −20) */

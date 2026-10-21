@@ -6,10 +6,10 @@ import { DEFAULT_LABELS, getLabels, getShopping, parsePrice, prefKey } from "../
 import { getProfile, planOwned } from "../repo";
 
 
-export async function shoppingRoutes({ request, sql, body, parts, route, id }: Ctx): Promise<Response | null> {
+export async function shoppingRoutes({ request, sql, body, parts, route, id, user }: Ctx): Promise<Response | null> {
   // ---------- Einkaufsliste ----------
   if (parts[0] === "plans" && id && parts[2] === "shopping") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     if (!(await planOwned(sql, p.id, id))) return json({ error: "Plan nicht gefunden" }, 404);
     const itemId = parts[3] ? decodeURIComponent(parts[3]) : "";
 
@@ -25,7 +25,7 @@ export async function shoppingRoutes({ request, sql, body, parts, route, id }: C
         .slice(0, 50);
       if (!names.length) return json({ error: "Name fehlt" }, 400);
       await sql`INSERT INTO shopping_extras (plan_id, name, label, is_basic)
-        SELECT ${id}, n, ${body.label || "knuspr"}, ${!!body.isBasic} FROM unnest(${names}::text[]) AS n`;
+        SELECT ${id}, n, ${body.label || "einkauf"}, ${!!body.isBasic} FROM unnest(${names}::text[]) AS n`;
       return json(await getShopping(sql, p.id, id, range));
     }
 
@@ -66,7 +66,7 @@ export async function shoppingRoutes({ request, sql, body, parts, route, id }: C
 
   // Produkt eines Shops pro Zutat merken (gilt für alle Pläne)
   if (route === "PUT /product-links") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     const name = String(body.name ?? "").trim();
     if (!name || !body.provider || !body.productId) return json({ error: "Angaben fehlen" }, 400);
     await sql`INSERT INTO product_links (profile_id, name_key, provider, product_id, product_name, image_url, price, amount)
@@ -80,7 +80,7 @@ export async function shoppingRoutes({ request, sql, body, parts, route, id }: C
 
   // Verknüpfung wieder lösen (Zutat hat dann kein festes Produkt mehr)
   if (route === "DELETE /product-links") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     const name = String(new URL(request.url).searchParams.get("name") ?? "").trim();
     const provider = String(new URL(request.url).searchParams.get("provider") ?? "");
     if (!name || !provider) return json({ error: "Angaben fehlen" }, 400);
@@ -91,7 +91,7 @@ export async function shoppingRoutes({ request, sql, body, parts, route, id }: C
   // ---------- Vorrat (kommt nicht auf die Liste) ----------
   // Hinzufügen: herausgenommenen Standard-Eintrag zurückholen, sonst eigener Eintrag
   if (route === "POST /pantry") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     const name = String(body.name ?? "").replace(/\(.*?\)/g, "").trim().slice(0, 80);
     if (!name) return json({ error: "Name fehlt" }, 400);
     const key = mergeKey(name);
@@ -104,7 +104,7 @@ export async function shoppingRoutes({ request, sql, body, parts, route, id }: C
   }
   // Aus dem Vorrat nehmen: eigener Eintrag wird gelöscht, Standard-Eintrag als herausgenommen gemerkt
   if (parts[0] === "pantry" && id && request.method === "DELETE") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     const name = decodeURIComponent(id).trim();
     const key = mergeKey(name);
     // Standard-Einträge immer als herausgenommen merken (überschreibt einen gleichnamigen eigenen Eintrag)
@@ -121,11 +121,11 @@ export async function shoppingRoutes({ request, sql, body, parts, route, id }: C
 
   // ---------- Einkaufs-Labels ----------
   if (route === "GET /labels") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     return json(await getLabels(sql, p.id));
   }
   if (route === "POST /labels") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     const name = String(body.name ?? "").trim();
     if (!name) return json({ error: "Name fehlt" }, 400);
     const labelId = name.toLowerCase().replace(/[^a-z0-9äöüß]+/g, "-").replace(/^-|-$/g, "") || `label-${Date.now()}`;
@@ -136,7 +136,7 @@ export async function shoppingRoutes({ request, sql, body, parts, route, id }: C
     return json(await getLabels(sql, p.id));
   }
   if (parts[0] === "labels" && id && request.method === "PUT") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     const name = String(body.name ?? "").trim();
     if (!name) return json({ error: "Name fehlt" }, 400);
     // Shop- und Standard-Listen behalten ihren Namen
@@ -146,7 +146,7 @@ export async function shoppingRoutes({ request, sql, body, parts, route, id }: C
   }
   if (parts[0] === "labels" && id && request.method === "DELETE") {
     if (DEFAULT_LABELS.some((l) => l.id === id)) return json({ error: "Standard-Labels können nicht gelöscht werden" }, 400);
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     await sql`DELETE FROM shopping_labels WHERE profile_id = ${p.id} AND id = ${id}`;
     // Artikel mit diesem Label wandern zurück zu Knuspr
     await sql`UPDATE ingredient_prefs SET label = NULL WHERE profile_id = ${p.id} AND label = ${id}`;

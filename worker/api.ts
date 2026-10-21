@@ -15,6 +15,7 @@ import { shoppingRoutes } from "./routes/shopping";
 import { shopRoutes } from "./routes/shops";
 import { pushRoutes } from "./routes/push";
 import { accountRoutes, publicAuthRoutes } from "./routes/auth";
+import { adminRoutes } from "./routes/admin";
 import { getSessionUser, usersExist } from "./auth";
 
 export type { Env } from "./http";
@@ -63,7 +64,7 @@ export async function handleApi(
     }
 
     if (user) {
-      const res = await accountRoutes(ctx, user);
+      const res = (await accountRoutes(ctx, user)) ?? (await adminRoutes(ctx, user));
       if (res) return res;
     }
     for (const handle of ROUTES) {

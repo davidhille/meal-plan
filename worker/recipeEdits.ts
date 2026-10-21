@@ -67,14 +67,15 @@ export async function saveRecipeEdit(sql: Sql, profileId: string, originalName: 
   if (input.name !== originalName && pool.some((r) => r.name.toLowerCase() === input.name.toLowerCase())) {
     throw new RecipeEditError(`Es gibt schon ein Gericht „${input.name}“.`, 409);
   }
-  const existing = await sql`SELECT name FROM recipes WHERE name = ${originalName}`;
+  const existing = await sql`SELECT name FROM recipes WHERE profile_id = ${profileId} AND name = ${originalName}`;
   const builtIn = MEAL_DATABASE.some((m) => m.name === originalName);
   if (existing[0]) {
     await sql`UPDATE recipes SET name = ${input.name}, type = ${input.type}, ingredients = ${input.ingredients},
-      instructions = ${input.instructions}, duration_min = ${input.durationMin ?? null} WHERE name = ${originalName}`;
+      instructions = ${input.instructions}, duration_min = ${input.durationMin ?? null}
+      WHERE profile_id = ${profileId} AND name = ${originalName}`;
   } else {
-    await sql`INSERT INTO recipes (name, type, ingredients, instructions, duration_min, source, replaces)
-      VALUES (${input.name}, ${input.type}, ${input.ingredients}, ${input.instructions}, ${input.durationMin ?? null},
+    await sql`INSERT INTO recipes (profile_id, name, type, ingredients, instructions, duration_min, source, replaces)
+      VALUES (${profileId}, ${input.name}, ${input.type}, ${input.ingredients}, ${input.instructions}, ${input.durationMin ?? null},
               'eigen', ${builtIn ? originalName : null})`;
   }
   await propagate(sql, profileId, originalName, input);
@@ -82,10 +83,10 @@ export async function saveRecipeEdit(sql: Sql, profileId: string, originalName: 
 
 /** Bearbeitetes Gericht der Grundsammlung auf das Original zurücksetzen; gibt den Originalnamen zurück */
 export async function resetRecipe(sql: Sql, profileId: string, name: string): Promise<string> {
-  const rows = await sql`SELECT replaces FROM recipes WHERE name = ${name} AND replaces IS NOT NULL`;
+  const rows = await sql`SELECT replaces FROM recipes WHERE profile_id = ${profileId} AND name = ${name} AND replaces IS NOT NULL`;
   const original = MEAL_DATABASE.find((m) => m.name === rows[0]?.replaces);
   if (!original) throw new RecipeEditError("Nur bearbeitete Gerichte der Grundsammlung lassen sich zurücksetzen.", 404);
-  await sql`DELETE FROM recipes WHERE name = ${name}`;
+  await sql`DELETE FROM recipes WHERE profile_id = ${profileId} AND name = ${name}`;
   await propagate(sql, profileId, name, original);
   return original.name;
 }

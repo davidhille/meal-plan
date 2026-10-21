@@ -3,8 +3,8 @@ import type { Ctx } from "../http";
 import { json } from "../http";
 import { getProfile } from "../repo";
 import {
-  MIN_PASSWORD, clearSessionCookie, createSession, deleteSession, hashPassword, login, markUsersExist, normEmail, usersExist,
-  validEmail, verifyPassword, type SessionUser,
+  MIN_PASSWORD, clearSessionCookie, createSession, deleteSession, findInvite, hashPassword, login, markUsersExist, normEmail,
+  usersExist, validEmail, verifyPassword, type SessionUser,
 } from "../auth";
 
 const withCookie = (res: Response, cookie: string) => {
@@ -13,10 +13,10 @@ const withCookie = (res: Response, cookie: string) => {
   return new Response(res.body, { status: res.status, headers: h });
 };
 
-const publicUser = (u: SessionUser) => ({ id: u.id, name: u.name, email: u.email, isAdmin: u.isAdmin });
+const publicUser = (u: SessionUser) => ({ id: u.id, name: u.name, email: u.email, isAdmin: u.isAdmin, isOwner: u.isOwner });
 
 /** Ohne Anmeldung erreichbar: Status, Anmelden, ersten Zugang anlegen, Abmelden */
-export async function publicAuthRoutes({ request, env, sql, body, route }: Ctx, user: SessionUser | null): Promise<Response | null> {
+export async function publicAuthRoutes({ request, env, sql, body, parts, route }: Ctx, user: SessionUser | null): Promise<Response | null> {
   if (route === "GET /auth/status") {
     return json({ user: user ? publicUser(user) : null, needsSetup: !(await usersExist(sql)) });
   }
@@ -39,10 +39,33 @@ export async function publicAuthRoutes({ request, env, sql, body, route }: Ctx, 
     const input = checkInput(body);
     if ("error" in input) return json({ error: input.error }, 400);
     const p = await getProfile(sql);
-    const rows = await sql`INSERT INTO users (profile_id, email, name, password_hash, is_admin)
-      VALUES (${p.id}, ${input.email}, ${input.name}, ${await hashPassword(input.password)}, true) RETURNING id`;
+    // Der erste Zugang überhaupt ist der Betreiber der App
+    const rows = await sql`INSERT INTO users (profile_id, email, name, password_hash, is_admin, is_owner)
+      VALUES (${p.id}, ${input.email}, ${input.name}, ${await hashPassword(input.password)}, true, true) RETURNING id`;
     markUsersExist();
     return withCookie(json({ ok: true }), await createSession(sql, rows[0].id));
+  }
+
+  // Einladungslink einer Familie: ansehen und ersten Zugang (Admin der Familie) anlegen
+  if (parts[0] === "auth" && parts[1] === "invite" && parts[2]) {
+    const invite = await findInvite(sql, decodeURIComponent(parts[2]));
+    if (request.method === "GET") {
+      return json(invite ? { valid: true, familyName: invite.familyName } : { valid: false });
+    }
+    if (request.method === "POST") {
+      if (!invite) return json({ error: "Der Einladungslink ist abgelaufen oder wurde schon benutzt." }, 410);
+      const input = checkInput(body);
+      if ("error" in input) return json({ error: input.error }, 400);
+      const exists = await sql`SELECT 1 FROM users WHERE lower(email) = ${input.email}`;
+      if (exists[0]) return json({ error: "Diese E-Mail-Adresse hat schon einen Zugang – bitte anmelden." }, 409);
+      // Einladung zuerst verbrauchen (gegen doppeltes Absenden)
+      const used = await sql`UPDATE invites SET used_at = now() WHERE token_hash = ${invite.hash} AND used_at IS NULL RETURNING token_hash`;
+      if (!used[0]) return json({ error: "Der Einladungslink wurde schon benutzt." }, 410);
+      const rows = await sql`INSERT INTO users (profile_id, email, name, password_hash, is_admin)
+        VALUES (${invite.profileId}, ${input.email}, ${input.name}, ${await hashPassword(input.password)}, true) RETURNING id`;
+      markUsersExist();
+      return withCookie(json({ ok: true }), await createSession(sql, rows[0].id));
+    }
   }
   return null;
 }

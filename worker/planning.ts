@@ -225,7 +225,11 @@ async function markFavoritesPlanned(sql: Sql, profileId: string, planId: string)
  */
 export async function replaceMeal(env: Env, sql: Sql, profileId: string, planMealId: string, reject: boolean,
   waitUntil: (p: Promise<unknown>) => void) {
-  const rows = await sql.query(`SELECT ${PLAN_MEAL_COLS} FROM plan_meals WHERE id = $1`, [planMealId]);
+  const rows = await sql.query(
+    `SELECT ${PLAN_MEAL_COLS.split(", ").map((c) => `pm.${c}`).join(", ")} FROM plan_meals pm
+     JOIN meal_plans mp ON mp.id = pm.plan_id WHERE pm.id = $1 AND mp.profile_id = $2`,
+    [planMealId, profileId]
+  );
   const old = rows[0];
   if (!old) return null;
 
@@ -310,7 +314,7 @@ export async function recipeCatalog(sql: Sql, profileId: string) {
     loadPool(sql, profileId),
     loadContext(sql, profileId),
     sql`SELECT meal_name, image_url, source, credit_name, credit_url FROM meal_images WHERE image_data IS NOT NULL OR source = 'removed'`,
-    sql`SELECT name, source, replaces FROM recipes`,
+    sql`SELECT name, source, replaces FROM recipes WHERE profile_id = ${profileId}`,
   ]);
   const imageBy = new Map(images.map((r) => [r.meal_name as string, r]));
   const hidden = new Set(ctx.rejectedMeals);

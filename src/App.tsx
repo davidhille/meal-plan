@@ -32,7 +32,7 @@ import {
   setMealDessert,
   replacePlanMeal,
 } from './lib/api';
-import LoginScreen from './components/LoginScreen';
+import LoginScreen, { inviteToken } from './components/LoginScreen';
 import { familyPortions } from './lib/portions';
 import { toPlanDessert } from './lib/desserts';
 import PlanCreationModal from './components/PlanCreationModal';
@@ -124,7 +124,8 @@ export default function App() {
     try {
       // Nicht angemeldet (oder noch kein Zugang angelegt) → Anmeldung zeigen
       const status = await getAuthStatus().catch(() => null);
-      if (status && !status.user) throw new UnauthorizedError();
+      // Einladungslink geöffnet → Zugang für die neue Familie anlegen
+      if ((status && !status.user) || inviteToken()) throw new UnauthorizedError();
       prof = await getOrCreateProfile();
       setLocked(false);
     } catch (error) {

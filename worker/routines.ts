@@ -29,7 +29,7 @@ export async function runRoutines(env: Env) {
   const routines = await sql.query(
     `SELECT id, profile_id, name, frequency, day_of_week, to_char(time, 'HH24:MI') AS time, duration_days,
             to_char(last_run_at AT TIME ZONE 'Europe/Berlin', 'YYYY-MM-DD') AS last_run_date
-     FROM routines WHERE active = true`
+     FROM routines WHERE active = true AND profile_id IN (SELECT id FROM profiles WHERE NOT disabled)`
   );
 
   for (const r of routines) {
