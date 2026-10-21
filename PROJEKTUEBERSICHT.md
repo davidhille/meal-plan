@@ -17,8 +17,10 @@ und entfernen Zugänge.
 Familie anlegen → **Einladungslink** (7 Tage gültig, einmal nutzbar; kopieren oder teilen). Wer ihn öffnet, legt den
 ersten Zugang an und ist Admin seiner Familie. Außerdem: neuer Link, umbenennen, sperren (Anmeldung geht nicht mehr,
 Routinen ruhen), endgültig löschen. Pro Familie getrennt: Pläne, Einkaufslisten, Favoriten, Bewertungen, Einstellungen,
-Shop-Zugänge **und eigene Rezepte** (KI, Import, Chefkoch, Bearbeitungen, eigene Nachtische). Gemeinsam: Grundsammlung
-(383 Gerichte, 161 Nachtische) und Bilder. Neue Familien starten mit den Listen „Einkauf“ (Standard) und „Metzger“
+Shop-Zugänge **und eigene Rezepte** (Import, Chefkoch, Bearbeitungen, eigene Nachtische) sowie Filter-Anpassungen
+(Kategorien) und eigene Filter. Gemeinsam: Grundsammlung (383 Gerichte, 161 Nachtische), Bilder und **KI-Rezepte** – was
+eine Familie per KI erzeugt, landet bei allen im Pool. Bearbeitet eine Familie ein fremdes KI-Rezept, gilt ihre Fassung nur
+für sie; Ausblenden/Löschen ebenso. Neue Familien starten mit den Listen „Einkauf“ (Standard) und „Metzger“
 (Automatik in den Einstellungen abschaltbar); Knuspr/Picnic erscheinen erst nach dem Verbinden.
 
 **Aufbau:** Kopfzeile mit Logo, darunter die Bereiche **Speiseplan · Einkaufsliste · Rezepte · Favoriten · Einstellungen**
@@ -133,7 +135,7 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
   Chips unter der Suche (einzeln entfernen oder „Alle löschen“).
 - **Kategorien:** Speiseart und Hauptzutat erkennt die App an Name und Zutaten (`lib/recipeCategories.ts`; Würzzutaten wie
   Hühnerbrühe oder Fischsauce zählen nicht, Hackfleisch ohne Angabe zählt zu Rind und Schwein). Liegt sie daneben, im
-  Rezept unter „Kategorien“ → „Korrigieren“ an- oder abwählen (gespeichert in `recipe_category_overrides`, zieht beim
+  Rezept unter „Kategorien“ → „Filter anpassen“ an- oder abwählen (gilt nur für die eigene Familie) (gespeichert in `recipe_category_overrides`, zieht beim
   Umbenennen mit).
 - **Rezept mit KI erstellen** (Knopf oben in der Übersicht): Wunsch eingeben („etwas mit Kürbis, schnell“), Art wählen
   oder „Egal“ → Vorschau. „Anderer Vorschlag“, über den Stift anpassen, dann „In die Sammlung“ (optional als Favorit).
