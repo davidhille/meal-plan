@@ -60,3 +60,9 @@ export function currentWeekIndex(weeks: PlanWeek[], today = toIso(new Date())): 
   if (i >= 0) return i;
   return today < weeks[0].weekStart ? 0 : weeks.length - 1;
 }
+
+/** Wochen ab der aktuellen (vergangene ausgeblendet); ist der ganze Plan vorbei, bleibt die letzte Woche */
+export function upcomingWeeks(weeks: PlanWeek[], today = toIso(new Date())): PlanWeek[] {
+  const rest = weeks.filter((w) => w.weekEnd >= today);
+  return rest.length ? rest : weeks.slice(-1);
+}

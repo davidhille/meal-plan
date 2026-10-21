@@ -42,7 +42,7 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
 - **Heute-Karte** oben: heutiges Gericht groß mit Bild, „Rezept“ und „Kochmodus“, darunter das Gericht von morgen.
   Gestern (bzw. heute ab der Erinnerungszeit, spätestens ab 18 Uhr) noch nicht bewertet? Direkt dort mit Sternen bewerten. Der heutige Tag ist im Plan markiert.
 - **Plan erstellen** für einen Zeitraum (nächster Tag, nächste Woche, nächster Monat oder frei gewählt). Bei Plänen über mehrere Wochen
-  filtert eine **KW-Auswahl** die Ansicht.
+  filtert eine **KW-Auswahl** die Ansicht; vergangene Wochen sind ausgeblendet und lassen sich mit „Frühere“ wieder einblenden.
 - Tagesrhythmus: Sa/So aufwendigere **Wochenend**-Gerichte, unter der Woche abwechselnd **vegetarisch** und **Fleisch/Fisch**.
 - Gerichtkarte: Bild, Typ, Zubereitungszeit, Bewertung, ggf. Nachtisch. Gerichte mit Fisch oder Meeresfrüchten (ohne Fleisch)
   heißen „Fisch“ statt „Fleisch“ (blauer Balken, auch im Plan-Download). Aktionen:

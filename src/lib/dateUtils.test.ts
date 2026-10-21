@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { currentWeekIndex, formatShortDate, getWeeksInRange, isDateInWeek, toIso } from './dateUtils';
+import { currentWeekIndex, formatShortDate, getWeeksInRange, isDateInWeek, toIso, upcomingWeeks } from './dateUtils';
 
 describe('toIso', () => {
   test('nutzt das lokale Datum (nicht UTC)', () => {
@@ -34,4 +34,15 @@ describe('getWeeksInRange', () => {
 
 describe('formatShortDate', () => {
   test('deutscher Wochentag und Datum', () => expect(formatShortDate('2026-10-13')).toBe('Di., 13.10.'));
+});
+
+describe('upcomingWeeks', () => {
+  const weeks = getWeeksInRange('2026-10-14', '2026-10-27'); // KW 42–44
+  test('vergangene Wochen fallen weg', () => {
+    expect(upcomingWeeks(weeks, '2026-10-21').map((w) => w.kw)).toEqual([43, 44]);
+    expect(upcomingWeeks(weeks, '2026-10-18').map((w) => w.kw)).toEqual([42, 43, 44]);
+  });
+  test('Plan ganz vorbei: letzte Woche bleibt', () => {
+    expect(upcomingWeeks(weeks, '2026-11-10').map((w) => w.kw)).toEqual([44]);
+  });
 });
