@@ -316,7 +316,9 @@ export async function recipeCatalog(sql: Sql, profileId: string) {
     sql`SELECT DISTINCT ON (meal_name) meal_name, image_url, source, credit_name, credit_url FROM meal_images
       WHERE (image_data IS NOT NULL OR source = 'removed') AND (profile_id IS NULL OR profile_id = ${profileId})
       ORDER BY meal_name, profile_id IS NULL`,
-    sql`SELECT name, source, replaces FROM recipes WHERE profile_id = ${profileId}`,
+    sql`SELECT name, source, replaces FROM recipes
+      WHERE profile_id = ${profileId} OR (source = 'ai' AND replaces IS NULL)
+      ORDER BY profile_id = ${profileId}, created_at`,
   ]);
   const imageBy = new Map(images.map((r) => [r.meal_name as string, r]));
   const hidden = new Set(ctx.rejectedMeals);
@@ -353,7 +355,7 @@ export async function recipeCatalog(sql: Sql, profileId: string) {
           : r.imageUrl ? { name: "TheMealDB", url: "https://www.themealdb.com/" } : null,
         origin: origin(r.name),
         /** Gericht der Grundsammlung, das bearbeitet wurde (lässt sich zurücksetzen) */
-        edited: !!rowBy.get(r.name)?.replaces,
+        edited: builtIn.has(String(rowBy.get(r.name)?.replaces ?? "")),
         unsuitable: violatesHealthConditions(r, ctx.healthConditions),
       };
     })

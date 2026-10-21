@@ -29,7 +29,10 @@ export function favoriteToRecipe(f: Row): Recipe {
 export async function loadPool(sql: Sql, profileId: string): Promise<{ pool: Recipe[]; favorites: Row[] }> {
   const [favorites, dbRecipes] = await Promise.all([
     loadFavorites(sql, profileId),
-    sql`SELECT name, type, ingredients, instructions, duration_min, replaces FROM recipes WHERE profile_id = ${profileId}`,
+    // Eigene Rezepte plus KI-Rezepte aller Familien (unbearbeitet); eigene zuletzt, damit sie gleichnamige ersetzen
+    sql`SELECT name, type, ingredients, instructions, duration_min, replaces FROM recipes
+      WHERE profile_id = ${profileId} OR (source = 'ai' AND replaces IS NULL)
+      ORDER BY profile_id = ${profileId}, created_at`,
   ]);
   const pool: Recipe[] = [...MEAL_DATABASE];
   const index = new Map(pool.map((m, i) => [m.name, i]));

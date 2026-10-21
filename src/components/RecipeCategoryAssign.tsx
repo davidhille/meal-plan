@@ -73,7 +73,7 @@ export default function RecipeCategoryAssign({ recipe, overrides, onChange }: Re
           aria-expanded={editing}
           className="text-xs font-semibold text-brand-700 hover:underline"
         >
-          {editing ? 'Fertig' : 'Korrigieren'}
+          {editing ? 'Fertig' : 'Filter anpassen'}
         </button>
       </div>
       {editing ? (
@@ -90,7 +90,7 @@ export default function RecipeCategoryAssign({ recipe, overrides, onChange }: Re
           ))}
         </p>
       ) : (
-        <p className="text-xs text-gray-500">Keine erkannt – über „Korrigieren“ zuordnen.</p>
+        <p className="text-xs text-gray-500">Keine erkannt – über „Filter anpassen“ zuordnen.</p>
       )}
       {error && (
         <p role="alert" className="mt-1.5 text-xs text-red-600">

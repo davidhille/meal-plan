@@ -101,7 +101,8 @@ fehlende Migrationen beim ersten Aufruf nach einem Deploy aus (`migrate.ts`), ei
 Mehrere Familien (`profiles`, eine pro Familie); Zugänge (`users`) gehören über `profile_id` zur Familie. Alle Tabellen
 mit Familiendaten hängen an `profile_id` – **jede Abfrage auf die Familie aus `getProfile(sql, user)` beschränken**, IDs aus
 der Anfrage immer gegen die Familie prüfen (z. B. `planOwned`). `recipes` (KI/Import/Bearbeitungen) gehört seit 0016 einer
-Familie (eindeutig je `(profile_id, name)`); `meal_images` ist gemeinsam mit optionaler Fassung pro Familie (seit 0017); `app_settings` ist global.
+Familie (eindeutig je `(profile_id, name)`); **KI-Rezepte (`source = 'ai'`, unbearbeitet) sieht jede Familie** (`loadPool`,
+`recipeCatalog`: eigene Zeilen zuletzt, damit sie gleichnamige ersetzen; Bearbeiten eines fremden KI-Rezepts = eigene Zeile mit `replaces`); `meal_images` ist gemeinsam mit optionaler Fassung pro Familie (seit 0017); `app_settings` ist global.
 
 Daten-Konventionen:
 - Datumsfelder als Text ausgeben (`meal_date::text`), Zeitzonen-Fallen beachten: im Frontend nie `toISOString()` für lokale Daten.

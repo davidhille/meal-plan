@@ -77,6 +77,8 @@ export async function saveRecipeEdit(sql: Sql, profileId: string, originalName: 
   }
   const existing = await sql`SELECT name FROM recipes WHERE profile_id = ${profileId} AND name = ${originalName}`;
   const builtIn = MEAL_DATABASE.some((m) => m.name === originalName);
+  // KI-Rezept einer anderen Familie: eigene Fassung ersetzt es nur für diese Familie
+  const sharedAi = (await sql`SELECT 1 FROM recipes WHERE name = ${originalName} AND source = 'ai' AND profile_id <> ${profileId}`)[0];
   if (existing[0]) {
     await sql`UPDATE recipes SET name = ${input.name}, type = ${input.type}, ingredients = ${input.ingredients},
       instructions = ${input.instructions}, duration_min = ${input.durationMin ?? null}
@@ -84,7 +86,7 @@ export async function saveRecipeEdit(sql: Sql, profileId: string, originalName: 
   } else {
     await sql`INSERT INTO recipes (profile_id, name, type, ingredients, instructions, duration_min, source, replaces)
       VALUES (${profileId}, ${input.name}, ${input.type}, ${input.ingredients}, ${input.instructions}, ${input.durationMin ?? null},
-              'eigen', ${builtIn ? originalName : null})`;
+              'eigen', ${builtIn || sharedAi ? originalName : null})`;
   }
   await propagate(sql, profileId, originalName, input);
 }
