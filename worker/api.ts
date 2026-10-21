@@ -34,6 +34,8 @@ export async function handleApi(
   // Bilder sind öffentlich (ein <img> kann kein Passwort mitschicken)
   if (request.method === "GET" && path.startsWith("/api/images/") && env.DATABASE_URL) {
     const sql = neon(env.DATABASE_URL);
+    // Auch hier zuerst migrieren: direkt nach einem Deploy kommen oft zuerst Bild-Anfragen
+    await ensureSchema(sql);
     const f = new URL(request.url).searchParams.get("f");
     const family = f && /^[0-9a-f-]{36}$/i.test(f) ? f : null;
     return serveImage(sql, decodeURIComponent(path.slice("/api/images/".length)), family);
