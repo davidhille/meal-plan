@@ -43,6 +43,9 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
   Gestern (bzw. heute ab der Erinnerungszeit, spätestens ab 18 Uhr) noch nicht bewertet? Direkt dort mit Sternen bewerten. Der heutige Tag ist im Plan markiert.
 - **Plan erstellen** für einen Zeitraum (nächster Tag, nächste Woche, nächster Monat oder frei gewählt). Bei Plänen über mehrere Wochen
   filtert eine **KW-Auswahl** die Ansicht; vergangene Wochen sind ausgeblendet und lassen sich mit „Frühere“ wieder einblenden.
+- **Wochen-Rückblick** (Sonntag: laufende Woche, Montag/Dienstag: Vorwoche; ab zwei gekochten Gerichten): Anzahl gekocht
+  und Brotzeiten, Lieblingsgericht (höchste Sterne ab 4), noch nicht bewertete Gerichte zum Antippen. Mit × pro Woche
+  ausblendbar (auf dem Gerät gemerkt). Logik `src/lib/weekReview.ts`.
 - **Saison-Hinweis:** Gerichtkarten im Plan zeigen Zutaten, die am Plan-Tag Saison haben (z. B. „Kürbis“, Koralle mit
   Spross-Symbol). Saison-Liste in `src/lib/season.ts`, dieselbe wie für den Schwerpunkt „saisonal“.
 - Tagesrhythmus: Sa/So aufwendigere **Wochenend**-Gerichte, unter der Woche abwechselnd **vegetarisch** und **Fleisch/Fisch**.

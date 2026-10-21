@@ -9,6 +9,8 @@ import { ruleForDate } from '../lib/dayRules';
 import { seasonHighlights } from '../lib/season';
 import TodayCard from './TodayCard';
 import GuestStepper from './GuestStepper';
+import WeekReviewCard from './WeekReviewCard';
+import { weekReview } from '../lib/weekReview';
 import MoveMealSheet from './MoveMealSheet';
 import DayCard from './DayCard';
 import BrotzeitCard from './BrotzeitCard';
@@ -160,6 +162,8 @@ export default function MealPlanView({
     ...active.filter((pm) => pm.meal_date === yesterdayIso),
   ].filter((pm) => !pm.brotzeit);
   const toRate = rateCandidates.find((pm) => !ratings[pm.meal_name]) ?? null;
+  // Sonntag bis Dienstag: Rückblick auf die (vergangene) Woche
+  const review = weekReview(active, ratings, now);
 
   // Freie Tage im sichtbaren Zeitraum ohne Gericht → eigene, schmale Zeile
   const offDays: string[] = [];
@@ -232,6 +236,7 @@ export default function MealPlanView({
           onRate={onRate ? (name, stars) => onRate(name, stars, '') : undefined}
           todayOff={!todayMeal && ruleForDate(todayIso, dayRules).off === true}
         />
+        {review && <WeekReviewCard key={review.weekStart} review={review} onOpen={(pm) => openPlanMeal(pm)} />}
         {rows.map(({ date, pm }) => {
           if (!pm) {
             return (
