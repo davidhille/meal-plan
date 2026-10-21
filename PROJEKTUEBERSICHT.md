@@ -110,6 +110,8 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
 
 ## 2. Einkaufsliste
 
+- **Gemeinsam einkaufen:** Häkchen werden gespeichert; ist die Liste offen, holt sie alle 10 Sekunden (und beim Zurückkehren
+  in die App) die Häkchen und Einträge der anderen. Kurzer Hinweis „Liste aktualisiert – … von anderen“.
 - Entsteht automatisch aus dem Plan: Zutaten auf die Familienportionen umgerechnet und zusammengefasst
   („6 Zwiebeln“, „2 Dosen Kokosmilch“), Stückware aufgerundet.
 - **„Einkauf für“:** eigene Wochenauswahl („Diese Woche“, „Nächste Woche“ …), mehrere Wochen kombinierbar; Häkchen je Woche.
