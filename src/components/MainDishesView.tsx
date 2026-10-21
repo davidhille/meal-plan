@@ -30,6 +30,7 @@ import {
   resetRecipeEdit,
   saveRecipeEdit,
   setRecipeHidden,
+  wishToQuery,
 } from '../lib/api';
 import { RECIPE_BASE_PORTIONS } from '../lib/portions';
 import MealModal from './MealModal';
@@ -97,6 +98,8 @@ export default function MainDishesView({
   const [showUnsuitable, setShowUnsuitable] = useState(false);
   const [showAi, setShowAi] = useState(false);
   const [showChefkoch, setShowChefkoch] = useState(false);
+  /** Suchbegriff für Chefkoch, wenn aus der KI heraus geöffnet (Kontingent leer) */
+  const [chefkochQuery, setChefkochQuery] = useState('');
 
   useEffect(() => {
     getRecipeCatalog()
@@ -222,7 +225,10 @@ export default function MainDishesView({
 
         <div className="grid grid-cols-2 gap-2">
           <button
-            onClick={() => setShowChefkoch(true)}
+            onClick={() => {
+              setChefkochQuery('');
+              setShowChefkoch(true);
+            }}
             className="h-11 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-brand-300 bg-brand-50/50 text-sm font-semibold text-brand-800 hover:bg-brand-50"
           >
             <ChefHat size={16} />
@@ -422,6 +428,7 @@ export default function MainDishesView({
       {showChefkoch && (
         <ChefkochSearchModal
           existingNames={new Set((catalog?.recipes ?? []).map((r) => r.name))}
+          initialQuery={chefkochQuery}
           onSaved={async (_name, favorite) => {
             // Fenster bleibt offen – nur die Sammlung im Hintergrund aktualisieren
             setCatalog(await getRecipeCatalog());
@@ -441,6 +448,11 @@ export default function MainDishesView({
             flash(`„${result.name}“ ist jetzt in der Sammlung – das Bild entsteht gerade.`);
           }}
           onClose={() => setShowAi(false)}
+          onChefkoch={(wish) => {
+            setShowAi(false);
+            setChefkochQuery(wishToQuery(wish));
+            setShowChefkoch(true);
+          }}
         />
       )}
 

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { X, Search, Loader2, Star, Clock, ChefHat, ArrowLeft, ExternalLink, ShieldAlert, Check } from 'lucide-react';
 import { DessertCategory, MealType } from '../types';
 import { DESSERT_CATEGORIES, guessDessertCategory } from '../lib/desserts';
@@ -22,6 +22,8 @@ interface ChefkochSearchModalProps {
   /** Rezept übernommen – das Fenster bleibt offen (weitere Rezepte übernehmen) */
   onSaved: (name: string, favorite: boolean) => void;
   onClose: () => void;
+  /** Suchbegriff, mit dem das Fenster gleich sucht (z. B. der KI-Wunsch, wenn das Kontingent leer ist) */
+  initialQuery?: string;
 }
 
 const TYPES: { id: MealType; label: string }[] = [
@@ -48,10 +50,10 @@ const formatRating = (r: number) =>
   });
 
 /** Rezepte bei Chefkoch suchen, ansehen und in die eigene Sammlung übernehmen */
-export default function ChefkochSearchModal({ mode = 'main', existingNames, onSaved, onClose }: ChefkochSearchModalProps) {
+export default function ChefkochSearchModal({ mode = 'main', existingNames, onSaved, onClose, initialQuery = '' }: ChefkochSearchModalProps) {
   const isDessert = mode === 'dessert';
   const chipList = CHIPS.filter((c) => (isDessert ? c.id !== 'main' && c.id !== 'vegetarian' : c.id !== 'dessert'));
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const [chips, setChips] = useState<Set<ChipId>>(new Set([isDessert ? 'dessert' : 'main']));
   const [hits, setHits] = useState<ChefkochHit[] | null>(null);
   /** Weiter bei … (null = keine weiteren Treffer); gilt für die Suche in `searched` */
@@ -123,6 +125,12 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
       setSearching(false);
     }
   };
+
+  // Mit Suchbegriff geöffnet (z. B. KI-Kontingent leer): gleich suchen
+  useEffect(() => {
+    if (initialQuery.trim().length >= 2) search();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /** Nächste Treffer derselben Suche anhängen (ohne Doppelte); leere Seiten werden übersprungen */
   const loadMore = async () => {

@@ -248,7 +248,7 @@ export async function generateWishRecipe(
     const g = await generateOne(env, type, CUISINES[Math.floor(Math.random() * CUISINES.length)], ctx, [], wish);
     if ("error" in g) {
       if (g.error === "quota") {
-        return { error: "Das tägliche Gratis-Kontingent der KI ist aufgebraucht. Morgen früh geht es wieder.", quota: true };
+        return { error: "Das tägliche Gratis-Kontingent der KI ist für heute verbraucht.", quota: true };
       }
       continue;
     }

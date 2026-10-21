@@ -42,7 +42,8 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   });
   if (res.status === 401) throw new UnauthorizedError();
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  // quota: KI-Kontingent aufgebraucht (Gratis-Tageskontingent oder Budget der Familie)
+  if (!res.ok) throw Object.assign(new Error(data.error || `HTTP ${res.status}`), { status: res.status, quota: !!data.quota });
   return data as T;
 }
 
@@ -976,4 +977,17 @@ export function saveReminderTime(reminderTime: string): Promise<PushState> {
 
 export function sendTestPush(endpoint: string): Promise<{ ok: true }> {
   return request<{ ok: true }>('POST', '/push/test', { endpoint });
+}
+
+/** Ist der Fehler „KI-Kontingent aufgebraucht“? */
+export const isQuotaError = (e: unknown) => !!(e as { quota?: boolean } | null)?.quota;
+
+/** Aus einem KI-Wunsch einen Suchbegriff für Chefkoch machen („etwas mit Kürbis, schnell“ → „Kürbis schnell“) */
+export function wishToQuery(wish: string): string {
+  return wish
+    .replace(/\b(etwas|was|irgendwas|gerne|bitte|ein|eine|einen|mit|ohne viel|für|die|der|das|und)\b/gi, ' ')
+    .replace(/[,.;!?&]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 60);
 }

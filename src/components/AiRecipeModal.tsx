@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Clock, Heart, Loader2, Pencil, RefreshCw, Sparkles, X } from 'lucide-react';
+import { BatteryLow, ChefHat, Clock, Heart, Loader2, Pencil, RefreshCw, Sparkles, X } from 'lucide-react';
 import { MealType, RecipeCatalog, RecipeDraft } from '../types';
-import { previewAiRecipe, saveAiRecipe } from '../lib/api';
+import { isQuotaError, previewAiRecipe, saveAiRecipe } from '../lib/api';
 import { toSteps } from '../lib/cooking';
 import { useDialog } from '../lib/useDialog';
 import RecipeEditModal from './RecipeEditModal';
@@ -10,6 +10,8 @@ interface AiRecipeModalProps {
   /** Gespeichert: Name des neuen Rezepts und die neue Übersicht */
   onSaved: (result: { name: string; catalog: RecipeCatalog }, favorite: boolean) => void;
   onClose: () => void;
+  /** KI-Kontingent aufgebraucht: stattdessen bei Chefkoch suchen (mit dem Wunsch als Suchbegriff) */
+  onChefkoch?: (wish: string) => void;
 }
 
 const TYPES: { id: MealType | null; label: string }[] = [
@@ -24,13 +26,15 @@ const TYPE_LABEL: Record<MealType, string> = { vegetarisch: 'Vegetarisch', fleis
 const IDEAS = ['etwas mit Kürbis', 'schnell & kindgerecht', 'Ofengericht ohne viel Abwasch', 'Suppe zum Aufwärmen', 'Resteessen mit Reis'];
 
 /** Rezept bei der KI bestellen: Wunsch eingeben → Vorschau → nochmal / anpassen / speichern */
-export default function AiRecipeModal({ onSaved, onClose }: AiRecipeModalProps) {
+export default function AiRecipeModal({ onSaved, onClose, onChefkoch }: AiRecipeModalProps) {
   const dialogRef = useDialog(onClose);
   const [wish, setWish] = useState('');
   const [type, setType] = useState<MealType | null>(null);
   const [draft, setDraft] = useState<RecipeDraft | null>(null);
   const [busy, setBusy] = useState<'create' | 'save' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** Hinweis, wenn das KI-Kontingent aufgebraucht ist */
+  const [quota, setQuota] = useState<string | null>(null);
   const [favorite, setFavorite] = useState(false);
   const [editing, setEditing] = useState(false);
 
@@ -38,10 +42,12 @@ export default function AiRecipeModal({ onSaved, onClose }: AiRecipeModalProps) 
     if (wish.trim().length < 3 || busy) return;
     setBusy('create');
     setError(null);
+    setQuota(null);
     try {
       setDraft(await previewAiRecipe(wish.trim(), type));
     } catch (e) {
-      setError((e as Error).message || 'Das hat nicht geklappt.');
+      if (isQuotaError(e)) setQuota((e as Error).message);
+      else setError((e as Error).message || 'Das hat nicht geklappt.');
     } finally {
       setBusy(null);
     }
@@ -185,6 +191,26 @@ export default function AiRecipeModal({ onSaved, onClose }: AiRecipeModalProps) 
               <p role="alert" className="text-sm text-red-600">
                 {error}
               </p>
+            )}
+
+            {quota && (
+              <div role="alert" className="rounded-xl border border-coral-300 bg-coral-50 p-3 space-y-2">
+                <p className="flex items-start gap-2 text-sm text-coral-700">
+                  <BatteryLow size={16} className="flex-shrink-0 mt-0.5" aria-hidden="true" />
+                  <span>
+                    <strong>KI-Kontingent aufgebraucht.</strong> {quota} Es läuft um 2 Uhr nachts (Winterzeit 1 Uhr) neu an.
+                  </span>
+                </p>
+                {onChefkoch && (
+                  <button
+                    onClick={() => onChefkoch(wish.trim())}
+                    className="w-full h-10 flex items-center justify-center gap-2 rounded-xl bg-white border border-coral-300 text-sm font-semibold text-coral-700 hover:bg-coral-100"
+                  >
+                    <ChefHat size={15} aria-hidden="true" />
+                    Stattdessen bei Chefkoch suchen
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
