@@ -43,6 +43,10 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
   Gestern (bzw. heute ab der Erinnerungszeit, spätestens ab 18 Uhr) noch nicht bewertet? Direkt dort mit Sternen bewerten. Der heutige Tag ist im Plan markiert.
 - **Plan erstellen** für einen Zeitraum (nächster Tag, nächste Woche, nächster Monat oder frei gewählt). Bei Plänen über mehrere Wochen
   filtert eine **KW-Auswahl** die Ansicht; vergangene Wochen sind ausgeblendet und lassen sich mit „Frühere“ wieder einblenden.
+- **Plan teilen** („Teilen“ oben neben „Herunterladen“): Nur-Lese-Link ohne Zugang (`/?plan=<token>`, in der Datenbank nur
+  der Hash in `meal_plans.share_hash`). Zeigt Familienname, Gerichte mit Bild, Zeit, Nachtisch, Brotzeit und aufklappbarem
+  Rezept (4 Portionen) – keine Einkaufsliste, keine Bewertungen. Neuer Link macht den alten ungültig; „Link zurückziehen“
+  sperrt ihn; „Neu generieren“ behält den Link.
 - **Wochen-Rückblick** (Sonntag: laufende Woche, Montag/Dienstag: Vorwoche; ab zwei gekochten Gerichten): Anzahl gekocht
   und Brotzeiten, Lieblingsgericht (höchste Sterne ab 4), noch nicht bewertete Gerichte zum Antippen. Mit × pro Woche
   ausblendbar (auf dem Gerät gemerkt). Logik `src/lib/weekReview.ts`.

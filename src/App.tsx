@@ -462,6 +462,7 @@ export default function App() {
             onRemove={currentPlan ? handleRemoveMeal : undefined}
             onBrotzeit={currentPlan ? handleBrotzeit : undefined}
             onSetGuests={currentPlan ? handleSetGuests : undefined}
+            onSharedChange={(shared) => setCurrentPlan((p) => (p ? { ...p, shared } : p))}
             visibleRange={selectedWeek ? { from: selectedWeek.weekStart, to: selectedWeek.weekEnd } : undefined}
           />
         ) : activeTab === 'einkaufsliste' ? (

@@ -48,7 +48,7 @@ export async function verifyPassword(password: string, stored: string): Promise<
   return diff === 0;
 }
 
-async function sha256(text: string): Promise<string> {
+export async function sha256(text: string): Promise<string> {
   const d = await crypto.subtle.digest("SHA-256", enc.encode(text));
   return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
@@ -127,11 +127,15 @@ export async function login(
   return { ok: true, userId: u.id };
 }
 
+/** Zufälliges, URL-taugliches Token (24 Byte) */
+export function randomToken(): string {
+  return toB64(crypto.getRandomValues(new Uint8Array(24))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
 /** Einladungslink: zufälliges Token, in der Datenbank nur sein Hash; 7 Tage gültig, einmal nutzbar */
 export const INVITE_DAYS = 7;
 export async function createInvite(sql: Sql, profileId: string): Promise<string> {
-  const bytes = crypto.getRandomValues(new Uint8Array(24));
-  const token = toB64(bytes).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const token = randomToken();
   await sql`INSERT INTO invites (token_hash, profile_id, expires_at)
     VALUES (${await sha256(token)}, ${profileId}, now() + ${`${INVITE_DAYS} days`}::interval)`;
   return token;

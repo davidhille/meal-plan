@@ -4,7 +4,7 @@ import { parseDayRules } from "./dayRules";
 import { MEAL_DATABASE, type Recipe, type ScoringContext } from "./meals";
 
 // Spaltenlisten mit Datum als Text (YYYY-MM-DD), damit das Frontend Strings bekommt
-export const PLAN_COLS = `id, profile_id, start_date::text AS start_date, end_date::text AS end_date, status, created_at`;
+export const PLAN_COLS = `id, profile_id, start_date::text AS start_date, end_date::text AS end_date, status, created_at, share_hash IS NOT NULL AS shared`;
 export const PLAN_MEAL_COLS = `id, plan_id, meal_date::text AS meal_date, meal_name, meal_type, ingredients, instructions, rejected, image_url, duration_min, dessert, brotzeit, guests, created_at`;
 export const ROUTINE_COLS = `id, profile_id, name, frequency, day_of_week, to_char(time, 'HH24:MI') AS time, duration_days, active, last_run_at, created_at`;
 

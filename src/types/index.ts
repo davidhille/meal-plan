@@ -218,6 +218,8 @@ export interface MealPlan {
   end_date: string;
   status: 'active' | 'archived';
   created_at: string;
+  /** Per Nur-Lese-Link geteilt */
+  shared?: boolean;
 }
 
 export interface PlanMeal {

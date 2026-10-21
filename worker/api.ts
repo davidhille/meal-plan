@@ -17,13 +17,14 @@ import { shopRoutes } from "./routes/shops";
 import { pushRoutes } from "./routes/push";
 import { accountRoutes, publicAuthRoutes } from "./routes/auth";
 import { adminRoutes } from "./routes/admin";
+import { publicShareRoutes, shareRoutes } from "./routes/share";
 import { getSessionUser, usersExist } from "./auth";
 
 export type { Env } from "./http";
 export { runRoutines } from "./routines";
 
 /** Reihenfolge ist egal, die Routen überschneiden sich nicht */
-const ROUTES: RouteHandler[] = [profileRoutes, planRoutes, recipeRoutes, shoppingRoutes, shopRoutes, pushRoutes];
+const ROUTES: RouteHandler[] = [profileRoutes, shareRoutes, planRoutes, recipeRoutes, shoppingRoutes, shopRoutes, pushRoutes];
 
 export async function handleApi(
   request: Request,
@@ -60,7 +61,7 @@ export async function handleApi(
   const ctx = { request, env: meteredEnv(env, sql, user?.profileId ?? null), sql, body, parts, route, id: parts[1], waitUntil, user };
 
   try {
-    const publicRes = await publicAuthRoutes(ctx, user);
+    const publicRes = (await publicAuthRoutes(ctx, user)) ?? (await publicShareRoutes(ctx));
     if (publicRes) return publicRes;
 
     // Angemeldet – oder Übergang: noch keine Zugänge angelegt, dann gilt das alte Familien-Passwort
