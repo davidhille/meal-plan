@@ -39,7 +39,8 @@ Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHu
 | Datei | Inhalt |
 |---|---|
 | `index.ts` | Einstieg (läuft vor den Assets, `run_worker_first`): `www.` → 301 ohne www, `/api/*` → `handleApi`, sonst Assets; `scheduled` (Cron alle 15 Min) → `runRoutines` |
-| `api.ts` | Einstieg der API: Passwort, Datenbank, Migration, verteilt an die Routen; Fehler → JSON |
+| `api.ts` | Einstieg der API: Datenbank, Migration, Anmeldung (Sitzungs-Cookie → `ctx.user`), Origin-Prüfung bei ändernden Anfragen, verteilt an die Routen; Fehler → JSON |
+| `auth.ts`, `routes/auth.ts` | Login pro Person: PBKDF2-Hash (100.000 Iterationen, Workers-Maximum), Sitzungen in `sessions` (nur SHA-256 des Tokens, Cookie `mp_session` HttpOnly/Secure/Lax, 180 Tage), Sperre nach 8 Fehlversuchen. `/auth/status`, `/auth/login`, `/auth/logout`, `/auth/setup` (erster Zugang, nur mit `APP_PASSWORD` und solange `users` leer ist) sind öffentlich; `/auth/password` und `/users` (nur Admin) brauchen eine Sitzung. Solange es keine Zugänge gibt, gilt noch `X-App-Password` |
 | `http.ts` | `Env`, Anfrage-Kontext `Ctx`, `json()` |
 | `routes/*.ts` | Routen nach Bereich (`profile`, `plans`, `recipes`, `shopping`, `shops`). Jede Datei prüft `route`/`parts` und gibt eine `Response` oder `null` (nicht zuständig) zurück |
 | `repo.ts` | Gemeinsame DB-Zugriffe: `getProfile`, `loadContext`, `loadPool`, Favoriten, Spaltenlisten (`PLAN_COLS` …) |
@@ -72,7 +73,8 @@ Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHu
 - Preisvergleich/Grundpreis: `lib/unitPrice.ts`. Portionen: `lib/portions.ts`.
 - Eigene Rezept-Filter: `lib/recipeFilters.ts` – Regeln (Suchbegriffe/Zeit) plus Hand-Zuordnung (`includeNames`/`excludeNames`).
 - Filter der Rezept-Übersicht: `RecipeFilterSheet` (ein Fenster), Gruppen-Logik `lib/recipeFacets.ts` (in der Gruppe oder, zwischen Gruppen und). Speiseart/Hauptzutat: `lib/recipeCategories.ts` (Heuristik) plus Korrekturen pro Gericht (`recipe_category_overrides`, `GET/POST /category-overrides`).
-- `localStorage` nur für Komfort (Passwort, auf-/zugeklappt, gewählte Einkaufswochen), immer in `try/catch`.
+- Anmeldung: `LoginScreen` (Anmelden bzw. ersten Zugang anlegen), `AccountSettings` (Einstellungen → Zugänge). Ohne Sitzung zeigt `App` die Anmeldung.
+- `localStorage` nur für Komfort (auf-/zugeklappt, gewählte Einkaufswochen; altes Familien-Passwort nur bis zum ersten Zugang), immer in `try/catch`.
 
 ### Design „Aubergine“
 
@@ -95,7 +97,7 @@ fehlende Migrationen beim ersten Aufruf nach einem Deploy aus (`migrate.ts`), ei
    `schema:2026101207`); stimmt er, führt ein Kaltstart keine DDL aus.
    Ausgeführte Migrationen stehen in `schema_migrations`.
 
-Ein Familienprofil (`getProfile` nimmt das erste), kein Mehrbenutzer-Login. Fast alle Tabellen hängen an `profile_id`;
+Ein Familienprofil (`getProfile` nimmt das erste); Zugänge (`users`) gehören über `profile_id` zur Familie. Fast alle Tabellen hängen an `profile_id`;
 `recipes` (KI-/Import-Rezepte) und `meal_images` sind geteilt.
 
 Daten-Konventionen:
@@ -105,7 +107,7 @@ Daten-Konventionen:
 
 ## Secrets (Cloudflare Worker)
 
-`DATABASE_URL`, `APP_PASSWORD` (Familien-Passwort, Header `X-App-Password`), `CREDENTIALS_KEY` (verschlüsselt Shop-Zugangsdaten und den privaten Push-Schlüssel; Ändern = Shops neu verbinden, Erinnerung neu einschalten),
+`DATABASE_URL`, `APP_PASSWORD` (bisheriges Familien-Passwort; nur noch zum Anlegen des ersten Zugangs), `CREDENTIALS_KEY` (verschlüsselt Shop-Zugangsdaten und den privaten Push-Schlüssel; Ändern = Shops neu verbinden, Erinnerung neu einschalten),
 optional `PIXABAY_API_KEY`, `PEXELS_API_KEY`. Nie ins Repo, nie in `wrangler.jsonc` (`vars` würden bei Deploys überschrieben).
 
 ## Stolperfallen
@@ -118,7 +120,7 @@ optional `PIXABAY_API_KEY`, `PEXELS_API_KEY`. Nie ins Repo, nie in `wrangler.jso
 - **Gesundheitsfilter** (`violatesHealthConditions`) sind Heuristiken auf Zutatentext, keine Allergie-Garantie. KI-Rezepte
   werden immer nachgeprüft, die KI hält sich nicht zuverlässig an Vorgaben.
 - **Abwechslung:** `isSimilarDish` verhindert Varianten desselben Gerichts im Plan; Gerichte der letzten 3 Wochen bekommen Abzug.
-- `/api/images/*` ist absichtlich ohne Passwort (ein `<img>` kann keinen Header schicken).
+- `/api/images/*` ist absichtlich ohne Anmeldung (Bilder sind nicht privat).
 - Service Worker (`public/sw.js`): `/api` wird nie gecacht. Bei Änderungen an gecachten Dateien `CACHE`-Version hochzählen.
   Er empfängt auch die Push-Nachrichten (`push`, `notificationclick`).
 - Push auf dem iPhone geht nur in der installierten PWA (Home-Bildschirm), ab iOS 16.4.

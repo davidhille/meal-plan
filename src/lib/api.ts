@@ -4,8 +4,9 @@ import {
 } from '../types';
 import type { CategoryOverride } from './recipeCategories';
 
-// Alle Daten laufen über die Cloudflare-Functions unter /api (→ Neon).
-// Das Familien-Passwort wird im Browser gemerkt und bei jeder Anfrage mitgeschickt.
+// Alle Daten laufen über den Cloudflare Worker unter /api (→ Neon).
+// Angemeldet wird per Sitzungs-Cookie (HttpOnly, schickt der Browser selbst mit).
+// Übergang: Solange es noch keine Zugänge gibt, gilt das alte Familien-Passwort (im Browser gemerkt).
 
 const PW_KEY = 'mealplan-password';
 
@@ -19,7 +20,8 @@ export function getPassword(): string {
 
 export function setPassword(pw: string) {
   try {
-    localStorage.setItem(PW_KEY, pw);
+    if (pw) localStorage.setItem(PW_KEY, pw);
+    else localStorage.removeItem(PW_KEY);
   } catch {
     /* ignore */
   }
@@ -32,7 +34,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     method,
     headers: {
       'Content-Type': 'application/json',
-      'X-App-Password': getPassword(),
+      ...(getPassword() ? { 'X-App-Password': getPassword() } : {}),
     },
     body: body === undefined ? undefined : JSON.stringify(body),
     // Lesende Anfragen nicht ewig hängen lassen (Planen/KI darf länger dauern)
@@ -44,7 +46,69 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   return data as T;
 }
 
-/** Wirft UnauthorizedError, damit die App den Passwort-Dialog zeigen kann */
+// ---------- Anmeldung und Zugänge ----------
+
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  isAdmin: boolean;
+  lastLoginAt?: string | null;
+}
+
+/** Wer ist angemeldet, und gibt es überhaupt schon Zugänge? */
+export async function getAuthStatus(): Promise<{ user: AuthUser | null; needsSetup: boolean }> {
+  return request('GET', '/auth/status');
+}
+
+export async function login(email: string, password: string): Promise<void> {
+  await requestPublic('POST', '/auth/login', { email, password });
+  setPassword('');
+}
+
+/** Ersten Zugang anlegen – mit dem bisherigen Familien-Passwort als Bestätigung */
+export async function setupFirstAccount(input: { familyPassword: string; name: string; email: string; password: string }): Promise<void> {
+  await requestPublic('POST', '/auth/setup', input);
+  setPassword('');
+}
+
+export async function logout(): Promise<void> {
+  await request('POST', '/auth/logout');
+}
+
+export async function changePassword(current: string, next: string): Promise<void> {
+  await request('PUT', '/auth/password', { current, next });
+}
+
+export async function listUsers(): Promise<AuthUser[]> {
+  return request('GET', '/users');
+}
+
+export async function addUser(input: { name: string; email: string; password: string; isAdmin: boolean }): Promise<AuthUser[]> {
+  return request('POST', '/users', input);
+}
+
+export async function resetUserPassword(id: string, password: string): Promise<AuthUser[]> {
+  return request('PUT', `/users/${id}/password`, { password });
+}
+
+export async function deleteUser(id: string): Promise<AuthUser[]> {
+  return request('DELETE', `/users/${id}`);
+}
+
+/** Wie request, aber ein 401 ist hier eine normale Fehlermeldung (falsches Passwort), kein „abgemeldet“ */
+async function requestPublic<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const res = await fetch(`/api${path}`, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data as T;
+}
+
+/** Wirft UnauthorizedError, damit die App die Anmeldung zeigen kann */
 export async function getOrCreateProfile(): Promise<Profile | null> {
   try {
     return await request<Profile>('GET', '/profile');

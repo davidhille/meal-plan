@@ -2,6 +2,7 @@
 import type { Row, Sql } from "./db";
 import type { AiEnv } from "./images";
 import type { ShopEnv } from "./shops";
+import type { SessionUser } from "./auth";
 
 export interface Env extends AiEnv, ShopEnv {
   DATABASE_URL: string;
@@ -23,6 +24,8 @@ export interface Ctx {
   /** zweiter Pfad-Teil, meist eine ID */
   id: string | undefined;
   waitUntil: (p: Promise<unknown>) => void;
+  /** Angemeldete Person (null nur in der Übergangszeit mit Familien-Passwort, solange es keine Zugänge gibt) */
+  user: SessionUser | null;
 }
 
 /** Route-Handler: Antwort, oder null, wenn die Route nicht zuständig ist */
