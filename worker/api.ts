@@ -3,6 +3,7 @@
 // Secrets (Cloudflare → Worker → Settings → Variables and Secrets): siehe CLAUDE.md
 
 import { meteredEnv } from "./aiUsage";
+import { logError } from "./adminTools";
 import { neon } from "@neondatabase/serverless";
 import type { Row } from "./db";
 import { json, type Env, type RouteHandler } from "./http";
@@ -81,9 +82,11 @@ export async function handleApi(
     return json({ error: `Unbekannte Route: ${route}` }, 404);
   } catch (err) {
     if (err instanceof ShopError) {
+      if (err.code !== "not_connected") await logError(sql, `Shop ${route}`, err, user?.profileId ?? null);
       return json({ error: err.message, code: err.code }, err.code === "not_connected" ? 409 : 502);
     }
     console.error(route, err);
+    await logError(sql, route, err, user?.profileId ?? null);
     return json({ error: (err as Error).message }, 500);
   }
 }

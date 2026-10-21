@@ -31,6 +31,19 @@ Zugänge, zuletzt aktiv, Pläne, geplante Gerichte (30 Tage), Bewertungen, Favor
 Neurons nur fürs ganze Konto – die App schreibt deshalb jeden KI-Aufruf selbst mit (Tabelle `ai_usage`) und schätzt die
 Neurons nach der Preisliste (Tokens bzw. Bildgröße und Schritte). Gezählt wird ab Version mit Migration 0018.
 
+**Weitere Werkzeuge für den Betreiber:**
+- **KI-Budget pro Familie** (Statistik, je Familie „KI-Budget/Tag“: unbegrenzt oder 500–5.000 Neurons). Ist es erreicht,
+  bekommt die Familie bis 2 Uhr (Winterzeit 1 Uhr) nur Gerichte aus der Sammlung bzw. Ersatzfotos; die KI der anderen
+  Familien läuft weiter. „Rezept mit KI“ zeigt dann „Euer KI-Budget für heute ist aufgebraucht“ mit Chefkoch-Ersatz.
+- **Warnung bei 80 %** des Gratis-Kontingents: einmal am Tag eine Push-Nachricht an den Betreiber (wenn die Erinnerung auf
+  seinem Gerät an ist), dazu ein Hinweis in der Statistik.
+- **Meldungen** (Karte unter der Statistik): Feedback der Familien (erledigt/wieder offen, löschen) und Fehler der App
+  (Server-Fehler, Shop-Fehler, KI-Fehler, Routinen, Bilder nachziehen; Tabelle `app_errors`, 60 Tage).
+- **Feedback & Wünsche** (Einstellungen, für alle): Nachricht an den Betreiber (höchstens 20 pro Tag und Familie).
+- **Datensicherung** (Statistik, je Familie): „Sichern“ lädt alle Daten der Familie als JSON herunter (ohne Zugänge und
+  Push-Geräte); „Wiederherstellen“ spielt eine Sicherung **derselben** Familie zurück und ersetzt deren Daten (Name, Sperre
+  und Zugänge bleiben; alles in einer Transaktion).
+
 **Aufbau:** Kopfzeile mit Logo, darunter die Bereiche **Speiseplan · Einkaufsliste · Rezepte · Favoriten · Einstellungen**
 als Segment-Leiste. Der gewählte Bereich bleibt beim Neuladen erhalten (URL-Hash, z. B. `#einkaufsliste`).
 Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus Jakarta Sans.

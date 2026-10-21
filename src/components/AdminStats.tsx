@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BarChart3, RefreshCw } from 'lucide-react';
 import CollapsibleCard from './CollapsibleCard';
+import FamilyTools from './FamilyTools';
 import { getAdminStats, type AdminStats as Stats, type AiUsage } from '../lib/api';
 
 const num = (n: number) => Math.round(n).toLocaleString('de-DE');
@@ -103,6 +104,12 @@ export default function AdminStats() {
             <div className={`h-full rounded-full ${high ? 'bg-coral-700' : 'bg-brand-600'}`} style={{ width: `${share}%` }} />
           </div>
           <p className="text-[11px] text-gray-500">Das Kontingent läuft um 2 Uhr (Winterzeit 1 Uhr) neu an.</p>
+          {high && (
+            <p role="alert" className="text-xs font-medium text-coral-700">
+              Schon über 80 % – ab der Grenze kommen Bilder aus Fotodatenbanken und neue KI-Rezepte erst morgen. Dazu gibt es
+              einmal am Tag eine Push-Nachricht, wenn die Erinnerung auf deinem Gerät eingeschaltet ist.
+            </p>
+          )}
         </section>
 
         {/* Verlauf 30 Tage */}
@@ -163,6 +170,13 @@ export default function AdminStats() {
                     <Figure value={f.importCount} label="Importe" />
                   </div>
                   <AiLine ai={f.ai} />
+                  {f.aiDailyLimit != null && (
+                    <p className={`text-xs ${f.ai.today >= f.aiDailyLimit ? 'text-coral-700 font-semibold' : 'text-gray-500'}`}>
+                      Budget heute: {num(f.ai.today)} von {num(f.aiDailyLimit)} Neurons
+                      {f.ai.today >= f.aiDailyLimit ? ' – aufgebraucht, es gibt nur noch Gerichte aus der Sammlung' : ''}
+                    </p>
+                  )}
+                  <FamilyTools family={f} label={label} onChanged={load} />
                 </li>
               );
             })}

@@ -13,6 +13,7 @@ import { CONDITION_LABELS, FOCUS_LABELS } from '../lib/health';
 import CollapsibleCard from './CollapsibleCard';
 import AccountSettings from './AccountSettings';
 import AdminSettings from './AdminSettings';
+import FeedbackCard from './FeedbackCard';
 import PlanCreationModal from './PlanCreationModal';
 
 interface SettingsViewProps {
@@ -174,6 +175,9 @@ export default function SettingsView({
 
         {/* Push-Erinnerung zum Bewerten */}
         <ReminderSettings onTimeChange={onReminderTimeChange} />
+
+        {/* Feedback an den Betreiber */}
+        <FeedbackCard />
 
         {/* Routines Section */}
         <CollapsibleCard

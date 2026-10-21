@@ -122,8 +122,12 @@ export type ImageResult =
 
 /** Tageskontingent von Workers AI aufgebraucht? (Fehler 4006 „daily free allocation“) */
 export function isQuotaError(err: unknown) {
+  if ((err as { familyBudget?: boolean } | null)?.familyBudget) return true;
   return /4006|daily free allocation|neurons/i.test(String((err as Error)?.message ?? err));
 }
+
+/** Nur das Budget einer Familie ist erreicht (nicht das Kontingent aller) */
+export const isFamilyBudget = (err: unknown) => !!(err as { familyBudget?: boolean } | null)?.familyBudget;
 
 // Ist das Kontingent leer, die KI bis zum Zurücksetzen (Mitternacht UTC) nicht weiter anfragen
 let aiBlockedUntil = 0;
@@ -145,6 +149,7 @@ async function aiImage(env: AiEnv, sql: Sql, mealName: string): Promise<{ base64
     return result?.image ? { base64: result.image } : { error: "Die Bild-KI hat kein Bild geliefert." };
   } catch (err) {
     console.error(`KI-Bild für "${mealName}" fehlgeschlagen:`, err);
+    if (isFamilyBudget(err)) return { error: "Euer KI-Budget für heute ist aufgebraucht.", quota: true };
     if (isQuotaError(err)) {
       blockAiUntilReset();
       return { error: "Das tägliche Gratis-Kontingent der Bild-KI ist aufgebraucht. Morgen früh geht es wieder.", quota: true };

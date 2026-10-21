@@ -2,7 +2,7 @@
 // Prompt-Idee übernommen aus der Juli-Version (lib/aiRecipes.ts), aber serverseitig und
 // mit Nachprüfung durch unsere eigenen Filter – die KI hält sich nicht immer an Vorgaben.
 import type { Sql } from "./db";
-import { isQuotaError, type AiEnv } from "./images";
+import { isFamilyBudget, isQuotaError, type AiEnv } from "./images";
 import { guessType } from "./recipeImport";
 import { FOCUS_PROMPT, type Focus } from "./nutrition";
 import { type Recipe, violatesHealthConditions, dislikeMatches, isSimilarDish } from "./meals";
@@ -137,7 +137,7 @@ function parse(raw: unknown): { name: string; duration_min: number; ingredients:
   return { name, duration_min: Math.max(5, Math.min(240, Math.round(Number(d.duration_min) || 30))), ingredients, steps };
 }
 
-type GenerateResult = { recipe: Recipe } | { error: "quota" | "failed" };
+type GenerateResult = { recipe: Recipe } | { error: "quota" | "budget" | "failed" };
 
 async function generateOne(
   env: AiEnv,
@@ -174,6 +174,7 @@ async function generateOne(
       return { recipe };
     } catch (err) {
       console.error("KI-Rezept fehlgeschlagen:", err);
+      if (isFamilyBudget(err)) return { error: "budget" };
       if (isQuotaError(err)) return { error: "quota" };
     }
   }
@@ -247,6 +248,7 @@ export async function generateWishRecipe(
     // Beim zweiten Versuch eine andere Küchenrichtung als Anstoß
     const g = await generateOne(env, type, CUISINES[Math.floor(Math.random() * CUISINES.length)], ctx, [], wish);
     if ("error" in g) {
+      if (g.error === "budget") return { error: "Euer KI-Budget für heute ist aufgebraucht.", quota: true };
       if (g.error === "quota") {
         return { error: "Das tägliche Gratis-Kontingent der KI ist für heute verbraucht.", quota: true };
       }
