@@ -1,7 +1,7 @@
 # CLAUDE.md – Familien-Speiseplaner
 
 Deutschsprachige Web-App für die Essensplanung einer Familie: Wochenplan, Rezepte, Einkaufsliste mit
-Anbindung an Knuspr und Picnic. Live unter https://meal-plan.davidshille.workers.dev/ (installierbar als PWA).
+Anbindung an Knuspr und Picnic. Live unter https://miyummy.com/ (zusätzlich https://meal-plan.davidshille.workers.dev/; installierbar als PWA).
 Nutzerdoku/Funktionsübersicht: `PROJEKTUEBERSICHT.md`. Einrichtung: `SETUP_NEON_CLOUDFLARE.md`.
 
 ## Stack
@@ -38,7 +38,7 @@ Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHu
 
 | Datei | Inhalt |
 |---|---|
-| `index.ts` | Einstieg: `/api/*` → `handleApi`, sonst Assets; `scheduled` (Cron alle 15 Min) → `runRoutines` |
+| `index.ts` | Einstieg (läuft vor den Assets, `run_worker_first`): `www.` → 301 ohne www, `/api/*` → `handleApi`, sonst Assets; `scheduled` (Cron alle 15 Min) → `runRoutines` |
 | `api.ts` | Einstieg der API: Passwort, Datenbank, Migration, verteilt an die Routen; Fehler → JSON |
 | `http.ts` | `Env`, Anfrage-Kontext `Ctx`, `json()` |
 | `routes/*.ts` | Routen nach Bereich (`profile`, `plans`, `recipes`, `shopping`, `shops`). Jede Datei prüft `route`/`parts` und gibt eine `Response` oder `null` (nicht zuständig) zurück |
