@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDialog } from '../lib/useDialog';
 import { X, Clock, ShoppingBasket, BookOpen, Star, ImageIcon, ImageOff, Loader2, Minus, Plus, Users, ListPlus, Pencil, ChefHat, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatRatingDate, useRatings } from '../lib/ratings';
@@ -70,6 +70,8 @@ export default function MealModal({
   onClose,
 }: MealModalProps) {
   const [portions, setPortions] = useState(defaultPortions);
+  // Standard ändert sich (z. B. Gäste dazu): Anzeige mitziehen
+  useEffect(() => setPortions(defaultPortions), [defaultPortions]);
   const factor = yieldLabel ? 1 : portions / RECIPE_BASE_PORTIONS;
   const [adding, setAdding] = useState(false);
   const [shoppingMsg, setShoppingMsg] = useState<string | null>(null);

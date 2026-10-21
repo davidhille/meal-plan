@@ -19,6 +19,7 @@ import familien from "./0016_familien";
 import bilderProFamilie from "./0017_bilder_pro_familie";
 import kiVerbrauch from "./0018_ki_verbrauch";
 import brotzeit from "./0019_brotzeit";
+import gaeste from "./0020_gaeste";
 
 export interface Migration {
   /** Eindeutig und aufsteigend, z. B. "0002_kochmodus" */
@@ -47,4 +48,5 @@ export const MIGRATIONS: Migration[] = [
   { id: "0017_bilder_pro_familie", statements: bilderProFamilie },
   { id: "0018_ki_verbrauch", statements: kiVerbrauch },
   { id: "0019_brotzeit", statements: brotzeit },
+  { id: "0020_gaeste", statements: gaeste },
 ];

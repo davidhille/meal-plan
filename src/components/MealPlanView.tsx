@@ -8,6 +8,7 @@ import { formatShortDate, toIso } from '../lib/dateUtils';
 import { ruleForDate } from '../lib/dayRules';
 import { seasonHighlights } from '../lib/season';
 import TodayCard from './TodayCard';
+import GuestStepper from './GuestStepper';
 import MoveMealSheet from './MoveMealSheet';
 import DayCard from './DayCard';
 import BrotzeitCard from './BrotzeitCard';
@@ -47,6 +48,8 @@ interface MealPlanViewProps {
   onRemove?: (pm: PlanMeal) => Promise<void>;
   /** Brotzeit statt Kochen (zurück über onRegenerate = doch kochen) */
   onBrotzeit?: (pm: PlanMeal) => Promise<void>;
+  /** Gäste an einem Tag setzen (wirft bei Fehlern) */
+  onSetGuests?: (pm: PlanMeal, guests: number) => Promise<void>;
 }
 
 /** Spätestens ab dann fragt die Heute-Karte nach dem heutigen Essen (vorher: nach dem von gestern) */
@@ -102,8 +105,11 @@ export default function MealPlanView({
   onMove,
   onRemove,
   onBrotzeit,
+  onSetGuests,
 }: MealPlanViewProps) {
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
+  /** Plan-Eintrag des geöffneten Gerichts (für die Gäste) */
+  const [selectedPmId, setSelectedPmId] = useState<string | null>(null);
   const [cookOnOpen, setCookOnOpen] = useState(false);
   const [moving, setMoving] = useState<PlanMeal | null>(null);
   const [pickDessertFor, setPickDessertFor] = useState<PlanMeal | null>(null);
@@ -118,6 +124,7 @@ export default function MealPlanView({
   const [imageOverrides, setImageOverrides] = useState<Record<string, { url: string; credit: ImageCredit | null }>>({});
 
   const displayItems = (planMeals ?? []).filter((pm) => !pm.rejected);
+  const selectedPm = selectedPmId ? (allPlanMeals ?? planMeals ?? []).find((pm) => pm.id === selectedPmId) ?? null : null;
 
   if (!plan) {
     return (
@@ -180,6 +187,7 @@ export default function MealPlanView({
     }
     setCookOnOpen(cook);
     setSelectedMeal(meal);
+    setSelectedPmId(pm.id);
   };
 
   const withBusy = (id: string, fn: () => Promise<void>) => async () => {
@@ -270,6 +278,7 @@ export default function MealPlanView({
               onToggleFavorite={onToggleFavorite ? withBusy(pm.id, () => onToggleFavorite(pm)) : undefined}
               isFavorite={favoriteNames?.has(pm.meal_name)}
               dessert={pm.dessert}
+              guests={pm.guests ?? 0}
               season={seasonHighlights(pm.meal_name, pm.ingredients ?? [], Number(pm.meal_date.slice(5, 7)))}
               onPickDessert={onSetDessert ? () => setPickDessertFor(pm) : undefined}
               onOpenDessert={() => pm.dessert && setOpenDessert({ pm, dessert: pm.dessert })}
@@ -396,7 +405,12 @@ export default function MealPlanView({
           meal={selectedMeal}
           startCooking={cookOnOpen}
           currentRating={ratings[selectedMeal.meal]}
-          defaultPortions={defaultPortions}
+          defaultPortions={(defaultPortions ?? 4) + (selectedPm?.guests ?? 0)}
+          extra={
+            selectedPm && onSetGuests ? (
+              <GuestStepper guests={selectedPm.guests ?? 0} onChange={(n) => onSetGuests(selectedPm, n)} />
+            ) : undefined
+          }
           onRate={
             onRate
               ? async (rating, notes) => {
@@ -415,7 +429,10 @@ export default function MealPlanView({
             setImageOverrides((prev) => ({ ...prev, [mealName]: { url: '', credit: null } }));
             setSelectedMeal((prev) => (prev ? { ...prev, imageUrl: undefined, imageCredit: null } : prev));
           }}
-          onClose={() => setSelectedMeal(null)}
+          onClose={() => {
+            setSelectedMeal(null);
+            setSelectedPmId(null);
+          }}
         />
       )}
       {confirmRegenerate && plan && onRegeneratePlan && (

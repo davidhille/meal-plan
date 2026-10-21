@@ -52,7 +52,7 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
     return json(
       await sql.query(
         `SELECT pm.id, pm.plan_id, pm.meal_date::text AS meal_date, pm.meal_name, pm.meal_type, pm.ingredients,
-                pm.instructions, pm.rejected, ${IMAGE_URL_SQL} AS image_url, ${IMAGE_CREDIT_SQL}, pm.duration_min, pm.dessert, pm.brotzeit, pm.created_at
+                pm.instructions, pm.rejected, ${IMAGE_URL_SQL} AS image_url, ${IMAGE_CREDIT_SQL}, pm.duration_min, pm.dessert, pm.brotzeit, pm.guests, pm.created_at
          FROM plan_meals pm
          LEFT JOIN LATERAL (SELECT * FROM meal_images x WHERE x.meal_name = pm.meal_name
            AND (x.profile_id IS NULL OR x.profile_id = $2) ORDER BY x.profile_id IS NULL LIMIT 1) mi ON true
@@ -128,6 +128,16 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
     // Bewusst leer: „Plan verlängern“ befüllt den Tag nicht wieder
     await markCleared(sql, removed[0].plan_id, removed[0].meal_date);
     return json({ ok: true });
+  }
+
+  // Gäste an diesem Tag (zusätzliche Portionen, 0–20 in halben Schritten)
+  if (parts[0] === "plan-meals" && id && parts[2] === "guests" && request.method === "PUT") {
+    const p = await getProfile(sql, user);
+    const guests = Math.max(0, Math.min(20, Math.round(Number(body.guests) * 2) / 2 || 0));
+    const rows = await sql`UPDATE plan_meals pm SET guests = ${guests} FROM meal_plans mp
+      WHERE pm.id = ${id} AND mp.id = pm.plan_id AND mp.profile_id = ${p.id} RETURNING pm.guests`;
+    if (!rows[0]) return json({ error: "Gericht nicht gefunden" }, 404);
+    return json({ guests: Number(rows[0].guests) });
   }
 
   // Nachtisch an ein Gericht hängen (oder mit dessert: null entfernen)

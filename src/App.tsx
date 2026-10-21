@@ -21,6 +21,7 @@ import {
   movePlanMeal,
   removePlanMeal,
   setPlanMealBrotzeit,
+  setPlanMealGuests,
   getLatestPlan,
   deletePlan,
   regenerateMeal,
@@ -337,6 +338,11 @@ export default function App() {
     swapMeal(pm.id, await setPlanMealBrotzeit(pm.id));
   };
 
+  const handleSetGuests = async (pm: PlanMeal, guests: number) => {
+    const saved = await setPlanMealGuests(pm.id, guests);
+    setPlanMeals((prev) => prev.map((m) => (m.id === pm.id ? { ...m, guests: saved } : m)));
+  };
+
   const handleRemoveMeal = async (pm: PlanMeal) => {
     await removePlanMeal(pm.id);
     setPlanMeals((prev) => prev.filter((m) => m.id !== pm.id));
@@ -455,6 +461,7 @@ export default function App() {
             onMove={currentPlan ? handleMoveMeal : undefined}
             onRemove={currentPlan ? handleRemoveMeal : undefined}
             onBrotzeit={currentPlan ? handleBrotzeit : undefined}
+            onSetGuests={currentPlan ? handleSetGuests : undefined}
             visibleRange={selectedWeek ? { from: selectedWeek.weekStart, to: selectedWeek.weekEnd } : undefined}
           />
         ) : activeTab === 'einkaufsliste' ? (

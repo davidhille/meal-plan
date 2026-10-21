@@ -217,13 +217,15 @@ export function buildPlanItems(
   /** Zutaten mit fester Menge (Nachtische), nicht auf die Portionen umgerechnet */
   unscaledIngredients: string[][] = [],
   /** Aus dem Standard-Vorrat genommene Wörter (kommen wieder auf die Liste) */
-  excludedPantry: Set<string> = new Set()
+  excludedPantry: Set<string> = new Set(),
+  /** Zusätzliche Portionen je Gericht (Gäste), gleiche Reihenfolge wie mealIngredients */
+  guests: number[] = []
 ): BuildResult {
   const agg = new Map<string, { name: string; unit: string; qty: number | null; count: number }>();
   const pantry = new Set<string>();
 
   const lists = [
-    ...mealIngredients.map((ingredients) => ({ ingredients, factor: portions / RECIPE_BASE_PORTIONS })),
+    ...mealIngredients.map((ingredients, i) => ({ ingredients, factor: (portions + (guests[i] ?? 0)) / RECIPE_BASE_PORTIONS })),
     ...unscaledIngredients.map((ingredients) => ({ ingredients, factor: 1 })),
   ];
   for (const { ingredients, factor } of lists) {
