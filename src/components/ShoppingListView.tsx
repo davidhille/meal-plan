@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Plus, Package, X, Loader2, ShoppingCart, FileDown, Check } from 'lucide-react';
 import { MealPlan, ProductLink, ShopProvider, ShopRule, PlanMeal, ShoppingItem, ShoppingLabel, DEFAULT_LABELS, ProductResult } from '../types';
 import { PlanWeek, currentWeekIndex, formatShortDate, toIso } from '../lib/dateUtils';
@@ -114,6 +114,46 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
     load();
   }, [load]);
 
+  // Gemeinsam einkaufen: Häkchen der anderen regelmäßig holen (nur solange die Liste sichtbar ist).
+  // Eigene, noch nicht gespeicherte Häkchen bleiben dabei, wie sie sind.
+  const pendingToggles = useRef(new Set<string>());
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+  const loadingRef = useRef(loading);
+  loadingRef.current = loading;
+  const [synced, setSynced] = useState<string | null>(null);
+  useEffect(() => {
+    if (!planId) return;
+    let stopped = false;
+    const sync = async () => {
+      if (document.visibilityState !== 'visible') return;
+      const data = await getShopping(planId, week).catch(() => null);
+      if (!data || stopped || loadingRef.current) return;
+      const prev = itemsRef.current;
+      const before = new Map(prev.map((i) => [i.id, i.checked]));
+      let changed = 0;
+      const next = data.items.map((i) => {
+        if (pendingToggles.current.has(i.id)) return { ...i, checked: before.get(i.id) ?? i.checked };
+        if (!before.has(i.id) || before.get(i.id) !== i.checked) changed++;
+        return i;
+      });
+      const removed = prev.filter((i) => !next.some((n) => n.id === i.id)).length;
+      if (changed + removed === 0) return;
+      setItems(next);
+      setSynced(`Liste aktualisiert – ${changed + removed === 1 ? 'eine Änderung' : `${changed + removed} Änderungen`} von anderen`);
+      window.setTimeout(() => setSynced(null), 4000);
+    };
+    const timer = window.setInterval(sync, 10_000);
+    const onVisible = () => document.visibilityState === 'visible' && sync();
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planId, week?.from, week?.to]);
+
   // --- Artikel ---
 
   const patchLocal = (id: string, change: Partial<ShoppingItem>) =>
@@ -130,7 +170,9 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
       return;
     }
     patchLocal(id, { checked: !item.checked });
+    pendingToggles.current.add(id);
     const ok = await updateShoppingItem(planId, item, { checked: !item.checked });
+    pendingToggles.current.delete(id);
     if (!ok) patchLocal(id, { checked: item.checked });
   };
 
@@ -431,6 +473,12 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
           />
         ) : (
           <p className="px-1 text-xs text-gray-600">{summary}</p>
+        )}
+
+        {synced && (
+          <p role="status" className="px-3 py-2 rounded-xl bg-brand-50 border border-brand-200 text-xs font-medium text-brand-800">
+            {synced}
+          </p>
         )}
 
         {offlineLists.length > 0 && (
