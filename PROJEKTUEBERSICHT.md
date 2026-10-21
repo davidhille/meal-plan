@@ -148,6 +148,11 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
 - **Rezept mit KI erstellen** (Knopf oben in der Übersicht): Wunsch eingeben („etwas mit Kürbis, schnell“), Art wählen
   oder „Egal“ → Vorschau. „Anderer Vorschlag“, über den Stift anpassen, dann „In die Sammlung“ (optional als Favorit).
   Gesundheitseinstellungen und Abneigungen werden beachtet und geprüft; das Bild entsteht im Hintergrund.
+- **KI-Kontingent leer:** „Rezept mit KI erstellen“ zeigt dann einen Hinweis (wann es neu anläuft) und bietet „Stattdessen bei
+  Chefkoch suchen“ an – die Chefkoch-Suche öffnet sich mit dem Wunsch als Suchbegriff.
+- **Was hab ich da?** (Knopf in der Übersicht): Zutaten mit Komma eingeben („Zucchini, Feta, Reis“) → Gerichte aus der
+  Sammlung, die möglichst viele davon verwenden (Plural egal, ohne KI, nur passende zu den Gesundheitseinstellungen).
+  Antippen öffnet das Rezept; die letzte Eingabe bleibt auf dem Gerät gemerkt.
 - **Bei Chefkoch suchen** (Knopf oben in der Übersicht): Suchbegriff plus Filter (Hauptspeise, Vegetarisch, Vegan,
   bis 30 Min, ab 4 ★, beste zuerst) → je 12 Treffer mit Foto, Bewertung und Zeit, „Mehr laden“ holt die nächsten 12. Antippen zeigt die Vorschau
   (Name änderbar, Zutaten auf 4 Portionen umgerechnet, Zubereitung, Hinweis bei unpassenden Gesundheitseinstellungen, „schon da“);
