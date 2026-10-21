@@ -110,7 +110,16 @@ function parseDateArray(value: unknown): string[] {
  * Mit extendPlanId wird stattdessen dieser Plan auf den Zeitraum erweitert: geplante Gerichte und bewusst leere
  * Tage bleiben, nur freie Tage bekommen ein Gericht.
  */
-export async function createPlan(env: Env, sql: Sql, profileId: string, startDate: string, endDate: string, extendPlanId?: string) {
+export async function createPlan(
+  env: Env,
+  sql: Sql,
+  profileId: string,
+  startDate: string,
+  endDate: string,
+  extendPlanId?: string,
+  /** Einzelnen Tag gezielt mit einem Gericht füllen: keine automatische Brotzeit */
+  opts: { cookOnly?: boolean } = {}
+) {
   const ctx = await loadContext(sql, profileId);
   const { pool, favorites } = await loadPool(sql, profileId);
   ctx.favoriteNames = favorites.filter((f) => !f.turnus_weeks).map((f) => f.meal_name);
@@ -150,7 +159,9 @@ export async function createPlan(env: Env, sql: Sql, profileId: string, startDat
 
   // Brotzeit-Tage (feste Wochentage und „x-mal pro Woche“) werden nicht gekocht
   const covered = [...fillable, ...existing.keys(), ...existingBrotzeit];
-  const brotzeitDates = pickBrotzeitDates(fillable, ctx.dayRules, ctx.brotzeitPerWeek ?? 0, covered, existingBrotzeit);
+  const brotzeitDates = opts.cookOnly
+    ? new Set<string>()
+    : pickBrotzeitDates(fillable, ctx.dayRules, ctx.brotzeitPerWeek ?? 0, covered, existingBrotzeit);
   const dates = fillable.filter((d) => !brotzeitDates.has(d));
 
   // 1) Fällige Turnus-Favoriten fest einplanen (am liebsten an einem passenden Tag)

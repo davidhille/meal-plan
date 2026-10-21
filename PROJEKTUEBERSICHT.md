@@ -81,6 +81,9 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
   Zeitraum erweitert. Geplante Tage bleiben – auch Gerichte, die man in die Zukunft verschoben hat –, ebenso bewusst
   leere Tage („Tag leeren“ oder Gericht weg verschoben). Nur freie Tage bekommen ein Gericht; Abwechslung, Fleisch-Grenze
   und Turnus-Favoriten berücksichtigen die schon geplanten Gerichte. „Neuen Plan erstellen“ ersetzt wie bisher alles.
+- **Leere Tage bleiben sichtbar:** Tage ohne Gericht (geleert, verschoben oder nicht geplant) stehen im Plan als schmale Zeile
+  „leer, nichts geplant“ mit „Gericht planen“ (füllt nur diesen Tag, ohne automatische Brotzeit); freie Wochentage als
+  „frei (Wochentag)“.
 - **Nur leere Tage füllen** (in der Rückfrage bei „Komplett neuen Plan generieren“): gleicher Zeitraum, aber nur Tage
   ohne Gericht werden geplant – z. B. die Lücke, die ein in die Zukunft verschobenes Gericht hinterlässt. Mit „Tag leeren“
   freigemachte Tage bleiben frei.

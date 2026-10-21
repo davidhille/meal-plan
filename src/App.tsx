@@ -22,6 +22,7 @@ import {
   removePlanMeal,
   setPlanMealBrotzeit,
   setPlanMealGuests,
+  fillPlanDay,
   getLatestPlan,
   deletePlan,
   regenerateMeal,
@@ -463,6 +464,14 @@ export default function App() {
             onBrotzeit={currentPlan ? handleBrotzeit : undefined}
             onSetGuests={currentPlan ? handleSetGuests : undefined}
             onSharedChange={(shared) => setCurrentPlan((p) => (p ? { ...p, shared } : p))}
+            onFillDay={
+              currentPlan
+                ? async (date) => {
+                    setCurrentPlan(await fillPlanDay(currentPlan.id, date));
+                    setPlanMeals(await getPlanMeals(currentPlan.id));
+                  }
+                : undefined
+            }
             visibleRange={selectedWeek ? { from: selectedWeek.weekStart, to: selectedWeek.weekEnd } : undefined}
           />
         ) : activeTab === 'einkaufsliste' ? (

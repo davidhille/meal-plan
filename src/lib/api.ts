@@ -561,6 +561,11 @@ export async function replacePlanMeal(planMealId: string, recipeName: string): P
 }
 
 /** Kompletten Plan für denselben Zeitraum neu erstellen (ersetzt den alten) */
+/** Einen leeren (auch bewusst geleerten) Tag wieder mit einem Gericht füllen; wirft bei Fehlern */
+export async function fillPlanDay(planId: string, date: string): Promise<MealPlan> {
+  return request<MealPlan>('POST', `/plans/${enc(planId)}/fill-day`, { date });
+}
+
 export async function regeneratePlan(planId: string): Promise<MealPlan | null> {
   try {
     return await request<MealPlan>('POST', `/plans/${planId}/regenerate`);
