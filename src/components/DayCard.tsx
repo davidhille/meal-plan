@@ -1,5 +1,5 @@
 import { Meal, MealType, PlanDessert } from '../types';
-import { ChevronRight, Leaf, Beef, Fish, Sunset, Star, X, Heart, RefreshCw, Clock, Loader2, CakeSlice, CalendarDays } from 'lucide-react';
+import { ChevronRight, Leaf, Beef, Fish, Sunset, Star, X, Heart, RefreshCw, Clock, Loader2, CakeSlice, CalendarDays, Sprout } from 'lucide-react';
 import { dessertPreview } from '../lib/desserts';
 import { isFishDish } from '../lib/recipeCategories';
 
@@ -22,6 +22,8 @@ interface DayCardProps {
   onMove?: () => void;
   /** Nachtisch vom Tag entfernen */
   onRemoveDessert?: () => void;
+  /** Saison-Zutaten des Gerichts (z. B. „Kürbis“) */
+  season?: string[];
 }
 
 const typeConfig: Record<MealType, { bar: string; label: string; icon: React.ReactNode }> = {
@@ -64,6 +66,7 @@ export default function DayCard({
   isToday,
   onMove,
   onRemoveDessert,
+  season,
 }: DayCardProps) {
   // „Fleisch“-Tage mit Fisch oder Meeresfrüchten (ohne Fleisch) als „Fisch“ anzeigen
   const config =
@@ -112,6 +115,15 @@ export default function DayCard({
                   {meal.durationMin} Min
                 </span>
               ) : null}
+              {season && season.length > 0 && (
+                <span className="flex items-center gap-1 min-w-0 text-xs text-coral-700" title="Hat gerade Saison">
+                  <Sprout size={11} aria-hidden="true" className="flex-shrink-0" />
+                  <span className="truncate">
+                    <span className="sr-only">Saison: </span>
+                    {season.join(', ')}
+                  </span>
+                </span>
+              )}
               {isFavorite && <Heart size={11} className="fill-rose-500 text-rose-500" aria-label="Favorit" />}
               {rating ? (
                 <span className="ml-auto text-xs text-amber-700 font-medium flex items-center gap-0.5" aria-label={`${rating} von 5 Sternen`}>

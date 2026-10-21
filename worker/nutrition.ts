@@ -1,6 +1,9 @@
 // Ernährungs-Schwerpunkte (mehrere gleichzeitig): schließen nichts aus, geben passenden Gerichten Pluspunkte.
 // Heuristik auf Zutatentext – wie die Gesundheitsfilter keine Ernährungsberatung.
 import type { Recipe } from "./meals";
+import { seasonalWords } from "../src/lib/season";
+
+export { seasonalWords };
 
 export const FOCUS_IDS = [
   "calorie_light",
@@ -42,17 +45,6 @@ const SPICY_RE = /chili|jalapeñ|jalapen|cayenne|harissa|sambal|sriracha|scharf|
 const CHEAP = ["linsen", "bohnen", "kichererbsen", "kartoffel", "hack", "nudel", "spaghetti", "reis", "eier", "kohl", "möhre", "karotte", "zwiebel", "haferflocken", "quark", "erbsen"];
 const PRICEY_RE = /lachs|garnele|scampi|filet|steak|lamm|pinienkern|parmesan|trüffel|entrecôte|jakobsmuschel|ente\b|entenbrust|kalb|wildlachs|serrano|parmaschinken/;
 
-/** Was in Deutschland gerade Saison hat (grob nach Monat) */
-const SEASON: { months: number[]; words: string[] }[] = [
-  { months: [3, 4, 5], words: ["spargel", "bärlauch", "radieschen", "spinat", "rhabarber", "frühlingszwiebel", "kohlrabi", "erbsen"] },
-  { months: [6, 7, 8], words: ["tomate", "zucchini", "paprika", "aubergine", "gurke", "bohnen", "mais", "beeren", "erdbeer", "kirsch", "fenchel", "mangold"] },
-  { months: [9, 10, 11], words: ["kürbis", "kohl", "wirsing", "rosenkohl", "pilz", "champignon", "pfifferling", "apfel", "birne", "rote bete", "lauch", "maronen", "pastinake", "steckrübe", "zwetschg"] },
-  { months: [12, 1, 2], words: ["grünkohl", "rotkohl", "wirsing", "rosenkohl", "rote bete", "pastinake", "schwarzwurzel", "lauch", "sellerie", "feldsalat", "steckrübe", "kohl"] },
-];
-
-export function seasonalWords(month: number): string[] {
-  return SEASON.find((s) => s.months.includes(month))?.words ?? [];
-}
 
 /** Pluspunkte (oder Abzug) für die gewählten Schwerpunkte; month = 1–12 (für „saisonal“) */
 export function focusScore(meal: Recipe, focus: string[], month?: number): number {
