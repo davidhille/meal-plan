@@ -4,6 +4,7 @@ import { json } from "../http";
 import { INVITE_DAYS, createInvite, type SessionUser } from "../auth";
 import { DEFAULT_LABELS } from "../shoppingList";
 import { DAILY_FREE_NEURONS } from "../aiUsage";
+import { exportFamily, importFamily } from "../adminTools";
 
 /** Beginn des heutigen KI-Tages: das Gratis-Kontingent läuft um 00:00 UTC neu an */
 const UTC_TODAY = `date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'`;
@@ -20,7 +21,7 @@ async function familyStats(sql: Ctx["sql"], ownProfileId: string) {
       count(*) FILTER (WHERE kind = 'image')::int AS "imageCalls"
     FROM ai_usage WHERE created_at >= now() - interval '30 days' GROUP BY profile_id`;
   const families = await sql.query(
-    `SELECT p.id, p.name, p.disabled,
+    `SELECT p.id, p.name, p.disabled, p.ai_daily_limit AS "aiDailyLimit",
       (SELECT count(*)::int FROM users u WHERE u.profile_id = p.id) AS "userCount",
       GREATEST(
         (SELECT max(s.last_seen_at) FROM sessions s JOIN users u ON u.id = s.user_id WHERE u.profile_id = p.id),
@@ -74,6 +75,34 @@ export async function adminRoutes({ request, sql, body, parts, route }: Ctx, use
   if (route === "GET /admin/families") return json(await listFamilies(sql, user.profileId));
   if (route === "GET /admin/stats") return json(await familyStats(sql, user.profileId));
 
+  // Fehler-Übersicht (neueste zuerst) und leeren
+  if (route === "GET /admin/errors") {
+    return json(
+      await sql`SELECT e.id::text, e.created_at::text AS "createdAt", e.source, e.message, p.name AS family
+        FROM app_errors e LEFT JOIN profiles p ON p.id = e.profile_id ORDER BY e.created_at DESC LIMIT 100`
+    );
+  }
+  if (route === "DELETE /admin/errors") {
+    await sql`DELETE FROM app_errors`;
+    return json({ ok: true });
+  }
+
+  // Feedback der Familien
+  if (route === "GET /admin/feedback") {
+    return json(
+      await sql`SELECT f.id::text, f.created_at::text AS "createdAt", f.user_name AS "userName", f.message, f.done, p.name AS family
+        FROM feedback f LEFT JOIN profiles p ON p.id = f.profile_id ORDER BY f.done, f.created_at DESC LIMIT 200`
+    );
+  }
+  if (parts[1] === "feedback" && id && request.method === "PUT") {
+    await sql`UPDATE feedback SET done = ${!!body.done} WHERE id = ${id}::bigint`;
+    return json({ ok: true });
+  }
+  if (parts[1] === "feedback" && id && request.method === "DELETE") {
+    await sql`DELETE FROM feedback WHERE id = ${id}::bigint`;
+    return json({ ok: true });
+  }
+
   // Neue Familie: Start-Listen „Einkauf“ (Standard) und „Metzger“, dazu ein Einladungslink
   if (route === "POST /admin/families") {
     const name = String(body.name ?? "").trim().slice(0, 80);
@@ -92,6 +121,18 @@ export async function adminRoutes({ request, sql, body, parts, route }: Ctx, use
     const exists = await sql`SELECT id FROM profiles WHERE id = ${id}`;
     if (!exists[0]) return json({ error: "Familie nicht gefunden" }, 404);
 
+    // Datensicherung: alle Daten der Familie als JSON bzw. zurückspielen (ersetzt die Daten der Familie)
+    if (parts[3] === "export" && request.method === "GET") {
+      return json(await exportFamily(sql, id));
+    }
+    if (parts[3] === "import" && request.method === "POST") {
+      try {
+        return json(await importFamily(sql, id, body.backup));
+      } catch (err) {
+        return json({ error: (err as Error).message }, 400);
+      }
+    }
+
     // Neuer Einladungslink (z. B. abgelaufen oder für eine weitere Person)
     if (parts[3] === "invite" && request.method === "POST") {
       const token = await createInvite(sql, id);
@@ -102,6 +143,11 @@ export async function adminRoutes({ request, sql, body, parts, route }: Ctx, use
         const name = String(body.name ?? "").trim().slice(0, 80);
         if (!name) return json({ error: "Bitte einen Namen angeben." }, 400);
         await sql`UPDATE profiles SET name = ${name} WHERE id = ${id}`;
+      }
+      // KI-Budget pro Tag (Neurons); null = unbegrenzt
+      if (body.ai_daily_limit !== undefined) {
+        const v = body.ai_daily_limit === null ? null : Math.max(0, Math.min(DAILY_FREE_NEURONS, Math.round(Number(body.ai_daily_limit)) || 0));
+        await sql`UPDATE profiles SET ai_daily_limit = ${v} WHERE id = ${id}`;
       }
       if (body.disabled !== undefined) {
         if (id === user.profileId) return json({ error: "Die eigene Familie lässt sich nicht sperren." }, 400);

@@ -1,5 +1,6 @@
 // Routinen automatisch ausführen (Cloudflare Cron, alle 15 Min)
 import { meteredEnv } from "./aiUsage";
+import { logError } from "./adminTools";
 import { neon } from "@neondatabase/serverless";
 import type { Env } from "./http";
 import { ensureSchema } from "./migrate";
@@ -52,13 +53,14 @@ export async function runRoutines(env: Env) {
     } catch (e) {
       // Eine fehlgeschlagene Routine soll Erinnerungen und Bilder nicht aufhalten
       console.error(`Routine "${r.name}" fehlgeschlagen:`, e);
+      await logError(sql, `Routine „${r.name}“`, e, r.profile_id);
     }
   }
 
   // Erinnerung zum Bewerten (Fehler hier sollen die Bilder nicht aufhalten)
-  await sendRatingReminders(env, sql, now).catch((e) => console.error("Bewertungs-Erinnerung fehlgeschlagen:", e));
+  await sendRatingReminders(env, sql, now).catch((e) => logError(sql, "Bewertungs-Erinnerung", e));
 
   // Einmalig: unpassende Ersatzfotos verwerfen (werden dann neu gesucht), danach fehlende Rezeptbilder nachziehen
   await recheckStockPhotos(sql).catch((e) => console.error("Foto-Nachprüfung fehlgeschlagen:", e));
-  await fillMissingImages(meteredEnv(env, sql, null), sql, 5);
+  await fillMissingImages(meteredEnv(env, sql, null), sql, 5).catch((e) => logError(sql, "Bilder nachziehen", e));
 }

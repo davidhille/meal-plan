@@ -3,6 +3,8 @@
 // developers.cloudflare.com/workers-ai/platform/pricing). Das ist eine Schätzung, nicht die Abrechnung.
 import type { Sql } from "./db";
 import type { AiEnv } from "./images";
+import type { Env } from "./http";
+import { checkAiWarning, logError, neuronsToday } from "./adminTools";
 
 /** Gratis-Kontingent pro Tag (Free und Paid), Rückstellung um 00:00 UTC */
 export const DAILY_FREE_NEURONS = 10_000;
@@ -53,14 +55,32 @@ const kindOf = (model: string): AiKind =>
 export function meteredEnv<E extends AiEnv>(env: E, sql: Sql, profileId: string | null): E {
   const ai = env.AI;
   if (!ai) return env;
+  // KI-Budget der Familie (Administration), einmal pro Anfrage gelesen
+  let limit: Promise<number | null> | undefined;
   const metered: E = Object.create(env);
   Object.defineProperty(metered, "AI", {
     value: {
       async run(model: string, input: Record<string, unknown>) {
-        const result = await ai.run(model, input);
+        if (profileId) {
+          limit ??= sql`SELECT ai_daily_limit FROM profiles WHERE id = ${profileId}`
+            .then((r) => (r[0]?.ai_daily_limit == null ? null : Number(r[0].ai_daily_limit)))
+            .catch(() => null);
+          const max = await limit;
+          if (max != null && (await neuronsToday(sql, profileId)) >= max) {
+            throw new FamilyBudgetError();
+          }
+        }
+        let result: unknown;
+        try {
+          result = await ai.run(model, input);
+        } catch (err) {
+          await logError(sql, `KI ${kindOf(model)}`, err, profileId);
+          throw err;
+        }
         try {
           const neurons = estimateNeurons(model, input, result);
           await sql`INSERT INTO ai_usage (profile_id, kind, model, neurons) VALUES (${profileId}, ${kindOf(model)}, ${model}, ${neurons})`;
+          await checkAiWarning(env as unknown as Env, sql);
         } catch (err) {
           console.error("KI-Verbrauch nicht gespeichert:", err);
         }
@@ -69,4 +89,12 @@ export function meteredEnv<E extends AiEnv>(env: E, sql: Sql, profileId: string 
     },
   });
   return metered;
+}
+
+/** Tages-Budget der Familie erreicht (gilt wie ein leeres Kontingent, sperrt die KI aber nicht für alle) */
+export class FamilyBudgetError extends Error {
+  readonly familyBudget = true;
+  constructor() {
+    super("Euer KI-Budget für heute ist aufgebraucht.");
+  }
 }

@@ -84,6 +84,16 @@ function checkInput(body: Record<string, unknown>): { name: string; email: strin
 export async function accountRoutes({ sql, body, parts, route, id }: Ctx, user: SessionUser): Promise<Response | null> {
   if (route === "GET /auth/me") return json(publicUser(user));
 
+  // Feedback / Wunsch an den Betreiber (höchstens 20 am Tag pro Familie)
+  if (route === "POST /feedback") {
+    const message = String(body.message ?? "").trim().slice(0, 2000);
+    if (message.length < 3) return json({ error: "Bitte ein paar Worte schreiben." }, 400);
+    const recent = await sql`SELECT count(*)::int AS n FROM feedback WHERE profile_id = ${user.profileId} AND created_at > now() - interval '1 day'`;
+    if ((recent[0]?.n ?? 0) >= 20) return json({ error: "Heute sind schon genug Nachrichten angekommen – danke!" }, 429);
+    await sql`INSERT INTO feedback (profile_id, user_name, message) VALUES (${user.profileId}, ${user.name ?? user.email}, ${message})`;
+    return json({ ok: true });
+  }
+
   if (route === "PUT /auth/password") {
     const rows = await sql`SELECT password_hash FROM users WHERE id = ${user.id}`;
     if (!(await verifyPassword(String(body.current ?? ""), rows[0].password_hash))) {

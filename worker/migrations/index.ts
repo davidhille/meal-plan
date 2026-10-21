@@ -21,6 +21,7 @@ import kiVerbrauch from "./0018_ki_verbrauch";
 import brotzeit from "./0019_brotzeit";
 import gaeste from "./0020_gaeste";
 import planTeilen from "./0021_plan_teilen";
+import adminWerkzeuge from "./0022_admin_werkzeuge";
 
 export interface Migration {
   /** Eindeutig und aufsteigend, z. B. "0002_kochmodus" */
@@ -51,4 +52,5 @@ export const MIGRATIONS: Migration[] = [
   { id: "0019_brotzeit", statements: brotzeit },
   { id: "0020_gaeste", statements: gaeste },
   { id: "0021_plan_teilen", statements: planTeilen },
+  { id: "0022_admin_werkzeuge", statements: adminWerkzeuge },
 ];

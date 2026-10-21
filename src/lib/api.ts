@@ -125,6 +125,8 @@ export interface FamilyStats {
   id: string;
   name: string | null;
   disabled: boolean;
+  /** KI-Budget pro Tag in Neurons (null = unbegrenzt) */
+  aiDailyLimit: number | null;
   userCount: number;
   lastActiveAt: string | null;
   planCount: number;
@@ -149,6 +151,63 @@ export interface AdminStats {
 
 export async function getAdminStats(): Promise<AdminStats> {
   return request('GET', '/admin/stats');
+}
+
+/** KI-Budget einer Familie pro Tag (null = unbegrenzt) */
+export async function setFamilyAiLimit(id: string, limit: number | null): Promise<void> {
+  await request('PUT', `/admin/families/${id}`, { ai_daily_limit: limit });
+}
+
+export interface AppError {
+  id: string;
+  createdAt: string;
+  source: string;
+  message: string;
+  family: string | null;
+}
+
+export async function getAdminErrors(): Promise<AppError[]> {
+  return request('GET', '/admin/errors');
+}
+
+export async function clearAdminErrors(): Promise<void> {
+  await request('DELETE', '/admin/errors');
+}
+
+export interface FeedbackEntry {
+  id: string;
+  createdAt: string;
+  userName: string | null;
+  message: string;
+  done: boolean;
+  family: string | null;
+}
+
+export async function getAdminFeedback(): Promise<FeedbackEntry[]> {
+  return request('GET', '/admin/feedback');
+}
+
+export async function setFeedbackDone(id: string, done: boolean): Promise<void> {
+  await request('PUT', `/admin/feedback/${id}`, { done });
+}
+
+export async function deleteFeedback(id: string): Promise<void> {
+  await request('DELETE', `/admin/feedback/${id}`);
+}
+
+/** Feedback oder Wunsch an den Betreiber schicken */
+export async function sendFeedback(message: string): Promise<void> {
+  await request('POST', '/feedback', { message });
+}
+
+/** Datensicherung einer Familie (JSON) */
+export async function exportFamilyBackup(id: string): Promise<unknown> {
+  return request('GET', `/admin/families/${id}/export`);
+}
+
+/** Sicherung in dieselbe Familie zurückspielen (ersetzt deren Daten) */
+export async function importFamilyBackup(id: string, backup: unknown): Promise<{ rows: number }> {
+  return request('POST', `/admin/families/${id}/import`, { backup });
 }
 
 /** Wer ist angemeldet, und gibt es überhaupt schon Zugänge? */

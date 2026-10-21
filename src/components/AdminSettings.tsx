@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Ban, Check, Copy, Link2, Pencil, Plus, Share2, ShieldCheck, Trash2 } from 'lucide-react';
 import AdminStats from './AdminStats';
+import AdminInbox from './AdminInbox';
 import CollapsibleCard from './CollapsibleCard';
 import ConfirmDialog from './ConfirmDialog';
 import {
@@ -197,6 +198,7 @@ export default function AdminSettings() {
       )}
     </CollapsibleCard>
     <AdminStats />
+    <AdminInbox />
     </>
   );
 }
