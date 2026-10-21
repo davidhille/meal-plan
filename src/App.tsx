@@ -27,12 +27,12 @@ import {
   removeFavorite,
   setFavoriteTurnus,
   rejectMeal,
-  getPassword,
   UnauthorizedError,
+  getAuthStatus,
   setMealDessert,
   replacePlanMeal,
 } from './lib/api';
-import PasswordGate from './components/PasswordGate';
+import LoginScreen from './components/LoginScreen';
 import { familyPortions } from './lib/portions';
 import { toPlanDessert } from './lib/desserts';
 import PlanCreationModal from './components/PlanCreationModal';
@@ -122,6 +122,9 @@ export default function App() {
     setLoadFailed(false);
     let prof: Profile | null = null;
     try {
+      // Nicht angemeldet (oder noch kein Zugang angelegt) → Anmeldung zeigen
+      const status = await getAuthStatus().catch(() => null);
+      if (status && !status.user) throw new UnauthorizedError();
       prof = await getOrCreateProfile();
       setLocked(false);
     } catch (error) {
@@ -351,7 +354,7 @@ export default function App() {
 
 
   if (locked) {
-    return <PasswordGate failed={getPassword() !== ''} onSubmit={loadProfile} />;
+    return <LoginScreen onDone={loadProfile} />;
   }
 
   if (loadFailed) {

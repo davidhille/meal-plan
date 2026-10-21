@@ -14,6 +14,7 @@ import eigeneNachtische from "./0011_eigene_nachtische";
 import kategorienKorrekturen from "./0012_kategorien_korrekturen";
 import geleerteTage from "./0013_geleerte_tage";
 import vorratHerausnehmen from "./0014_vorrat_herausnehmen";
+import zugaenge from "./0015_zugaenge";
 
 export interface Migration {
   /** Eindeutig und aufsteigend, z. B. "0002_kochmodus" */
@@ -37,4 +38,5 @@ export const MIGRATIONS: Migration[] = [
   { id: "0012_kategorien_korrekturen", statements: kategorienKorrekturen },
   { id: "0013_geleerte_tage", statements: geleerteTage },
   { id: "0014_vorrat_herausnehmen", statements: vorratHerausnehmen },
+  { id: "0015_zugaenge", statements: zugaenge },
 ];

@@ -11,6 +11,7 @@ import ReminderSettings from './ReminderSettings';
 import DayRulesSettings from './DayRulesSettings';
 import { CONDITION_LABELS, FOCUS_LABELS } from '../lib/health';
 import CollapsibleCard from './CollapsibleCard';
+import AccountSettings from './AccountSettings';
 import PlanCreationModal from './PlanCreationModal';
 
 interface SettingsViewProps {
@@ -158,6 +159,9 @@ export default function SettingsView({
 
         {/* Regeln pro Wochentag: frei / wenig Zeit */}
         {profile && onProfileChange && <DayRulesSettings profile={profile} onSaved={onProfileChange} />}
+
+        {/* Zugänge: Abmelden, Passwort, Zugänge der Familie */}
+        <AccountSettings />
 
         {/* Einkaufen & Shops */}
         <ShopSettings />

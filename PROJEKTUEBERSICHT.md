@@ -7,7 +7,11 @@ sich auf dem Handy als App installieren.
 **Technik:** React + Vite + TypeScript + Tailwind · Cloudflare Worker (API, Zeitplan, KI) · Neon Postgres.
 Entwickler-Infos stehen in `CLAUDE.md`, die Einrichtung in `SETUP_NEON_CLOUDFLARE.md`.
 
-**Zugang:** ein gemeinsames Familien-Passwort (Secret `APP_PASSWORD`), kein Login mit Konten.
+**Zugang:** Jede Person meldet sich mit eigener E-Mail und eigenem Passwort an (Sitzung 180 Tage, verlängert sich bei
+Nutzung; nach 8 Fehlversuchen 15 Minuten gesperrt). Den ersten Zugang legt man einmalig mit dem bisherigen
+Familien-Passwort (Secret `APP_PASSWORD`) an – danach gilt nur noch die Anmeldung. **Einstellungen → Zugänge:** eigenes
+Passwort ändern, abmelden; Admins legen Zugänge für die Familie an, setzen Passwörter zurück (meldet die Person überall ab)
+und entfernen Zugänge.
 
 **Aufbau:** Kopfzeile mit Logo, darunter die Bereiche **Speiseplan · Einkaufsliste · Rezepte · Favoriten · Einstellungen**
 als Segment-Leiste. Der gewählte Bereich bleibt beim Neuladen erhalten (URL-Hash, z. B. `#einkaufsliste`).
