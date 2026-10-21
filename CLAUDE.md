@@ -41,7 +41,8 @@ Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHu
 | `index.ts` | Einstieg (läuft vor den Assets, `run_worker_first`): `www.` → 301 ohne www, `/api/*` → `handleApi`, sonst Assets; `scheduled` (Cron alle 15 Min) → `runRoutines` |
 | `api.ts` | Einstieg der API: Datenbank, Migration, Anmeldung (Sitzungs-Cookie → `ctx.user`), Origin-Prüfung bei ändernden Anfragen, verteilt an die Routen; Fehler → JSON |
 | `auth.ts`, `routes/auth.ts` | Login pro Person: PBKDF2-Hash (100.000 Iterationen, Workers-Maximum), Sitzungen in `sessions` (nur SHA-256 des Tokens, Cookie `mp_session` HttpOnly/Secure/Lax, 180 Tage), Sperre nach 8 Fehlversuchen. `/auth/status`, `/auth/login`, `/auth/logout`, `/auth/setup` (erster Zugang, nur mit `APP_PASSWORD` und solange `users` leer ist) sind öffentlich; `/auth/password` und `/users` (nur Admin) brauchen eine Sitzung. Solange es keine Zugänge gibt, gilt noch `X-App-Password` |
-| `routes/admin.ts` | Administration (nur `users.is_owner`): Familien anlegen (Start-Listen + Einladung), Einladungslink, umbenennen, sperren (`profiles.disabled`), löschen. Einladungen in `invites` (nur Token-Hash, 7 Tage, einmal); angenommen über öffentliches `/auth/invite/:token` |
+| `routes/admin.ts` | Administration (nur `users.is_owner`): Familien anlegen (Start-Listen + Einladung), Einladungslink, umbenennen, sperren (`profiles.disabled`), löschen. Einladungen in `invites` (nur Token-Hash, 7 Tage, einmal); angenommen über öffentliches `/auth/invite/:token`. `GET /admin/stats` = Statistik pro Familie inkl. KI-Verbrauch |
+| `aiUsage.ts` | KI-Verbrauch: `meteredEnv(env, sql, profileId)` zählt jeden erfolgreichen `AI.run` in `ai_usage` (geschätzte Neurons nach Preisliste; `null` = App/Cron). `api.ts` gibt Routen die gezählte Umgebung (`ctx.env`), `routines.ts` pro Familie bzw. `null`. Neue KI-Aufrufe immer über `ctx.env`/`meteredEnv`, nie über das rohe `env` |
 | `http.ts` | `Env`, Anfrage-Kontext `Ctx` (inkl. `user`), `json()` |
 | `routes/*.ts` | Routen nach Bereich (`profile`, `plans`, `recipes`, `shopping`, `shops`). Jede Datei prüft `route`/`parts` und gibt eine `Response` oder `null` (nicht zuständig) zurück |
 | `repo.ts` | Gemeinsame DB-Zugriffe: `getProfile(sql, user)` (Familie der angemeldeten Person; ohne Anmeldung nur im Übergang die erste), `loadContext`, `loadPool`, Favoriten, Spaltenlisten (`PLAN_COLS` …) |
@@ -74,6 +75,7 @@ Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHu
 - Preisvergleich/Grundpreis: `lib/unitPrice.ts`. Portionen: `lib/portions.ts`.
 - Eigene Rezept-Filter: `lib/recipeFilters.ts` – Regeln (Suchbegriffe/Zeit) plus Hand-Zuordnung (`includeNames`/`excludeNames`).
 - Filter der Rezept-Übersicht: `RecipeFilterSheet` (ein Fenster), Gruppen-Logik `lib/recipeFacets.ts` (in der Gruppe oder, zwischen Gruppen und). Speiseart/Hauptzutat: `lib/recipeCategories.ts` (Heuristik) plus Korrekturen pro Gericht (`recipe_category_overrides`, `GET/POST /category-overrides`).
+- Administration: `AdminSettings` (Familien) und `AdminStats` (Statistik), nur für `isOwner`.
 - Anmeldung: `LoginScreen` (Anmelden bzw. ersten Zugang anlegen), `AccountSettings` (Einstellungen → Zugänge). Ohne Sitzung zeigt `App` die Anmeldung.
 - `localStorage` nur für Komfort (auf-/zugeklappt, gewählte Einkaufswochen; altes Familien-Passwort nur bis zum ersten Zugang), immer in `try/catch`.
 

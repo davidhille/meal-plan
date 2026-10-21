@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Ban, Check, Copy, Link2, Pencil, Plus, Share2, ShieldCheck, Trash2 } from 'lucide-react';
+import AdminStats from './AdminStats';
 import CollapsibleCard from './CollapsibleCard';
 import ConfirmDialog from './ConfirmDialog';
 import {
@@ -76,6 +77,7 @@ export default function AdminSettings() {
   const others = families.filter((f) => !f.own).length;
 
   return (
+    <>
     <CollapsibleCard
       storageKey="administration"
       title="Administration"
@@ -194,5 +196,7 @@ export default function AdminSettings() {
         />
       )}
     </CollapsibleCard>
+    <AdminStats />
+    </>
   );
 }

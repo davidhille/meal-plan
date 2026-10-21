@@ -109,6 +109,47 @@ export async function deleteFamily(id: string): Promise<Family[]> {
   return request('DELETE', `/admin/families/${id}`);
 }
 
+/** KI-Verbrauch der letzten 30 Tage in geschätzten Neurons */
+export interface AiUsage {
+  today: number;
+  week: number;
+  month: number;
+  recipes: number;
+  images: number;
+  recipeCalls: number;
+  imageCalls: number;
+}
+
+export interface FamilyStats {
+  id: string;
+  name: string | null;
+  disabled: boolean;
+  userCount: number;
+  lastActiveAt: string | null;
+  planCount: number;
+  meals30: number;
+  ratingCount: number;
+  favoriteCount: number;
+  aiRecipeCount: number;
+  importCount: number;
+  ai: AiUsage;
+  own: boolean;
+}
+
+export interface AdminStats {
+  dailyLimit: number;
+  /** Seit wann der KI-Verbrauch gezählt wird (null = noch nichts gezählt) */
+  since: string | null;
+  daily: { day: string; neurons: number }[];
+  /** Was die App selbst erzeugt (Bilder per Cron) */
+  automatic: AiUsage;
+  families: FamilyStats[];
+}
+
+export async function getAdminStats(): Promise<AdminStats> {
+  return request('GET', '/admin/stats');
+}
+
 /** Wer ist angemeldet, und gibt es überhaupt schon Zugänge? */
 export async function getAuthStatus(): Promise<{ user: AuthUser | null; needsSetup: boolean }> {
   return request('GET', '/auth/status');
