@@ -2,6 +2,7 @@
 // Die Routen liegen thematisch in worker/routes/*; hier nur Anmeldung (Sitzung), Datenbank, Schema und Verteilung.
 // Secrets (Cloudflare → Worker → Settings → Variables and Secrets): siehe CLAUDE.md
 
+import { meteredEnv } from "./aiUsage";
 import { neon } from "@neondatabase/serverless";
 import type { Row } from "./db";
 import { json, type Env, type RouteHandler } from "./http";
@@ -55,7 +56,8 @@ export async function handleApi(
   const route = `${request.method} /${parts.join("/")}`;
   const body: Row = ["POST", "PUT", "PATCH"].includes(request.method) ? await request.json<Row>().catch(() => ({})) : {};
   const user = await getSessionUser(sql, request);
-  const ctx = { request, env, sql, body, parts, route, id: parts[1], waitUntil, user };
+  // KI-Aufrufe zählen pro Familie mit (Statistik in der Administration)
+  const ctx = { request, env: meteredEnv(env, sql, user?.profileId ?? null), sql, body, parts, route, id: parts[1], waitUntil, user };
 
   try {
     const publicRes = await publicAuthRoutes(ctx, user);

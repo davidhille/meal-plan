@@ -23,6 +23,13 @@ eine Familie per KI erzeugt, landet bei allen im Pool. Bearbeitet eine Familie e
 für sie; Ausblenden/Löschen ebenso. Neue Familien starten mit den Listen „Einkauf“ (Standard) und „Metzger“
 (Automatik in den Einstellungen abschaltbar); Knuspr/Picnic erscheinen erst nach dem Verbinden.
 
+**Statistik (nur Betreiber):** Karte **„Statistik“** unter der Administration. KI-Verbrauch heute gegen das
+Gratis-Kontingent (10.000 Neurons, neu ab 00:00 UTC), Verlauf der letzten 30 Tage mit Gratis-Grenze, und pro Familie:
+Zugänge, zuletzt aktiv, Pläne, geplante Gerichte (30 Tage), Bewertungen, Favoriten, KI-Rezepte, Importe sowie KI-Verbrauch
+(heute/7/30 Tage, aufgeteilt in Rezepte und Bilder). „Automatisch“ = Bilder, die der Cron nachzieht. Cloudflare meldet
+Neurons nur fürs ganze Konto – die App schreibt deshalb jeden KI-Aufruf selbst mit (Tabelle `ai_usage`) und schätzt die
+Neurons nach der Preisliste (Tokens bzw. Bildgröße und Schritte). Gezählt wird ab Version mit Migration 0018.
+
 **Aufbau:** Kopfzeile mit Logo, darunter die Bereiche **Speiseplan · Einkaufsliste · Rezepte · Favoriten · Einstellungen**
 als Segment-Leiste. Der gewählte Bereich bleibt beim Neuladen erhalten (URL-Hash, z. B. `#einkaufsliste`).
 Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus Jakarta Sans.
@@ -223,7 +230,8 @@ Auf- und zuklappbare Karten:
 - **Knuspr und Picnic** nutzen inoffizielle Schnittstellen und können jederzeit ausfallen. Läuft die Picnic-Sitzung ab,
   muss neu verbunden werden (ggf. mit SMS-Code).
 - **Workers-AI-Kontingent** (Free: 10.000 Neurons/Tag) teilen sich KI-Rezepte und Bilder. Ist es aufgebraucht, kommen Bilder
-  aus Fotodatenbanken und es entstehen bis zum nächsten Tag keine neuen KI-Rezepte.
+  aus Fotodatenbanken und es entstehen bis zum nächsten Tag keine neuen KI-Rezepte. Den Verbrauch zeigt die Karte
+  „Statistik“ (geschätzt, siehe oben).
 - **Amazon** ist bewusst nicht angebunden (keine Suche/Warenkorb aus Apps möglich).
 - **Gesundheitsfilter** sind eine Heuristik, keine zertifizierte Allergie-Absicherung.
 - Routinen lassen sich nur anlegen und löschen, nicht bearbeiten.
