@@ -12,6 +12,11 @@ Workers & Pages → Create → Import a repository → `davidhille/meal-plan`
 - Preview command: `npx wrangler versions upload`
 - API token: neuen Token anlegen („meal-plan build token")
 
+## 2b. Eigene Domain
+Zone `miyummy.com` liegt im selben Cloudflare-Konto (Nameserver bei Domainfactory auf Cloudflare umgestellt; E-Mail-Einträge
+bleiben „DNS only“). Die Custom Domains `miyummy.com` und `www.miyummy.com` stehen in `wrangler.jsonc` (`routes`) und
+werden beim Deploy angelegt – vorher dürfen für diese Namen keine eigenen A/AAAA/CNAME-Einträge existieren.
+
 ## 3. Secrets (nach dem ersten Deploy)
 Worker `meal-plan` → **Settings → Variables and Secrets** → *Add* → Typ **Secret**:
 - `DATABASE_URL` = Neon Connection String (Connect → Branch `production`)
