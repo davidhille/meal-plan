@@ -50,7 +50,11 @@ export default function TodayCard({ todayIso, today, tomorrow, toRate, onOpen, o
         <span className="text-xs text-gray-500">{longDate(todayIso)}</span>
       </div>
 
-      {today ? (
+      {today?.brotzeit ? (
+        <p className="px-4 pb-3 text-sm text-gray-700">
+          Heute ist <strong>Brotzeit</strong> – nicht kochen.
+        </p>
+      ) : today ? (
         <div>
           <button onClick={() => onOpen(today)} className="block w-full text-left">
             {today.image_url && (
@@ -96,7 +100,7 @@ export default function TodayCard({ todayIso, today, tomorrow, toRate, onOpen, o
 
       {tomorrow && (
         <button
-          onClick={() => onOpen(tomorrow)}
+          onClick={() => !tomorrow.brotzeit && onOpen(tomorrow)}
           className="w-full flex items-center gap-2 px-4 py-2.5 border-t border-gray-100 text-left hover:bg-gray-50"
         >
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Morgen</span>

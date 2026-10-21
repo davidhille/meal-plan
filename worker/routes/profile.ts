@@ -32,7 +32,10 @@ export async function profileRoutes({ request, sql, body, parts, route, id, user
   if (route === "PUT /profile/day-rules") {
     const p = await getProfile(sql, user);
     const rules = parseDayRules(body.day_rules);
-    const rows = await sql`UPDATE profiles SET day_rules = ${JSON.stringify(rules)}::jsonb, updated_at = now()
+    // Brotzeit pro Woche (0–7); fehlt der Wert, bleibt der bisherige
+    const perWeek = body.brotzeit_per_week === undefined ? null : Math.max(0, Math.min(7, Math.round(Number(body.brotzeit_per_week)) || 0));
+    const rows = await sql`UPDATE profiles SET day_rules = ${JSON.stringify(rules)}::jsonb,
+        brotzeit_per_week = COALESCE(${perWeek}::int, brotzeit_per_week), updated_at = now()
       WHERE id = ${p.id} RETURNING *`;
     return json(rows[0]);
   }

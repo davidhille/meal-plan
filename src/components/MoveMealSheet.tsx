@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Loader2, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Loader2, Trash2, Wheat, X } from 'lucide-react';
 import { useDialog } from '../lib/useDialog';
 import { DayRules, MealPlan, PlanMeal } from '../types';
 import { getWeeksInRange, toIso } from '../lib/dateUtils';
@@ -13,6 +13,8 @@ interface MoveMealSheetProps {
   dayRules?: DayRules;
   onMove: (date: string) => Promise<void>;
   onRemove: () => Promise<void>;
+  /** Gericht durch Brotzeit ersetzen (fehlt bei Brotzeit-Tagen) */
+  onBrotzeit?: () => Promise<void>;
   onClose: () => void;
 }
 
@@ -30,10 +32,10 @@ const addDays = (iso: string, n: number) => {
 /** Wie weit nach Planende man verschieben kann (Tage) */
 const EXTRA_DAYS = 14;
 
-type Step = { kind: 'pick' } | { kind: 'move'; date: string } | { kind: 'remove' };
+type Step = { kind: 'pick' } | { kind: 'move'; date: string } | { kind: 'remove' } | { kind: 'brotzeit' };
 
 /** Gericht auf einen anderen Tag (auch nächste Woche) verschieben oder den Tag leeren */
-export default function MoveMealSheet({ pm, plan, planMeals, dayRules, onMove, onRemove, onClose }: MoveMealSheetProps) {
+export default function MoveMealSheet({ pm, plan, planMeals, dayRules, onMove, onRemove, onBrotzeit, onClose }: MoveMealSheetProps) {
   const dialogRef = useDialog(onClose);
   const [step, setStep] = useState<Step>({ kind: 'pick' });
   const [busy, setBusy] = useState(false);
@@ -85,7 +87,7 @@ export default function MoveMealSheet({ pm, plan, planMeals, dayRules, onMove, o
           )}
           <div className="flex-1 min-w-0">
             <h2 id="move-title" className="text-base font-semibold text-gray-900">
-              {step.kind === 'pick' ? 'Verschieben oder Tag leeren' : 'Bitte bestätigen'}
+              {step.kind === 'pick' ? (onBrotzeit ? 'Verschieben, Brotzeit oder leeren' : 'Verschieben oder Tag leeren') : 'Bitte bestätigen'}
             </h2>
             <p className="text-xs text-gray-500 truncate">
               {pm.meal_name} · {label(pm.meal_date)}
@@ -132,7 +134,16 @@ export default function MoveMealSheet({ pm, plan, planMeals, dayRules, onMove, o
                 </div>
               ))}
             </div>
-            <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
+            <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 space-y-2">
+              {onBrotzeit && (
+                <button
+                  onClick={() => setStep({ kind: 'brotzeit' })}
+                  className="w-full h-11 flex items-center justify-center gap-2 rounded-xl border border-coral-300 bg-white text-sm font-semibold text-coral-700 hover:bg-coral-50"
+                >
+                  <Wheat size={15} />
+                  Brotzeit statt Kochen
+                </button>
+              )}
               <button
                 onClick={() => setStep({ kind: 'remove' })}
                 className="w-full h-11 flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-white text-sm font-semibold text-red-600 hover:bg-red-50"
@@ -154,6 +165,11 @@ export default function MoveMealSheet({ pm, plan, planMeals, dayRules, onMove, o
                     <> Der Plan wird bis dahin verlängert.</>
                   ) : null}
                 </>
+              ) : step.kind === 'brotzeit' ? (
+                <>
+                  Am {label(pm.meal_date)} <strong>Brotzeit</strong> statt <strong>{pm.meal_name}</strong>? Die Zutaten verschwinden
+                  von der Einkaufsliste. Mit „Doch kochen“ planst du später wieder ein Gericht.
+                </>
               ) : (
                 <>
                   <strong>{pm.meal_name}</strong> am {label(pm.meal_date)} aus dem Plan nehmen? Der Tag bleibt leer, die Zutaten
@@ -167,14 +183,14 @@ export default function MoveMealSheet({ pm, plan, planMeals, dayRules, onMove, o
               </p>
             )}
             <button
-              onClick={() => run(step.kind === 'move' ? () => onMove(step.date) : onRemove)}
+              onClick={() => run(step.kind === 'move' ? () => onMove(step.date) : step.kind === 'brotzeit' && onBrotzeit ? onBrotzeit : onRemove)}
               disabled={busy}
               className={`w-full h-11 flex items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white disabled:opacity-60 ${
                 step.kind === 'remove' ? 'bg-red-600 hover:bg-red-700' : 'bg-brand-700 hover:bg-brand-800'
               }`}
             >
               {busy && <Loader2 size={14} className="animate-spin" />}
-              {step.kind === 'move' ? (target ? 'Tauschen' : 'Verschieben') : 'Tag leeren'}
+              {step.kind === 'move' ? (target ? 'Tauschen' : 'Verschieben') : step.kind === 'brotzeit' ? 'Brotzeit machen' : 'Tag leeren'}
             </button>
           </div>
         )}

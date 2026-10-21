@@ -97,7 +97,7 @@ export async function sendRatingReminders(env: Env, sql: Sql, now: { date: strin
       WHERE id = ${p.id} AND (reminder_last_sent IS NULL OR reminder_last_sent < ${now.date}::date) RETURNING id`;
     if (!claimed.length) continue;
     const meals = await sql`SELECT pm.meal_name FROM plan_meals pm JOIN meal_plans mp ON mp.id = pm.plan_id
-      WHERE mp.profile_id = ${p.id} AND mp.status = 'active' AND pm.meal_date = ${now.date}::date AND NOT pm.rejected
+      WHERE mp.profile_id = ${p.id} AND mp.status = 'active' AND pm.meal_date = ${now.date}::date AND NOT pm.rejected AND NOT pm.brotzeit
       ORDER BY mp.created_at DESC LIMIT 1`;
     const name = meals[0]?.meal_name as string | undefined;
     if (!name) continue;

@@ -240,8 +240,8 @@ export function setDessertVisibility(
 }
 
 /** Regeln pro Wochentag speichern; wirft bei Fehlern */
-export function saveDayRules(dayRules: DayRules): Promise<Profile> {
-  return request<Profile>('PUT', '/profile/day-rules', { day_rules: dayRules });
+export function saveDayRules(dayRules: DayRules, brotzeitPerWeek?: number): Promise<Profile> {
+  return request<Profile>('PUT', '/profile/day-rules', { day_rules: dayRules, brotzeit_per_week: brotzeitPerWeek });
 }
 
 export async function getFamilyMembers(_profileId: string): Promise<FamilyMember[]> {
@@ -437,6 +437,12 @@ export function movePlanMeal(planMealId: string, date: string): Promise<{ swappe
 }
 
 /** Gericht aus dem Plan nehmen (Tag bleibt leer, Gericht wird nicht abgelehnt); wirft bei Fehlern */
+/** Gericht im Plan durch Brotzeit ersetzen (zurück: regenerateMeal = doch kochen); wirft bei Fehlern */
+export async function setPlanMealBrotzeit(planMealId: string): Promise<PlanMeal> {
+  const result = await request<{ replacement: PlanMeal }>('POST', `/plan-meals/${enc(planMealId)}/brotzeit`);
+  return result.replacement;
+}
+
 export async function removePlanMeal(planMealId: string): Promise<void> {
   await request('DELETE', `/plan-meals/${enc(planMealId)}`);
 }

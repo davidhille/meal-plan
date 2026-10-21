@@ -202,6 +202,11 @@ Auf- und zuklappbare Karten:
 - **Wochentage:** pro Wochentag „Normal“, „Frei – nicht planen“ (auswärts essen, Reste) oder „höchstens 15/20/30/45/60 Min“.
   Freie Tage bleiben im Plan leer (schmale Zeile „frei“, Heute-Karte „Heute ist frei“); an Tagen mit Zeitlimit kommen
   nur Gerichte, die reinpassen (bekannte Zeit zuerst). Gilt für neue Pläne, Routinen und „Neu generieren“.
+- **Brotzeit:** Tage ohne Kochen – reiner Platzhalter „Brotzeit“, nichts auf der Einkaufsliste, kein Bild, keine Bewertung.
+  Drei Wege: Wochentag auf „Brotzeit“ stellen (immer), **„Brotzeit pro Woche“** (0–4×; feste Tage zählen mit, die Planung
+  verteilt den Rest – bevorzugt Tage mit Zeitlimit, dann Mo–Fr, möglichst auseinander; bei angebrochenen Wochen anteilig)
+  oder im Plan beim Kalender-Knopf „Brotzeit statt Kochen“. Auf der Brotzeit-Karte holt „Doch kochen“ (Kochmütze) ein Gericht
+  aus der Sammlung zurück (KI nur, wenn nichts passt).
 - **Erinnerung zum Bewerten:** pro Gerät einschalten, Uhrzeit wählen (Standard 20:00), Test senden. Abends kommt eine
   Benachrichtigung, wenn das heutige Gericht noch keine Sterne hat (höchstens einmal am Tag). Ein Tipp darauf öffnet
   direkt das Bewerten-Fenster für dieses Gericht. iPhone: nur mit der

@@ -18,13 +18,15 @@ export function ruleForDate(iso: string, rules: DayRules | undefined): DayRule {
   return rules?.[String(new Date(`${iso}T12:00:00`).getDay())] ?? {};
 }
 
-/** Kurzbeschreibung, z. B. „Mi max. 20 Min · So frei“ */
-export function describeDayRules(rules: DayRules | undefined): string {
+/** Kurzbeschreibung, z. B. „Mi max. 20 Min · Fr Brotzeit · So frei · 2× Brotzeit pro Woche“ */
+export function describeDayRules(rules: DayRules | undefined, brotzeitPerWeek = 0): string {
   const parts = WEEKDAYS.flatMap((d) => {
     const r = rules?.[d.key];
     if (r?.off) return [`${d.short} frei`];
+    if (r?.brotzeit) return [`${d.short} Brotzeit`];
     if (r?.maxMinutes) return [`${d.short} max. ${r.maxMinutes} Min`];
     return [];
   });
+  if (brotzeitPerWeek > 0) parts.push(`${brotzeitPerWeek}× Brotzeit pro Woche`);
   return parts.length ? parts.join(' · ') : 'Jeder Tag wird normal geplant';
 }
