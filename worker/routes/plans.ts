@@ -4,7 +4,7 @@ import type { Ctx } from "../http";
 import { json } from "../http";
 import { IMAGE_URL_SQL, IMAGE_CREDIT_SQL, fillMissingImages } from "../images";
 import { PLAN_COLS, getProfile, latestPlan, planOwned } from "../repo";
-import { createPlan, replaceMeal, replaceWithRecipe } from "../planning";
+import { createPlan, replaceMeal, replaceWithRecipe, setBrotzeit } from "../planning";
 
 /** Nachtisch aus dem Request prüfen und auf die erlaubten Felder beschränken */
 function parseDessert(raw: unknown) {
@@ -52,7 +52,7 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
     return json(
       await sql.query(
         `SELECT pm.id, pm.plan_id, pm.meal_date::text AS meal_date, pm.meal_name, pm.meal_type, pm.ingredients,
-                pm.instructions, pm.rejected, ${IMAGE_URL_SQL} AS image_url, ${IMAGE_CREDIT_SQL}, pm.duration_min, pm.dessert, pm.created_at
+                pm.instructions, pm.rejected, ${IMAGE_URL_SQL} AS image_url, ${IMAGE_CREDIT_SQL}, pm.duration_min, pm.dessert, pm.brotzeit, pm.created_at
          FROM plan_meals pm
          LEFT JOIN LATERAL (SELECT * FROM meal_images x WHERE x.meal_name = pm.meal_name
            AND (x.profile_id IS NULL OR x.profile_id = $2) ORDER BY x.profile_id IS NULL LIMIT 1) mi ON true
@@ -67,6 +67,14 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
     const p = await getProfile(sql, user);
     const replacement = await replaceMeal(env, sql, p.id, id, parts[2] === "reject", waitUntil);
     if (!replacement) return json({ error: "Kein passender Ersatz gefunden" }, 404);
+    return json({ replacement });
+  }
+
+  // Brotzeit statt Kochen (zurück geht es mit „regenerate“ = doch kochen)
+  if (parts[0] === "plan-meals" && id && parts[2] === "brotzeit" && request.method === "POST") {
+    const p = await getProfile(sql, user);
+    const replacement = await setBrotzeit(sql, p.id, id);
+    if (!replacement) return json({ error: "Gericht nicht gefunden" }, 404);
     return json({ replacement });
   }
 

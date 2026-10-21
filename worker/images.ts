@@ -535,12 +535,12 @@ export async function fillMissingImages(env: AiEnv, sql: Sql, limit = 5, planId?
   const rows = planId
     ? await sql`SELECT DISTINCT pm.meal_name FROM plan_meals pm
         LEFT JOIN meal_images mi ON mi.meal_name = pm.meal_name AND mi.profile_id IS NULL
-        WHERE pm.plan_id = ${planId} AND NOT pm.rejected AND mi.image_data IS NULL
+        WHERE pm.plan_id = ${planId} AND NOT pm.rejected AND NOT pm.brotzeit AND mi.image_data IS NULL
           AND mi.source IS DISTINCT FROM 'removed' LIMIT ${limit}`
     : await sql`SELECT DISTINCT pm.meal_name FROM plan_meals pm
         JOIN meal_plans mp ON mp.id = pm.plan_id AND mp.status = 'active'
         LEFT JOIN meal_images mi ON mi.meal_name = pm.meal_name AND mi.profile_id IS NULL
-        WHERE NOT pm.rejected AND mi.image_data IS NULL AND mi.source IS DISTINCT FROM 'removed' LIMIT ${limit}`;
+        WHERE NOT pm.rejected AND NOT pm.brotzeit AND mi.image_data IS NULL AND mi.source IS DISTINCT FROM 'removed' LIMIT ${limit}`;
   for (const r of rows) {
     const res = await generateImage(env, sql, r.meal_name);
     if ("error" in res) return; // auch kein Foto → beim nächsten Lauf weiter
@@ -560,7 +560,7 @@ export async function fillMissingImages(env: AiEnv, sql: Sql, limit = 5, planId?
   // Ist die KI wieder verfügbar, Ersatzfotos und entfernte Bilder aus aktiven Plänen nach und nach durch KI-Bilder ersetzen
   if (left <= 0 || !aiAvailable(env)) return;
   const fallbacks = await sql`SELECT DISTINCT mi.meal_name FROM meal_images mi
-    JOIN plan_meals pm ON pm.meal_name = mi.meal_name AND NOT pm.rejected
+    JOIN plan_meals pm ON pm.meal_name = mi.meal_name AND NOT pm.rejected AND NOT pm.brotzeit
     JOIN meal_plans mp ON mp.id = pm.plan_id AND mp.status = 'active'
     WHERE mi.profile_id IS NULL AND (mi.source = ANY(${PHOTO_SOURCES}) OR mi.source = 'removed') LIMIT ${left}`;
   for (const r of fallbacks) {

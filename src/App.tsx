@@ -20,6 +20,7 @@ import {
   extendMealPlan,
   movePlanMeal,
   removePlanMeal,
+  setPlanMealBrotzeit,
   getLatestPlan,
   deletePlan,
   regenerateMeal,
@@ -330,6 +331,10 @@ export default function App() {
     if (currentPlan) setPlanMeals(await getPlanMeals(currentPlan.id));
   };
 
+  const handleBrotzeit = async (pm: PlanMeal) => {
+    swapMeal(pm.id, await setPlanMealBrotzeit(pm.id));
+  };
+
   const handleRemoveMeal = async (pm: PlanMeal) => {
     await removePlanMeal(pm.id);
     setPlanMeals((prev) => prev.filter((m) => m.id !== pm.id));
@@ -433,6 +438,7 @@ export default function App() {
             dayRules={profile?.day_rules}
             onMove={currentPlan ? handleMoveMeal : undefined}
             onRemove={currentPlan ? handleRemoveMeal : undefined}
+            onBrotzeit={currentPlan ? handleBrotzeit : undefined}
             visibleRange={selectedWeek ? { from: selectedWeek.weekStart, to: selectedWeek.weekEnd } : undefined}
           />
         ) : activeTab === 'einkaufsliste' ? (

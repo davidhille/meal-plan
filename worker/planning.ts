@@ -6,7 +6,7 @@ import { effectiveImageUrl, generateImage } from "./images";
 import { generateRecipes } from "./aiRecipes";
 import { PLAN_COLS, PLAN_MEAL_COLS, favoriteToRecipe, loadContext, loadPool } from "./repo";
 import { isMeatDish, isoWeekKey } from "./nutrition";
-import { fitsTime, isOffDay, ruleFor, withinTime } from "./dayRules";
+import { BROTZEIT, fitsTime, isOffDay, pickBrotzeitDates, ruleFor, withinTime } from "./dayRules";
 
 /** Gerichte, die in den 3 Wochen vor `startDate` schon geplant waren */
 async function recentMealNames(sql: Sql, profileId: string, startDate: string): Promise<string[]> {
@@ -119,14 +119,20 @@ export async function createPlan(env: Env, sql: Sql, profileId: string, startDat
 
   // Beim Verlängern: vorhandene Gerichte (fest, zählen für Abwechslung und Fleisch-Grenze) und leere Tage
   const existing = new Map<string, Recipe>();
+  // Schon vorhandene Brotzeiten: Tag ist belegt, zählt aber nicht als Gericht
+  const existingBrotzeit: string[] = [];
   let cleared = new Set<string>();
   if (extendPlanId) {
     const [rows, planRows] = await Promise.all([
-      sql`SELECT meal_date::text AS meal_date, meal_name, meal_type, ingredients, instructions, duration_min
+      sql`SELECT meal_date::text AS meal_date, meal_name, meal_type, ingredients, instructions, duration_min, brotzeit
         FROM plan_meals WHERE plan_id = ${extendPlanId} AND NOT rejected`,
       sql`SELECT cleared_dates FROM meal_plans WHERE id = ${extendPlanId}`,
     ]);
     for (const r of rows) {
+      if (r.brotzeit) {
+        existingBrotzeit.push(r.meal_date as string);
+        continue;
+      }
       existing.set(r.meal_date as string, {
         name: r.meal_name as string,
         type: r.meal_type as Recipe["type"],
@@ -139,8 +145,13 @@ export async function createPlan(env: Env, sql: Sql, profileId: string, startDat
   }
 
   // Freie Wochentage (Einstellungen → Wochentage) werden gar nicht geplant
-  const dates = datesToFill(startDate, endDate, ctx.dayRules, new Set(existing.keys()), cleared);
-  if (extendPlanId && dates.length === 0) return extendPlanRange(sql, extendPlanId, startDate, endDate);
+  const fillable = datesToFill(startDate, endDate, ctx.dayRules, new Set([...existing.keys(), ...existingBrotzeit]), cleared);
+  if (extendPlanId && fillable.length === 0) return extendPlanRange(sql, extendPlanId, startDate, endDate);
+
+  // Brotzeit-Tage (feste Wochentage und „x-mal pro Woche“) werden nicht gekocht
+  const covered = [...fillable, ...existing.keys(), ...existingBrotzeit];
+  const brotzeitDates = pickBrotzeitDates(fillable, ctx.dayRules, ctx.brotzeitPerWeek ?? 0, covered, existingBrotzeit);
+  const dates = fillable.filter((d) => !brotzeitDates.has(d));
 
   // 1) Fällige Turnus-Favoriten fest einplanen (am liebsten an einem passenden Tag)
   const assigned = new Map<string, Recipe>();
@@ -198,6 +209,13 @@ export async function createPlan(env: Env, sql: Sql, profileId: string, startDat
     );
     await markFavoritesPlanned(sql, profileId, plan.id);
   }
+  if (brotzeitDates.size) {
+    await sql.query(
+      `INSERT INTO plan_meals (plan_id, meal_date, meal_name, meal_type, ingredients, instructions, brotzeit)
+       SELECT $1, d::date, $3, 'vegetarisch', '{}', '', true FROM unnest($2::text[]) AS x(d)`,
+      [plan.id, [...brotzeitDates], BROTZEIT]
+    );
+  }
   return plan;
 }
 
@@ -232,6 +250,9 @@ export async function replaceMeal(env: Env, sql: Sql, profileId: string, planMea
   );
   const old = rows[0];
   if (!old) return null;
+  // Brotzeit-Tag „doch kochen“: ein Gericht aus der Sammlung, KI nur, wenn nichts passt
+  const wasBrotzeit = !!old.brotzeit;
+  if (wasBrotzeit) reject = false;
 
   if (reject) {
     await sql`UPDATE plan_meals SET rejected = true WHERE id = ${planMealId}`;
@@ -244,7 +265,7 @@ export async function replaceMeal(env: Env, sql: Sql, profileId: string, planMea
   const existing = await sql`SELECT meal_name FROM plan_meals WHERE plan_id = ${old.plan_id}`;
   // Was an diesem Tag schon weggetauscht wurde, soll nicht gleich wiederkommen
   const history = await sql`SELECT skipped_names FROM plan_meals WHERE id = ${planMealId}`;
-  const skipped = [...((history[0]?.skipped_names as string[] | undefined) ?? []), old.meal_name].slice(-30);
+  const skipped = [...((history[0]?.skipped_names as string[] | undefined) ?? []), ...(wasBrotzeit ? [] : [old.meal_name])].slice(-30);
   const exclude = new Set<string>([...existing.map((r) => r.meal_name as string), ...skipped]);
 
   ctx.recentNames = await recentMealNames(sql, profileId, old.meal_date);
@@ -276,7 +297,7 @@ export async function replaceMeal(env: Env, sql: Sql, profileId: string, planMea
 
   let best: Recipe | null = null;
   // „Neu generieren“: am liebsten ein ganz neues KI-Rezept
-  if (!reject) best = await fromAi();
+  if (!reject && !wasBrotzeit) best = await fromAi();
   best ??= pickReplacement(old.meal_date, ctx, candidates, exclude);
   // Alles schon durchprobiert: Verlauf vergessen, nur das aktuelle Gericht und den Plan ausschließen
   best ??= pickReplacement(
@@ -286,7 +307,7 @@ export async function replaceMeal(env: Env, sql: Sql, profileId: string, planMea
     new Set<string>([...existing.map((r) => r.meal_name as string), old.meal_name])
   );
   // Pool erschöpft (z. B. vegan) → KI als Rettung
-  if (!best && reject) best = await fromAi();
+  if (!best && (reject || wasBrotzeit)) best = await fromAi();
   if (!best) return null;
 
   if (!reject) await sql`DELETE FROM plan_meals WHERE id = ${planMealId}`;
@@ -303,6 +324,18 @@ export async function replaceMeal(env: Env, sql: Sql, profileId: string, planMea
   if (img) replacement.image_url = img;
   else waitUntil(generateImage(env, sql, best.name));
   return replacement;
+}
+
+/** Gericht im Plan durch Brotzeit ersetzen (nicht kochen; keine Zutaten, kein Nachtisch) */
+export async function setBrotzeit(sql: Sql, profileId: string, planMealId: string) {
+  const rows = await sql.query(
+    `UPDATE plan_meals pm SET meal_name = $3, meal_type = 'vegetarisch', ingredients = '{}', instructions = '',
+       duration_min = NULL, dessert = NULL, image_url = NULL, brotzeit = true
+     FROM meal_plans mp WHERE pm.id = $1 AND mp.id = pm.plan_id AND mp.profile_id = $2 AND NOT pm.rejected
+     RETURNING ${PLAN_MEAL_COLS.split(", ").map((c) => `pm.${c}`).join(", ")}`,
+    [planMealId, profileId, BROTZEIT]
+  );
+  return rows[0] ?? null;
 }
 
 /**

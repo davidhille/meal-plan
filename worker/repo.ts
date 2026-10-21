@@ -5,7 +5,7 @@ import { MEAL_DATABASE, type Recipe, type ScoringContext } from "./meals";
 
 // Spaltenlisten mit Datum als Text (YYYY-MM-DD), damit das Frontend Strings bekommt
 export const PLAN_COLS = `id, profile_id, start_date::text AS start_date, end_date::text AS end_date, status, created_at`;
-export const PLAN_MEAL_COLS = `id, plan_id, meal_date::text AS meal_date, meal_name, meal_type, ingredients, instructions, rejected, image_url, duration_min, dessert, created_at`;
+export const PLAN_MEAL_COLS = `id, plan_id, meal_date::text AS meal_date, meal_name, meal_type, ingredients, instructions, rejected, image_url, duration_min, dessert, brotzeit, created_at`;
 export const ROUTINE_COLS = `id, profile_id, name, frequency, day_of_week, to_char(time, 'HH24:MI') AS time, duration_days, active, last_run_at, created_at`;
 
 export const FAVORITE_COLS = `id, meal_name, meal_type, ingredients, instructions, duration_min, turnus_weeks,
@@ -86,7 +86,7 @@ export async function getProfile(sql: Sql, user?: { profileId: string } | null) 
 
 export async function loadContext(sql: Sql, profileId: string): Promise<ScoringContext> {
   const [profiles, members, ratings, rejected] = await Promise.all([
-    sql`SELECT health_focus, health_conditions, meat_max_per_week, day_rules FROM profiles WHERE id = ${profileId}`,
+    sql`SELECT health_focus, health_conditions, meat_max_per_week, day_rules, brotzeit_per_week FROM profiles WHERE id = ${profileId}`,
     sql`SELECT type, age, favorite_foods, disliked_foods FROM family_members WHERE profile_id = ${profileId}`,
     sql`SELECT meal_name, rating, notes FROM meal_ratings WHERE profile_id = ${profileId}
       ORDER BY COALESCE(updated_at, created_at) DESC`,
@@ -99,6 +99,7 @@ export async function loadContext(sql: Sql, profileId: string): Promise<ScoringC
     healthConditions: p.health_conditions || [],
     meatMaxPerWeek: p.meat_max_per_week ?? null,
     dayRules: parseDayRules(p.day_rules),
+    brotzeitPerWeek: Number(p.brotzeit_per_week) || 0,
     month: new Date().getMonth() + 1,
     familyMembers: members as ScoringContext["familyMembers"],
     mealRatings: Object.fromEntries(ratings.map((r) => [r.meal_name, r.rating])),

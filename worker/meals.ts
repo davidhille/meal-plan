@@ -227,6 +227,8 @@ export interface ScoringContext {
   profileId?: string;
   /** Regeln pro Wochentag (frei / höchstens X Minuten), siehe dayRules.ts */
   dayRules?: DayRules;
+  /** So oft pro Woche Brotzeit statt Kochen (feste Brotzeit-Wochentage zählen mit) */
+  brotzeitPerWeek?: number;
   /** Gerichte, die schon im Plan sind (nur beim Ersetzen: −20) */
   existingPlanMeals?: string[];
   /** Favoriten ohne Turnus bekommen einen Bonus */

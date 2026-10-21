@@ -53,6 +53,7 @@ export function buildPlanHtml(plan: MealPlan, meals: PlanMeal[], portions: numbe
     .join('');
 
   const recipes = list
+    .filter((m) => !m.brotzeit)
     .map((m) => {
       const meta = [
         m.meal_type === 'fleisch' && isFishDish({ name: m.meal_name, ingredients: m.ingredients ?? [] }) ? 'Fisch' : TYPE_LABEL[m.meal_type] ?? '',

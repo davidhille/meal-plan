@@ -9,6 +9,7 @@ import { ruleForDate } from '../lib/dayRules';
 import TodayCard from './TodayCard';
 import MoveMealSheet from './MoveMealSheet';
 import DayCard from './DayCard';
+import BrotzeitCard from './BrotzeitCard';
 import MealModal from './MealModal';
 import { exportPlan } from '../lib/planExport';
 import ReplacePlanDialog from './ReplacePlanDialog';
@@ -43,6 +44,8 @@ interface MealPlanViewProps {
   onMove?: (pm: PlanMeal, date: string) => Promise<void>;
   /** Gericht aus dem Plan nehmen (Tag leeren) */
   onRemove?: (pm: PlanMeal) => Promise<void>;
+  /** Brotzeit statt Kochen (zurück über onRegenerate = doch kochen) */
+  onBrotzeit?: (pm: PlanMeal) => Promise<void>;
 }
 
 /** Spätestens ab dann fragt die Heute-Karte nach dem heutigen Essen (vorher: nach dem von gestern) */
@@ -97,6 +100,7 @@ export default function MealPlanView({
   visibleRange,
   onMove,
   onRemove,
+  onBrotzeit,
 }: MealPlanViewProps) {
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [cookOnOpen, setCookOnOpen] = useState(false);
@@ -146,7 +150,7 @@ export default function MealPlanView({
   const rateCandidates = [
     ...(nowHm >= askTodayFrom && todayMeal ? [todayMeal] : []),
     ...active.filter((pm) => pm.meal_date === yesterdayIso),
-  ];
+  ].filter((pm) => !pm.brotzeit);
   const toRate = rateCandidates.find((pm) => !ratings[pm.meal_name]) ?? null;
 
   // Freie Tage im sichtbaren Zeitraum ohne Gericht → eigene, schmale Zeile
@@ -166,6 +170,7 @@ export default function MealPlanView({
   ].sort((a, b) => a.date.localeCompare(b.date));
 
   const openPlanMeal = (pm: PlanMeal, cook = false) => {
+    if (pm.brotzeit) return;
     const meal = planMealToMeal(pm);
     const override = imageOverrides[pm.meal_name];
     if (override) {
@@ -230,6 +235,18 @@ export default function MealPlanView({
                 <span className="font-medium uppercase tracking-wide">{dayLabel(date)}</span>
                 <span>· frei, nichts geplant</span>
               </div>
+            );
+          }
+          if (pm.brotzeit) {
+            return (
+              <BrotzeitCard
+                key={pm.id}
+                day={dayLabel(pm.meal_date)}
+                isToday={pm.meal_date === todayIso}
+                busy={busyId === pm.id}
+                onMove={onMove && onRemove ? () => setMoving(pm) : undefined}
+                onCook={onRegenerate ? withBusy(pm.id, () => onRegenerate(pm.id)) : undefined}
+              />
             );
           }
           const meal = planMealToMeal(pm);
@@ -317,6 +334,7 @@ export default function MealPlanView({
           dayRules={dayRules}
           onMove={(date) => onMove(moving, date)}
           onRemove={() => onRemove(moving)}
+          onBrotzeit={onBrotzeit && !moving.brotzeit ? () => onBrotzeit(moving) : undefined}
           onClose={() => setMoving(null)}
         />
       )}

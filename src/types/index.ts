@@ -184,10 +184,14 @@ export interface Profile {
   deleted_desserts?: string[];
   /** Regeln pro Wochentag (Schlüssel 0–6, 0 = Sonntag): frei oder höchstens X Minuten */
   day_rules?: DayRules;
+  /** So oft pro Woche Brotzeit (feste Brotzeit-Tage zählen mit) */
+  brotzeit_per_week?: number;
 }
 
 export interface DayRule {
   off?: boolean;
+  /** An diesem Wochentag Brotzeit statt Kochen */
+  brotzeit?: boolean;
   maxMinutes?: number;
 }
 export type DayRules = Partial<Record<string, DayRule>>;
@@ -233,6 +237,8 @@ export interface PlanMeal {
   duration_min?: number | null;
   /** Nachtisch zu diesem Gericht (aus der Nachtisch-Sammlung) */
   dessert?: PlanDessert | null;
+  /** Brotzeit statt Kochen (Platzhalter ohne Zutaten) */
+  brotzeit?: boolean;
 }
 
 /** Am Gericht gespeicherter Nachtisch – die Zutaten landen mit fester Menge auf der Einkaufsliste */

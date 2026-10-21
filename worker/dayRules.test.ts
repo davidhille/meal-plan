@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { fitsTime, isOffDay, parseDayRules, ruleFor, withinTime } from "./dayRules";
+import { fitsTime, isOffDay, parseDayRules, pickBrotzeitDates, ruleFor, withinTime } from "./dayRules";
 import { pickDays } from "./planning";
 import type { Recipe, ScoringContext } from "./meals";
 
@@ -71,4 +71,34 @@ describe("pickDays mit Zeitlimit", () => {
 
 describe("parseDayRules aus Text", () => {
   test("jsonb als Text wird gelesen", () => expect(parseDayRules('{"0":{"off":true}}')).toEqual({ "0": { off: true } }));
+});
+
+describe("Brotzeit", () => {
+  const week = ["2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25"]; // Mo–So
+
+  test("Regel wird gelesen", () => {
+    expect(parseDayRules({ "5": { brotzeit: true } })).toEqual({ "5": { brotzeit: true } });
+  });
+
+  test("feste Wochentage", () => {
+    expect([...pickBrotzeitDates(week, { "5": { brotzeit: true } }, 0)]).toEqual(["2026-10-23"]);
+  });
+
+  test("zweimal pro Woche: unter der Woche, verteilt", () => {
+    const days = [...pickBrotzeitDates(week, {}, 2)].sort();
+    expect(days).toHaveLength(2);
+    for (const d of days) expect(["0", "6"]).not.toContain(String(new Date(`${d}T00:00:00Z`).getUTCDay()));
+    const gap = (Date.parse(days[1]) - Date.parse(days[0])) / 86_400_000;
+    expect(gap).toBeGreaterThanOrEqual(2);
+  });
+
+  test("Tage mit wenig Zeit zuerst, feste Tage zählen mit", () => {
+    const rules = { "3": { maxMinutes: 15 }, "1": { brotzeit: true } };
+    expect([...pickBrotzeitDates(week, rules, 2)].sort()).toEqual(["2026-10-19", "2026-10-21"]);
+  });
+
+  test("halbe Woche: anteilig, vorhandene Brotzeiten zählen", () => {
+    expect(pickBrotzeitDates(week.slice(4), {}, 2).size).toBe(1); // Fr–So: 3 von 7 Tagen
+    expect(pickBrotzeitDates(week.slice(3), {}, 2, week, ["2026-10-20"]).size).toBe(1);
+  });
 });
