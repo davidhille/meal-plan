@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChefHat, Clock, Loader2, Search, EyeOff, X, ShieldAlert, Sparkles, MessageSquare, Star, SlidersHorizontal } from 'lucide-react';
+import { ChefHat, Clock, Loader2, Search, EyeOff, X, ShieldAlert, Sparkles, MessageSquare, Star, SlidersHorizontal, Refrigerator } from 'lucide-react';
 import { useRatings } from '../lib/ratings';
 import { CatalogRecipe, Meal, MealType, PlanMeal, RecipeCatalog, RecipeFilter } from '../types';
 import { CategoryOverride, toOverrideMap } from '../lib/recipeCategories';
@@ -18,6 +18,7 @@ import { CONDITION_LABELS, swapExample } from '../lib/health';
 import RecipeFilterAssign from './RecipeFilterAssign';
 import RecipeEditModal from './RecipeEditModal';
 import AiRecipeModal from './AiRecipeModal';
+import WhatIHaveSheet from './WhatIHaveSheet';
 import ChefkochSearchModal from './ChefkochSearchModal';
 import HiddenItemsList from './HiddenItemsList';
 import {
@@ -98,6 +99,7 @@ export default function MainDishesView({
   const [showUnsuitable, setShowUnsuitable] = useState(false);
   const [showAi, setShowAi] = useState(false);
   const [showChefkoch, setShowChefkoch] = useState(false);
+  const [showHave, setShowHave] = useState(false);
   /** Suchbegriff für Chefkoch, wenn aus der KI heraus geöffnet (Kontingent leer) */
   const [chefkochQuery, setChefkochQuery] = useState('');
 
@@ -241,6 +243,13 @@ export default function MainDishesView({
             <Sparkles size={16} />
             Rezept mit KI
           </button>
+          <button
+            onClick={() => setShowHave(true)}
+            className="col-span-2 h-11 flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-brand-50"
+          >
+            <Refrigerator size={16} />
+            Was hab ich da? – Gerichte nach Zutaten
+          </button>
         </div>
 
         {activeCount > 0 && (
@@ -373,6 +382,10 @@ export default function MainDishesView({
         />
       </div>
 
+      {showHave && catalog && (
+        <WhatIHaveSheet recipes={catalog.recipes} onOpen={setSelected} onClose={() => setShowHave(false)} />
+      )}
+
       {selected && (
         <MealModal
           key={selected.name}
@@ -393,8 +406,9 @@ export default function MainDishesView({
             )
           }
           onEdit={() => setEditing(selected)}
-          onPrev={selectedIndex > 0 ? () => goTo(selectedIndex - 1) : undefined}
-          onNext={selectedIndex >= 0 && selectedIndex < visible.length - 1 ? () => goTo(selectedIndex + 1) : undefined}
+          // Aus „Was hab ich da?“ geöffnet: kein Blättern in der gefilterten Übersicht
+          onPrev={!showHave && selectedIndex > 0 ? () => goTo(selectedIndex - 1) : undefined}
+          onNext={!showHave && selectedIndex >= 0 && selectedIndex < visible.length - 1 ? () => goTo(selectedIndex + 1) : undefined}
           position={selectedIndex >= 0 ? `${selectedIndex + 1} / ${visible.length}` : undefined}
           extra={
             <div className="space-y-3">
