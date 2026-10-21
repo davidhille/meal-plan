@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import AppIcon from './components/AppIcon';
+import Logo from './components/Logo';
 import { ViewTab, Profile, FamilyMember, Routine, MealPlan, PlanMeal, Favorite, Dessert, CatalogRecipe } from './types';
 import {
   getOrCreateProfile,
@@ -377,8 +379,10 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center" role="status">
-        <p className="text-sm text-gray-500">Wird geladen …</p>
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-3" role="status">
+        <AppIcon size={56} />
+        <Logo size={34} />
+        <p className="text-sm text-gray-500 mt-2">Wird geladen …</p>
       </div>
     );
   }
