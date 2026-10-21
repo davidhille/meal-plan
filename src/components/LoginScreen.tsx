@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Loader2, UtensilsCrossed } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import AppIcon from './AppIcon';
+import Logo from './Logo';
 import { acceptInvite, getAuthStatus, getInvite, login, setPassword, setupFirstAccount } from '../lib/api';
 
 interface Props {
@@ -78,11 +80,12 @@ export default function LoginScreen({ onDone }: Props) {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <form onSubmit={submit} className="w-full max-w-xs bg-white rounded-2xl border border-gray-100 p-6 flex flex-col gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center" aria-hidden="true">
-            <UtensilsCrossed size={18} className="text-white" />
-          </div>
-          <h1 className="text-base font-semibold text-gray-900">Familien-Speiseplaner</h1>
+        <div className="flex flex-col items-center gap-2 pt-1 pb-1">
+          <AppIcon size={48} />
+          <h1 className="leading-none">
+            <Logo size={32} />
+          </h1>
+          <p className="text-xs text-gray-500">Familien-Speiseplaner</p>
         </div>
 
         {mode === 'loading' ? (

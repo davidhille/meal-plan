@@ -67,7 +67,7 @@ export default function AdminSettings() {
   const share = async () => {
     if (!invite) return;
     try {
-      await navigator.share({ title: 'Einladung zum Speiseplaner', text: `Einladung für ${invite.family}:`, url: invite.inviteUrl });
+      await navigator.share({ title: 'Einladung zu miyummy', text: `Einladung für ${invite.family}:`, url: invite.inviteUrl });
     } catch {
       /* abgebrochen */
     }

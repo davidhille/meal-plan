@@ -1,6 +1,6 @@
 // Service Worker: macht die App installierbar und lädt die Oberfläche schneller.
 // Daten (/api) kommen immer live vom Server und werden nie zwischengespeichert.
-const CACHE = 'speiseplaner-v4';
+const CACHE = 'speiseplaner-v5';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(['/', '/manifest.webmanifest', '/icons/icon-192.png'])));
@@ -55,7 +55,7 @@ self.addEventListener('fetch', (event) => {
 
 // Erinnerung zum Bewerten (Web Push vom Worker, siehe worker/push.ts)
 self.addEventListener('push', (event) => {
-  let msg = { title: 'Familien-Speiseplaner', body: '', url: '/', tag: 'speiseplaner' };
+  let msg = { title: 'miyummy', body: '', url: '/', tag: 'speiseplaner' };
   try {
     msg = { ...msg, ...event.data.json() };
   } catch {

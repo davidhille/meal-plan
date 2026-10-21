@@ -1,4 +1,4 @@
-# CLAUDE.md – Familien-Speiseplaner
+# CLAUDE.md – miyummy (Familien-Speiseplaner)
 
 Deutschsprachige Web-App für die Essensplanung einer Familie: Wochenplan, Rezepte, Einkaufsliste mit
 Anbindung an Knuspr und Picnic. Live unter https://miyummy.com/ (zusätzlich https://meal-plan.davidshille.workers.dev/; installierbar als PWA).
@@ -82,7 +82,7 @@ Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHu
 ### Design „Aubergine“
 
 Farben in `tailwind.config.js`: `brand-*` (Pflaume, Hauptfarbe), `coral-*` (Akzent: „günstiger“, Fortschritt),
-`gray-*` mit Pflaumenstich. Schrift Plus Jakarta Sans. **Keine** `green-*`-Klassen mehr verwenden – alles ist auf `brand-*` umgestellt.
+`gray-*` mit Pflaumenstich. Schrift Plus Jakarta Sans; Logo-Schriftzug `Logo.tsx` in Poppins (in `index.html` nur die Zeichen m/ı/y/u geladen), „mi“ fett, „yummy“ leicht, i-Punkt = Koralle-Ring. **Keine** `green-*`-Klassen mehr verwenden – alles ist auf `brand-*` umgestellt.
 Kontraste auf WCAG AA; Icon-Knöpfe brauchen `aria-label`.
 
 ## Datenbank
