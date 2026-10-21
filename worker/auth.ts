@@ -8,6 +8,8 @@ export interface SessionUser {
   email: string;
   name: string;
   isAdmin: boolean;
+  /** Betreiber der App: sieht die Administration (Familien anlegen, einladen, sperren) */
+  isOwner: boolean;
 }
 
 export const SESSION_COOKIE = "mp_session";
@@ -80,16 +82,17 @@ export async function getSessionUser(sql: Sql, request: Request): Promise<Sessio
   const token = readCookie(request, SESSION_COOKIE);
   if (!token) return null;
   const hash = await sha256(token);
-  const rows = await sql`SELECT u.id, u.profile_id, u.email, u.name, u.is_admin, s.last_seen_at < now() - interval '1 day' AS stale
-    FROM sessions s JOIN users u ON u.id = s.user_id
-    WHERE s.token_hash = ${hash} AND s.expires_at > now()`;
+  const rows = await sql`SELECT u.id, u.profile_id, u.email, u.name, u.is_admin, u.is_owner,
+      s.last_seen_at < now() - interval '1 day' AS stale
+    FROM sessions s JOIN users u ON u.id = s.user_id JOIN profiles p ON p.id = u.profile_id
+    WHERE s.token_hash = ${hash} AND s.expires_at > now() AND (NOT p.disabled OR u.is_owner)`;
   const r = rows[0];
   if (!r) return null;
   if (r.stale) {
     await sql`UPDATE sessions SET last_seen_at = now(), expires_at = now() + ${`${SESSION_DAYS} days`}::interval
       WHERE token_hash = ${hash}`;
   }
-  return { id: r.id, profileId: r.profile_id, email: r.email, name: r.name, isAdmin: !!r.is_admin };
+  return { id: r.id, profileId: r.profile_id, email: r.email, name: r.name, isAdmin: !!r.is_admin, isOwner: !!r.is_owner };
 }
 
 export async function deleteSession(sql: Sql, request: Request) {
@@ -103,7 +106,9 @@ export async function login(
   email: string,
   password: string
 ): Promise<{ ok: true; userId: string } | { ok: false; error: string }> {
-  const rows = await sql`SELECT id, password_hash, failed_logins, locked_until > now() AS locked FROM users WHERE lower(email) = ${email}`;
+  const rows = await sql`SELECT u.id, u.password_hash, u.failed_logins, u.locked_until > now() AS locked,
+      p.disabled AND NOT u.is_owner AS disabled
+    FROM users u JOIN profiles p ON p.id = u.profile_id WHERE lower(u.email) = ${email}`;
   const u = rows[0];
   const wrong = { ok: false as const, error: "E-Mail oder Passwort stimmt nicht." };
   if (!u) {
@@ -118,7 +123,27 @@ export async function login(
       WHERE id = ${u.id}`;
     return wrong;
   }
+  if (u.disabled) return { ok: false, error: "Dieser Zugang ist gesperrt. Bitte beim Betreiber der App melden." };
   return { ok: true, userId: u.id };
+}
+
+/** Einladungslink: zufälliges Token, in der Datenbank nur sein Hash; 7 Tage gültig, einmal nutzbar */
+export const INVITE_DAYS = 7;
+export async function createInvite(sql: Sql, profileId: string): Promise<string> {
+  const bytes = crypto.getRandomValues(new Uint8Array(24));
+  const token = toB64(bytes).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  await sql`INSERT INTO invites (token_hash, profile_id, expires_at)
+    VALUES (${await sha256(token)}, ${profileId}, now() + ${`${INVITE_DAYS} days`}::interval)`;
+  return token;
+}
+
+/** Gültige Einladung → Familie (oder null) */
+export async function findInvite(sql: Sql, token: string): Promise<{ hash: string; profileId: string; familyName: string | null } | null> {
+  if (!token || token.length > 100) return null;
+  const hash = await sha256(token);
+  const rows = await sql`SELECT i.profile_id, p.name FROM invites i JOIN profiles p ON p.id = i.profile_id
+    WHERE i.token_hash = ${hash} AND i.used_at IS NULL AND i.expires_at > now() AND NOT p.disabled`;
+  return rows[0] ? { hash, profileId: rows[0].profile_id, familyName: rows[0].name ?? null } : null;
 }
 
 /** Gibt es schon Zugänge? (Solange nicht, gilt noch das alte Familien-Passwort.) Einmal true, bleibt true. */

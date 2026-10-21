@@ -16,6 +16,8 @@ export interface RecipeRequestContext {
   familyMembers: { type: string; age: number | null; favorite_foods: string[] | null; disliked_foods: string[] | null }[];
   /** Kommentare zu früheren Gerichten, z. B. „„Chili con Carne“ (2 von 5 Sternen): zu scharf für die Kinder“ */
   feedback?: string[];
+  /** Familie, der neue KI-Rezepte gehören */
+  profileId?: string;
 }
 
 const TYPE_LABEL: Record<Recipe["type"], string> = {
@@ -211,9 +213,10 @@ export async function generateRecipes(
   }
 
   for (const r of valid) {
-    await sql`INSERT INTO recipes (name, type, ingredients, instructions, duration_min, source)
-      VALUES (${r.name}, ${r.type}, ${r.ingredients}, ${r.instructions}, ${r.durationMin ?? null}, 'ai')
-      ON CONFLICT (name) DO NOTHING`;
+    if (!ctx.profileId) continue;
+    await sql`INSERT INTO recipes (profile_id, name, type, ingredients, instructions, duration_min, source)
+      VALUES (${ctx.profileId}, ${r.name}, ${r.type}, ${r.ingredients}, ${r.instructions}, ${r.durationMin ?? null}, 'ai')
+      ON CONFLICT (profile_id, name) DO NOTHING`;
   }
   return valid;
 }

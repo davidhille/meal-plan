@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Loader2, UtensilsCrossed } from 'lucide-react';
-import { getAuthStatus, login, setPassword, setupFirstAccount } from '../lib/api';
+import { acceptInvite, getAuthStatus, getInvite, login, setPassword, setupFirstAccount } from '../lib/api';
 
 interface Props {
   /** Nach erfolgreicher Anmeldung: App neu laden */
@@ -10,12 +10,29 @@ interface Props {
 const input =
   'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500';
 
+/** Einladungslink: ?einladung=<token> */
+export const inviteToken = () => {
+  try {
+    return new URLSearchParams(window.location.search).get('einladung');
+  } catch {
+    return null;
+  }
+};
+
+const dropInviteFromUrl = () => {
+  const url = new URL(window.location.href);
+  url.searchParams.delete('einladung');
+  window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+};
+
 /**
  * Anmeldung mit E-Mail und Passwort. Gibt es noch keine Zugänge, legt man hier den ersten an
  * (bestätigt mit dem bisherigen Familien-Passwort) – danach gilt nur noch die Anmeldung.
+ * Mit Einladungslink legt man den ersten Zugang einer neuen Familie an.
  */
 export default function LoginScreen({ onDone }: Props) {
-  const [mode, setMode] = useState<'loading' | 'login' | 'setup'>('loading');
+  const [mode, setMode] = useState<'loading' | 'login' | 'setup' | 'invite' | 'invalid-invite'>('loading');
+  const [familyName, setFamilyName] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPw] = useState('');
   const [name, setName] = useState('');
@@ -24,6 +41,16 @@ export default function LoginScreen({ onDone }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const token = inviteToken();
+    if (token) {
+      getInvite(token)
+        .then((r) => {
+          setFamilyName(r.familyName ?? null);
+          setMode(r.valid ? 'invite' : 'invalid-invite');
+        })
+        .catch(() => setMode('invalid-invite'));
+      return;
+    }
     getAuthStatus()
       .then((s) => setMode(s.needsSetup ? 'setup' : 'login'))
       .catch(() => setMode('login'));
@@ -36,7 +63,9 @@ export default function LoginScreen({ onDone }: Props) {
     setError(null);
     try {
       if (mode === 'setup') await setupFirstAccount({ familyPassword, name, email, password });
+      else if (mode === 'invite') await acceptInvite(inviteToken() ?? '', { name, email, password });
       else await login(email, password);
+      dropInviteFromUrl();
       setPassword('');
       onDone();
     } catch (err) {
@@ -62,6 +91,41 @@ export default function LoginScreen({ onDone }: Props) {
           </div>
         ) : (
           <>
+            {mode === 'invalid-invite' && (
+              <>
+                <p role="alert" className="text-sm text-gray-700">
+                  Dieser Einladungslink ist abgelaufen oder wurde schon benutzt. Bitte frag nach einem neuen Link – oder melde
+                  dich an, wenn du schon einen Zugang hast.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    dropInviteFromUrl();
+                    setMode('login');
+                  }}
+                  className="bg-brand-700 hover:bg-brand-800 text-white text-sm font-medium rounded-lg py-2"
+                >
+                  Zur Anmeldung
+                </button>
+              </>
+            )}
+            {mode === 'invite' && (
+              <>
+                <p className="text-sm text-gray-700">
+                  Willkommen{familyName ? <> bei <strong>{familyName}</strong></> : ''}! Lege deinen Zugang an. Weitere Personen
+                  deiner Familie lädst du danach in den Einstellungen unter „Zugänge“ ein.
+                </p>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Dein Name"
+                  aria-label="Dein Name"
+                  autoComplete="given-name"
+                  required
+                  className={input}
+                />
+              </>
+            )}
             {mode === 'setup' && (
               <>
                 <p className="text-xs text-gray-600">
@@ -89,6 +153,8 @@ export default function LoginScreen({ onDone }: Props) {
                 />
               </>
             )}
+            {mode !== 'invalid-invite' && (
+            <>
             <input
               type="email"
               value={email}
@@ -104,10 +170,10 @@ export default function LoginScreen({ onDone }: Props) {
               type="password"
               value={password}
               onChange={(e) => setPw(e.target.value)}
-              placeholder={mode === 'setup' ? 'Neues Passwort (mind. 8 Zeichen)' : 'Passwort'}
-              aria-label={mode === 'setup' ? 'Neues Passwort' : 'Passwort'}
-              autoComplete={mode === 'setup' ? 'new-password' : 'current-password'}
-              minLength={mode === 'setup' ? 8 : undefined}
+              placeholder={mode === 'login' ? 'Passwort' : 'Neues Passwort (mind. 8 Zeichen)'}
+              aria-label={mode === 'login' ? 'Passwort' : 'Neues Passwort'}
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              minLength={mode === 'login' ? undefined : 8}
               required
               className={input}
             />
@@ -122,10 +188,12 @@ export default function LoginScreen({ onDone }: Props) {
               className="flex items-center justify-center gap-2 bg-brand-700 hover:bg-brand-800 disabled:bg-brand-300 text-white text-sm font-medium rounded-lg py-2"
             >
               {busy && <Loader2 size={14} className="animate-spin" />}
-              {mode === 'setup' ? 'Zugang anlegen' : 'Anmelden'}
+              {mode === 'login' ? 'Anmelden' : 'Zugang anlegen'}
             </button>
             {mode === 'login' && (
               <p className="text-[11px] text-gray-500 text-center">Passwort vergessen? Ein Admin eurer Familie kann es zurücksetzen.</p>
+            )}
+            </>
             )}
           </>
         )}

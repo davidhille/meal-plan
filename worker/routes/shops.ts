@@ -10,10 +10,10 @@ import { enableShopLabel, getShopState, loadConnection, saveConnection } from ".
 import { getProfile } from "../repo";
 
 
-export async function shopRoutes({ request, env, sql, body, parts }: Ctx): Promise<Response | null> {
+export async function shopRoutes({ request, env, sql, body, parts, user }: Ctx): Promise<Response | null> {
   // ---------- Shops (Einstellungen, Verbinden, Suche, Warenkorb) ----------
   if (parts[0] === "shops") {
-    const p = await getProfile(sql);
+    const p = await getProfile(sql, user);
     const provider = parts[1];
     const action = parts[2];
 
@@ -71,7 +71,7 @@ export async function shopRoutes({ request, env, sql, body, parts }: Ctx): Promi
     // Shop trennen bzw. deaktivieren (Liste weg, Artikel fallen auf die Standard-Liste zurück)
     if (request.method === "DELETE" && !action) {
       await sql`DELETE FROM shop_connections WHERE profile_id = ${p.id} AND provider = ${provider}`;
-      if (provider !== "knuspr") await sql`DELETE FROM shopping_labels WHERE profile_id = ${p.id} AND id = ${provider}`;
+      await sql`DELETE FROM shopping_labels WHERE profile_id = ${p.id} AND id = ${provider}`;
       return json(await getShopState(sql, p.id));
     }
 

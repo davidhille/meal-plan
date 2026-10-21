@@ -24,7 +24,7 @@ const deleteDevice = (sql: Sql, profileId: string, endpoint: string) =>
 export async function pushRoutes(ctx: Ctx): Promise<Response | null> {
   const { request, sql, body, route } = ctx;
   if (!route.startsWith("GET /push") && !route.startsWith("POST /push") && !route.startsWith("PUT /push")) return null;
-  const p = await getProfile(sql);
+  const p = await getProfile(sql, ctx.user);
 
   if (route === "GET /push") return json(await pushState(ctx, p.id));
 

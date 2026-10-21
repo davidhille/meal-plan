@@ -53,7 +53,60 @@ export interface AuthUser {
   name: string;
   email: string;
   isAdmin: boolean;
+  /** Betreiber der App (sieht die Administration) */
+  isOwner?: boolean;
   lastLoginAt?: string | null;
+}
+
+export interface Family {
+  id: string;
+  name: string | null;
+  disabled: boolean;
+  createdAt: string;
+  userCount: number;
+  lastLoginAt: string | null;
+  planCount: number;
+  openInvites: number;
+  /** Die eigene Familie (lässt sich nicht sperren/löschen) */
+  own: boolean;
+}
+
+/** Einladungslink prüfen (ohne Anmeldung) */
+export async function getInvite(token: string): Promise<{ valid: boolean; familyName?: string | null }> {
+  return requestPublic('GET', `/auth/invite/${encodeURIComponent(token)}`);
+}
+
+/** Über den Einladungslink den ersten Zugang einer Familie anlegen (meldet direkt an) */
+export async function acceptInvite(token: string, input: { name: string; email: string; password: string }): Promise<void> {
+  await requestPublic('POST', `/auth/invite/${encodeURIComponent(token)}`, input);
+}
+
+// ---------- Administration (nur Betreiber) ----------
+
+export interface InviteResult {
+  families: Family[];
+  inviteUrl: string;
+  days: number;
+}
+
+export async function listFamilies(): Promise<Family[]> {
+  return request('GET', '/admin/families');
+}
+
+export async function createFamily(name: string): Promise<InviteResult> {
+  return request('POST', '/admin/families', { name });
+}
+
+export async function newFamilyInvite(id: string): Promise<InviteResult> {
+  return request('POST', `/admin/families/${id}/invite`);
+}
+
+export async function updateFamily(id: string, change: { name?: string; disabled?: boolean }): Promise<Family[]> {
+  return request('PUT', `/admin/families/${id}`, change);
+}
+
+export async function deleteFamily(id: string): Promise<Family[]> {
+  return request('DELETE', `/admin/families/${id}`);
 }
 
 /** Wer ist angemeldet, und gibt es überhaupt schon Zugänge? */

@@ -12,6 +12,7 @@ import DayRulesSettings from './DayRulesSettings';
 import { CONDITION_LABELS, FOCUS_LABELS } from '../lib/health';
 import CollapsibleCard from './CollapsibleCard';
 import AccountSettings from './AccountSettings';
+import AdminSettings from './AdminSettings';
 import PlanCreationModal from './PlanCreationModal';
 
 interface SettingsViewProps {
@@ -162,6 +163,7 @@ export default function SettingsView({
 
         {/* Zugänge: Abmelden, Passwort, Zugänge der Familie */}
         <AccountSettings />
+        <AdminSettings />
 
         {/* Einkaufen & Shops */}
         <ShopSettings />

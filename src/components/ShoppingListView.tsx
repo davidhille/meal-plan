@@ -478,7 +478,8 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
             label.id === firstShopLabel && (
               <ShoppingSection
                 key={DELIVERY_LABEL.id}
-                label={DELIVERY_LABEL}
+                // Nur ein Shop verbunden: Liste heißt wie der Shop
+                label={productShops.length === 1 ? { ...DELIVERY_LABEL, name: productShops[0].label.name } : DELIVERY_LABEL}
                 items={deliveryItems}
                 allLabels={labels}
                 deliveryShops={productShops}

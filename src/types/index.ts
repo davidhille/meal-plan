@@ -141,8 +141,9 @@ export interface ShoppingLabel {
   provider?: ShopProvider | null;
 }
 
+/** Start-Listen (fest, nicht löschbar); Knuspr/Picnic kommen erst beim Verbinden des Shops dazu */
 export const DEFAULT_LABELS: ShoppingLabel[] = [
-  { id: 'knuspr', name: 'Knuspr', color: '#22c55e' },
+  { id: 'einkauf', name: 'Einkauf', color: '#3b82f6' },
   { id: 'metzger', name: 'Metzger', color: '#f97316' },
 ];
 

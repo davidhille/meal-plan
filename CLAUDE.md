@@ -41,9 +41,10 @@ Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHu
 | `index.ts` | Einstieg (läuft vor den Assets, `run_worker_first`): `www.` → 301 ohne www, `/api/*` → `handleApi`, sonst Assets; `scheduled` (Cron alle 15 Min) → `runRoutines` |
 | `api.ts` | Einstieg der API: Datenbank, Migration, Anmeldung (Sitzungs-Cookie → `ctx.user`), Origin-Prüfung bei ändernden Anfragen, verteilt an die Routen; Fehler → JSON |
 | `auth.ts`, `routes/auth.ts` | Login pro Person: PBKDF2-Hash (100.000 Iterationen, Workers-Maximum), Sitzungen in `sessions` (nur SHA-256 des Tokens, Cookie `mp_session` HttpOnly/Secure/Lax, 180 Tage), Sperre nach 8 Fehlversuchen. `/auth/status`, `/auth/login`, `/auth/logout`, `/auth/setup` (erster Zugang, nur mit `APP_PASSWORD` und solange `users` leer ist) sind öffentlich; `/auth/password` und `/users` (nur Admin) brauchen eine Sitzung. Solange es keine Zugänge gibt, gilt noch `X-App-Password` |
-| `http.ts` | `Env`, Anfrage-Kontext `Ctx`, `json()` |
+| `routes/admin.ts` | Administration (nur `users.is_owner`): Familien anlegen (Start-Listen + Einladung), Einladungslink, umbenennen, sperren (`profiles.disabled`), löschen. Einladungen in `invites` (nur Token-Hash, 7 Tage, einmal); angenommen über öffentliches `/auth/invite/:token` |
+| `http.ts` | `Env`, Anfrage-Kontext `Ctx` (inkl. `user`), `json()` |
 | `routes/*.ts` | Routen nach Bereich (`profile`, `plans`, `recipes`, `shopping`, `shops`). Jede Datei prüft `route`/`parts` und gibt eine `Response` oder `null` (nicht zuständig) zurück |
-| `repo.ts` | Gemeinsame DB-Zugriffe: `getProfile`, `loadContext`, `loadPool`, Favoriten, Spaltenlisten (`PLAN_COLS` …) |
+| `repo.ts` | Gemeinsame DB-Zugriffe: `getProfile(sql, user)` (Familie der angemeldeten Person; ohne Anmeldung nur im Übergang die erste), `loadContext`, `loadPool`, Favoriten, Spaltenlisten (`PLAN_COLS` …) |
 | `planning.ts` | Plan erstellen, Gericht austauschen/ersetzen, Rezept-Übersicht (`unsuitable` = passt nicht zu den Gesundheitseinstellungen). `createPlan(…, extendPlanId)` = Plan verlängern (`POST /plans/:id/extend`): nur `datesToFill` – belegte Tage und `meal_plans.cleared_dates` (Tag geleert / Gericht weg verschoben) bleiben |
 | `recipeEdits.ts` | Gericht bearbeiten/zurücksetzen. Grundsammlung: Zeile in `recipes` mit `replaces` = Originalname; Umbenennen zieht Bewertung, Ausblenden, Favorit, Filter, Bild und kommende Plan-Tage mit |
 | `shoppingList.ts` | Einkaufsliste eines Plans aus DB-Daten (Labels, Zustand, Produkt-Verknüpfungen, Shop-Regeln) |
@@ -97,8 +98,10 @@ fehlende Migrationen beim ersten Aufruf nach einem Deploy aus (`migrate.ts`), ei
    `schema:2026101207`); stimmt er, führt ein Kaltstart keine DDL aus.
    Ausgeführte Migrationen stehen in `schema_migrations`.
 
-Ein Familienprofil (`getProfile` nimmt das erste); Zugänge (`users`) gehören über `profile_id` zur Familie. Fast alle Tabellen hängen an `profile_id`;
-`recipes` (KI-/Import-Rezepte) und `meal_images` sind geteilt.
+Mehrere Familien (`profiles`, eine pro Familie); Zugänge (`users`) gehören über `profile_id` zur Familie. Alle Tabellen
+mit Familiendaten hängen an `profile_id` – **jede Abfrage auf die Familie aus `getProfile(sql, user)` beschränken**, IDs aus
+der Anfrage immer gegen die Familie prüfen (z. B. `planOwned`). `recipes` (KI/Import/Bearbeitungen) gehört seit 0016 einer
+Familie (eindeutig je `(profile_id, name)`); geteilt sind nur `meal_images` und `app_settings`.
 
 Daten-Konventionen:
 - Datumsfelder als Text ausgeben (`meal_date::text`), Zeitzonen-Fallen beachten: im Frontend nie `toISOString()` für lokale Daten.

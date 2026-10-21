@@ -29,7 +29,7 @@ export function favoriteToRecipe(f: Row): Recipe {
 export async function loadPool(sql: Sql, profileId: string): Promise<{ pool: Recipe[]; favorites: Row[] }> {
   const [favorites, dbRecipes] = await Promise.all([
     loadFavorites(sql, profileId),
-    sql`SELECT name, type, ingredients, instructions, duration_min, replaces FROM recipes`,
+    sql`SELECT name, type, ingredients, instructions, duration_min, replaces FROM recipes WHERE profile_id = ${profileId}`,
   ]);
   const pool: Recipe[] = [...MEAL_DATABASE];
   const index = new Map(pool.map((m, i) => [m.name, i]));
@@ -65,7 +65,16 @@ export async function latestPlan(sql: Sql, profileId: string) {
 }
 
 /** Das eine Familienprofil (wird beim ersten Aufruf angelegt) */
-export async function getProfile(sql: Sql) {
+/**
+ * Familie der angemeldeten Person. Ohne Anmeldung (nur im Übergang, solange es keine Zugänge gibt, und für den
+ * ersten Zugang) die erste Familie – sie wird beim allerersten Aufruf angelegt.
+ */
+export async function getProfile(sql: Sql, user?: { profileId: string } | null) {
+  if (user) {
+    const own = await sql`SELECT * FROM profiles WHERE id = ${user.profileId}`;
+    if (!own[0]) throw new Error("Familie nicht gefunden");
+    return own[0];
+  }
   const rows = await sql`SELECT * FROM profiles ORDER BY created_at LIMIT 1`;
   if (rows[0]) return rows[0];
   const created = await sql`INSERT INTO profiles DEFAULT VALUES RETURNING *`;
@@ -82,6 +91,7 @@ export async function loadContext(sql: Sql, profileId: string): Promise<ScoringC
   ]);
   const p = profiles[0] ?? {};
   return {
+    profileId,
     healthFocus: p.health_focus || [],
     healthConditions: p.health_conditions || [],
     meatMaxPerWeek: p.meat_max_per_week ?? null,
