@@ -1,8 +1,9 @@
-# Projektübersicht – Familien-Speiseplaner
+# Projektübersicht – miyummy (Familien-Speiseplaner)
 
 Deutschsprachige App für die Essensplanung einer Familie: Speiseplan, Rezepte, Nachtische, Einkaufsliste mit
-Preisvergleich und Warenkorb bei Knuspr und Picnic. Läuft unter https://meal-plan.davidshille.workers.dev/ und lässt
-sich auf dem Handy als App installieren.
+Preisvergleich und Warenkorb bei Knuspr und Picnic. Läuft unter https://miyummy.com/ (zusätzlich https://meal-plan.davidshille.workers.dev/) und lässt
+sich auf dem Handy als App installieren. Name und Logo: „miyummy“ (Schriftzug in Poppins, i-Punkt als Teller-Ring);
+das App-Icon (Teller mit Besteck) bleibt.
 
 **Technik:** React + Vite + TypeScript + Tailwind · Cloudflare Worker (API, Zeitplan, KI) · Neon Postgres.
 Entwickler-Infos stehen in `CLAUDE.md`, die Einrichtung in `SETUP_NEON_CLOUDFLARE.md`.

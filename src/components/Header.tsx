@@ -1,4 +1,5 @@
 import AppIcon from './AppIcon';
+import Logo from './Logo';
 
 export default function Header() {
   return (
@@ -6,8 +7,10 @@ export default function Header() {
       <div className="flex items-center gap-3 px-4 pt-4 pb-1 max-w-2xl mx-auto">
         <AppIcon size={40} />
         <div>
-          <h1 className="text-lg font-extrabold tracking-tight text-brand-700 leading-tight">Familien-Speiseplaner</h1>
-          <p className="text-xs text-gray-500">& Einkaufs-Assistent</p>
+          <h1 className="leading-none">
+            <Logo size={26} />
+          </h1>
+          <p className="text-xs text-gray-500 mt-1">Familien-Speiseplaner</p>
         </div>
       </div>
     </header>
