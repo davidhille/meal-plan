@@ -47,11 +47,12 @@ export default function AccountSettings() {
 
   return (
     <CollapsibleCard storageKey="zugaenge" title="Zugänge" icon={<Users size={16} />} summary={`Angemeldet als ${me.name}`}>
-      <div className="space-y-5">
-        <div className="flex items-center justify-between gap-3">
+      <div className="px-4 pb-4 space-y-4">
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 border border-gray-100 px-4 py-3">
           <div className="min-w-0">
             <p className="text-sm font-semibold text-gray-800 truncate">{me.name}</p>
             <p className="text-xs text-gray-500 truncate">{me.email}{me.isAdmin ? ' · Admin' : ''}</p>
+            <p className="text-[11px] text-gray-500 mt-0.5">Angemeldet auf diesem Gerät</p>
           </div>
           <button
             onClick={async () => {
@@ -72,17 +73,17 @@ export default function AccountSettings() {
               setPw({ current: '', next: '' });
             }, 'Passwort geändert.');
           }}
-          className="space-y-2"
+          className="space-y-2 pt-4 border-t border-gray-100"
         >
           <p className="flex items-center gap-1.5 text-xs font-semibold text-gray-600">
             <KeyRound size={13} aria-hidden="true" /> Eigenes Passwort ändern
           </p>
           <input type="password" className={input} placeholder="Bisheriges Passwort" aria-label="Bisheriges Passwort"
             autoComplete="current-password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} required />
-          <div className="flex gap-2">
-            <input type="password" className={input} placeholder="Neues Passwort (mind. 8 Zeichen)" aria-label="Neues Passwort"
-              autoComplete="new-password" minLength={8} value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} required />
-            <button type="submit" disabled={busy} className={button}>Ändern</button>
+          <input type="password" className={input} placeholder="Neues Passwort (mind. 8 Zeichen)" aria-label="Neues Passwort"
+            autoComplete="new-password" minLength={8} value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} required />
+          <div className="flex justify-end">
+            <button type="submit" disabled={busy} className={button}>Passwort ändern</button>
           </div>
         </form>
 
@@ -91,9 +92,13 @@ export default function AccountSettings() {
             <p className="text-xs font-semibold text-gray-600">Zugänge eurer Familie</p>
             <ul className="space-y-2">
               {users.map((u) => (
-                <li key={u.id} className="flex items-center gap-2">
+                <li key={u.id} className="flex items-center gap-2 rounded-xl bg-gray-50 border border-gray-100 pl-4 pr-2 py-2.5">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-800 truncate">{u.name}{u.isAdmin ? ' · Admin' : ''}</p>
+                    <p className="text-sm font-medium text-gray-800 truncate">
+                      {u.name}
+                      {u.id === me.id && <span className="font-normal text-gray-500"> (du)</span>}
+                      {u.isAdmin && <span className="ml-1.5 align-middle text-[10px] font-semibold uppercase tracking-wide text-brand-700">Admin</span>}
+                    </p>
                     <p className="text-xs text-gray-500 truncate">{u.email}</p>
                   </div>
                   {u.id !== me.id && (
@@ -120,7 +125,7 @@ export default function AccountSettings() {
                   setNewUser({ name: '', email: '', password: '', isAdmin: false });
                 }, 'Zugang angelegt. Gib die E-Mail und das Startpasswort weiter.');
               }}
-              className="space-y-2 rounded-xl bg-gray-50 p-3"
+              className="space-y-2 rounded-xl border border-dashed border-gray-200 p-3"
             >
               <p className="flex items-center gap-1.5 text-xs font-semibold text-gray-600">
                 <UserPlus size={13} aria-hidden="true" /> Zugang anlegen
