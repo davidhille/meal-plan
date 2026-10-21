@@ -172,8 +172,14 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
     // Turnus-Zähler nicht durch den alten Plan blockieren lassen
     await sql`UPDATE favorites SET last_planned = NULL WHERE profile_id = ${p.id}
       AND last_planned BETWEEN ${rows[0].start_date}::date AND ${rows[0].end_date}::date`;
+    const shared = await sql`SELECT share_hash FROM meal_plans WHERE id = ${id}`;
     await sql`DELETE FROM meal_plans WHERE id = ${id}`;
     const plan = await createPlan(env, sql, p.id, rows[0].start_date, rows[0].end_date);
+    // Geteilter Link gilt auch für den neu generierten Plan
+    if (shared[0]?.share_hash) {
+      await sql`UPDATE meal_plans SET share_hash = ${shared[0].share_hash} WHERE id = ${plan.id}`;
+      plan.shared = true;
+    }
     waitUntil(fillMissingImages(env, sql, 7, plan.id));
     return json(plan);
   }

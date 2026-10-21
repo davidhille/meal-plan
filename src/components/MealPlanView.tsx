@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2, CalendarPlus, RefreshCw, Loader2, Download } from 'lucide-react';
+import { Trash2, CalendarPlus, RefreshCw, Loader2, Download, Share2 } from 'lucide-react';
 import { DayRules, Dessert, ImageCredit, Meal, MealPlan, MealType, PlanDessert, PlanMeal } from '../types';
 import { generateMealImage, removeMealImage } from '../lib/api';
 import { planDessertToMeal } from '../lib/desserts';
@@ -9,6 +9,7 @@ import { ruleForDate } from '../lib/dayRules';
 import { seasonHighlights } from '../lib/season';
 import TodayCard from './TodayCard';
 import GuestStepper from './GuestStepper';
+import SharePlanDialog from './SharePlanDialog';
 import WeekReviewCard from './WeekReviewCard';
 import { weekReview } from '../lib/weekReview';
 import MoveMealSheet from './MoveMealSheet';
@@ -50,6 +51,8 @@ interface MealPlanViewProps {
   onRemove?: (pm: PlanMeal) => Promise<void>;
   /** Brotzeit statt Kochen (zurück über onRegenerate = doch kochen) */
   onBrotzeit?: (pm: PlanMeal) => Promise<void>;
+  /** Plan wurde geteilt bzw. der Link zurückgezogen */
+  onSharedChange?: (shared: boolean) => void;
   /** Gäste an einem Tag setzen (wirft bei Fehlern) */
   onSetGuests?: (pm: PlanMeal, guests: number) => Promise<void>;
 }
@@ -108,6 +111,7 @@ export default function MealPlanView({
   onRemove,
   onBrotzeit,
   onSetGuests,
+  onSharedChange,
 }: MealPlanViewProps) {
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   /** Plan-Eintrag des geöffneten Gerichts (für die Gäste) */
@@ -118,6 +122,7 @@ export default function MealPlanView({
   const [openDessert, setOpenDessert] = useState<{ pm: PlanMeal; dessert: PlanDessert } | null>(null);
   const [removeDessertFor, setRemoveDessertFor] = useState<PlanMeal | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [confirmRegenerate, setConfirmRegenerate] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -212,6 +217,14 @@ export default function MealPlanView({
               {formatShortDate(plan.start_date)} – {formatShortDate(plan.end_date)}
             </span>
             <span className="flex items-center gap-3">
+              <button
+                onClick={() => setSharing(true)}
+                title="Nur-Lese-Link für Familie und Freunde"
+                className="flex items-center gap-1 text-xs font-medium text-brand-700 hover:text-brand-800"
+              >
+                <Share2 size={13} aria-hidden="true" />
+                Teilen
+              </button>
               <button
                 onClick={() => exportPlan(plan, allPlanMeals ?? planMeals ?? [], defaultPortions ?? 4)}
                 title="Plan mit allen Rezepten herunterladen oder drucken"
@@ -341,6 +354,10 @@ export default function MealPlanView({
           </div>
         </div>
       </div>
+
+      {sharing && plan && (
+        <SharePlanDialog plan={plan} onSharedChange={(s) => onSharedChange?.(s)} onClose={() => setSharing(false)} />
+      )}
 
       {moving && plan && onMove && onRemove && (
         <MoveMealSheet

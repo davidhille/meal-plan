@@ -996,3 +996,37 @@ export function wishToQuery(wish: string): string {
     .trim()
     .slice(0, 60);
 }
+
+// ---------- Plan teilen ----------
+
+/** Nur-Lese-Link für den Plan erzeugen (ein früherer Link wird ungültig) */
+export async function sharePlan(planId: string): Promise<string> {
+  return (await request<{ url: string }>('POST', `/plans/${enc(planId)}/share`)).url;
+}
+
+/** Geteilten Link zurückziehen */
+export async function unsharePlan(planId: string): Promise<void> {
+  await request('DELETE', `/plans/${enc(planId)}/share`);
+}
+
+export interface SharedPlan {
+  family: string | null;
+  startDate: string;
+  endDate: string;
+  meals: {
+    date: string;
+    name: string;
+    type: MealType;
+    durationMin: number | null;
+    ingredients: string[];
+    instructions: string;
+    brotzeit: boolean;
+    dessert: string | null;
+    imageUrl: string | null;
+  }[];
+}
+
+/** Geteilten Plan ohne Anmeldung lesen */
+export async function getSharedPlan(token: string): Promise<SharedPlan> {
+  return requestPublic('GET', `/share/${encodeURIComponent(token)}`);
+}
