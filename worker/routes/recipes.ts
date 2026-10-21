@@ -1,7 +1,7 @@
 // Rezept-Übersicht, Import, eigene Rezepte, Favoriten, Rezept-Filter, Bilder
 import type { Ctx } from "../http";
 import { json } from "../http";
-import { generateImage, removeImage, storeSourcePhoto } from "../images";
+import { effectiveImageUrl, generateImage, removeImage, storeSourcePhoto } from "../images";
 import { importRecipeFromUrl, ImportError } from "../recipeImport";
 import { loadChefkochRecipe, searchChefkoch, type ChefkochFilters } from "../chefkoch";
 import { violatesHealthConditions } from "../meals";
@@ -265,7 +265,7 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
     // Foto der Quelle übernehmen (nur von Chefkoch, mit Link zum Original)
     const photo = String(body.imageUrl ?? "");
     if (/^https:\/\/([a-z0-9-]+\.)*chefkoch-cdn\.de\//i.test(photo) || /^https:\/\/([a-z0-9-]+\.)*chefkoch\.de\//i.test(photo)) {
-      await storeSourcePhoto(sql, name, photo, "Chefkoch", String(body.sourceUrl || "https://www.chefkoch.de/"));
+      await storeSourcePhoto(sql, name, photo, "Chefkoch", String(body.sourceUrl || "https://www.chefkoch.de/"), p.id);
     }
     return json({ ok: true, favorites: await loadFavorites(sql, p.id) });
   }
@@ -372,20 +372,28 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
   if (route === "POST /meal-images/generate") {
     const name = String(body.mealName ?? "").trim();
     if (!name) return json({ error: "mealName fehlt" }, 400);
+    const p = await getProfile(sql, user);
     if (!body.force) {
-      const existing = await sql`SELECT image_url FROM meal_images WHERE meal_name = ${name} AND image_data IS NOT NULL`;
-      if (existing[0]) return json({ imageUrl: existing[0].image_url });
+      const existing = await effectiveImageUrl(sql, name, p.id);
+      if (existing) return json({ imageUrl: existing });
     }
-    const res = await generateImage(env, sql, name);
+    // „Neues Bild“ bzw. eigene Fassung vorhanden → nur für diese Familie; sonst (noch gar kein Bild) gemeinsam.
+    // Nachtische der Sammlung haben immer das gemeinsame Bild (shared).
+    const own = await sql`SELECT 1 FROM meal_images WHERE profile_id = ${p.id} AND meal_name = ${name}`;
+    const target = !body.shared && (body.force || own[0]) ? p.id : null;
+    const res = await generateImage(env, sql, name, false, target);
     if ("error" in res) return json({ error: res.error, quota: !!res.quota }, res.quota ? 429 : 502);
-    const credit = await sql`SELECT source, credit_name, credit_url FROM meal_images WHERE meal_name = ${name}`;
+    const credit = target
+      ? await sql`SELECT source, credit_name, credit_url FROM meal_images WHERE profile_id = ${target} AND meal_name = ${name}`
+      : await sql`SELECT source, credit_name, credit_url FROM meal_images WHERE profile_id IS NULL AND meal_name = ${name}`;
     return json({ imageUrl: res.url, source: res.source, creditName: credit[0]?.credit_name, creditUrl: credit[0]?.credit_url });
   }
   // Bild entfernen, weil es nicht passt (kommt nicht wieder; später ggf. KI-Bild)
   if (route === "POST /meal-images/remove") {
     const name = String(body.mealName ?? "").trim();
     if (!name) return json({ error: "mealName fehlt" }, 400);
-    await removeImage(sql, name);
+    const p = await getProfile(sql, user);
+    await removeImage(sql, name, p.id);
     return json({ ok: true });
   }
 

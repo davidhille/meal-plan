@@ -2,7 +2,7 @@
 import type { Sql } from "./db";
 import type { Env } from "./http";
 import { pickMeal, pickReplacement, preferredTypeFor, scoreMeal, violatesHealthConditions, MEAL_DATABASE, type Recipe, type ScoringContext } from "./meals";
-import { generateImage } from "./images";
+import { effectiveImageUrl, generateImage } from "./images";
 import { generateRecipes } from "./aiRecipes";
 import { PLAN_COLS, PLAN_MEAL_COLS, favoriteToRecipe, loadContext, loadPool } from "./repo";
 import { isMeatDish, isoWeekKey } from "./nutrition";
@@ -299,8 +299,8 @@ export async function replaceMeal(env: Env, sql: Sql, profileId: string, planMea
   );
   const replacement = inserted[0];
   await markFavoritesPlanned(sql, profileId, old.plan_id);
-  const img = await sql`SELECT image_url FROM meal_images WHERE meal_name = ${best.name} AND image_data IS NOT NULL`;
-  if (img[0]) replacement.image_url = img[0].image_url;
+  const img = await effectiveImageUrl(sql, best.name, profileId);
+  if (img) replacement.image_url = img;
   else waitUntil(generateImage(env, sql, best.name));
   return replacement;
 }
@@ -313,7 +313,9 @@ export async function recipeCatalog(sql: Sql, profileId: string) {
   const [{ pool, favorites }, ctx, images, dbRecipes] = await Promise.all([
     loadPool(sql, profileId),
     loadContext(sql, profileId),
-    sql`SELECT meal_name, image_url, source, credit_name, credit_url FROM meal_images WHERE image_data IS NOT NULL OR source = 'removed'`,
+    sql`SELECT DISTINCT ON (meal_name) meal_name, image_url, source, credit_name, credit_url FROM meal_images
+      WHERE (image_data IS NOT NULL OR source = 'removed') AND (profile_id IS NULL OR profile_id = ${profileId})
+      ORDER BY meal_name, profile_id IS NULL`,
     sql`SELECT name, source, replaces FROM recipes WHERE profile_id = ${profileId}`,
   ]);
   const imageBy = new Map(images.map((r) => [r.meal_name as string, r]));
@@ -384,8 +386,8 @@ export async function replaceWithRecipe(env: Env, sql: Sql, profileId: string, p
   );
   const replacement = inserted[0];
   await markFavoritesPlanned(sql, profileId, old.plan_id);
-  const img = await sql`SELECT image_url FROM meal_images WHERE meal_name = ${recipe.name} AND image_data IS NOT NULL`;
-  if (img[0]) replacement.image_url = img[0].image_url;
+  const img = await effectiveImageUrl(sql, recipe.name, profileId);
+  if (img) replacement.image_url = img;
   else waitUntil(generateImage(env, sql, recipe.name));
   return replacement;
 }
