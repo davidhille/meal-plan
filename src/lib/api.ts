@@ -444,6 +444,11 @@ export async function setPlanMealBrotzeit(planMealId: string): Promise<PlanMeal>
   return result.replacement;
 }
 
+/** Gäste an einem Tag (zusätzliche Portionen) speichern; wirft bei Fehlern */
+export async function setPlanMealGuests(planMealId: string, guests: number): Promise<number> {
+  return (await request<{ guests: number }>('PUT', `/plan-meals/${enc(planMealId)}/guests`, { guests })).guests;
+}
+
 export async function removePlanMeal(planMealId: string): Promise<void> {
   await request('DELETE', `/plan-meals/${enc(planMealId)}`);
 }

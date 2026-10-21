@@ -39,7 +39,7 @@ export async function getShopping(sql: Sql, profileId: string, planId: string, r
   const keyPrefix = range ? (multiWeek ? `${range.from}..${range.to}:` : `${range.from}:`) : "";
   const [labels, meals, members, states, extras, prefs, links, settingsRows, pantry] = await Promise.all([
     getLabels(sql, profileId),
-    sql`SELECT ingredients, dessert FROM plan_meals WHERE plan_id = ${planId} AND NOT rejected
+    sql`SELECT ingredients, dessert, guests FROM plan_meals WHERE plan_id = ${planId} AND NOT rejected
       AND meal_date BETWEEN ${from}::date AND ${to}::date`,
     sql`SELECT type, age FROM family_members WHERE profile_id = ${profileId}`,
     sql`SELECT item_key, checked, label FROM shopping_item_state WHERE plan_id = ${planId}`,
@@ -61,7 +61,9 @@ export async function getShopping(sql: Sql, profileId: string, planId: string, r
     new Set(custom.map((r) => r.name_key as string)),
     // Nachtische haben eine feste Menge (z. B. ein ganzer Kuchen) und werden nicht umgerechnet
     meals.flatMap((m) => (m.dessert?.ingredients ? [m.dessert.ingredients as string[]] : [])),
-    excluded
+    excluded,
+    // Gäste an diesem Tag: zusätzliche Portionen nur für dieses Gericht
+    meals.map((m) => Number(m.guests) || 0)
   );
   const stateBy = new Map(states.map((r) => [r.item_key, r]));
   const prefBy = new Map(prefs.map((r) => [r.name_key, r]));

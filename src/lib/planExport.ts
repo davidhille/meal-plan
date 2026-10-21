@@ -44,7 +44,6 @@ function recipeBlock(title: string, ingredients: string[], instructions: string,
 
 /** Speiseplan mit allen Rezepten als eigenständige, druckbare HTML-Seite */
 export function buildPlanHtml(plan: MealPlan, meals: PlanMeal[], portions: number): string {
-  const factor = portions / RECIPE_BASE_PORTIONS;
   const list = meals.filter((m) => !m.rejected).sort((a, b) => a.meal_date.localeCompare(b.meal_date));
   const range = `${shortDate(plan.start_date)} – ${shortDate(plan.end_date)}`;
 
@@ -58,7 +57,7 @@ export function buildPlanHtml(plan: MealPlan, meals: PlanMeal[], portions: numbe
       const meta = [
         m.meal_type === 'fleisch' && isFishDish({ name: m.meal_name, ingredients: m.ingredients ?? [] }) ? 'Fisch' : TYPE_LABEL[m.meal_type] ?? '',
         m.duration_min ? `${m.duration_min} Min` : '',
-        `für ${formatPortions(portions)} Portionen`,
+        `für ${formatPortions(portions + (m.guests ?? 0))} Portionen${m.guests ? ` (mit ${m.guests === 1 ? '1 Gast' : `${m.guests} Gästen`})` : ''}`,
       ].filter(Boolean);
       const dessert = m.dessert
         ? `<div class="dessert-box">${recipeBlock(
@@ -71,7 +70,7 @@ export function buildPlanHtml(plan: MealPlan, meals: PlanMeal[], portions: numbe
       return `
       <section class="recipe">
         <p class="day">${esc(longDate(m.meal_date))}</p>
-        ${recipeBlock(m.meal_name, m.ingredients.map((i) => scaleIngredient(i, factor)), m.instructions, meta)}
+        ${recipeBlock(m.meal_name, m.ingredients.map((i) => scaleIngredient(i, (portions + (m.guests ?? 0)) / RECIPE_BASE_PORTIONS)), m.instructions, meta)}
         ${dessert}
       </section>`;
     })

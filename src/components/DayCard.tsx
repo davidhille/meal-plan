@@ -1,5 +1,5 @@
 import { Meal, MealType, PlanDessert } from '../types';
-import { ChevronRight, Leaf, Beef, Fish, Sunset, Star, X, Heart, RefreshCw, Clock, Loader2, CakeSlice, CalendarDays, Sprout } from 'lucide-react';
+import { ChevronRight, Leaf, Beef, Fish, Sunset, Star, X, Heart, RefreshCw, Clock, Loader2, CakeSlice, CalendarDays, Sprout, UserPlus } from 'lucide-react';
 import { dessertPreview } from '../lib/desserts';
 import { isFishDish } from '../lib/recipeCategories';
 
@@ -24,6 +24,8 @@ interface DayCardProps {
   onRemoveDessert?: () => void;
   /** Saison-Zutaten des Gerichts (z. B. „Kürbis“) */
   season?: string[];
+  /** Gäste an diesem Tag */
+  guests?: number;
 }
 
 const typeConfig: Record<MealType, { bar: string; label: string; icon: React.ReactNode }> = {
@@ -67,6 +69,7 @@ export default function DayCard({
   onMove,
   onRemoveDessert,
   season,
+  guests = 0,
 }: DayCardProps) {
   // „Fleisch“-Tage mit Fisch oder Meeresfrüchten (ohne Fleisch) als „Fisch“ anzeigen
   const config =
@@ -115,6 +118,12 @@ export default function DayCard({
                   {meal.durationMin} Min
                 </span>
               ) : null}
+              {guests > 0 && (
+                <span className="flex items-center gap-1 text-xs font-medium text-brand-700">
+                  <UserPlus size={11} aria-hidden="true" />+{guests}
+                  <span className="sr-only">{guests === 1 ? 'Gast' : 'Gäste'}</span>
+                </span>
+              )}
               {season && season.length > 0 && (
                 <span className="flex items-center gap-1 min-w-0 text-xs text-coral-700" title="Hat gerade Saison">
                   <Sprout size={11} aria-hidden="true" className="flex-shrink-0" />

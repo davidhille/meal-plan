@@ -239,6 +239,8 @@ export interface PlanMeal {
   dessert?: PlanDessert | null;
   /** Brotzeit statt Kochen (Platzhalter ohne Zutaten) */
   brotzeit?: boolean;
+  /** Gäste an diesem Tag (zusätzliche Portionen) */
+  guests?: number;
 }
 
 /** Am Gericht gespeicherter Nachtisch – die Zutaten landen mit fester Menge auf der Einkaufsliste */

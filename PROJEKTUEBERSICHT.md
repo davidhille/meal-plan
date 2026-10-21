@@ -64,6 +64,8 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
 - **Nur leere Tage füllen** (in der Rückfrage bei „Komplett neuen Plan generieren“): gleicher Zeitraum, aber nur Tage
   ohne Gericht werden geplant – z. B. die Lücke, die ein in die Zukunft verschobenes Gericht hinterlässt. Mit „Tag leeren“
   freigemachte Tage bleiben frei.
+- **Gäste pro Tag:** In der Rezept-Ansicht eines Plan-Gerichts „Gäste an diesem Tag“ (+/−). Die Portionen dieses Gerichts,
+  die Einkaufsliste und der Export rechnen die Gäste mit ein; die Karte im Plan zeigt „+2“. Bleibt beim Austauschen am Tag.
 - **Rezept-Ansicht:** Bild mit Quellenangabe, Zutaten mit **Portionen-Umrechnung** (Familie: Erwachsene 1, Kinder je nach Alter
   ½ bis 1 Portion; per +/− änderbar), Zubereitung Schritt für Schritt, Bewertung.
 - **Eure Bewertung mit Kommentar:** In jeder Rezept-Ansicht (Plan, Rezepte, Favoriten) stehen unter „Eure Bewertung“

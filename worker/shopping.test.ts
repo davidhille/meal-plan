@@ -63,6 +63,11 @@ describe("buildPlanItems", () => {
     expect(Object.keys(labels)).toContain("Frischer Thymian");
   });
 
+  test("Gäste: zusätzliche Portionen nur für dieses Gericht", () => {
+    const r = buildPlanItems([["400 g Spaghetti"], ["400 g Spaghetti"]], 4, new Set(), [], new Set(), [4, 0]);
+    expect(r.items.map((i) => i.display)).toEqual(["1,2 kg Spaghetti"]);
+  });
+
   test("Nachtisch-Zutaten werden nicht umgerechnet", () => {
     const r = buildPlanItems([["400 g Spaghetti"]], 2, new Set(), [["250 g Quark"]]);
     expect(r.items.map((i) => i.display)).toEqual(["250 g Quark", "200 g Spaghetti"]);
