@@ -86,6 +86,9 @@ werden mit Quellenangabe gezeigt und nur übernommen, wenn sie zum Rezept passen
 Rezept ist (Pommes beim Kartoffelsalat, Brokkoli/Tofu, Kürbis, Frühstück …). Von mehreren Treffern gewinnt der mit den
 meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Gespeichert in Neon.
 
+- **Bilder pro Familie:** Grundsätzlich teilen sich alle Familien ein Bild pro Gericht. **„Neues Bild“** und **„Bild
+  entfernen“** gelten aber nur für die eigene Familie (eigene Fassung), die anderen behalten ihr Bild. Beim Umbenennen
+  eines Gerichts wird das Bild für den neuen Namen kopiert. Chefkoch-Fotos importierter Rezepte gehören der Familie.
 - **Bild entfernen** (Symbol neben „Neues Bild“, mit Rückfrage): Das Gericht hat dann kein Bild, das Foto kommt nicht
   wieder. „Bild generieren“ sucht ein anderes; bei Gerichten im Speiseplan erstellt der Cron ein KI-Bild, sobald wieder
   Kontingent da ist (kein Ersatzfoto mehr).

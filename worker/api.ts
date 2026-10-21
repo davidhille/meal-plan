@@ -34,7 +34,9 @@ export async function handleApi(
   // Bilder sind öffentlich (ein <img> kann kein Passwort mitschicken)
   if (request.method === "GET" && path.startsWith("/api/images/") && env.DATABASE_URL) {
     const sql = neon(env.DATABASE_URL);
-    return serveImage(sql, decodeURIComponent(path.slice("/api/images/".length)));
+    const f = new URL(request.url).searchParams.get("f");
+    const family = f && /^[0-9a-f-]{36}$/i.test(f) ? f : null;
+    return serveImage(sql, decodeURIComponent(path.slice("/api/images/".length)), family);
   }
 
   if (!env.DATABASE_URL) return json({ error: "DATABASE_URL fehlt" }, 500);

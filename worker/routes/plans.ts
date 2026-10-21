@@ -53,9 +53,11 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
       await sql.query(
         `SELECT pm.id, pm.plan_id, pm.meal_date::text AS meal_date, pm.meal_name, pm.meal_type, pm.ingredients,
                 pm.instructions, pm.rejected, ${IMAGE_URL_SQL} AS image_url, ${IMAGE_CREDIT_SQL}, pm.duration_min, pm.dessert, pm.created_at
-         FROM plan_meals pm LEFT JOIN meal_images mi ON mi.meal_name = pm.meal_name
+         FROM plan_meals pm
+         LEFT JOIN LATERAL (SELECT * FROM meal_images x WHERE x.meal_name = pm.meal_name
+           AND (x.profile_id IS NULL OR x.profile_id = $2) ORDER BY x.profile_id IS NULL LIMIT 1) mi ON true
          WHERE pm.plan_id = $1 ORDER BY pm.meal_date`,
-        [id]
+        [id, p.id]
       )
     );
   }

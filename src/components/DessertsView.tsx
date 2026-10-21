@@ -321,7 +321,7 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
             selected.imageUrl
               ? undefined
               : async (name) => {
-                  const image = await generateMealImage(name, true);
+                  const image = await generateMealImage(name, true, true);
                   setGenerated((g) => ({ ...g, [name]: image.url }));
                   return image;
                 }

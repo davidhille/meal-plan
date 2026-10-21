@@ -500,12 +500,14 @@ export async function setFavoriteTurnus(id: string, weeks: number | null): Promi
  *  Wirft mit verständlicher Meldung, z. B. wenn das Tageskontingent aufgebraucht ist. */
 export async function generateMealImage(
   mealName: string,
-  force = false
+  force = false,
+  /** Gemeinsames Bild für alle Familien (Nachtische der Sammlung); sonst gilt „Neues Bild“ nur für die eigene Familie */
+  shared = false
 ): Promise<{ url: string; credit: ImageCredit | null }> {
   const r = await request<{ imageUrl: string; source?: string; creditName?: string; creditUrl?: string }>(
     'POST',
     '/meal-images/generate',
-    { mealName, force }
+    { mealName, force, shared }
   );
   const credit = r.source && r.source !== 'ai' && r.creditName && r.creditUrl ? { name: r.creditName, url: r.creditUrl } : null;
   return { url: r.imageUrl, credit };

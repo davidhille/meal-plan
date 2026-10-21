@@ -40,11 +40,19 @@ async function renameReferences(sql: Sql, profileId: string, from: string, to: s
     exclude_names = array_replace(exclude_names, ${from}, ${to}) WHERE profile_id = ${profileId}`;
   await sql`UPDATE recipe_category_overrides o SET recipe_name = ${to} WHERE profile_id = ${profileId} AND recipe_name = ${from}
     AND NOT EXISTS (SELECT 1 FROM recipe_category_overrides x WHERE x.profile_id = o.profile_id AND x.recipe_name = ${to} AND x.category_id = o.category_id)`;
-  // Bild mitnehmen (die Bild-URL enthält den Namen)
-  const img = await sql`SELECT extract(epoch FROM updated_at)::bigint AS v FROM meal_images WHERE meal_name = ${from}
-    AND NOT EXISTS (SELECT 1 FROM meal_images WHERE meal_name = ${to})`;
-  if (img[0]) {
-    await sql`UPDATE meal_images SET meal_name = ${to}, image_url = ${imageUrl(to, img[0].v)} WHERE meal_name = ${from}`;
+  // Bild für den neuen Namen kopieren (als eigene Fassung dieser Familie) – andere Familien behalten ihr Bild
+  const has = await sql`SELECT 1 FROM meal_images WHERE meal_name = ${to} AND (profile_id IS NULL OR profile_id = ${profileId})`;
+  if (!has[0]) {
+    const copied = await sql`INSERT INTO meal_images (profile_id, meal_name, image_url, image_data, content_type, source,
+        credit_name, credit_url, rejected_photos, updated_at)
+      SELECT ${profileId}, ${to}, '', image_data, content_type, source, credit_name, credit_url, rejected_photos, now()
+      FROM meal_images WHERE meal_name = ${from} AND (profile_id IS NULL OR profile_id = ${profileId})
+      ORDER BY profile_id IS NULL LIMIT 1
+      RETURNING extract(epoch FROM updated_at)::bigint AS v`;
+    if (copied[0]) {
+      await sql`UPDATE meal_images SET image_url = ${imageUrl(to, copied[0].v, profileId)}
+        WHERE profile_id = ${profileId} AND meal_name = ${to}`;
+    }
   }
 }
 

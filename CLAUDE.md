@@ -59,7 +59,7 @@ Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHu
 | `aiRecipes.ts` | KI-Rezepte erzeugen, mit eigenen Filtern nachprüfen, in Tabelle `recipes` speichern; Bewertungs-Kommentare (`ctx.feedback` aus `loadContext`) fließen in den Prompt; `generateWishRecipe` = Rezept nach Wunsch (nur Vorschau, Speichern über `POST /recipes/ai-save`) |
 | `recipeImport.ts` | Rezept per Link (schema.org JSON-LD, z. B. Chefkoch) → auf 4 Portionen umrechnen |
 | `chefkoch.ts` | Chefkoch-Suche: Such-Adresse mit Filter-Kennungen, Treffer aus der `ItemList` (JSON-LD) der Ergebnisseite, Details per `parseRecipeDetails`; Seiten über den Cloudflare-Cache (6 Std.; wirkt nur mit eigener Domain, nicht auf workers.dev). Nur `chefkoch.de/rezepte/…` wird abgerufen |
-| `images.ts` | Bilder: TheMealDB-Originalfoto → KI-Bild → Ersatzfoto (Pexels/Pixabay/Openverse, geprüft mit `photoFit`: Gericht zu sehen, keine fremden Hauptzutaten `CONFLICTS`); gespeichert als `bytea` in `meal_images`. `removeImage`: `source = 'removed'`, Foto-Link bzw. `mealdb` in `rejected_photos` – kommt nicht wieder, Cron ersetzt nur per KI |
+| `images.ts` | Bilder: TheMealDB-Originalfoto → KI-Bild → Ersatzfoto (Pexels/Pixabay/Openverse, geprüft mit `photoFit`: Gericht zu sehen, keine fremden Hauptzutaten `CONFLICTS`); gespeichert als `bytea` in `meal_images` – ohne `profile_id` gemeinsam, mit `profile_id` eigene Fassung einer Familie (Vorrang, URL `?f=<Familie>`; „Neues Bild“, Entfernen, Umbenennen-Kopie, Chefkoch-Fotos). Sichtbares Bild: `effectiveImageUrl` bzw. `ORDER BY profile_id IS NULL`. `removeImage(…, profileId)`: `source = 'removed'`, Foto-Link bzw. `mealdb` in `rejected_photos`. Cron und Nachprüfung arbeiten nur auf gemeinsamen Bildern |
 | `shopping.ts` | Einkaufsliste aus Plan-Zutaten: parsen, auf Portionen skalieren, zusammenfassen, Vorrat aussortieren. Vorrat = `DEFAULT_PANTRY` (Wörter aus `PANTRY_WORDS`) + eigene `pantry_items`; herausgenommene Standard-Einträge = `pantry_items.excluded`; Anzeige über `pantryOverview` |
 | `shops.ts` | Knuspr/Picnic (inoffizielle APIs): Login, Suche, Warenkorb; AES-GCM-Verschlüsselung der Zugangsdaten |
 
@@ -101,7 +101,7 @@ fehlende Migrationen beim ersten Aufruf nach einem Deploy aus (`migrate.ts`), ei
 Mehrere Familien (`profiles`, eine pro Familie); Zugänge (`users`) gehören über `profile_id` zur Familie. Alle Tabellen
 mit Familiendaten hängen an `profile_id` – **jede Abfrage auf die Familie aus `getProfile(sql, user)` beschränken**, IDs aus
 der Anfrage immer gegen die Familie prüfen (z. B. `planOwned`). `recipes` (KI/Import/Bearbeitungen) gehört seit 0016 einer
-Familie (eindeutig je `(profile_id, name)`); geteilt sind nur `meal_images` und `app_settings`.
+Familie (eindeutig je `(profile_id, name)`); `meal_images` ist gemeinsam mit optionaler Fassung pro Familie (seit 0017); `app_settings` ist global.
 
 Daten-Konventionen:
 - Datumsfelder als Text ausgeben (`meal_date::text`), Zeitzonen-Fallen beachten: im Frontend nie `toISOString()` für lokale Daten.
@@ -123,7 +123,7 @@ optional `PIXABAY_API_KEY`, `PEXELS_API_KEY`. Nie ins Repo, nie in `wrangler.jso
 - **Gesundheitsfilter** (`violatesHealthConditions`) sind Heuristiken auf Zutatentext, keine Allergie-Garantie. KI-Rezepte
   werden immer nachgeprüft, die KI hält sich nicht zuverlässig an Vorgaben.
 - **Abwechslung:** `isSimilarDish` verhindert Varianten desselben Gerichts im Plan; Gerichte der letzten 3 Wochen bekommen Abzug.
-- `/api/images/*` ist absichtlich ohne Anmeldung (Bilder sind nicht privat).
+- `/api/images/*` ist absichtlich ohne Anmeldung (Bilder sind nicht privat); `?f=<profile_id>` liefert die Fassung einer Familie.
 - Service Worker (`public/sw.js`): `/api` wird nie gecacht. Bei Änderungen an gecachten Dateien `CACHE`-Version hochzählen.
   Er empfängt auch die Push-Nachrichten (`push`, `notificationclick`).
 - Push auf dem iPhone geht nur in der installierten PWA (Home-Bildschirm), ab iOS 16.4.
