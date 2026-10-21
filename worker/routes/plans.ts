@@ -165,6 +165,19 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
     return json(plan);
   }
 
+  // Einen leeren Tag (auch bewusst geleert) wieder mit einem Gericht füllen
+  if (parts[0] === "plans" && id && parts[2] === "fill-day" && request.method === "POST") {
+    const date = body.date;
+    if (!isIsoDate(date)) return json({ error: "Ungültiges Datum" }, 400);
+    const p = await getProfile(sql, user);
+    const rows = await sql`SELECT id FROM meal_plans WHERE id = ${id} AND profile_id = ${p.id}`;
+    if (!rows[0]) return json({ error: "Plan nicht gefunden" }, 404);
+    await sql`UPDATE meal_plans SET cleared_dates = array_remove(cleared_dates, ${date}::date) WHERE id = ${id}`;
+    const plan = await createPlan(env, sql, p.id, date, date, id, { cookOnly: true });
+    waitUntil(fillMissingImages(env, sql, 2, plan.id));
+    return json(plan);
+  }
+
   if (parts[0] === "plans" && id && parts[2] === "regenerate" && request.method === "POST") {
     const p = await getProfile(sql, user);
     const rows = await sql.query(`SELECT ${PLAN_COLS} FROM meal_plans WHERE id = $1 AND profile_id = $2`, [id, p.id]);

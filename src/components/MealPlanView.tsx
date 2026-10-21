@@ -51,6 +51,8 @@ interface MealPlanViewProps {
   onRemove?: (pm: PlanMeal) => Promise<void>;
   /** Brotzeit statt Kochen (zurück über onRegenerate = doch kochen) */
   onBrotzeit?: (pm: PlanMeal) => Promise<void>;
+  /** Leeren Tag wieder mit einem Gericht füllen */
+  onFillDay?: (date: string) => Promise<void>;
   /** Plan wurde geteilt bzw. der Link zurückgezogen */
   onSharedChange?: (shared: boolean) => void;
   /** Gäste an einem Tag setzen (wirft bei Fehlern) */
@@ -112,6 +114,7 @@ export default function MealPlanView({
   onBrotzeit,
   onSetGuests,
   onSharedChange,
+  onFillDay,
 }: MealPlanViewProps) {
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   /** Plan-Eintrag des geöffneten Gerichts (für die Gäste) */
@@ -123,6 +126,7 @@ export default function MealPlanView({
   const [removeDessertFor, setRemoveDessertFor] = useState<PlanMeal | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [fillingDay, setFillingDay] = useState<string | null>(null);
   const [confirmRegenerate, setConfirmRegenerate] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -170,15 +174,15 @@ export default function MealPlanView({
   // Sonntag bis Dienstag: Rückblick auf die (vergangene) Woche
   const review = weekReview(active, ratings, now);
 
-  // Freie Tage im sichtbaren Zeitraum ohne Gericht → eigene, schmale Zeile
+  // Tage im sichtbaren Zeitraum ohne Gericht (freier Wochentag oder geleert) → eigene, schmale Zeile
   const offDays: string[] = [];
-  if (plan && dayRules) {
+  if (plan) {
     const from = visibleRange && visibleRange.from > plan.start_date ? visibleRange.from : plan.start_date;
     const to = visibleRange && visibleRange.to < plan.end_date ? visibleRange.to : plan.end_date;
     const planned = new Set(displayItems.map((pm) => pm.meal_date));
     for (let d = new Date(`${from}T12:00:00`); toIso(d) <= to; d.setDate(d.getDate() + 1)) {
       const iso = toIso(d);
-      if (!planned.has(iso) && ruleForDate(iso, dayRules).off) offDays.push(iso);
+      if (!planned.has(iso)) offDays.push(iso);
     }
   }
   const rows = [
@@ -260,7 +264,24 @@ export default function MealPlanView({
                 }`}
               >
                 <span className="font-medium uppercase tracking-wide">{dayLabel(date)}</span>
-                <span>· frei, nichts geplant</span>
+                <span className="flex-1">· {ruleForDate(date, dayRules).off ? 'frei (Wochentag)' : 'leer, nichts geplant'}</span>
+                {onFillDay && !ruleForDate(date, dayRules).off && (
+                  <button
+                    onClick={async () => {
+                      setFillingDay(date);
+                      try {
+                        await onFillDay(date);
+                      } finally {
+                        setFillingDay(null);
+                      }
+                    }}
+                    disabled={!!fillingDay}
+                    className="flex-shrink-0 flex items-center gap-1 font-semibold text-brand-700 hover:text-brand-800 disabled:opacity-50"
+                  >
+                    {fillingDay === date ? <Loader2 size={12} className="animate-spin" /> : <CalendarPlus size={12} aria-hidden="true" />}
+                    Gericht planen
+                  </button>
+                )}
               </div>
             );
           }
