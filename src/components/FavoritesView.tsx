@@ -121,16 +121,16 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
             }`}
           >
             <div className="flex items-start gap-3">
-              <button onClick={() => setSelected(f)} className="flex-shrink-0" tabIndex={-1} aria-hidden="true">
+              {/* Bild und Name sind ein Knopf: ein Ziel, ein Name für Screenreader */}
+              <button onClick={() => setSelected(f)} className="flex-1 min-w-0 flex items-start gap-3 text-left">
                 {f.image_url ? (
-                  <img src={f.image_url} alt="" loading="lazy" className="w-16 h-16 rounded-xl object-cover bg-gray-100" />
+                  <img src={f.image_url} alt="" loading="lazy" className="flex-shrink-0 w-16 h-16 rounded-xl object-cover bg-gray-100" />
                 ) : (
-                  <span className="w-16 h-16 rounded-xl bg-coral-50 flex items-center justify-center">
-                    <Heart size={20} className="text-coral-500" />
+                  <span className="flex-shrink-0 w-16 h-16 rounded-xl bg-coral-50 flex items-center justify-center">
+                    <Heart size={20} className="text-coral-500" aria-hidden="true" />
                   </span>
                 )}
-              </button>
-              <button onClick={() => setSelected(f)} className="flex-1 min-w-0 text-left">
+                <span className="flex-1 min-w-0">
                 <h2 className="text-sm leading-snug font-semibold text-gray-800">{f.meal_name}</h2>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-gray-500">
                   {f.duration_min ? (
@@ -146,6 +146,7 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
                     <span className="line-clamp-2">{notes[f.meal_name].notes}</span>
                   </p>
                 )}
+                </span>
               </button>
               {confirmId === f.id ? (
                 <button
