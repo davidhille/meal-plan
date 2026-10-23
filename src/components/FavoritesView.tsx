@@ -38,6 +38,7 @@ function toMeal(f: Favorite): Meal {
     ingredients: f.ingredients,
     instructions: f.instructions ?? '',
     durationMin: f.duration_min,
+    imageUrl: f.image_url ?? undefined,
   };
 }
 
@@ -120,6 +121,15 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
             }`}
           >
             <div className="flex items-start gap-3">
+              <button onClick={() => setSelected(f)} className="flex-shrink-0" tabIndex={-1} aria-hidden="true">
+                {f.image_url ? (
+                  <img src={f.image_url} alt="" loading="lazy" className="w-16 h-16 rounded-xl object-cover bg-gray-100" />
+                ) : (
+                  <span className="w-16 h-16 rounded-xl bg-coral-50 flex items-center justify-center">
+                    <Heart size={20} className="text-coral-500" />
+                  </span>
+                )}
+              </button>
               <button onClick={() => setSelected(f)} className="flex-1 min-w-0 text-left">
                 <h2 className="text-sm leading-snug font-semibold text-gray-800">{f.meal_name}</h2>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-gray-500">

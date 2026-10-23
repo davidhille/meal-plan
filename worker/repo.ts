@@ -11,8 +11,17 @@ export const ROUTINE_COLS = `id, profile_id, name, frequency, day_of_week, to_ch
 export const FAVORITE_COLS = `id, meal_name, meal_type, ingredients, instructions, duration_min, turnus_weeks,
   last_planned::text AS last_planned, created_at`;
 
+/** Favoriten der Familie, mit Bild (eigene Fassung der Familie vor dem gemeinsamen Bild) */
 export async function loadFavorites(sql: Sql, profileId: string) {
-  return sql.query(`SELECT ${FAVORITE_COLS} FROM favorites WHERE profile_id = $1 ORDER BY created_at`, [profileId]);
+  const cols = FAVORITE_COLS.split(",").map((c) => `f.${c.trim()}`).join(", ");
+  return sql.query(
+    `SELECT ${cols}, CASE WHEN mi.image_data IS NOT NULL THEN mi.image_url END AS image_url
+     FROM favorites f
+     LEFT JOIN LATERAL (SELECT image_url, image_data FROM meal_images x WHERE x.meal_name = f.meal_name
+       AND (x.profile_id IS NULL OR x.profile_id = $1) ORDER BY x.profile_id IS NULL LIMIT 1) mi ON true
+     WHERE f.profile_id = $1 ORDER BY f.created_at`,
+    [profileId]
+  );
 }
 
 export function favoriteToRecipe(f: Row): Recipe {
