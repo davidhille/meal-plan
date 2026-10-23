@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings, Plus, Trash2, Edit2, Calendar, HeartPulse, Repeat, Users, Info } from 'lucide-react';
+import { Settings, Plus, Trash2, Edit2, HeartPulse, Repeat, Users, Info } from 'lucide-react';
 import { FamilyMember, Profile, Routine } from '../types';
 import FamilyMemberModal from './FamilyMemberModal';
 import PreferencesModal from './PreferencesModal';
@@ -15,7 +15,6 @@ import SettingsGroup from './SettingsGroup';
 import AccountSettings from './AccountSettings';
 import AdminSettings from './AdminSettings';
 import FeedbackCard from './FeedbackCard';
-import PlanCreationModal from './PlanCreationModal';
 
 interface SettingsViewProps {
   profile: Profile | null;
@@ -33,7 +32,6 @@ interface SettingsViewProps {
     durationDays: number
   ) => Promise<void>;
   onDeleteRoutine: (id: string) => Promise<void>;
-  onCreatePlan: (startDate: string, endDate: string) => Promise<void>;
   /** Uhrzeit der Erinnerung geändert */
   onReminderTimeChange?: (time: string) => void;
   /** Profil vom Server neu (z. B. nach Änderung der Wochentage) */
@@ -50,7 +48,6 @@ export default function SettingsView({
   onDeleteFamilyMember,
   onCreateRoutine,
   onDeleteRoutine,
-  onCreatePlan,
   onReminderTimeChange,
   onProfileChange,
 }: SettingsViewProps) {
@@ -58,7 +55,6 @@ export default function SettingsView({
   const [editingMember, setEditingMember] = useState<FamilyMember | null>(null);
   const [showPrefsModal, setShowPrefsModal] = useState(false);
   const [showRoutineModal, setShowRoutineModal] = useState(false);
-  const [showPlanModal, setShowPlanModal] = useState(false);
   // Löschen erst nach zweitem Tipp ("Löschen?")
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
@@ -78,24 +74,6 @@ export default function SettingsView({
   return (
     <>
       <div className="px-4 py-4 space-y-4">
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={() => setShowPlanModal(true)}
-            className="bg-brand-700 text-white rounded-xl px-4 py-3 font-medium text-sm hover:bg-brand-800 transition-colors flex items-center justify-center gap-2"
-          >
-            <Calendar size={16} />
-            Plan erstellen
-          </button>
-          <button
-            onClick={() => setShowRoutineModal(true)}
-            className="bg-white text-gray-700 border border-gray-200 rounded-xl px-4 py-3 font-medium text-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-          >
-            <Plus size={16} />
-            Routine anlegen
-          </button>
-        </div>
-
         <SettingsGroup title="Familie & Ernährung">
           {/* Family Members Section */}
           <CollapsibleCard
@@ -381,12 +359,6 @@ export default function SettingsView({
         />
       )}
 
-      {showPlanModal && (
-        <PlanCreationModal
-          onCreate={onCreatePlan}
-          onClose={() => setShowPlanModal(false)}
-        />
-      )}
     </>
   );
 }
