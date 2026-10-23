@@ -70,6 +70,7 @@ Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHu
 
 - `App.tsx` hält den globalen Zustand (Profil, Familie, Plan, Favoriten …) und schaltet die Bereiche:
   `speiseplan | einkaufsliste | rezepte | favoriten | einstellungen` (`ViewTab`, im URL-Hash gemerkt).
+- Navigation: `TabSwitcher` mit `variant="bottom"` (Handy, `sm:hidden`, fest unten inkl. `env(safe-area-inset-bottom)`) bzw. `"top"` (ab `sm`). Feste Elemente unten (CartBar, Hinweise) am Handy über der Tab-Leiste platzieren (`bottom-[calc(4rem+env(safe-area-inset-bottom))]`).
 - `lib/api.ts`: **alle** Serveraufrufe. Komponenten rufen nie selbst `fetch` auf.
 - Jede Ansicht/jedes Fenster ist eine eigene Komponente (`…View`, `…Modal`, `…Sheet`).
 - Fenster nutzen `useDialog` (Escape schließt das oberste, Fokus, Scroll-Sperre); Bestätigungen über `ConfirmDialog`, nie `alert()`/`confirm()`.

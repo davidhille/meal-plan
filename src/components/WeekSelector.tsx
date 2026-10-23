@@ -15,7 +15,7 @@ export default function WeekSelector({ weeks, selectedWeekKey, onSelectWeek, pas
   if (weeks.length === 0) return null;
 
   return (
-    <nav className="bg-gray-50" aria-label="Kalenderwoche">
+    <nav className="bg-gray-50 pt-3" aria-label="Kalenderwoche">
       <div className="flex overflow-x-auto no-scrollbar gap-2 px-4 pb-3 max-w-2xl mx-auto">
         {pastCount > 0 && onTogglePast && (
           <button

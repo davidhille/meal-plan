@@ -44,8 +44,11 @@ Neurons nach der Preisliste (Tokens bzw. Bildgröße und Schritte). Gezählt wir
   Push-Geräte); „Wiederherstellen“ spielt eine Sicherung **derselben** Familie zurück und ersetzt deren Daten (Name, Sperre
   und Zugänge bleiben; alles in einer Transaktion).
 
-**Aufbau:** Kopfzeile mit Logo, darunter die Bereiche **Speiseplan · Einkaufsliste · Rezepte · Favoriten · Einstellungen**
-als Segment-Leiste. Der gewählte Bereich bleibt beim Neuladen erhalten (URL-Hash, z. B. `#einkaufsliste`).
+**Aufbau:** Kopfzeile mit Logo (scrollt mit). Die Bereiche **Speiseplan · Einkaufsliste · Rezepte · Favoriten · Einstellungen**
+stehen immer mit Symbol und Text da: am Handy als feste Tab-Leiste unten (Plan · Einkauf · Rezepte · Favoriten ·
+Einstellungen), ab Tablet-Breite als Leiste unter dem Logo. Oben fest bleibt nur die Wochenauswahl. Der gewählte Bereich
+bleibt beim Neuladen erhalten (URL-Hash, z. B. `#einkaufsliste`). Beim Laden zeigt der Speiseplan Platzhalter-Karten,
+bis die Gerichte da sind.
 Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus Jakarta Sans.
 
 ---
