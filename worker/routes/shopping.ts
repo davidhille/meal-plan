@@ -15,7 +15,10 @@ export async function shoppingRoutes({ request, sql, body, parts, route, id, use
 
     const qs = new URL(request.url).searchParams;
     const range = qs.get("from") && qs.get("to") ? { from: qs.get("from")!, to: qs.get("to")! } : undefined;
-    if (request.method === "GET" && !itemId) return json(await getShopping(sql, p.id, id, range));
+    // Vergangene Tage weglassen (?since=JJJJ-MM-TT)
+    const sinceParam = qs.get("since") ?? "";
+    const since = /^\d{4}-\d{2}-\d{2}$/.test(sinceParam) ? sinceParam : undefined;
+    if (request.method === "GET" && !itemId) return json(await getShopping(sql, p.id, id, range, since));
 
     // Eigenen Artikel / Basic hinzufügen (oder mehrere auf einmal, z. B. Zutaten eines Nachtischs)
     if (request.method === "POST" && !itemId) {
@@ -26,7 +29,7 @@ export async function shoppingRoutes({ request, sql, body, parts, route, id, use
       if (!names.length) return json({ error: "Name fehlt" }, 400);
       await sql`INSERT INTO shopping_extras (plan_id, name, label, is_basic)
         SELECT ${id}, n, ${body.label || "einkauf"}, ${!!body.isBasic} FROM unnest(${names}::text[]) AS n`;
-      return json(await getShopping(sql, p.id, id, range));
+      return json(await getShopping(sql, p.id, id, range, since));
     }
 
     // Abhaken / Label ändern

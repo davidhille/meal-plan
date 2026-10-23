@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Plus, Package, X, Loader2, ShoppingCart, FileDown, Check } from 'lucide-react';
+import { Plus, Package, X, Loader2, ShoppingCart, Check } from 'lucide-react';
 import { MealPlan, ProductLink, ShopProvider, ShopRule, PlanMeal, ShoppingItem, ShoppingLabel, DEFAULT_LABELS, ProductResult } from '../types';
 import { PlanWeek, currentWeekIndex, formatShortDate, toIso } from '../lib/dateUtils';
 import ShoppingRangePicker from './ShoppingRangePicker';
@@ -17,6 +17,7 @@ import {
   clearShopCart,
   addToShopCart,
   type WeekRange,
+  type ShoppingScope,
   type CartSummary,
   addToPantry,
   removeFromPantry,
@@ -63,6 +64,13 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
   const multiWeek = weeks.length > 1;
   const week: WeekRange | undefined =
     multiWeek && weeks[startIdx] && weeks[endIdx] ? { from: weeks[startIdx].weekStart, to: weeks[endIdx].weekEnd } : undefined;
+  // Vergangene Tage zählen standardmäßig nicht mit (schon gekocht/eingekauft)
+  const [showPast, setShowPast] = useState(false);
+  const today = toIso(new Date());
+  const pastCount = planMeals.filter(
+    (m) => !m.rejected && m.meal_date < today && (!week || (m.meal_date >= week.from && m.meal_date <= week.to))
+  ).length;
+  const scope: ShoppingScope = { ...week, since: !showPast && pastCount > 0 ? today : undefined };
   const changeRange = (s: number, e: number) => {
     setRange([s, e]);
     try {
@@ -98,7 +106,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
       return;
     }
     setLoading(true);
-    const data = await getShopping(planId, week);
+    const data = await getShopping(planId, scope);
     if (data) {
       setItems(data.items);
       setLabels(data.labels);
@@ -108,7 +116,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
     }
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [planId, week?.from, week?.to]);
+  }, [planId, week?.from, week?.to, scope.since]);
 
   useEffect(() => {
     load();
@@ -127,7 +135,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
     let stopped = false;
     const sync = async () => {
       if (document.visibilityState !== 'visible') return;
-      const data = await getShopping(planId, week).catch(() => null);
+      const data = await getShopping(planId, scope).catch(() => null);
       if (!data || stopped || loadingRef.current) return;
       const prev = itemsRef.current;
       const before = new Map(prev.map((i) => [i.id, i.checked]));
@@ -152,7 +160,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
       document.removeEventListener('visibilitychange', onVisible);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [planId, week?.from, week?.to]);
+  }, [planId, week?.from, week?.to, scope.since]);
 
   // --- Artikel ---
 
@@ -187,7 +195,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
 
   const addItem = async (name: string, label: string, isBasic = false) => {
     if (!planId || !name.trim()) return;
-    const data = await addShoppingItem(planId, name.trim(), label, isBasic, week);
+    const data = await addShoppingItem(planId, name.trim(), label, isBasic, scope);
     if (data) setItems(data.items);
   };
 
@@ -411,7 +419,6 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
   const onList = new Set(items.filter((i) => !i.checked || i.isBasic).map((i) => stem(i.baseName)));
   const neededCount = pantry.filter((e) => e.needed).length;
 
-  const shopLabelIdsForPdf = new Set(productShops.map((s) => s.label.id));
   const itemsByLabel = labels.reduce<Record<string, ShoppingItem[]>>((acc, label) => {
     acc[label.id] = items
       .filter((i) => i.label === label.id)
@@ -420,8 +427,12 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
   }, {});
 
   // Welche Gerichte die Liste abdeckt
-  const today = toIso(new Date());
-  const inRange = planMeals.filter((m) => !m.rejected && (!week || (m.meal_date >= week.from && m.meal_date <= week.to)));
+  const inRange = planMeals.filter(
+    (m) =>
+      !m.rejected &&
+      (!week || (m.meal_date >= week.from && m.meal_date <= week.to)) &&
+      (!scope.since || m.meal_date >= scope.since)
+  );
   const past = inRange.filter((m) => m.meal_date < today).length;
   const firstDay = inRange[0]?.meal_date;
   const lastDay = inRange[inRange.length - 1]?.meal_date;
@@ -438,7 +449,6 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
     color: label.color,
     items: (itemsByLabel[label.id] || []).filter((i) => !i.checked).map((i) => i.name),
   });
-  const offlineLists = labels.filter((l) => !shopLabelIdsForPdf.has(l.id)).map(pdfListFor).filter((l) => l.items.length > 0);
   const savePdf = (lists: PdfList[], namePart: string) => {
     const created = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
     downloadPdf(buildShoppingPdf(lists, 'Einkaufsliste', `${summary} · erstellt am ${created}`), pdfFileName(namePart, today));
@@ -474,21 +484,22 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
         ) : (
           <p className="px-1 text-xs text-gray-600">{summary}</p>
         )}
+        {pastCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowPast((v) => !v)}
+            className="-mt-2 px-1 text-xs font-medium text-brand-700 hover:text-brand-900 underline underline-offset-2"
+          >
+            {showPast
+              ? 'Vergangene Tage wieder ausblenden'
+              : `${pastCount} ${pastCount === 1 ? 'Gericht' : 'Gerichte'} aus vergangenen Tagen ausgeblendet · einblenden`}
+          </button>
+        )}
 
         {synced && (
           <p role="status" className="px-3 py-2 rounded-xl bg-brand-50 border border-brand-200 text-xs font-medium text-brand-800">
             {synced}
           </p>
-        )}
-
-        {offlineLists.length > 0 && (
-          <button
-            onClick={() => savePdf(offlineLists, offlineLists.length === 1 ? offlineLists[0].name : 'Listen')}
-            className="w-full h-10 flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50"
-          >
-            <FileDown size={15} />
-            {offlineLists.length === 1 ? `${offlineLists[0].name} als PDF` : `Listen ohne Shop als PDF (${offlineLists.map((l) => l.name).join(', ')})`}
-          </button>
         )}
 
         {/* Eigenen Artikel hinzufügen */}

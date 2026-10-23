@@ -100,3 +100,18 @@ describe("Vorrat", () => {
     expect(list.filter((e) => e.name === "Zucker")).toEqual([{ name: "Zucker", needed: true, kind: "default" }]);
   });
 });
+
+describe("Zusammenfassen unterschiedlicher Schreibweisen", () => {
+  test("Knoblauchzehen und Knoblauch (2 Zehen)", () => {
+    const r = buildPlanItems([["Knoblauch (2 Zehen)"], ["2 Knoblauchzehen"]], 4);
+    expect(r.items.map((i) => i.display)).toEqual(["4 Zehen Knoblauch"]);
+  });
+  test("Paprika mit Menge in Klammern", () => {
+    const r = buildPlanItems([["3 Paprika"], ["Paprika (1 rote oder gelbe)"]], 4);
+    expect(r.items.map((i) => i.display)).toEqual(["4 Paprika"]);
+  });
+  test("Menge mit Einheit in Klammern", () => {
+    const r = buildPlanItems([["Langkorn oder Basmatireis (ca. 250 g)"], ["250 g Langkorn oder Basmatireis"]], 4);
+    expect(r.items.map((i) => i.display)).toEqual(["500 g Langkorn oder Basmatireis"]);
+  });
+});

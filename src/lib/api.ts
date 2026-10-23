@@ -667,9 +667,26 @@ export interface WeekRange {
   to: string;
 }
 
-const weekQuery = (week?: WeekRange) => (week ? `?from=${week.from}&to=${week.to}` : '');
+/** Ausschnitt der Einkaufsliste: Wochen (für die Häkchen) und ab welchem Tag Gerichte zählen */
+export interface ShoppingScope {
+  from?: string;
+  to?: string;
+  /** Gerichte vor diesem Tag nicht einrechnen (vergangene Tage) */
+  since?: string;
+}
 
-export async function getShopping(planId: string, week?: WeekRange): Promise<ShoppingData | null> {
+const weekQuery = (scope?: ShoppingScope) => {
+  const q = new URLSearchParams();
+  if (scope?.from && scope.to) {
+    q.set('from', scope.from);
+    q.set('to', scope.to);
+  }
+  if (scope?.since) q.set('since', scope.since);
+  const s = q.toString();
+  return s ? `?${s}` : '';
+};
+
+export async function getShopping(planId: string, week?: ShoppingScope): Promise<ShoppingData | null> {
   try {
     return await request<ShoppingData>('GET', `/plans/${planId}/shopping${weekQuery(week)}`);
   } catch (error) {
@@ -701,7 +718,7 @@ export async function addShoppingItem(
   name: string,
   label: string,
   isBasic = false,
-  week?: WeekRange
+  week?: ShoppingScope
 ): Promise<ShoppingData | null> {
   try {
     return await request<ShoppingData>('POST', `/plans/${planId}/shopping${weekQuery(week)}`, { name, label, isBasic });

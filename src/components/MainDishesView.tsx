@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChefHat, Clock, Loader2, Search, EyeOff, X, ShieldAlert, Sparkles, MessageSquare, Star, SlidersHorizontal, Refrigerator } from 'lucide-react';
+import { ChefHat, Clock, Loader2, Search, EyeOff, X, ShieldAlert, MessageSquare, Star, SlidersHorizontal, Refrigerator, Plus } from 'lucide-react';
 import { useRatings } from '../lib/ratings';
 import { CatalogRecipe, Meal, MealType, PlanMeal, RecipeCatalog, RecipeFilter } from '../types';
 import { CategoryOverride, toOverrideMap } from '../lib/recipeCategories';
@@ -20,6 +20,8 @@ import RecipeEditModal from './RecipeEditModal';
 import AiRecipeModal from './AiRecipeModal';
 import WhatIHaveSheet from './WhatIHaveSheet';
 import ChefkochSearchModal from './ChefkochSearchModal';
+import AddRecipeSheet from './AddRecipeSheet';
+import RecipeImportModal from './RecipeImportModal';
 import HiddenItemsList from './HiddenItemsList';
 import {
   deleteRecipe,
@@ -99,6 +101,8 @@ export default function MainDishesView({
   const [showUnsuitable, setShowUnsuitable] = useState(false);
   const [showAi, setShowAi] = useState(false);
   const [showChefkoch, setShowChefkoch] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [showHave, setShowHave] = useState(false);
   /** Suchbegriff für Chefkoch, wenn aus der KI heraus geöffnet (Kontingent leer) */
   const [chefkochQuery, setChefkochQuery] = useState('');
@@ -227,28 +231,18 @@ export default function MainDishesView({
 
         <div className="grid grid-cols-2 gap-2">
           <button
-            onClick={() => {
-              setChefkochQuery('');
-              setShowChefkoch(true);
-            }}
+            onClick={() => setShowAdd(true)}
             className="h-11 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-brand-300 bg-brand-50/50 text-sm font-semibold text-brand-800 hover:bg-brand-50"
           >
-            <ChefHat size={16} />
-            Bei Chefkoch suchen
-          </button>
-          <button
-            onClick={() => setShowAi(true)}
-            className="h-11 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-brand-300 bg-brand-50/50 text-sm font-semibold text-brand-800 hover:bg-brand-50"
-          >
-            <Sparkles size={16} />
-            Rezept mit KI
+            <Plus size={16} aria-hidden="true" />
+            Rezept hinzufügen
           </button>
           <button
             onClick={() => setShowHave(true)}
-            className="col-span-2 h-11 flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-brand-50"
+            className="h-11 flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-brand-50"
           >
-            <Refrigerator size={16} />
-            Was hab ich da? – Gerichte nach Zutaten
+            <Refrigerator size={16} aria-hidden="true" />
+            Was hab ich da?
           </button>
         </div>
 
@@ -410,6 +404,7 @@ export default function MainDishesView({
           onPrev={!showHave && selectedIndex > 0 ? () => goTo(selectedIndex - 1) : undefined}
           onNext={!showHave && selectedIndex >= 0 && selectedIndex < visible.length - 1 ? () => goTo(selectedIndex + 1) : undefined}
           position={selectedIndex >= 0 ? `${selectedIndex + 1} / ${visible.length}` : undefined}
+          extraBelow
           extra={
             <div className="space-y-3">
               {selected.unsuitable && (
@@ -436,6 +431,34 @@ export default function MainDishesView({
           customFilters={customFilters}
           overrides={overrides}
           onClose={() => setShowFilters(false)}
+        />
+      )}
+
+      {showAdd && (
+        <AddRecipeSheet
+          onPick={(way) => {
+            setShowAdd(false);
+            if (way === 'chefkoch') {
+              setChefkochQuery('');
+              setShowChefkoch(true);
+            } else if (way === 'ai') setShowAi(true);
+            else setShowImport(true);
+          }}
+          onClose={() => setShowAdd(false)}
+        />
+      )}
+
+      {showImport && (
+        <RecipeImportModal
+          onSaved={async (_favorites, name) => {
+            setShowImport(false);
+            const next = await getRecipeCatalog();
+            setCatalog(next);
+            setSelected(next.recipes.find((r) => r.name === name) ?? null);
+            onRecipesChanged?.();
+            flash(`„${name}“ ist jetzt in der Sammlung.`);
+          }}
+          onClose={() => setShowImport(false)}
         />
       )}
 

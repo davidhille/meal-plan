@@ -139,12 +139,15 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
 - **Gemeinsam einkaufen:** Häkchen werden gespeichert; ist die Liste offen, holt sie alle 10 Sekunden (und beim Zurückkehren
   in die App) die Häkchen und Einträge der anderen. Kurzer Hinweis „Liste aktualisiert – … von anderen“.
 - Entsteht automatisch aus dem Plan: Zutaten auf die Familienportionen umgerechnet und zusammengefasst
-  („6 Zwiebeln“, „2 Dosen Kokosmilch“), Stückware aufgerundet.
+  („6 Zwiebeln“, „2 Dosen Kokosmilch“), Stückware aufgerundet. Unterschiedliche Schreibweisen landen auf einer Zeile
+  („Knoblauch (2 Zehen)“ + „2 Knoblauchzehen“, „Paprika (1 rote)“ + „3 Paprikaschoten“; Menge in Klammern zählt).
 - **„Einkauf für“:** eigene Wochenauswahl („Diese Woche“, „Nächste Woche“ …), mehrere Wochen kombinierbar; Häkchen je Woche.
+  Gerichte vergangener Tage zählen standardmäßig nicht mit („2 Gerichte aus vergangenen Tagen ausgeblendet · einblenden“;
+  `?since=` an `GET /plans/:id/shopping`, die Häkchen bleiben dabei erhalten).
 - **Listen:** Lieferdienst (Knuspr/Picnic), Metzger (Fleisch automatisch, abschaltbar), eigene Listen (Aldi, DM …).
   Zuordnungen pro Zutat werden für künftige Pläne gemerkt. Listen sind auf- und zuklappbar.
-- **PDF:** Listen ohne Shop (Metzger, Aldi, DM …) einzeln über das PDF-Symbol in der Liste oder alle zusammen über
-  „Listen ohne Shop als PDF“ herunterladen – nur offene Einträge, mit Kästchen zum Abhaken, Umlaute und € passen.
+- **PDF:** Listen ohne Shop (Metzger, Aldi, DM …) über das PDF-Symbol im Kopf der jeweiligen Liste herunterladen –
+  nur offene Einträge, mit Kästchen zum Abhaken, Umlaute und € passen.
 - **Vorrat** (ein Bereich unter den Listen): alles, was ihr immer im Haus habt – kommt nicht automatisch auf die Liste.
   Vorbelegt mit Salz, Pfeffer, Öl, Mehl, Brühe, Tomatenmark und gängigen Gewürzen; eigene Einträge per Eingabefeld
   „Zum Vorrat“ oder Kisten-Symbol an einer Zutat. Gelb = braucht der Plan, kurz nachschauen. **Antippen = ist alle** →
@@ -177,7 +180,9 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
   Hühnerbrühe oder Fischsauce zählen nicht, Hackfleisch ohne Angabe zählt zu Rind und Schwein). Liegt sie daneben, im
   Rezept unter „Kategorien“ → „Filter anpassen“ an- oder abwählen (gilt nur für die eigene Familie) (gespeichert in `recipe_category_overrides`, zieht beim
   Umbenennen mit).
-- **Rezept mit KI erstellen** (Knopf oben in der Übersicht): Wunsch eingeben („etwas mit Kürbis, schnell“), Art wählen
+- **Rezept hinzufügen** (Knopf oben in der Übersicht) bündelt drei Wege: Bei Chefkoch suchen, Mit KI erstellen,
+  Von einem Link importieren (`AddRecipeSheet`).
+- **Rezept mit KI erstellen** (über „Rezept hinzufügen“): Wunsch eingeben („etwas mit Kürbis, schnell“), Art wählen
   oder „Egal“ → Vorschau. „Anderer Vorschlag“, über den Stift anpassen, dann „In die Sammlung“ (optional als Favorit).
   Gesundheitseinstellungen und Abneigungen werden beachtet und geprüft; das Bild entsteht im Hintergrund.
 - **KI-Kontingent leer:** „Rezept mit KI erstellen“ zeigt dann einen Hinweis (wann es neu anläuft) und bietet „Stattdessen bei
@@ -185,7 +190,7 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
 - **Was hab ich da?** (Knopf in der Übersicht): Zutaten mit Komma eingeben („Zucchini, Feta, Reis“) → Gerichte aus der
   Sammlung, die möglichst viele davon verwenden (Plural egal, ohne KI, nur passende zu den Gesundheitseinstellungen).
   Antippen öffnet das Rezept; die letzte Eingabe bleibt auf dem Gerät gemerkt.
-- **Bei Chefkoch suchen** (Knopf oben in der Übersicht): Suchbegriff plus Filter (Hauptspeise, Vegetarisch, Vegan,
+- **Bei Chefkoch suchen** (über „Rezept hinzufügen“): Suchbegriff plus Filter (Hauptspeise, Vegetarisch, Vegan,
   bis 30 Min, ab 4 ★, beste zuerst) → je 12 Treffer mit Foto, Bewertung und Zeit, „Mehr laden“ holt die nächsten 12. Antippen zeigt die Vorschau
   (Name änderbar, Zutaten auf 4 Portionen umgerechnet, Zubereitung, Hinweis bei unpassenden Gesundheitseinstellungen, „schon da“);
   „In meine Rezepte übernehmen“ speichert es mit Chefkoch-Foto und Link zum Original (optional als Favorit) und führt
@@ -215,7 +220,7 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
 ## 4. Favoriten
 
 - Gemerkte Gerichte mit eigenem Rezept, **Turnus** (kein / 1–4 Wochen) und „zuletzt geplant“.
-- **Rezept aus dem Web importieren:** Link einfügen (Chefkoch & Co., schema.org-Rezeptdaten) → Vorschau prüfen → speichern.
+- **Rezept aus dem Web importieren** (auch unter Rezepte → „Rezept hinzufügen“): Link einfügen (Chefkoch & Co., schema.org-Rezeptdaten) → Vorschau prüfen → speichern.
   Mengen werden auf 4 Portionen umgerechnet, der Typ geschätzt.
 
 ## 5. Einstellungen

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDialog } from '../lib/useDialog';
-import { X, Clock, ShoppingBasket, BookOpen, Star, ImageIcon, ImageOff, Loader2, Minus, Plus, Users, ListPlus, Pencil, ChefHat, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, ShoppingBasket, BookOpen, Star, ImageIcon, ImageOff, Loader2, Minus, Plus, Users, ListPlus, Pencil, ChefHat, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatRatingDate, useRatings } from '../lib/ratings';
 import { ImageCredit, Meal } from '../types';
 import MealRatingModal from './MealRatingModal';
@@ -33,8 +33,10 @@ interface MealModalProps {
   onEdit?: () => void;
   /** Neues Bild wurde erzeugt (z. B. damit die Übersicht es auch zeigt) */
   onImageChange?: (url: string, credit: ImageCredit | null) => void;
-  /** Zusätzlicher Bereich unter dem Bild (z. B. Filter zuordnen) */
+  /** Zusätzlicher Bereich unter dem Bild (z. B. Gäste) */
   extra?: React.ReactNode;
+  /** extra erst unter Zutaten/Zubereitung zeigen (z. B. Kategorien, damit die Zutaten oben bleiben) */
+  extraBelow?: boolean;
   /** Blättern zum vorigen/nächsten Gericht der Liste (Pfeile, Pfeiltasten, Wischen übers Bild) */
   onPrev?: () => void;
   onNext?: () => void;
@@ -63,6 +65,7 @@ export default function MealModal({
   onEdit,
   onImageChange,
   extra,
+  extraBelow = false,
   onPrev,
   onNext,
   position,
@@ -113,7 +116,6 @@ export default function MealModal({
   const [imageUrl, setImageUrl] = useState(meal.imageUrl);
   const [imageCredit, setImageCredit] = useState(meal.imageCredit ?? null);
   const [confirmRemoveImage, setConfirmRemoveImage] = useState(false);
-  const isWeekend = meal.type === 'wochenende';
 
   const [choosing, setChoosing] = useState(false);
   const [chooseError, setChooseError] = useState<string | null>(null);
@@ -179,12 +181,12 @@ export default function MealModal({
             <X size={16} />
           </button>
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-gray-500 uppercase tracking-wider">
+            <p className="text-xs text-gray-500 uppercase tracking-wider truncate">
               {meal.day}
               {meal.durationMin ? ` · ${meal.durationMin} Min` : ''}
               {position ? <span className="normal-case tracking-normal"> · {position}</span> : null}
             </p>
-            <h2 id="meal-dialog-title" className="text-base font-semibold text-gray-900 leading-tight truncate">{meal.meal}</h2>
+            <h2 id="meal-dialog-title" className="text-base font-semibold text-gray-900 leading-tight line-clamp-2">{meal.meal}</h2>
           </div>
           {(onPrev || onNext) && (
             <div className="flex items-center gap-1 flex-shrink-0">
@@ -355,18 +357,7 @@ export default function MealModal({
           </section>
         )}
 
-        {extra && <div className="mx-4 mt-4">{extra}</div>}
-
-        {/* Weekend Badge */}
-        {isWeekend && (
-          <div className="mx-4 mt-4 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-center gap-3">
-            <Clock size={18} className="text-blue-600 flex-shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-blue-800">Wochenende: mehr Zeit einplanen</p>
-              <p className="text-xs text-blue-700 mt-0.5">Dieses Gericht braucht etwas mehr Vorbereitung</p>
-            </div>
-          </div>
-        )}
+        {extra && !extraBelow && <div className="mx-4 mt-4">{extra}</div>}
 
         {/* Tabs */}
         <div role="tablist" aria-label="Rezept" className="sticky top-0 z-10 flex px-4 mt-4 border-b border-gray-100 bg-white">
@@ -476,18 +467,32 @@ export default function MealModal({
             </div>
           )}
         </div>
+        {extra && extraBelow && <div className="mx-4 mb-4">{extra}</div>}
         </div>
 
-        {onChoose && (
-          <div className="px-4 py-4 border-t border-gray-100 bg-gray-50">
-            <button
-              onClick={handleChoose}
-              disabled={choosing}
-              className="w-full px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 disabled:bg-brand-300 transition-colors flex items-center justify-center gap-2"
-            >
-              {choosing ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-              {chooseLabel}
-            </button>
+        {(onChoose || onRate) && (
+          <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
+            <div className="flex gap-2">
+              {onRate && (
+                <button
+                  onClick={() => setShowRating(true)}
+                  className={`${onChoose ? 'flex-none px-3.5' : 'flex-1 px-4'} py-2.5 rounded-lg text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2`}
+                >
+                  <Star size={14} aria-hidden="true" />
+                  {onChoose ? 'Bewerten' : 'Gericht bewerten'}
+                </button>
+              )}
+              {onChoose && (
+                <button
+                  onClick={handleChoose}
+                  disabled={choosing}
+                  className="flex-1 min-w-0 px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 disabled:bg-brand-300 transition-colors flex items-center justify-center gap-2"
+                >
+                  {choosing ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                  <span className="truncate">{chooseLabel}</span>
+                </button>
+              )}
+            </div>
             {chooseError && (
               <p role="alert" className="mt-2 text-xs text-center text-red-600">
                 {chooseError}
@@ -514,18 +519,6 @@ export default function MealModal({
           </div>
         )}
 
-        {/* Rating Button */}
-        {onRate && (
-          <div className="px-4 py-4 border-t border-gray-100 bg-gray-50">
-            <button
-              onClick={() => setShowRating(true)}
-              className="w-full px-4 py-2 rounded-lg text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-            >
-              <Star size={14} />
-              Gericht bewerten
-            </button>
-          </div>
-        )}
       </div>
       </div>
 

@@ -84,10 +84,36 @@ function normUnit(u: string): string {
   return x;
 }
 
+/** Menge in Klammern hinter dem Namen: „Knoblauch (2 Zehen)“, „Reis (ca. 250 g)“, „Paprika (1 rote oder gelbe)“ */
+const PAREN_QTY_RE = /\(\s*(?:ca\.?\s*)?(\d+\/\d+|\d+(?:[.,]\d+)?|[½¼¾])\s*([^)]*)\)/;
+
+/** Gleiche Zutat, andere Schreibweise: „2 Knoblauchzehen“ = „2 Zehen Knoblauch“, „Paprikaschoten“ = „Paprika“ */
+function normalizeName(p: Parsed): Parsed {
+  if (/^knoblauchzehen?\b/i.test(p.name)) {
+    return { qty: p.qty, unit: p.unit || (p.qty !== null ? "zehe" : ""), name: p.name.replace(/^knoblauchzehen?/i, "Knoblauch").trim() };
+  }
+  if (/^paprikaschoten?\b/i.test(p.name)) return { ...p, name: p.name.replace(/^paprikaschoten?/i, "Paprika").trim() };
+  return p;
+}
+
 function parse(text: string): Parsed {
+  return normalizeName(parseRaw(text));
+}
+
+function parseRaw(text: string): Parsed {
   const t = text.trim();
   const m = t.match(QTY_RE);
-  if (!m) return { qty: null, unit: "", name: t };
+  if (!m) {
+    const pm = t.match(PAREN_QTY_RE);
+    const qty = pm ? parseQty(pm[1]) : NaN;
+    if (!pm || !Number.isFinite(qty)) return { qty: null, unit: "", name: t };
+    const u = pm[2].trim().match(UNIT_RE);
+    let unit = u ? normUnit(u[1]) : "";
+    let q = qty;
+    if (unit === "kg") { q *= 1000; unit = "g"; }
+    if (unit === "l") { q *= 1000; unit = "ml"; }
+    return { qty: q, unit, name: t.replace(pm[0], " ").replace(/\s+/g, " ").trim() };
+  }
   let qty = parseQty(m[1]);
   let rest = m[2];
   let unit = "";
