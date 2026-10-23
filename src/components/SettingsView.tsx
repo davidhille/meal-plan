@@ -220,7 +220,7 @@ export default function SettingsView({
             </button>
           </CollapsibleCard>
           {/* Info Card */}
-          <CollapsibleCard storageKey="info" title="Wie werden deine Einstellungen genutzt?" icon={<Info size={16} />}>
+          <CollapsibleCard storageKey="info" title="Wie werden die Einstellungen genutzt?" icon={<Info size={16} />}>
             <ul className="list-disc pl-8 pr-4 pb-4 space-y-0.5 text-xs text-gray-600">
               <li>Portionen richten sich nach Alter der Familienmitglieder</li>
               <li>Gerichte, die jemand gern isst, kommen öfter</li>
