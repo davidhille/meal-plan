@@ -990,6 +990,8 @@ export interface ChefkochHit {
   ratingCount: number | null;
   durationMin: number | null;
   type: MealType | null;
+  /** Schon übernommen (auch unter anderem Namen): Name in den Rezepten */
+  knownAs?: string | null;
 }
 
 export interface ChefkochDetails {
@@ -1004,6 +1006,8 @@ export interface ChefkochDetails {
   yieldText: string | null;
   /** Passt nicht zu den Gesundheitseinstellungen (Allergien, vegetarisch …) */
   unsuitable: boolean;
+  /** Schon in den Rezepten (gleiche Chefkoch-Nummer), ggf. unter anderem Namen */
+  knownAs?: string | null;
 }
 
 // ---------- Eigene Nachtische – werfen mit Klartext-Meldung ----------

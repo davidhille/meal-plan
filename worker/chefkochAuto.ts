@@ -6,7 +6,7 @@ import { listRecipeUrls, loadChefkochRecipe, newestTopMainUrl } from "./chefkoch
 import { excludedByDislikes } from "./dislikes";
 import { storeSourcePhoto } from "./images";
 import { dislikeMatches, MEAL_DATABASE, violatesHealthConditions } from "./meals";
-import { loadContext } from "./repo";
+import { loadContext, sourceKey } from "./repo";
 
 export const AUTO_PER_DAY = 10;
 const MIN_RATING = 4.5;
@@ -25,14 +25,14 @@ export async function importChefkochBatch(sql: Sql, profileId: string, today: st
   // Schon bekannt: eigene Rezepte (Name oder Link), Grundsammlung, ausgeblendete
   const known = await sql`SELECT lower(name) AS name, source_url FROM recipes WHERE profile_id = ${profileId}`;
   const knownNames = new Set([...known.map((r) => r.name as string), ...MEAL_DATABASE.map((m) => m.name.toLowerCase()), ...ctx.rejectedMeals.map((n) => n.toLowerCase())]);
-  const knownUrls = new Set(known.map((r) => r.source_url as string).filter(Boolean));
+  const knownUrls = new Set(known.map((r) => r.source_url as string).filter(Boolean).map(sourceKey));
   const skipped = await sql`SELECT url FROM chefkoch_auto_skipped WHERE profile_id = ${profileId}`;
   const skippedUrls = new Set(skipped.map((r) => r.url as string));
 
   const added: string[] = [];
   let loaded = 0;
   for (let page = 0; page < PAGES_PER_RUN && loaded < DETAILS_PER_RUN && done + added.length < AUTO_PER_DAY; page++) {
-    const urls = (await listRecipeUrls(newestTopMainUrl(page))).filter((u) => !knownUrls.has(u) && !skippedUrls.has(u));
+    const urls = (await listRecipeUrls(newestTopMainUrl(page))).filter((u) => !knownUrls.has(sourceKey(u)) && !skippedUrls.has(u));
     for (const url of urls) {
       if (loaded >= DETAILS_PER_RUN || done + added.length >= AUTO_PER_DAY) break;
       loaded++;

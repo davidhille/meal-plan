@@ -121,3 +121,15 @@ export async function loadContext(sql: Sql, profileId: string): Promise<ScoringC
     rejectedMeals: rejected.map((r) => r.meal_name),
   };
 }
+
+/** Gleiche Quelle erkennen: Chefkoch über die Rezept-Nummer (Titel in der Adresse kann sich ändern), sonst Adresse ohne ?/# */
+export function sourceKey(url: string): string {
+  const m = url.match(/chefkoch\.de\/rezepte\/(\d+)\//);
+  return m ? `chefkoch:${m[1]}` : url.split(/[?#]/)[0].replace(/\/$/, "");
+}
+
+/** Eigene Rezepte der Familie nach Quelle: Schlüssel (sourceKey) → Name */
+export async function recipesBySource(sql: Sql, profileId: string): Promise<Map<string, string>> {
+  const rows = await sql`SELECT name, source_url FROM recipes WHERE profile_id = ${profileId} AND source_url IS NOT NULL`;
+  return new Map(rows.map((r) => [sourceKey(r.source_url as string), r.name as string]));
+}
