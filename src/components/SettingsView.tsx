@@ -7,6 +7,7 @@ import RoutineModal from './RoutineModal';
 import ShopSettings from './ShopSettings';
 import LabelSettings from './LabelSettings';
 import FilterSettings from './FilterSettings';
+import ChefkochAutoSettings from './ChefkochAutoSettings';
 import ReminderSettings from './ReminderSettings';
 import DayRulesSettings from './DayRulesSettings';
 import { CONDITION_LABELS, FOCUS_LABELS } from '../lib/health';
@@ -316,6 +317,7 @@ export default function SettingsView({
           </CollapsibleCard>
           {/* Eigene Filter für die Rezept-Übersicht */}
           <FilterSettings />
+          {profile && onProfileChange && <ChefkochAutoSettings profile={profile} onSaved={onProfileChange} />}
           {/* Push-Erinnerung zum Bewerten */}
           <ReminderSettings onTimeChange={onReminderTimeChange} />
         </SettingsGroup>

@@ -186,6 +186,11 @@ export interface Profile {
   day_rules?: DayRules;
   /** „Kommt nie in den Plan“: Hauptzutaten, die die ganze Familie nicht will (z. B. „fisch“, „lamm“) */
   family_dislikes?: string[];
+  /** Chefkoch-Automatik: täglich bis zu 10 neue Hauptspeisen ab 4,5 Sternen */
+  chefkoch_auto?: boolean;
+  /** Tag (JJJJ-MM-TT) und Anzahl der heute übernommenen Rezepte */
+  chefkoch_auto_day?: string | null;
+  chefkoch_auto_count?: number;
   /** So oft pro Woche Brotzeit (feste Brotzeit-Tage zählen mit) */
   brotzeit_per_week?: number;
 }
