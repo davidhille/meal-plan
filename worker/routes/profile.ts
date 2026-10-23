@@ -1,5 +1,7 @@
 // Profil, Familie, Bewertungen, Routinen
 import { FAMILY_DISLIKE_IDS } from "../dislikes";
+import { importChefkochBatch } from "../chefkochAuto";
+import { logError } from "../adminTools";
 import type { Ctx } from "../http";
 import { json } from "../http";
 import { ROUTINE_COLS, getProfile } from "../repo";
@@ -13,7 +15,7 @@ const onlyKnown = (raw: unknown, allowed: readonly string[]) =>
   [...new Set((Array.isArray(raw) ? raw : []).map(String))].filter((x) => allowed.includes(x));
 
 
-export async function profileRoutes({ request, sql, body, parts, route, id, user }: Ctx): Promise<Response | null> {
+export async function profileRoutes({ request, sql, body, parts, route, id, user, waitUntil }: Ctx): Promise<Response | null> {
   // ---------- Profil ----------
   if (route === "GET /profile") return json(await getProfile(sql, user));
 
@@ -26,6 +28,17 @@ export async function profileRoutes({ request, sql, body, parts, route, id, user
     const rows = await sql`UPDATE profiles
       SET health_focus = ${focus}, health_conditions = ${conditions}, meat_max_per_week = ${meatLimit}, updated_at = now()
       WHERE id = ${p.id} RETURNING *`;
+    return json(rows[0]);
+  }
+
+  // Chefkoch-Automatik an/aus: { on: true } – beim Einschalten gleich die erste Portion holen
+  if (route === "PUT /profile/chefkoch-auto") {
+    const p = await getProfile(sql, user);
+    const rows = await sql`UPDATE profiles SET chefkoch_auto = ${!!body.on}, updated_at = now() WHERE id = ${p.id} RETURNING *`;
+    if (body.on) {
+      const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date());
+      waitUntil(importChefkochBatch(sql, p.id, today).catch((e) => logError(sql, "Chefkoch-Automatik", e, p.id)));
+    }
     return json(rows[0]);
   }
 

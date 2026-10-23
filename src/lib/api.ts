@@ -291,6 +291,11 @@ export async function updateProfile(
   }
 }
 
+/** Chefkoch-Automatik ein-/ausschalten. Wirft bei Fehlern. */
+export function setChefkochAuto(on: boolean): Promise<Profile> {
+  return request<Profile>('PUT', '/profile/chefkoch-auto', { on });
+}
+
 /** „Kommt nie in den Plan“: eine Hauptzutat dazu/weg (`id`) oder die ganze Liste (`ids`). Wirft bei Fehlern. */
 export function setFamilyDislikes(change: { id: string; on: boolean } | { ids: string[] }): Promise<Profile> {
   return request<Profile>('PUT', '/profile/family-dislikes', change);

@@ -58,6 +58,16 @@ export function chefkochSearchUrl(query: string, f: ChefkochFilters = {}, page =
   return `${BASE}/rs/s${page}t${tags.join(",")}p${prep}r${rating}o${sort}/${q}/Rezepte.html`;
 }
 
+/** Neueste Hauptspeisen ab 4,5 Sternen (wie https://www.chefkoch.de/rs/s0t21r4.5o6/Hauptspeise-Rezepte.html) */
+export function newestTopMainUrl(page = 0): string {
+  return `${BASE}/rs/s${Math.max(0, Math.floor(page))}t${TAG_MAIN}r4.5o${SORT.new}/Hauptspeise-Rezepte.html`;
+}
+
+/** Links einer Ergebnisseite (für die tägliche Automatik) */
+export async function listRecipeUrls(searchUrl: string): Promise<string[]> {
+  return parseSearchResults(await fetchPage(searchUrl));
+}
+
 /** Nur echte Chefkoch-Rezeptseiten zulassen (der Worker ruft sonst keine fremden Adressen ab) */
 export function isChefkochRecipeUrl(raw: string): boolean {
   try {

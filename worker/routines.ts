@@ -7,6 +7,7 @@ import { ensureSchema } from "./migrate";
 import { fillMissingImages, recheckStockPhotos } from "./images";
 import { addDaysIso, createPlan } from "./planning";
 import { sendRatingReminders } from "./push";
+import { AUTO_PER_DAY, importChefkochBatch } from "./chefkochAuto";
 
 /** Aktuelles Datum/Uhrzeit in Deutschland */
 function berlinNow() {
@@ -54,6 +55,15 @@ export async function runRoutines(env: Env) {
       // Eine fehlgeschlagene Routine soll Erinnerungen und Bilder nicht aufhalten
       console.error(`Routine "${r.name}" fehlgeschlagen:`, e);
       await logError(sql, `Routine „${r.name}“`, e, r.profile_id);
+    }
+  }
+
+  // Chefkoch-Automatik: ab 6 Uhr in kleinen Portionen, bis 10 neue Rezepte pro Familie und Tag
+  if (now.time >= "06:00") {
+    const families = await sql`SELECT id FROM profiles WHERE chefkoch_auto AND NOT disabled
+      AND (chefkoch_auto_day IS DISTINCT FROM ${now.date} OR chefkoch_auto_count < ${AUTO_PER_DAY})`;
+    for (const f of families) {
+      await importChefkochBatch(sql, f.id as string, now.date).catch((e) => logError(sql, "Chefkoch-Automatik", e, f.id as string));
     }
   }
 
