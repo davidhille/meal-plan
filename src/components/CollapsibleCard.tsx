@@ -41,21 +41,24 @@ export default function CollapsibleCard({ storageKey, title, icon, summary, acti
 
   return (
     <section className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="flex items-center gap-2 pr-2">
+      {/* Pfeil sitzt immer ganz rechts; ein Zusatz-Knopf liegt links daneben über dem Kopf */}
+      <div className="relative">
         <button
           onClick={toggle}
           aria-expanded={open}
           aria-controls={contentId}
-          className="flex-1 min-w-0 flex items-center gap-2 pl-4 pr-2 py-3.5 text-left hover:bg-gray-50"
+          className={`w-full flex items-center gap-2 pl-4 pr-4 py-3.5 text-left rounded-xl hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-600 ${
+            open ? 'rounded-b-none' : ''
+          }`}
         >
           {icon && <span className="text-gray-500 flex-shrink-0" aria-hidden="true">{icon}</span>}
-          <span className="flex-1 min-w-0">
+          <span className={`flex-1 min-w-0 ${action ? 'pr-10' : ''}`}>
             <span className="block text-sm font-semibold text-gray-800">{title}</span>
             {!open && summary && <span className="block text-xs text-gray-500 truncate mt-0.5">{summary}</span>}
           </span>
           <ChevronDown size={16} className={`flex-shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
         </button>
-        {action}
+        {action && <div className="absolute right-10 top-1/2 -translate-y-1/2 flex items-center">{action}</div>}
       </div>
       <div id={contentId} hidden={!open}>
         {open && children}
