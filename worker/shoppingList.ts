@@ -30,8 +30,9 @@ export async function getLabels(sql: Sql, profileId: string) {
 }
 
 /** Komplette Einkaufsliste eines Plans: berechnete Zutaten + gespeicherter Zustand + eigene Artikel */
-export async function getShopping(sql: Sql, profileId: string, planId: string, range?: { from: string; to: string }) {
-  const from = range?.from ?? "0001-01-01";
+export async function getShopping(sql: Sql, profileId: string, planId: string, range?: { from: string; to: string }, since?: string) {
+  // Vergangene Tage weglassen (Häkchen-Schlüssel bleiben am Wochenbeginn)
+  const from = since && since > (range?.from ?? "") ? since : range?.from ?? "0001-01-01";
   const to = range?.to ?? "9999-12-31";
   // Pro Woche eigene Häkchen: Schlüssel bekommt das Wochen-Startdatum vorangestellt
   // Mehrere Wochen zusammen haben eigene Häkchen (andere Mengen als die einzelnen Wochen)

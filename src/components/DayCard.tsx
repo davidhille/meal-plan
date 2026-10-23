@@ -107,40 +107,38 @@ export default function DayCard({
               {meal.day}
             </p>
             <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">{meal.meal}</p>
-            <div className="flex items-center gap-2 mt-1.5">
+            {/* Infozeile: Teile brechen als Ganzes um, nie mitten im Wort („35 Min“) */}
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-1.5 text-xs whitespace-nowrap">
               <span className="flex items-center gap-1">
                 {config.icon}
-                <span className="text-xs text-gray-500">{config.label}</span>
+                <span className="text-gray-500">{config.label}</span>
               </span>
               {meal.durationMin ? (
-                <span className="flex items-center gap-1 text-xs text-gray-500">
-                  <Clock size={11} />
+                <span className="flex items-center gap-1 text-gray-500">
+                  <Clock size={11} aria-hidden="true" />
                   {meal.durationMin} Min
                 </span>
               ) : null}
               {guests > 0 && (
-                <span className="flex items-center gap-1 text-xs font-medium text-brand-700">
+                <span className="flex items-center gap-1 font-medium text-brand-700">
                   <UserPlus size={11} aria-hidden="true" />+{guests}
                   <span className="sr-only">{guests === 1 ? 'Gast' : 'Gäste'}</span>
                 </span>
               )}
-              {season && season.length > 0 && (
-                <span className="flex items-center gap-1 min-w-0 text-xs text-coral-700" title="Hat gerade Saison">
-                  <Sprout size={11} aria-hidden="true" className="flex-shrink-0" />
-                  <span className="truncate">
-                    <span className="sr-only">Saison: </span>
-                    {season.join(', ')}
-                  </span>
-                </span>
-              )}
               {isFavorite && <Heart size={11} className="fill-rose-500 text-rose-500" aria-label="Favorit" />}
               {rating ? (
-                <span className="ml-auto text-xs text-amber-700 font-medium flex items-center gap-0.5" aria-label={`${rating} von 5 Sternen`}>
+                <span className="text-amber-700 font-medium flex items-center gap-0.5" aria-label={`${rating} von 5 Sternen`}>
                   <Star size={11} className="fill-yellow-400 text-yellow-500" aria-hidden="true" />
                   {rating}
                 </span>
               ) : null}
             </div>
+            {season && season.length > 0 && (
+              <p className="flex items-center gap-1 mt-1 min-w-0 text-xs text-coral-700" title="Hat gerade Saison">
+                <Sprout size={11} aria-hidden="true" className="flex-shrink-0" />
+                <span className="truncate">Saison: {season.join(', ')}</span>
+              </p>
+            )}
           </div>
           <ChevronRight size={16} className="text-gray-300 flex-shrink-0" />
         </div>
