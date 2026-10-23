@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { guessType, parseRecipeHtml } from "./recipeImport";
+import { guessType, parseRecipeHtml, stripAuthorSuffix } from "./recipeImport";
 
 const page = (data: unknown) =>
   `<html><head><script type="application/ld+json">${JSON.stringify(data)}</script></head><body></body></html>`;
@@ -62,5 +62,21 @@ describe("Schreibweisen aus Rezeptseiten", () => {
     const r = parseRecipeHtml(html, "https://www.chefkoch.de/rezepte/1/x.html");
     expect(r?.name).toBe("Hähnchen in Sahne");
     expect(r?.type).toBe("fleisch");
+  });
+});
+
+describe("Nutzername im Titel", () => {
+  test("entfernt Chefkoch-Nutzernamen am Ende", () => {
+    expect(stripAuthorSuffix("Knoblauch-Hähnchenbrust in Parmesan-Kräuterkruste von DasperfekteDinner")).toBe(
+      "Knoblauch-Hähnchenbrust in Parmesan-Kräuterkruste"
+    );
+    expect(stripAuthorSuffix("Hähnchenbrust in cremiger Knoblauchsauce von bettina_uphus")).toBe("Hähnchenbrust in cremiger Knoblauchsauce");
+    expect(stripAuthorSuffix("Linsensuppe von koch2010")).toBe("Linsensuppe");
+    expect(stripAuthorSuffix("Gulasch von Anna", "Anna")).toBe("Gulasch");
+  });
+  test("lässt normale Titel stehen", () => {
+    expect(stripAuthorSuffix("Gulasch von Oma")).toBe("Gulasch von Oma");
+    expect(stripAuthorSuffix("Filet von der Pute mit Reis")).toBe("Filet von der Pute mit Reis");
+    expect(stripAuthorSuffix("Kürbissuppe")).toBe("Kürbissuppe");
   });
 });
