@@ -55,7 +55,7 @@ export default function DayRulesSettings({ profile, onSaved }: DayRulesSettingsP
     <CollapsibleCard storageKey="wochentage" title="Wochentage" icon={<CalendarClock size={16} />} summary={describeDayRules(rules, perWeek)}>
       <p className="px-4 pb-3 text-xs text-gray-500">
         Freie Tage werden nicht geplant (z. B. auswärts essen oder Reste). An Brotzeit-Tagen wird nicht gekocht. An Tagen mit
-        wenig Zeit kommen nur Gerichte, die höchstens so lange dauern. Gilt für neue Pläne und für „Neu generieren“.
+        wenig Zeit kommen nur Gerichte, die höchstens so lange dauern. Gilt für neue Pläne und beim Tauschen.
       </p>
       <ul className="border-t border-gray-100 divide-y divide-gray-100">
         {WEEKDAYS.map((d) => (

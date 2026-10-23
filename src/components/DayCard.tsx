@@ -53,7 +53,7 @@ const fishConfig = {
   icon: <Fish size={11} className="text-coral-700" aria-hidden="true" />,
 };
 
-/** Gerichtkarte: Farbbalken, Bild, Typ; unten die Aktionsleiste (Merken, Nachtisch, Verschieben, Tauschen, Ablehnen) */
+/** Gerichtkarte: Farbbalken, Bild, Typ; unten die Aktionsleiste (Merken, Nachtisch, Verlegen, Tauschen, Ausblenden) */
 export default function DayCard({
   meal,
   rating,
@@ -112,18 +112,18 @@ export default function DayCard({
       label: 'Tauschen',
       icon: busy ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />,
       onClick: onRegenerate,
-      title: 'Neu generieren – nur austauschen',
+      title: 'Tauschen – anderes Gericht für diesen Tag',
       ariaLabel: `${meal.meal}: austauschen`,
     });
   if (onReject)
     actions.push({
       key: 'reject',
-      label: 'Ablehnen',
+      label: 'Ausblenden',
       icon: <X size={16} />,
       onClick: onReject,
       tone: 'danger',
-      title: 'Ablehnen – kommt nicht wieder',
-      ariaLabel: `${meal.meal}: ablehnen, kommt nicht wieder`,
+      title: 'Ausblenden – kommt nicht mehr in den Plan',
+      ariaLabel: `${meal.meal}: ausblenden, kommt nicht mehr in den Plan`,
     });
 
   return (

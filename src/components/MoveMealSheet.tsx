@@ -173,7 +173,7 @@ export default function MoveMealSheet({ pm, plan, planMeals, dayRules, onMove, o
               ) : (
                 <>
                   <strong>{pm.meal_name}</strong> am {label(pm.meal_date)} aus dem Plan nehmen? Der Tag bleibt leer, die Zutaten
-                  verschwinden von der Einkaufsliste. Das Gericht wird nicht abgelehnt und kann wieder vorgeschlagen werden.
+                  verschwinden von der Einkaufsliste. Das Gericht wird nicht ausgeblendet und kann wieder vorgeschlagen werden.
                 </>
               )}
             </p>

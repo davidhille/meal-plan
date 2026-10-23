@@ -310,7 +310,7 @@ export default function App() {
       [...prev.filter((m) => m.id !== oldId), replacement].sort((a, b) => a.meal_date.localeCompare(b.meal_date))
     );
 
-  // Zuletzt abgelehntes Gericht – kurz rückgängig machbar
+  // Zuletzt ausgeblendetes Gericht – kurz rückgängig machbar
   const [undoReject, setUndoReject] = useState<{ id: string; name: string; replacementId: string | null } | null>(null);
   const undoTimer = useRef<number | undefined>(undefined);
 
@@ -560,12 +560,12 @@ export default function App() {
         <TabSwitcher variant="bottom" activeTab={activeTab} onTabChange={setActiveTab} />
       </div>
 
-      {/* Nach „Ablehnen“: kurz rückgängig machbar; role=status, damit Screenreader es ansagen */}
+      {/* Nach „Ausblenden“: kurz rückgängig machbar; role=status, damit Screenreader es ansagen */}
       <div role="status" className="fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] sm:bottom-6 z-40 flex justify-center pointer-events-none">
         {undoReject && (
           <div className="pointer-events-auto w-full max-w-md flex items-center gap-3 pl-4 pr-2 py-2 rounded-2xl bg-gray-800 text-white shadow-lg">
             <p className="flex-1 min-w-0 text-sm">
-              <span className="line-clamp-2">„{undoReject.name}“ abgelehnt – kommt nicht wieder.</span>
+              <span className="line-clamp-2">„{undoReject.name}“ ausgeblendet – kommt nicht mehr in den Plan.</span>
             </p>
             <button
               onClick={handleUndoReject}

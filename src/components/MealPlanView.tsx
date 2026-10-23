@@ -347,7 +347,7 @@ export default function MealPlanView({
 
         {displayItems.length === 0 && offDays.length === 0 && (
           <div className="text-center py-8 text-gray-500 text-sm">
-            Alle Gerichte dieser Woche wurden abgelehnt. Erstelle einen neuen Plan.
+            Alle Gerichte dieser Woche wurden ausgeblendet. Erstelle einen neuen Plan.
           </div>
         )}
 
@@ -356,7 +356,7 @@ export default function MealPlanView({
 
         {/* Plan-Aktionen */}
         <div className="pt-2 space-y-2">
-          {/* Häufigste Aktion: nächsten Zeitraum planen (Hauptknopf); Neu generieren und Löschen zurückhaltend */}
+          {/* Häufigste Aktion: nächsten Zeitraum planen (Hauptknopf); „Alle tauschen“ und Löschen zurückhaltend */}
           <button
             onClick={onCreatePlan}
             className="w-full py-3 flex items-center justify-center gap-2 rounded-xl bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 transition-colors"
@@ -372,7 +372,7 @@ export default function MealPlanView({
                 className="flex-1 py-2.5 flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
               >
                 {regeneratingPlan ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
-                {regeneratingPlan ? 'Wird neu geplant …' : 'Neu generieren'}
+                {regeneratingPlan ? 'Wird neu geplant …' : 'Alle tauschen'}
               </button>
             )}
             {onDeletePlan &&
@@ -513,7 +513,7 @@ export default function MealPlanView({
           plan={plan}
           meals={allPlanMeals ?? planMeals ?? []}
           portions={defaultPortions ?? 4}
-          confirmLabel="Neu generieren"
+          confirmLabel="Alle tauschen"
           onConfirm={async () => {
             setRegeneratingPlan(true);
             try {

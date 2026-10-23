@@ -63,7 +63,7 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
 - **Plan teilen** („Teilen“ oben neben „Herunterladen“): Nur-Lese-Link ohne Zugang (`/?plan=<token>`, in der Datenbank nur
   der Hash in `meal_plans.share_hash`). Zeigt Familienname, Gerichte mit Bild, Zeit, Nachtisch, Brotzeit und aufklappbarem
   Rezept (4 Portionen) – keine Einkaufsliste, keine Bewertungen. Neuer Link macht den alten ungültig; „Link zurückziehen“
-  sperrt ihn; „Neu generieren“ behält den Link.
+  sperrt ihn; „Alle tauschen“ behält den Link.
 - **Wochen-Rückblick** (Sonntag: laufende Woche, Montag/Dienstag: Vorwoche; ab zwei gekochten Gerichten): Anzahl gekocht
   und Brotzeiten, Lieblingsgericht (höchste Sterne ab 4), noch nicht bewertete Gerichte zum Antippen. Mit × pro Woche
   ausblendbar (auf dem Gerät gemerkt). Logik `src/lib/weekReview.ts`.
@@ -74,14 +74,14 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
   heißen „Fisch“ statt „Fleisch“ (auch im Plan-Download). Farbbalken nur aus der Palette: Vegetarisch Pflaume,
   Fleisch Koralle, Fisch helle Koralle, Wochenende dunkle Aubergine, Brotzeit neutral grau. Aktionen als beschriftete
   Leiste unten in der Karte (`CardActionBar`):
-  - **Merken** (Favorit) · **Nachtisch** (dazu/ändern) · **Tauschen** (nur austauschen) · **Ablehnen** (kommt nie wieder; 8 Sek. lang „Rückgängig“, `POST /plan-meals/:id/unreject`)
+  - **Merken** (Favorit) · **Nachtisch** (dazu/ändern) · **Tauschen** (nur austauschen) · **Ausblenden** (kommt nicht mehr in den Plan, gleiche Liste wie „Ausgeblendete Gerichte“ unter Rezepte; 8 Sek. lang „Rückgängig“, `POST /plan-meals/:id/unreject`)
   - **Verlegen** (oder Tag leeren): Gericht auf einen anderen Tag legen – steht dort schon eins, tauschen beide;
     auch bis 2 Wochen nach Planende (der Plan wird verlängert). Oder „Tag leeren – nicht kochen“: Gericht kommt aus dem
-    Plan (nicht abgelehnt), die Zutaten verschwinden von der Einkaufsliste.
-- Unter dem Plan: **Neuen Zeitraum planen** (Hauptknopf), daneben zurückhaltend **Neu generieren** (gleicher Zeitraum) und **Plan löschen**, beide mit Bestätigung.
+    Plan (nicht ausgeblendet), die Zutaten verschwinden von der Einkaufsliste.
+- Unter dem Plan: **Neuen Zeitraum planen** (Hauptknopf), daneben zurückhaltend **Alle tauschen** (gleicher Zeitraum) und **Plan löschen**, beide mit Bestätigung.
 - **Plan herunterladen:** „Herunterladen“ neben dem Zeitraum öffnet den ganzen Plan als Druckseite (Übersicht, alle Rezepte
   mit auf die Familie umgerechneten Zutaten und Zubereitung, Nachtische) → „Als PDF speichern“. Ohne Pop-up als HTML-Datei.
-- **Rückfrage vor dem Ersetzen:** Läuft der Plan noch, fragen „Neu generieren“ und „Neuen Zeitraum planen“ nach –
+- **Rückfrage vor dem Ersetzen:** Läuft der Plan noch, fragen „Alle tauschen“ und „Neuen Zeitraum planen“ nach –
   mit „Vorher herunterladen“, damit die Rezepte zum schon erledigten Einkauf nicht verloren gehen.
 - **Plan verlängern statt ersetzen** (in der Rückfrage bei „Neuen Zeitraum planen“): Der laufende Plan wird auf den neuen
   Zeitraum erweitert. Geplante Tage bleiben – auch Gerichte, die man in die Zukunft verschoben hat –, ebenso bewusst
@@ -90,7 +90,7 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
 - **Leere Tage bleiben sichtbar:** Tage ohne Gericht (geleert, verschoben oder nicht geplant) stehen im Plan als schmale Zeile
   „leer, nichts geplant“ mit „Gericht planen“ (füllt nur diesen Tag, ohne automatische Brotzeit); freie Wochentage als
   „frei (Wochentag)“.
-- **Nur leere Tage füllen** (in der Rückfrage bei „Neu generieren“): gleicher Zeitraum, aber nur Tage
+- **Nur leere Tage füllen** (in der Rückfrage bei „Alle tauschen“): gleicher Zeitraum, aber nur Tage
   ohne Gericht werden geplant – z. B. die Lücke, die ein in die Zukunft verschobenes Gericht hinterlässt. Mit „Tag leeren“
   freigemachte Tage bleiben frei.
 - **Gäste pro Tag:** In der Rezept-Ansicht eines Plan-Gerichts „Gäste an diesem Tag“ (+/−). Die Portionen dieses Gerichts,
@@ -244,7 +244,7 @@ Auf- und zuklappbare Karten:
   - **Einschränkungen** (mehrere): Diabetes (nur Abzug bei Zucker), glutenfrei, laktosefrei, Nussallergie, vegetarisch,
     vegan, ohne Alkohol – schließen hart aus.
   - **Fleisch pro Woche:** keine Grenze, kein Fleisch oder höchstens 1–5× pro Kalenderwoche (Fisch zählt nicht mit);
-    gilt beim Planen und beim „Neu generieren“.
+    gilt beim Planen und beim „Alle tauschen“.
 - **Familienmitglieder:** Name, Erwachsener/Kind mit Alter, mag/mag nicht – anlegen, bearbeiten, löschen (mit Bestätigung).
 - **Routinen:** wöchentlich oder monatlich automatisch einen neuen Plan erstellen (Cron alle 15 Minuten, deutsche Zeit).
 - **Einkaufslisten verwalten:** eigene Listen anlegen, umbenennen, umfärben, löschen.
@@ -255,7 +255,7 @@ Auf- und zuklappbare Karten:
   durch die festen Hauptzutaten ersetzt; ihre Hand-Zuordnungen wurden dabei als Korrekturen übernommen.
 - **Wochentage:** pro Wochentag „Normal“, „Frei – nicht planen“ (auswärts essen, Reste) oder „höchstens 15/20/30/45/60 Min“.
   Freie Tage bleiben im Plan leer (schmale Zeile „frei“, Heute-Karte „Heute ist frei“); an Tagen mit Zeitlimit kommen
-  nur Gerichte, die reinpassen (bekannte Zeit zuerst). Gilt für neue Pläne, Routinen und „Neu generieren“.
+  nur Gerichte, die reinpassen (bekannte Zeit zuerst). Gilt für neue Pläne, Routinen und „Alle tauschen“.
 - **Brotzeit:** Tage ohne Kochen – reiner Platzhalter „Brotzeit“, nichts auf der Einkaufsliste, kein Bild, keine Bewertung.
   Drei Wege: Wochentag auf „Brotzeit“ stellen (immer), **„Brotzeit pro Woche“** (0–4×; feste Tage zählen mit, die Planung
   verteilt den Rest – bevorzugt Tage mit Zeitlimit, dann Mo–Fr, möglichst auseinander; bei angebrochenen Wochen anteilig)
