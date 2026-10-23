@@ -180,6 +180,8 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
   Hühnerbrühe oder Fischsauce zählen nicht, Hackfleisch ohne Angabe zählt zu Rind und Schwein). Liegt sie daneben, im
   Rezept unter „Kategorien“ → „Filter anpassen“ an- oder abwählen (gilt nur für die eigene Familie) (gespeichert in `recipe_category_overrides`, zieht beim
   Umbenennen mit).
+- **Sortierung** (Auswahl rechts über der Liste, auf dem Gerät gemerkt): Empfohlen (Favoriten, gut bewertete und
+  saisonale Gerichte zuerst, schlecht bewertete hinten; `lib/recipeSort.ts`), Beste Bewertung, Schnellste zuerst, A–Z.
 - **Rezept hinzufügen** (Knopf oben in der Übersicht) bündelt drei Wege: Bei Chefkoch suchen, Mit KI erstellen,
   Von einem Link importieren (`AddRecipeSheet`).
 - **Rezept mit KI erstellen** (über „Rezept hinzufügen“): Wunsch eingeben („etwas mit Kürbis, schnell“), Art wählen

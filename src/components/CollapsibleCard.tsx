@@ -44,7 +44,11 @@ export default function CollapsibleCard({ storageKey, title, icon, summary, acti
       {/* Pfeil sitzt immer ganz rechts; ein Zusatz-Knopf liegt links daneben über dem Kopf */}
       <div className="relative">
         <button
-          onClick={toggle}
+          onClick={(e) => {
+            // Nach Maus-/Fingertipp keinen Fokus-Rahmen stehen lassen (Tastatur behält ihn)
+            if (e.detail > 0) e.currentTarget.blur();
+            toggle();
+          }}
           aria-expanded={open}
           aria-controls={contentId}
           className={`w-full flex items-center gap-2 pl-4 pr-4 py-3.5 text-left rounded-xl hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-600 ${

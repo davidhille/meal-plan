@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChefHat, Clock, Loader2, Search, EyeOff, X, ShieldAlert, MessageSquare, Star, SlidersHorizontal, Refrigerator, Plus } from 'lucide-react';
+import { ChefHat, Clock, Loader2, Search, EyeOff, X, ShieldAlert, MessageSquare, Star, SlidersHorizontal, Refrigerator, Plus, ArrowUpDown } from 'lucide-react';
 import { useRatings } from '../lib/ratings';
 import { CatalogRecipe, Meal, MealType, PlanMeal, RecipeCatalog, RecipeFilter } from '../types';
 import { CategoryOverride, toOverrideMap } from '../lib/recipeCategories';
@@ -36,6 +36,7 @@ import {
   wishToQuery,
 } from '../lib/api';
 import { RECIPE_BASE_PORTIONS } from '../lib/portions';
+import { RecipeSort, SORT_LABELS, sortRecipes } from '../lib/recipeSort';
 import MealModal from './MealModal';
 import DayAssignSheet from './DayAssignSheet';
 import ConfirmDialog from './ConfirmDialog';
@@ -51,6 +52,17 @@ interface MainDishesViewProps {
   onFiltersChange?: (filters: RecipeFilter[]) => void;
   /** Gericht bearbeitet – Plan und Favoriten neu laden */
   onRecipesChanged?: () => void;
+  /** Namen der Favoriten (für die Sortierung „Empfohlen“) */
+  favoriteNames?: string[];
+}
+
+function readSort(): RecipeSort {
+  try {
+    const v = localStorage.getItem('rezepte-sortierung');
+    return v && v in SORT_LABELS ? (v as RecipeSort) : 'empfohlen';
+  } catch {
+    return 'empfohlen';
+  }
 }
 
 const TYPE_LABEL: Record<MealType, string> = { vegetarisch: 'Vegetarisch', fleisch: 'Fleisch & Fisch', wochenende: 'Wochenende' };
@@ -83,6 +95,7 @@ export default function MainDishesView({
   customFilters = [],
   onFiltersChange,
   onRecipesChanged,
+  favoriteNames = [],
 }: MainDishesViewProps) {
   const [catalog, setCatalog] = useState<RecipeCatalog | null>(null);
   const { ratings, notes } = useRatings();
@@ -93,6 +106,15 @@ export default function MainDishesView({
   const [overrideList, setOverrideList] = useState<CategoryOverride[]>([]);
   const overrides = useMemo(() => toOverrideMap(overrideList), [overrideList]);
   const [query, setQuery] = useState('');
+  const [sort, setSort] = useState<RecipeSort>(readSort);
+  const changeSort = (value: RecipeSort) => {
+    setSort(value);
+    try {
+      localStorage.setItem('rezepte-sortierung', value);
+    } catch {
+      // gilt dann nur bis zum Neuladen
+    }
+  };
   const [selected, setSelected] = useState<CatalogRecipe | null>(null);
   const [assign, setAssign] = useState<CatalogRecipe | null>(null);
   const [hideCandidate, setHideCandidate] = useState<CatalogRecipe | null>(null);
@@ -138,8 +160,14 @@ export default function MainDishesView({
     [selection, customFilters]
   );
   const visible = useMemo(
-    () => searched.filter((r) => matchesSelection(r, activeSelection, { customFilters, overrides })),
-    [searched, activeSelection, customFilters, overrides]
+    () =>
+      sortRecipes(
+        searched.filter((r) => matchesSelection(r, activeSelection, { customFilters, overrides })),
+        sort,
+        { ratings, favorites: new Set(favoriteNames), month: new Date().getMonth() + 1 }
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [searched, activeSelection, customFilters, overrides, sort, ratings, favoriteNames.join('|')]
   );
   const activeCount = selectionSize(activeSelection);
 
@@ -270,9 +298,26 @@ export default function MainDishesView({
           </div>
         )}
 
-        <p className="text-xs text-gray-500 px-1" aria-live="polite">
-          {visible.length === shownTotal ? `${shownTotal} Gerichte` : `${visible.length} von ${shownTotal} Gerichten`}
-        </p>
+        <div className="flex items-center justify-between gap-2 px-1">
+          <p className="text-xs text-gray-500" aria-live="polite">
+            {visible.length === shownTotal ? `${shownTotal} Gerichte` : `${visible.length} von ${shownTotal} Gerichten`}
+          </p>
+          <label className="flex items-center gap-1.5 text-xs text-gray-600">
+            <ArrowUpDown size={13} aria-hidden="true" />
+            <span className="sr-only">Sortieren nach</span>
+            <select
+              value={sort}
+              onChange={(e) => changeSort(e.target.value as RecipeSort)}
+              className="h-8 pl-2 pr-7 rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+            >
+              {(Object.keys(SORT_LABELS) as RecipeSort[]).map((k) => (
+                <option key={k} value={k}>
+                  {SORT_LABELS[k]}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
         {unsuitableCount > 0 && (
           <label className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
             <input

@@ -494,6 +494,7 @@ export default function App() {
             onReplace={currentPlan ? handleReplaceWithRecipe : undefined}
             onAssignDessert={currentPlan ? handleSetDessert : undefined}
             defaultPortions={familyPortions(familyMembers)}
+            favoriteNames={favorites.map((f) => f.meal_name)}
             onRecipesChanged={() => {
               loadPlanMeals();
               getFavorites().then(setFavorites).catch(() => {});
