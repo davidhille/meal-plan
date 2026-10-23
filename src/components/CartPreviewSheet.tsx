@@ -91,7 +91,7 @@ function Stepper({
         onClick={() => onChange(value - 1)}
         disabled={disabled || value <= min}
         aria-label={`${label}: weniger`}
-        className="w-7 h-7 flex items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 disabled:text-gray-300"
+        className="tap w-7 h-7 flex items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 disabled:text-gray-300"
       >
         <Minus size={12} />
       </button>
@@ -102,7 +102,7 @@ function Stepper({
         onClick={() => onChange(value + 1)}
         disabled={disabled || value >= 50}
         aria-label={`${label}: mehr`}
-        className="w-7 h-7 flex items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 disabled:text-gray-300"
+        className="tap w-7 h-7 flex items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 disabled:text-gray-300"
       >
         <Plus size={12} />
       </button>
@@ -204,7 +204,7 @@ export default function CartPreviewSheet({
           <button
             onClick={onClose}
             aria-label="Schließen"
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200"
+            className="tap w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200"
           >
             <X size={16} />
           </button>
@@ -229,7 +229,7 @@ export default function CartPreviewSheet({
                       role="checkbox"
                       aria-checked={on}
                       aria-label={name}
-                      className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center border-2 ${
+                      className={`tap w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center border-2 ${
                         on ? 'bg-brand-600 border-brand-500' : 'bg-white border-gray-300'
                       }`}
                     >
@@ -318,7 +318,7 @@ export default function CartPreviewSheet({
                       onClick={() => changeCart(c.productId, 0)}
                       disabled={!!cartBusyId}
                       aria-label={`${c.name} aus dem Warenkorb entfernen`}
-                      className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-full text-gray-500 hover:text-red-600 hover:bg-red-50"
+                      className="tap w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-full text-gray-500 hover:text-red-600 hover:bg-red-50"
                     >
                       <Trash2 size={13} />
                     </button>

@@ -82,7 +82,7 @@ export default function AiRecipeModal({ onSaved, onClose, onChefkoch }: AiRecipe
             <button
               onClick={onClose}
               aria-label="Schließen"
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 flex-shrink-0"
+              className="tap w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 flex-shrink-0"
             >
               <X size={16} />
             </button>
@@ -165,7 +165,7 @@ export default function AiRecipeModal({ onSaved, onClose, onChefkoch }: AiRecipe
                     onClick={() => setEditing(true)}
                     aria-label="Vorschau anpassen"
                     title="Anpassen"
-                    className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 flex-shrink-0"
+                    className="tap w-8 h-8 flex items-center justify-center rounded-full bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 flex-shrink-0"
                   >
                     <Pencil size={14} />
                   </button>

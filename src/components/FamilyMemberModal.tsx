@@ -51,7 +51,7 @@ export default function FamilyMemberModal({ member, onSave, onClose }: FamilyMem
           <button
             onClick={onClose}
             aria-label="Schließen"
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200"
+            className="tap w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200"
           >
             <X size={16} />
           </button>

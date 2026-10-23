@@ -110,7 +110,7 @@ export default function RecipeEditModal({
             <button
               onClick={onClose}
               aria-label="Abbrechen"
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 flex-shrink-0"
+              className="tap w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 flex-shrink-0"
             >
               <X size={16} />
             </button>

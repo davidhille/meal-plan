@@ -63,7 +63,7 @@ export default function AdminInbox() {
       summary={`${open} ${open === 1 ? 'neues Feedback' : 'neue Feedbacks'} · ${recentErrors} ${recentErrors === 1 ? 'Fehler' : 'Fehler'} in 24 Std.`}
       action={
         <button onClick={load} disabled={loading} aria-label="Meldungen aktualisieren" title="Aktualisieren"
-          className="w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 disabled:opacity-50">
+          className="tap w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 disabled:opacity-50">
           <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
         </button>
       }

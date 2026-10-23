@@ -178,7 +178,7 @@ export default function MealModal({
           <button
             onClick={onClose}
             aria-label="Schließen"
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors flex-shrink-0"
+            className="tap w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors flex-shrink-0"
           >
             <X size={16} />
           </button>
@@ -197,7 +197,7 @@ export default function MealModal({
                 disabled={!onPrev}
                 aria-label="Voriges Gericht"
                 title="Voriges Gericht (←)"
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-40 disabled:hover:bg-gray-100 transition-colors"
+                className="tap w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-40 disabled:hover:bg-gray-100 transition-colors"
               >
                 <ChevronLeft size={16} />
               </button>
@@ -206,7 +206,7 @@ export default function MealModal({
                 disabled={!onNext}
                 aria-label="Nächstes Gericht"
                 title="Nächstes Gericht (→)"
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-40 disabled:hover:bg-gray-100 transition-colors"
+                className="tap w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-40 disabled:hover:bg-gray-100 transition-colors"
               >
                 <ChevronRight size={16} />
               </button>
@@ -217,7 +217,7 @@ export default function MealModal({
               onClick={onEdit}
               aria-label={`${meal.meal} bearbeiten`}
               title="Bearbeiten"
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors flex-shrink-0"
+              className="tap w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors flex-shrink-0"
             >
               <Pencil size={14} />
             </button>
@@ -282,7 +282,7 @@ export default function MealModal({
                   disabled={generating}
                   aria-label="Bild entfernen"
                   title="Bild entfernen"
-                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-black/60 text-white hover:bg-black/70 backdrop-blur-sm transition-all active:scale-95"
+                  className="tap w-8 h-8 flex items-center justify-center rounded-lg bg-black/60 text-white hover:bg-black/70 backdrop-blur-sm transition-all active:scale-95"
                 >
                   <ImageOff size={14} aria-hidden="true" />
                 </button>
@@ -408,7 +408,7 @@ export default function MealModal({
                 <button
                   onClick={() => setPortions((p) => Math.max(0.5, p - 0.5))}
                   aria-label="Weniger Portionen"
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-600 active:scale-95"
+                  className="tap w-8 h-8 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-600 active:scale-95"
                 >
                   <Minus size={14} />
                 </button>
@@ -418,7 +418,7 @@ export default function MealModal({
                 <button
                   onClick={() => setPortions((p) => Math.min(20, p + 0.5))}
                   aria-label="Mehr Portionen"
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-600 active:scale-95"
+                  className="tap w-8 h-8 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-600 active:scale-95"
                 >
                   <Plus size={14} />
                 </button>

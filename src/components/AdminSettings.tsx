@@ -10,7 +10,7 @@ import {
 } from '../lib/api';
 
 const input = 'w-full h-9 px-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500';
-const iconBtn = 'w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100';
+const iconBtn = 'tap w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100';
 
 const formatDate = (v: string | null) =>
   v ? new Date(v.replace(' ', 'T').replace(/([+-]\d{2})$/, '$1:00')).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' }) : null;
@@ -165,7 +165,7 @@ export default function AdminSettings() {
                       <Ban size={15} />
                     </button>
                     <button onClick={() => setRemove(f)} aria-label={`${label} löschen`} title="Löschen"
-                      className="w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:text-red-600 hover:bg-red-50">
+                      className="tap w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:text-red-600 hover:bg-red-50">
                       <Trash2 size={15} />
                     </button>
                   </>

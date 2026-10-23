@@ -118,14 +118,14 @@ export default function FilterSettings() {
                 <button
                   onClick={() => edit(f)}
                   aria-label={`Filter ${f.name} bearbeiten`}
-                  className="w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100"
+                  className="tap w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100"
                 >
                   <Pencil size={14} />
                 </button>
                 <button
                   onClick={() => setToDelete(f)}
                   aria-label={`Filter ${f.name} löschen`}
-                  className="w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:text-red-600 hover:bg-red-50"
+                  className="tap w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:text-red-600 hover:bg-red-50"
                 >
                   <Trash2 size={14} />
                 </button>
@@ -142,7 +142,7 @@ export default function FilterSettings() {
             <button
               onClick={() => setDraft(null)}
               aria-label="Abbrechen"
-              className="w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-200"
+              className="tap w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-200"
             >
               <X size={14} />
             </button>
