@@ -119,7 +119,7 @@ export default function SettingsView({
             </button>
           }
         >
-          <button onClick={() => setShowPrefsModal(true)} className="w-full text-left px-4 pb-4 hover:bg-gray-50 transition-colors">
+          <button onClick={() => setShowPrefsModal(true)} className="w-full text-left px-4 pb-4 hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-600 rounded-b-xl">
             <div className="space-y-2">
               <div>
                 <p className="text-xs text-gray-500 mb-1">Schwerpunkte</p>
