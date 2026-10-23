@@ -219,6 +219,8 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
 
   const steps = detail ? detail.recipe.instructions.split('\n').filter(Boolean) : [];
   const already = detail ? existingNames.has(name.trim() || detail.recipe.name) : false;
+  // Dieselbe Chefkoch-Nummer schon übernommen, aber unter anderem Namen (z. B. ohne Nutzernamen im Titel)
+  const knownAs = !isDessert && detail?.knownAs && detail.knownAs !== (name.trim() || detail.recipe.name) ? detail.knownAs : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -363,10 +365,16 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
                   aber nie automatisch.
                 </p>
               )}
-              {already && (
+              {knownAs ? (
                 <p className="p-3 rounded-xl bg-brand-50 text-sm text-brand-900">
-                  Ein Rezept mit diesem Namen ist schon in der Sammlung – Übernehmen ersetzt es.
+                  Dieses Rezept ist schon in den Rezepten – als „{knownAs}“.
                 </p>
+              ) : (
+                already && (
+                  <p className="p-3 rounded-xl bg-brand-50 text-sm text-brand-900">
+                    Ein Rezept mit diesem Namen ist schon in der Sammlung – Übernehmen ersetzt es.
+                  </p>
+                )
               )}
 
               <div>
@@ -483,7 +491,7 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
                           <Loader2 size={20} className="animate-spin text-brand-700" />
                         </span>
                       )}
-                      {(existingNames.has(h.name) || taken.has(h.name)) && (
+                      {(existingNames.has(h.name) || taken.has(h.name) || (!isDessert && !!h.knownAs)) && (
                         <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/95 text-xs font-semibold text-brand-800">
                           <Check size={10} aria-hidden="true" /> schon da
                         </span>
@@ -534,7 +542,7 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
           <div className="px-4 py-3 border-t border-gray-200 bg-white">
             <button
               onClick={save}
-              disabled={saving}
+              disabled={saving || !!knownAs}
               className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 disabled:bg-brand-300"
             >
               {saving && <Loader2 size={15} className="animate-spin" />}

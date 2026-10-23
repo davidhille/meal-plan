@@ -5,7 +5,7 @@ import { effectiveImageUrl, generateImage, removeImage, storeSourcePhoto } from 
 import { importRecipeFromUrl, ImportError } from "../recipeImport";
 import { loadChefkochRecipe, searchChefkoch, type ChefkochFilters } from "../chefkoch";
 import { violatesHealthConditions } from "../meals";
-import { PLAN_MEAL_COLS, getProfile, loadContext, loadFavorites, loadPool } from "../repo";
+import { PLAN_MEAL_COLS, getProfile, loadContext, loadFavorites, loadPool, recipesBySource, sourceKey } from "../repo";
 import { cleanWish, generateWishRecipe } from "../aiRecipes";
 import { recipeCatalog } from "../planning";
 import { RecipeEditError, parseRecipeInput, resetRecipe, saveRecipeEdit } from "../recipeEdits";
@@ -220,13 +220,17 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
         };
         const c = (body.cursor ?? {}) as Record<string, unknown>;
         const cursor = { page: Number(c.page) || 0, index: Number(c.index) || 0 };
-        return json(await searchChefkoch(String(body.query ?? "").slice(0, 80), filters, cursor));
+        const result = await searchChefkoch(String(body.query ?? "").slice(0, 80), filters, cursor);
+        // Schon übernommen (auch unter anderem Namen)? → „schon da“
+        const known = await recipesBySource(sql, (await getProfile(sql, user)).id);
+        return json({ ...result, hits: result.hits.map((h) => ({ ...h, knownAs: known.get(sourceKey(h.url)) ?? null })) });
       }
       const details = await loadChefkochRecipe(String(body.url ?? ""));
       const p = await getProfile(sql, user);
       const rows = await sql`SELECT health_conditions FROM profiles WHERE id = ${p.id}`;
       const unsuitable = violatesHealthConditions(details.recipe, (rows[0]?.health_conditions as string[]) ?? []);
-      return json({ ...details, unsuitable });
+      const knownAs = (await recipesBySource(sql, p.id)).get(sourceKey(String(body.url ?? ""))) ?? null;
+      return json({ ...details, unsuitable, knownAs });
     } catch (e) {
       if (e instanceof ImportError) return json({ error: e.message }, 422);
       throw e;
@@ -250,6 +254,11 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
     const instructions = String(body.instructions ?? "").trim();
     const duration = Number(body.durationMin) > 0 ? Math.round(Number(body.durationMin)) : null;
     if (!name || ingredients.length === 0) return json({ error: "Name und Zutaten fehlen" }, 400);
+    // Dieselbe Quelle unter anderem Namen schon übernommen → keine Dublette
+    if (body.sourceUrl) {
+      const knownAs = (await recipesBySource(sql, p.id)).get(sourceKey(String(body.sourceUrl)));
+      if (knownAs && knownAs !== name) return json({ error: `Dieses Rezept ist schon in den Rezepten – als „${knownAs}“.`, knownAs }, 409);
+    }
     await sql`INSERT INTO recipes (profile_id, name, type, ingredients, instructions, duration_min, source, source_url)
       VALUES (${p.id}, ${name}, ${type}, ${ingredients}, ${instructions}, ${duration}, 'import', ${body.sourceUrl || null})
       ON CONFLICT (profile_id, name) DO UPDATE SET type = EXCLUDED.type, ingredients = EXCLUDED.ingredients,
