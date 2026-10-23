@@ -62,7 +62,7 @@ export async function pushRoutes(ctx: Ctx): Promise<Response | null> {
   if (route === "POST /push/test") {
     const endpoint = String(body.endpoint ?? "");
     const r = await sendToProfile(ctx.env, sql, p.id, {
-      title: "Familien-Speiseplaner",
+      title: "miyummy",
       body: "So sieht die Erinnerung zum Bewerten aus.",
       url: "/#speiseplan",
       tag: "test",

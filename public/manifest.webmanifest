@@ -1,7 +1,7 @@
 {
-  "name": "miyummy – Familien-Speiseplaner",
+  "name": "miyummy – Essen & Einkauf planen",
   "short_name": "miyummy",
-  "description": "Speiseplan, Rezepte und Einkaufsliste für die Familie",
+  "description": "Speiseplan, Rezepte und Einkaufsliste – für alle, die gern gut essen und clever einkaufen",
   "lang": "de",
   "start_url": "/",
   "scope": "/",

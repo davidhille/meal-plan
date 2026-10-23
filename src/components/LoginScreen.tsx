@@ -85,7 +85,7 @@ export default function LoginScreen({ onDone }: Props) {
           <h1 className="leading-none">
             <Logo size={32} />
           </h1>
-          <p className="text-xs text-gray-500">Familien-Speiseplaner</p>
+          <p className="text-xs text-gray-500">Essen & Einkauf planen</p>
         </div>
 
         {mode === 'loading' ? (

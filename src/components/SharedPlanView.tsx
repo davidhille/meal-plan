@@ -36,7 +36,7 @@ export default function SharedPlanView({ token }: { token: string }) {
           <p className="leading-none">
             <Logo size={26} />
           </p>
-          <p className="text-xs text-gray-500 mt-1">Familien-Speiseplaner</p>
+          <p className="text-xs text-gray-500 mt-1">Essen & Einkauf planen</p>
         </div>
       </header>
 

@@ -10,7 +10,7 @@ export default function Header() {
           <h1 className="leading-none">
             <Logo size={26} />
           </h1>
-          <p className="text-xs text-gray-500 mt-1">Familien-Speiseplaner</p>
+          <p className="text-xs text-gray-500 mt-1">Essen & Einkauf planen</p>
         </div>
       </div>
     </header>
