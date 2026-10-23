@@ -80,7 +80,7 @@ export default function MealRatingModal({
                   className={`transition-all ${
                     star <= rating
                       ? 'fill-yellow-400 text-yellow-400'
-                      : 'text-gray-300'
+                      : 'text-gray-500'
                   }`}
                 />
               </button>

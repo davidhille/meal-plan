@@ -175,7 +175,7 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
             <button
               onClick={() => setQuery('')}
               aria-label="Suche leeren"
-              className="tap absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100"
+              className="tap absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100"
             >
               <X size={14} />
             </button>

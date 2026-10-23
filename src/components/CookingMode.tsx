@@ -211,7 +211,7 @@ export default function CookingMode({ name, ingredients, steps, amountLabel, onR
                         >
                           {on && <Check size={14} />}
                         </span>
-                        <span className={`text-lg ${on ? 'text-gray-400 line-through' : 'text-gray-800'}`}>{ing}</span>
+                        <span className={`text-lg ${on ? 'text-gray-500 line-through' : 'text-gray-800'}`}>{ing}</span>
                       </button>
                     </li>
                   );
