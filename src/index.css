@@ -17,3 +17,12 @@
   outline: 2px solid #6B2E7A;
   outline-offset: 2px;
 }
+
+/* Ziffern gleich breit (Preise, Mengen, Daten stehen ruhig untereinander); Schrift weich gerendert */
+@layer base {
+  body {
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}

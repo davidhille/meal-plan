@@ -246,8 +246,8 @@ export default function MealPlanView({
         {mealsLoading ? (
           <div className="space-y-3" role="status" aria-label="Gerichte werden geladen">
             {[0, 1, 2].map((n) => (
-              <div key={n} className="h-24 rounded-xl bg-white border border-gray-100 shadow-sm flex items-center gap-3 px-4 animate-pulse">
-                <div className="w-14 h-14 rounded-lg bg-gray-100" />
+              <div key={n} className="h-[156px] rounded-xl bg-white border border-gray-100 shadow-sm flex items-center gap-3.5 px-4 animate-pulse">
+                <div className="w-20 h-20 rounded-xl bg-gray-100" />
                 <div className="flex-1 space-y-2">
                   <div className="h-2.5 w-24 rounded bg-gray-100" />
                   <div className="h-3.5 w-3/4 rounded bg-gray-100" />
@@ -274,12 +274,14 @@ export default function MealPlanView({
             return (
               <div
                 key={`frei-${date}`}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed text-xs ${
-                  date === todayIso ? 'border-brand-300 text-brand-800' : 'border-gray-200 text-gray-500'
+                className={`flex items-center gap-3 pl-4 pr-3 py-3 rounded-xl border border-dashed ${
+                  date === todayIso ? 'border-brand-300 bg-brand-50/40' : 'border-gray-200'
                 }`}
               >
-                <span className="font-medium uppercase tracking-wide">{dayLabel(date)}</span>
-                <span className="flex-1">· {ruleForDate(date, dayRules).off ? 'frei (Wochentag)' : 'leer, nichts geplant'}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">{dayLabel(date)}</p>
+                  <p className="text-sm text-gray-500">{ruleForDate(date, dayRules).off ? 'Frei (Wochentag)' : 'Nichts geplant'}</p>
+                </div>
                 {onFillDay && !ruleForDate(date, dayRules).off && (
                   <button
                     onClick={async () => {
@@ -291,9 +293,9 @@ export default function MealPlanView({
                       }
                     }}
                     disabled={!!fillingDay}
-                    className="flex-shrink-0 flex items-center gap-1 font-semibold text-brand-700 hover:text-brand-800 disabled:opacity-50"
+                    className="flex-shrink-0 h-9 px-3 flex items-center gap-1.5 rounded-lg bg-brand-50 text-xs font-semibold text-brand-800 hover:bg-brand-100 transition-colors duration-150 disabled:opacity-50"
                   >
-                    {fillingDay === date ? <Loader2 size={12} className="animate-spin" /> : <CalendarPlus size={12} aria-hidden="true" />}
+                    {fillingDay === date ? <Loader2 size={14} className="animate-spin" /> : <CalendarPlus size={14} aria-hidden="true" />}
                     Gericht planen
                   </button>
                 )}

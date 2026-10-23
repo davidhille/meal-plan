@@ -84,8 +84,8 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
     return (
       <>
       <div className="px-5 py-12 flex flex-col items-center text-center gap-3">
-        <div className="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center">
-          <Heart size={28} className="text-rose-400" />
+        <div className="w-16 h-16 rounded-full bg-coral-50 flex items-center justify-center">
+          <Heart size={28} className="text-coral-500" />
         </div>
         <p className="text-lg font-semibold text-gray-800 mt-2">Noch keine Favoriten</p>
         <p className="text-sm text-gray-500 max-w-xs">
