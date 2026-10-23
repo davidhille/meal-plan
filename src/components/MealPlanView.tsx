@@ -131,6 +131,8 @@ export default function MealPlanView({
   const [sharing, setSharing] = useState(false);
   const [fillingDay, setFillingDay] = useState<string | null>(null);
   const [confirmRegenerate, setConfirmRegenerate] = useState(false);
+  // Ausblenden erst nach Rückfrage (wie in den Rezepten)
+  const [hideCandidate, setHideCandidate] = useState<PlanMeal | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [regeneratingPlan, setRegeneratingPlan] = useState(false);
@@ -331,7 +333,7 @@ export default function MealPlanView({
               onClick={() => openPlanMeal(pm)}
               isToday={pm.meal_date === todayIso}
               onMove={onMove && onRemove ? () => setMoving(pm) : undefined}
-              onReject={onReject ? withBusy(pm.id, () => onReject(pm.id, pm.meal_name)) : undefined}
+              onReject={onReject ? () => setHideCandidate(pm) : undefined}
               onRegenerate={onRegenerate ? withBusy(pm.id, () => onRegenerate(pm.id)) : undefined}
               onToggleFavorite={onToggleFavorite ? withBusy(pm.id, () => onToggleFavorite(pm)) : undefined}
               isFavorite={favoriteNames?.has(pm.meal_name)}
@@ -506,6 +508,21 @@ export default function MealPlanView({
             setSelectedMeal(null);
             setSelectedPmId(null);
           }}
+        />
+      )}
+      {hideCandidate && onReject && (
+        <ConfirmDialog
+          title="Gericht ausblenden?"
+          message={
+            <>
+              <strong>{hideCandidate.meal_name}</strong> wird nicht mehr vorgeschlagen, an diesem Tag kommt ein anderes Gericht. Unter
+              Rezepte → „Ausgeblendete Gerichte“ kannst du es wieder einblenden.
+            </>
+          }
+          confirmLabel="Ausblenden"
+          danger
+          onConfirm={withBusy(hideCandidate.id, () => onReject(hideCandidate.id, hideCandidate.meal_name))}
+          onClose={() => setHideCandidate(null)}
         />
       )}
       {confirmRegenerate && plan && onRegeneratePlan && (
