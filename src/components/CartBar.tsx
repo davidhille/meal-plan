@@ -87,11 +87,11 @@ export default function CartBar({ shops, carts, pending, rules, onOpen, onRefres
                       <span className={`block h-full rounded-full ${missing ? 'bg-coral-500' : 'bg-brand-600'}`} style={{ width: `${pct}%` }} />
                     </span>
                   )}
-                  <span className={`block mt-0.5 text-[11px] truncate ${missing ? 'text-coral-700' : 'text-brand-700'}`}>
+                  <span className={`block mt-0.5 text-xs truncate ${missing ? 'text-coral-700' : 'text-brand-700'}`}>
                     {missing ? `noch ${euro(missing)}` : rule.minOrder > 0 ? '✓ Mindestwert' : 'kein Mindestwert'}
                   </span>
                   {rule.deliveryFee > 0 && (
-                    <span className="block text-[11px] text-gray-500 truncate">+{euro(rule.deliveryFee)} Liefergebühr</span>
+                    <span className="block text-xs text-gray-500 truncate">+{euro(rule.deliveryFee)} Liefergebühr</span>
                   )}
                 </>
               )}

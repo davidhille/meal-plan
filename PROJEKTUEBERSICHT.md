@@ -75,7 +75,7 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
   Fleisch Koralle, Fisch helle Koralle, Wochenende dunkle Aubergine, Brotzeit neutral grau. Aktionen als beschriftete
   Leiste unten in der Karte (`CardActionBar`):
   - **Merken** (Favorit) · **Nachtisch** (dazu/ändern) · **Tauschen** (nur austauschen) · **Ablehnen** (kommt nie wieder)
-  - **Verschieben** (oder Tag leeren): Gericht auf einen anderen Tag legen – steht dort schon eins, tauschen beide;
+  - **Verlegen** (oder Tag leeren): Gericht auf einen anderen Tag legen – steht dort schon eins, tauschen beide;
     auch bis 2 Wochen nach Planende (der Plan wird verlängert). Oder „Tag leeren – nicht kochen“: Gericht kommt aus dem
     Plan (nicht abgelehnt), die Zutaten verschwinden von der Einkaufsliste.
 - Unter dem Plan: **Neuen Zeitraum planen** (Hauptknopf), daneben zurückhaltend **Neu generieren** (gleicher Zeitraum) und **Plan löschen**, beide mit Bestätigung.

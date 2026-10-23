@@ -281,7 +281,7 @@ export default function MealPlanView({
                 }`}
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">{dayLabel(date)}</p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{dayLabel(date)}</p>
                   <p className="text-sm text-gray-500">{ruleForDate(date, dayRules).off ? 'Frei (Wochentag)' : 'Nichts geplant'}</p>
                 </div>
                 {onFillDay && !ruleForDate(date, dayRules).off && (

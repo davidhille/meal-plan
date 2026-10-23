@@ -269,7 +269,7 @@ export default function MealModal({
               href={imageCredit.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="absolute bottom-3 left-3 max-w-[55%] truncate px-2 py-1 rounded-md text-[11px] bg-black/60 text-white hover:bg-black/70"
+              className="absolute bottom-3 left-3 max-w-[55%] truncate px-2 py-1 rounded-md text-xs bg-black/60 text-white hover:bg-black/70"
             >
               Foto: {imageCredit.name}
             </a>
@@ -328,7 +328,7 @@ export default function MealModal({
                 </span>
               )}
               {formatRatingDate(note?.updatedAt) && (
-                <span className="ml-auto text-[11px] text-gray-500">{formatRatingDate(note?.updatedAt)}</span>
+                <span className="ml-auto text-xs text-gray-500">{formatRatingDate(note?.updatedAt)}</span>
               )}
               {onRate && (
                 <button

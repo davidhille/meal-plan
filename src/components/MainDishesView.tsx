@@ -389,7 +389,7 @@ export default function MainDishesView({
                       {notes[r.name] && <MessageSquare size={12} className="text-amber-700" aria-label="mit Kommentar" />}
                     </p>
                     {r.unsuitable && (
-                      <p className="flex items-center gap-1 mt-1 text-[11px] font-medium text-amber-800">
+                      <p className="flex items-center gap-1 mt-1 text-xs font-medium text-amber-800">
                         <ShieldAlert size={11} aria-hidden="true" />
                         Passt nicht{conditions ? ` (${conditions})` : ''}
                       </p>

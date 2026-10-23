@@ -168,7 +168,7 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
             </div>
 
             <div className="mt-3">
-              <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2">
+              <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
                 <Repeat size={11} /> Turnus
               </p>
               <div className="flex flex-wrap gap-1.5" role="group" aria-label={`Turnus für ${f.meal_name}`}>

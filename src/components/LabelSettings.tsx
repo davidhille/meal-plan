@@ -83,7 +83,7 @@ export default function LabelSettings() {
                   </button>
                 </>
               ) : (
-                <span className="text-[11px] text-gray-500">{l.provider ? 'Shop' : 'Standard'}</span>
+                <span className="text-xs text-gray-500">{l.provider ? 'Shop' : 'Standard'}</span>
               )}
             </li>
           ))}

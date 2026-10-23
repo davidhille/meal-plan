@@ -484,14 +484,14 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
                         </span>
                       )}
                       {(existingNames.has(h.name) || taken.has(h.name)) && (
-                        <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/95 text-[10px] font-semibold text-brand-800">
+                        <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/95 text-xs font-semibold text-brand-800">
                           <Check size={10} aria-hidden="true" /> schon da
                         </span>
                       )}
                     </div>
                     <div className="p-2.5">
                       <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">{h.name}</p>
-                      <p className="mt-1 flex items-center gap-2 text-[11px] text-gray-600">
+                      <p className="mt-1 flex items-center gap-2 text-xs text-gray-600">
                         {h.rating != null && (
                           <span className="inline-flex items-center gap-0.5">
                             <Star size={11} className="text-amber-500 fill-amber-500" aria-hidden="true" />
@@ -525,7 +525,7 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
               ) : (
                 <p className="text-xs text-gray-500">Keine weiteren Treffer.</p>
               )}
-              <p className="text-[11px] text-gray-500">{hits.length} Rezepte geladen</p>
+              <p className="text-xs text-gray-500">{hits.length} Rezepte geladen</p>
             </div>
           )}
         </div>

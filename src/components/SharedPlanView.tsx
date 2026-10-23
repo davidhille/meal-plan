@@ -75,7 +75,7 @@ export default function SharedPlanView({ token }: { token: string }) {
                           <Wheat size={20} className="text-coral-700" aria-hidden="true" />
                         </span>
                         <span>
-                          <span className="block text-[11px] font-medium text-gray-500 uppercase tracking-wide">{longDate(m.date)}</span>
+                          <span className="block text-xs font-medium text-gray-500 uppercase tracking-wide">{longDate(m.date)}</span>
                           <span className="block text-sm font-semibold text-gray-900">Brotzeit</span>
                         </span>
                       </div>
@@ -92,7 +92,7 @@ export default function SharedPlanView({ token }: { token: string }) {
                             <span className="w-12 h-12 rounded-lg bg-gray-100 flex-shrink-0" aria-hidden="true" />
                           )}
                           <span className="flex-1 min-w-0">
-                            <span className="block text-[11px] font-medium text-gray-500 uppercase tracking-wide">
+                            <span className="block text-xs font-medium text-gray-500 uppercase tracking-wide">
                               {m.date === today ? 'Heute · ' : ''}
                               {longDate(m.date)}
                             </span>

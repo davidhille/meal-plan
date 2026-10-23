@@ -77,7 +77,7 @@ export default function AdminInbox() {
           <ul className="space-y-2">
             {feedback.map((f) => (
               <li key={f.id} className={`rounded-xl border p-3 ${f.done ? 'border-gray-100 bg-gray-50' : 'border-brand-200 bg-brand-50/50'}`}>
-                <p className="text-[11px] text-gray-500">
+                <p className="text-xs text-gray-500">
                   {when(f.createdAt)} · {f.userName ?? 'Unbekannt'}{f.family ? ` (${f.family})` : ''}
                 </p>
                 <p className={`mt-1 text-sm whitespace-pre-wrap ${f.done ? 'text-gray-500' : 'text-gray-800'}`}>{f.message}</p>
@@ -117,7 +117,7 @@ export default function AdminInbox() {
           <ul className="divide-y divide-gray-100 rounded-xl border border-gray-100 bg-white">
             {(showAllErrors ? errors : errors.slice(0, 8)).map((e) => (
               <li key={e.id} className="px-3 py-2">
-                <p className="text-[11px] text-gray-500">
+                <p className="text-xs text-gray-500">
                   {when(e.createdAt)} · {e.source}
                   {e.family ? ` · ${e.family}` : ''}
                 </p>

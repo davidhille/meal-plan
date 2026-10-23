@@ -106,7 +106,7 @@ export default function ProductSearchModal({ item, shops, onSelect, onRemove, on
       >
         <div className="flex items-start gap-3 px-5 pt-5 pb-3">
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-600">Produkt wählen · {item.name}</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">Produkt wählen · {item.name}</p>
             <h2 id="product-dialog-title" className="text-lg font-bold text-gray-800 leading-snug">
               Produkt für „{item.baseName}“
             </h2>
@@ -179,7 +179,7 @@ export default function ProductSearchModal({ item, shops, onSelect, onRemove, on
                         }
                       }}
                       disabled={savingId !== null}
-                      className="flex items-center gap-1 px-2 h-7 rounded-lg text-[11px] font-semibold text-red-700 bg-red-50 hover:bg-red-100"
+                      className="flex items-center gap-1 px-2 h-7 rounded-lg text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100"
                     >
                       {savingId === `${provider}:remove` ? <Loader2 size={11} className="animate-spin" /> : <Unlink size={11} />}
                       Auswahl entfernen
@@ -228,16 +228,16 @@ export default function ProductSearchModal({ item, shops, onSelect, onRemove, on
                                 {up && <span className="text-gray-500"> · {up.label}</span>}
                               </p>
                               {price != null && packs > 1 && (
-                                <p className="text-[11px] text-gray-600">
+                                <p className="text-xs text-gray-600">
                                   Für {item.name.split(' ')[0]}: {packs} × = {euro(price * packs)}
                                 </p>
                               )}
                               {best === key && (
-                                <p className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-brand-100 text-brand-800">
+                                <p className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded-md text-xs font-semibold bg-brand-100 text-brand-800">
                                   <TrendingDown size={10} aria-hidden="true" /> Günstigster Grundpreis
                                 </p>
                               )}
-                              {active && <p className="text-[11px] text-brand-700 mt-0.5">Ausgewählt – nochmal antippen zum Abwählen</p>}
+                              {active && <p className="text-xs text-brand-700 mt-0.5">Ausgewählt – nochmal antippen zum Abwählen</p>}
                             </div>
                             {savingId === key ? (
                               <Loader2 size={16} className="animate-spin text-gray-500" />

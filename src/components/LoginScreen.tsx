@@ -194,7 +194,7 @@ export default function LoginScreen({ onDone }: Props) {
               {mode === 'login' ? 'Anmelden' : 'Zugang anlegen'}
             </button>
             {mode === 'login' && (
-              <p className="text-[11px] text-gray-500 text-center">Passwort vergessen? Ein Admin eurer Familie kann es zurücksetzen.</p>
+              <p className="text-xs text-gray-500 text-center">Passwort vergessen? Ein Admin eurer Familie kann es zurücksetzen.</p>
             )}
             </>
             )}

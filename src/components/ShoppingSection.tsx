@@ -99,12 +99,12 @@ export default function ShoppingSection({
             const nameContent = (
               <>
                 {item.name}
-                {item.isBasic && !item.checked && <span className="ml-1.5 text-[11px] text-gray-500">Vorrat</span>}
+                {item.isBasic && !item.checked && <span className="ml-1.5 text-xs text-gray-500">Vorrat</span>}
                 {item.productName && !item.checked && (
-                  <span className="block text-[11px] text-gray-500 truncate">→ {item.productName}</span>
+                  <span className="block text-xs text-gray-500 truncate">→ {item.productName}</span>
                 )}
                 {item.productId && !item.checked && isInCart?.(item) && (
-                  <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-brand-50 text-brand-800">
+                  <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded-md text-xs font-semibold bg-brand-50 text-brand-800">
                     <ShoppingCart size={10} aria-hidden="true" /> im Warenkorb
                   </span>
                 )}

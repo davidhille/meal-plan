@@ -19,7 +19,7 @@ function Figure({ value, label }: { value: number | string; label: string }) {
   return (
     <div className="rounded-lg bg-white border border-gray-100 px-2 py-1.5 text-center">
       <p className="text-sm font-semibold text-gray-800 tabular-nums">{value}</p>
-      <p className="text-[11px] leading-tight text-gray-500">{label}</p>
+      <p className="text-xs leading-tight text-gray-500">{label}</p>
     </div>
   );
 }
@@ -103,7 +103,7 @@ export default function AdminStats() {
             aria-valuemin={0} aria-valuemax={stats.dailyLimit} aria-valuenow={Math.round(today)}>
             <div className={`h-full rounded-full ${high ? 'bg-coral-700' : 'bg-brand-600'}`} style={{ width: `${share}%` }} />
           </div>
-          <p className="text-[11px] text-gray-500">Das Kontingent läuft um 2 Uhr (Winterzeit 1 Uhr) neu an.</p>
+          <p className="text-xs text-gray-500">Das Kontingent läuft um 2 Uhr (Winterzeit 1 Uhr) neu an.</p>
           {high && (
             <p role="alert" className="text-xs font-medium text-coral-700">
               Schon über 80 % – ab der Grenze kommen Bilder aus Fotodatenbanken und neue KI-Rezepte erst morgen. Dazu gibt es
@@ -135,7 +135,7 @@ export default function AdminStats() {
               </div>
             ))}
           </div>
-          <div className="flex justify-between text-[11px] text-gray-500 tabular-nums">
+          <div className="flex justify-between text-xs text-gray-500 tabular-nums">
             <span>{shortDay(stats.daily[0].day)}</span>
             <span className="text-coral-700">– – Gratis-Grenze</span>
             <span>heute</span>
@@ -155,7 +155,7 @@ export default function AdminStats() {
                     <p className="text-sm font-medium text-gray-800 truncate">
                       {label}
                       {f.own && <span className="font-normal text-gray-500"> (ihr)</span>}
-                      {f.disabled && <span className="ml-1.5 align-middle text-[10px] font-semibold uppercase tracking-wide text-red-700">Gesperrt</span>}
+                      {f.disabled && <span className="ml-1.5 align-middle text-xs font-semibold uppercase tracking-wide text-red-700">Gesperrt</span>}
                     </p>
                     <p className="text-xs text-gray-500">
                       {f.userCount} {f.userCount === 1 ? 'Zugang' : 'Zugänge'} · {last ? `zuletzt aktiv ${last}` : 'noch nicht angemeldet'}
@@ -188,7 +188,7 @@ export default function AdminStats() {
           </ul>
         </section>
 
-        <p className="text-[11px] text-gray-500">
+        <p className="text-xs text-gray-500">
           Neurons sind geschätzt nach der Cloudflare-Preisliste (Tokens bzw. Bildgröße und Schritte). Die genaue Abrechnung
           steht im Cloudflare-Dashboard unter Workers AI.{' '}
           {since ? `Gezählt seit ${since}.` : 'Gezählt wird ab jetzt – noch keine KI-Aufrufe erfasst.'}

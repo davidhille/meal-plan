@@ -475,7 +475,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
       <button
         type="button"
         onClick={() => setShowPast((v) => !v)}
-        className="px-1 mt-0.5 text-left text-[11px] text-gray-500"
+        className="px-1 mt-0.5 text-left text-xs text-gray-500"
       >
         {showPast
           ? 'Vergangene Tage sind eingerechnet · '
@@ -667,7 +667,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
                       </button>
                       {basicPickerTarget === entry.name && (
                         <div role="menu" className="absolute top-full left-0 mt-1 z-20 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[140px]">
-                          <p className="px-3 py-1 text-[11px] text-gray-500">Auf die Liste:</p>
+                          <p className="px-3 py-1 text-xs text-gray-500">Auf die Liste:</p>
                           {labels.map((l) => (
                             <button
                               key={l.id}
@@ -715,7 +715,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
                   Zum Vorrat
                 </button>
               </form>
-              <p className="mt-2 text-[11px] text-gray-500">Tipp: Das Kisten-Symbol an einer Zutat in der Liste legt sie auch in den Vorrat.</p>
+              <p className="mt-2 text-xs text-gray-500">Tipp: Das Kisten-Symbol an einer Zutat in der Liste legt sie auch in den Vorrat.</p>
             </div>
           )}
         </div>

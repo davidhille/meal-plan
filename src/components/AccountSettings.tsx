@@ -52,7 +52,7 @@ export default function AccountSettings() {
           <div className="min-w-0">
             <p className="text-sm font-semibold text-gray-800 truncate">{me.name}</p>
             <p className="text-xs text-gray-500 truncate">{me.email}{me.isAdmin ? ' · Admin' : ''}</p>
-            <p className="text-[11px] text-gray-500 mt-0.5">Angemeldet auf diesem Gerät</p>
+            <p className="text-xs text-gray-500 mt-0.5">Angemeldet auf diesem Gerät</p>
           </div>
           <button
             onClick={async () => {
@@ -97,7 +97,7 @@ export default function AccountSettings() {
                     <p className="text-sm font-medium text-gray-800 truncate">
                       {u.name}
                       {u.id === me.id && <span className="font-normal text-gray-500"> (du)</span>}
-                      {u.isAdmin && <span className="ml-1.5 align-middle text-[10px] font-semibold uppercase tracking-wide text-brand-700">Admin</span>}
+                      {u.isAdmin && <span className="ml-1.5 align-middle text-xs font-semibold uppercase tracking-wide text-brand-700">Admin</span>}
                     </p>
                     <p className="text-xs text-gray-500 truncate">{u.email}</p>
                   </div>

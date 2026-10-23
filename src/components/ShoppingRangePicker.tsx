@@ -55,7 +55,7 @@ export default function ShoppingRangePicker({ weeks, currentIndex, start, end, o
               }`}
             >
               <span className="block text-sm font-semibold leading-tight">{weekName(i, currentIndex, w.kw)}</span>
-              <span className={`block text-[11px] leading-tight ${active ? 'text-brand-100' : 'text-gray-500'}`}>
+              <span className={`block text-xs leading-tight ${active ? 'text-brand-100' : 'text-gray-500'}`}>
                 {formatShortDate(w.weekStart).replace(/^\w+\.?,\s*/, '')} – {formatShortDate(w.weekEnd).replace(/^\w+\.?,\s*/, '')}
               </span>
             </button>
@@ -67,7 +67,7 @@ export default function ShoppingRangePicker({ weeks, currentIndex, start, end, o
       </p>
       {summaryExtra}
       {start === end && end < weeks.length - 1 && (
-        <p className="px-1 mt-0.5 text-[11px] text-gray-500">Tipp: Weitere Woche antippen, um gleich mit einzukaufen.</p>
+        <p className="px-1 mt-0.5 text-xs text-gray-500">Tipp: Weitere Woche antippen, um gleich mit einzukaufen.</p>
       )}
     </section>
   );
