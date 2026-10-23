@@ -33,6 +33,7 @@ import {
   setFavoriteTurnus,
   rejectMeal,
   unrejectMeal,
+  setFamilyDislikes,
   UnauthorizedError,
   getAuthStatus,
   setMealDessert,
@@ -187,11 +188,16 @@ export default function App() {
     setMealsLoadedFor(currentPlan.id);
   };
 
-  const handleUpdateProfile = async (focus: string[], conditions: string[], meatMaxPerWeek: number | null) => {
+  // „Kommt nie in den Plan“: Hauptzutat für die ganze Familie ausschließen (aus dem Ausblenden-Dialog)
+  const handleFamilyDislike = async (groupId: string) => {
+    setProfile(await setFamilyDislikes({ id: groupId, on: true }));
+  };
+
+  const handleUpdateProfile = async (focus: string[], conditions: string[], meatMaxPerWeek: number | null, never?: string[]) => {
     if (!profile) return;
     const updated = await updateProfile(profile.id, focus, conditions, meatMaxPerWeek);
     if (!updated) throw new Error('Die Einstellungen konnten nicht gespeichert werden.');
-    setProfile(updated);
+    setProfile(never ? await setFamilyDislikes({ ids: never }) : updated);
   };
 
   const handleAddFamilyMember = async (
@@ -494,6 +500,8 @@ export default function App() {
             onBrotzeit={currentPlan ? handleBrotzeit : undefined}
             onSetGuests={currentPlan ? handleSetGuests : undefined}
             onSharedChange={(shared) => setCurrentPlan((p) => (p ? { ...p, shared } : p))}
+            familyDislikes={profile?.family_dislikes}
+            onFamilyDislike={handleFamilyDislike}
             onFillDay={
               currentPlan
                 ? async (date) => {
@@ -519,6 +527,8 @@ export default function App() {
             onAssignDessert={currentPlan ? handleSetDessert : undefined}
             defaultPortions={familyPortions(familyMembers)}
             favoriteNames={favorites.map((f) => f.meal_name)}
+            familyDislikes={profile?.family_dislikes}
+            onFamilyDislike={handleFamilyDislike}
             onRecipesChanged={() => {
               loadPlanMeals();
               getFavorites().then(setFavorites).catch(() => {});

@@ -184,6 +184,8 @@ export interface Profile {
   deleted_desserts?: string[];
   /** Regeln pro Wochentag (Schlüssel 0–6, 0 = Sonntag): frei oder höchstens X Minuten */
   day_rules?: DayRules;
+  /** „Kommt nie in den Plan“: Hauptzutaten, die die ganze Familie nicht will (z. B. „fisch“, „lamm“) */
+  family_dislikes?: string[];
   /** So oft pro Woche Brotzeit (feste Brotzeit-Tage zählen mit) */
   brotzeit_per_week?: number;
 }

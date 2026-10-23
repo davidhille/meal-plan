@@ -19,6 +19,7 @@ import MealModal from './MealModal';
 import { exportPlan } from '../lib/planExport';
 import ReplacePlanDialog from './ReplacePlanDialog';
 import ConfirmDialog from './ConfirmDialog';
+import HideMealDialog from './HideMealDialog';
 
 interface MealPlanViewProps {
   onCreatePlan: () => void;
@@ -55,6 +56,9 @@ interface MealPlanViewProps {
   mealsLoading?: boolean;
   /** Leeren Tag wieder mit einem Gericht füllen */
   onFillDay?: (date: string) => Promise<void>;
+  /** „Kommt nie in den Plan“ (Hauptzutaten) und Familien-Nein beim Ausblenden setzen */
+  familyDislikes?: string[];
+  onFamilyDislike?: (groupId: string) => Promise<void>;
   /** Plan wurde geteilt bzw. der Link zurückgezogen */
   onSharedChange?: (shared: boolean) => void;
   /** Gäste an einem Tag setzen (wirft bei Fehlern) */
@@ -117,6 +121,8 @@ export default function MealPlanView({
   onSetGuests,
   onSharedChange,
   onFillDay,
+  familyDislikes,
+  onFamilyDislike,
   mealsLoading,
 }: MealPlanViewProps) {
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
@@ -511,17 +517,14 @@ export default function MealPlanView({
         />
       )}
       {hideCandidate && onReject && (
-        <ConfirmDialog
-          title="Gericht ausblenden?"
-          message={
-            <>
-              <strong>{hideCandidate.meal_name}</strong> wird nicht mehr vorgeschlagen, an diesem Tag kommt ein anderes Gericht. Unter
-              Rezepte → „Ausgeblendete Gerichte“ kannst du es wieder einblenden.
-            </>
-          }
-          confirmLabel="Ausblenden"
-          danger
-          onConfirm={withBusy(hideCandidate.id, () => onReject(hideCandidate.id, hideCandidate.meal_name))}
+        <HideMealDialog
+          name={hideCandidate.meal_name}
+          ingredients={hideCandidate.ingredients ?? []}
+          effect="wird nicht mehr vorgeschlagen, an diesem Tag kommt ein anderes Gericht."
+          undoHint="Unter Rezepte → „Ausgeblendete Gerichte“ kannst du es wieder einblenden."
+          familyDislikes={familyDislikes}
+          onFamilyNo={onFamilyDislike}
+          onHide={withBusy(hideCandidate.id, () => onReject(hideCandidate.id, hideCandidate.meal_name))}
           onClose={() => setHideCandidate(null)}
         />
       )}

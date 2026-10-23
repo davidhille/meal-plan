@@ -239,6 +239,12 @@ Die Karten sind in Gruppen mit kleiner Überschrift geordnet (`SettingsGroup`): 
 (Familien, Statistik, Meldungen).
 
 Auf- und zuklappbare Karten:
+- **Kommt nie in den Plan** (in „Gesundheit & Ernährung“ und beim Ausblenden): Hauptzutaten, die die ganze Familie nicht will
+  (Fisch, Meeresfrüchte, Lamm, Schwein, Rind, Geflügel; `profiles.family_dislikes`, `worker/dislikes.ts`). Solche Gerichte werden
+  nie geplant, nie getauscht, nicht von der KI erzeugt und stehen in den Rezepten unter „passen nicht“. Beim Ausblenden erkennt die
+  App die Hauptzutat und bietet „Nur dieses Gericht“ oder „Keinen Fisch mehr vorschlagen“ (`HideMealDialog`).
+- **Abneigungen einzelner Familienmitglieder** („Mag nicht“): Abzug beim Planen; ausgeschlossen erst, wenn die Mehrheit der
+  Familienmitglieder sie teilt.
 - **Gesundheit & Ernährung:**
   - **Schwerpunkte** (mehrere): Kalorienbewusst, Proteinreich, Low Carb, Viel Gemüse, Vollkorn & Ballaststoffe,
     Kinderfreundlich, Saisonal, Günstig – passende Gerichte bekommen Pluspunkte, nichts wird ausgeschlossen.

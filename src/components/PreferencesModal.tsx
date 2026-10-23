@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { X, AlertCircle, Check, Loader2 } from 'lucide-react';
 import { useDialog } from '../lib/useDialog';
 import { CONDITION_LABELS, FOCUS_OPTIONS } from '../lib/health';
+import { FAMILY_DISLIKES } from '../lib/familyDislikes';
 
 interface PreferencesModalProps {
   healthFocus: string[];
   healthConditions: string[];
   meatMaxPerWeek: number | null;
-  onSave: (focus: string[], conditions: string[], meatMaxPerWeek: number | null) => Promise<void>;
+  /** „Kommt nie in den Plan“ (Kennungen aus lib/familyDislikes.ts) */
+  familyDislikes: string[];
+  onSave: (focus: string[], conditions: string[], meatMaxPerWeek: number | null, familyDislikes: string[]) => Promise<void>;
   onClose: () => void;
 }
 
@@ -26,10 +29,11 @@ const toggle = (set: Set<string>, id: string) => {
 };
 
 /** Gesundheit & Ernährung: Schwerpunkte (mehrere), Einschränkungen (mehrere), Regeln */
-export default function PreferencesModal({ healthFocus, healthConditions, meatMaxPerWeek, onSave, onClose }: PreferencesModalProps) {
+export default function PreferencesModal({ healthFocus, healthConditions, meatMaxPerWeek, familyDislikes, onSave, onClose }: PreferencesModalProps) {
   const [focus, setFocus] = useState<Set<string>>(new Set(healthFocus));
   const [conditions, setConditions] = useState<Set<string>>(new Set(healthConditions));
   const [meatMax, setMeatMax] = useState<number | null>(meatMaxPerWeek);
+  const [never, setNever] = useState<Set<string>>(new Set(familyDislikes));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const dialogRef = useDialog(onClose);
@@ -43,7 +47,8 @@ export default function PreferencesModal({ healthFocus, healthConditions, meatMa
       await onSave(
         FOCUS_OPTIONS.map((f) => f.id).filter((id) => focus.has(id)),
         CONDITIONS.map((c) => c.id).filter((id) => conditions.has(id)),
-        meatMax
+        meatMax,
+        FAMILY_DISLIKES.map((d) => d.id).filter((id) => never.has(id))
       );
     } catch (e) {
       setError((e as Error).message || 'Die Einstellungen konnten nicht gespeichert werden.');
@@ -135,6 +140,30 @@ export default function PreferencesModal({ healthFocus, healthConditions, meatMa
             {conditions.has('diabetes') && (
               <p className="mt-1.5 text-xs text-gray-500">Diabetes schließt nichts aus, Gerichte mit viel Zucker kommen seltener.</p>
             )}
+          </div>
+
+          {/* Kommt nie in den Plan */}
+          <div>
+            <p id="prefs-never" className="text-sm font-medium text-gray-700">
+              Kommt nie in den Plan
+            </p>
+            <p className="text-xs text-gray-500 mb-2">
+              Gilt für die ganze Familie. Abneigungen einzelner Familienmitglieder schließen erst aus, wenn die Mehrheit sie teilt.
+            </p>
+            <div className="grid grid-cols-3 gap-2" role="group" aria-labelledby="prefs-never">
+              {FAMILY_DISLIKES.map((d) => (
+                <button
+                  key={d.id}
+                  aria-pressed={never.has(d.id)}
+                  onClick={() => setNever(toggle(never, d.id))}
+                  className={`px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
+                    never.has(d.id) ? 'bg-coral-50 border-coral-300 text-coral-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Regeln */}

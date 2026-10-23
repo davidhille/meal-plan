@@ -77,8 +77,8 @@ export const MAIN_INGREDIENTS: RecipeCategory[] = [
   {
     id: 'fisch',
     label: 'Fisch',
-    name: /fisch|lachs|kabeljau|thunfisch|forelle|dorade|sardine|makrele|hering|scholle|zander|seelachs|barsch|heilbutt|seeteufel|pangasius|tilapia|dorsch|steinbutt|karpfen|saibling|sardelle|backfisch/,
-    ingredient: /fisch|lachs|kabeljau|thunfisch|forelle|dorade|sardine|makrele|hering|scholle|zander|seelachs|barsch|heilbutt|seeteufel|pangasius|tilapia|dorsch|steinbutt|karpfen|saibling|sardelle/,
+    name: /fisch|lachs|kabeljau|thunfisch|forelle|dorade|sardine|makrele|hering|scholle|zander|seelachs|seehecht|loup de mer|barsch|heilbutt|seeteufel|pangasius|tilapia|dorsch|steinbutt|karpfen|saibling|sardelle|backfisch/,
+    ingredient: /fisch|lachs|kabeljau|thunfisch|forelle|dorade|sardine|makrele|hering|scholle|zander|seelachs|seehecht|loup de mer|barsch|heilbutt|seeteufel|pangasius|tilapia|dorsch|steinbutt|karpfen|saibling|sardelle/,
   },
   {
     id: 'krustentiere',

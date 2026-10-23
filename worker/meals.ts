@@ -1,4 +1,5 @@
 // Rezeptdatenbank + Auswahl-Logik (übernommen aus den Supabase Edge Functions)
+import { excludedByDislikes } from "./dislikes";
 import type { DayRules } from "./dayRules";
 import { VEGETARISCH } from "./recipes/vegetarisch";
 import { FLEISCH } from "./recipes/fleisch";
@@ -237,6 +238,8 @@ export interface ScoringContext {
   recentNames?: string[];
   /** Frisch erzeugte KI-Rezepte → Bonus, damit sie auch eingeplant werden */
   newNames?: string[];
+  /** „Kommt nie in den Plan“ – Hauptzutaten, die die ganze Familie nicht will (siehe dislikes.ts) */
+  familyDislikes?: string[];
 }
 
 const MEAT_RE =
@@ -340,6 +343,8 @@ export function scoreMeal(meal: Recipe, ctx: ScoringContext): number {
   }
 
   if (violatesHealthConditions(meal, ctx.healthConditions)) return -1;
+  // Familien-Nein oder Abneigung der Mehrheit: nie planen (einzelne Abneigungen geben oben nur Abzug)
+  if (excludedByDislikes(meal, ctx.familyDislikes, ctx.familyMembers, (d) => dislikeMatches(meal, d))) return -1;
   if (ctx.healthConditions.includes("diabetes") && violates(meal, SUGAR_RE)) score -= 15;
 
   score += focusScore(meal, ctx.healthFocus ?? [], ctx.month);

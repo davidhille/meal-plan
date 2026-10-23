@@ -126,6 +126,10 @@ export default function FamilyMemberModal({ member, onSave, onClose }: FamilyMem
               rows={2}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none resize-none"
             />
+            <p className="mt-1 text-xs text-gray-500">
+              Kommt seltener. Ganz ausgeschlossen, wenn die Mehrheit der Familie es nicht mag – oder unter Gesundheit & Ernährung
+              „Kommt nie in den Plan“.
+            </p>
           </div>
 
           {/* Favorite Foods */}

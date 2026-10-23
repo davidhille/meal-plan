@@ -10,6 +10,7 @@ import FilterSettings from './FilterSettings';
 import ReminderSettings from './ReminderSettings';
 import DayRulesSettings from './DayRulesSettings';
 import { CONDITION_LABELS, FOCUS_LABELS } from '../lib/health';
+import { familyDislikeLabel } from '../lib/familyDislikes';
 import CollapsibleCard from './CollapsibleCard';
 import SettingsGroup from './SettingsGroup';
 import AccountSettings from './AccountSettings';
@@ -20,7 +21,7 @@ interface SettingsViewProps {
   profile: Profile | null;
   familyMembers: FamilyMember[];
   routines: Routine[];
-  onUpdateProfile: (focus: string[], conditions: string[], meatMaxPerWeek: number | null) => Promise<void>;
+  onUpdateProfile: (focus: string[], conditions: string[], meatMaxPerWeek: number | null, familyDislikes?: string[]) => Promise<void>;
   onAddFamilyMember: (member: Omit<FamilyMember, 'id' | 'profile_id' | 'created_at'>) => Promise<void>;
   onUpdateFamilyMember: (id: string, member: Omit<FamilyMember, 'id' | 'profile_id' | 'created_at'>) => Promise<void>;
   onDeleteFamilyMember: (id: string) => Promise<void>;
@@ -166,6 +167,7 @@ export default function SettingsView({
                 ...(profile.health_focus ?? []).map((f) => FOCUS_LABELS[f] || f),
                 ...profile.health_conditions.map((c) => CONDITION_LABELS[c] || c),
                 profile.meat_max_per_week != null ? `Fleisch max. ${profile.meat_max_per_week}×/Woche` : null,
+                profile.family_dislikes?.length ? `nie ${profile.family_dislikes.map(familyDislikeLabel).join(', ')}` : null,
               ]
                 .filter(Boolean)
                 .join(' · ') || 'Ausgewogen, keine Einschränkungen'
@@ -211,6 +213,18 @@ export default function SettingsView({
                       {profile.health_conditions.map((cond) => (
                         <span key={cond} className="text-xs bg-coral-50 text-coral-700 px-2 py-1 rounded border border-coral-100">
                           {CONDITION_LABELS[cond] || cond}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {(profile.family_dislikes?.length ?? 0) > 0 && (
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Kommt nie in den Plan</p>
+                    <div className="flex flex-wrap gap-1">
+                      {profile.family_dislikes!.map((d) => (
+                        <span key={d} className="text-xs bg-coral-50 text-coral-700 px-2 py-1 rounded border border-coral-100">
+                          {familyDislikeLabel(d)}
                         </span>
                       ))}
                     </div>
@@ -344,8 +358,9 @@ export default function SettingsView({
           healthFocus={profile.health_focus ?? []}
           healthConditions={profile.health_conditions}
           meatMaxPerWeek={profile.meat_max_per_week ?? null}
-          onSave={async (focus, conditions, meatMax) => {
-            await onUpdateProfile(focus, conditions, meatMax);
+          familyDislikes={profile.family_dislikes ?? []}
+          onSave={async (focus, conditions, meatMax, never) => {
+            await onUpdateProfile(focus, conditions, meatMax, never);
             setShowPrefsModal(false);
           }}
           onClose={() => setShowPrefsModal(false)}

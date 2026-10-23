@@ -1,7 +1,8 @@
 // Planung: Plan erstellen, Gerichte austauschen, Rezept-Übersicht.
+import { excludedByDislikes } from "./dislikes";
 import type { Sql } from "./db";
 import type { Env } from "./http";
-import { pickMeal, pickReplacement, preferredTypeFor, scoreMeal, violatesHealthConditions, MEAL_DATABASE, type Recipe, type ScoringContext } from "./meals";
+import { pickMeal, pickReplacement, preferredTypeFor, scoreMeal, violatesHealthConditions, dislikeMatches, MEAL_DATABASE, type Recipe, type ScoringContext } from "./meals";
 import { effectiveImageUrl, generateImage } from "./images";
 import { generateRecipes } from "./aiRecipes";
 import { PLAN_COLS, PLAN_MEAL_COLS, favoriteToRecipe, loadContext, loadPool } from "./repo";
@@ -400,7 +401,10 @@ export async function recipeCatalog(sql: Sql, profileId: string) {
         origin: origin(r.name),
         /** Gericht der Grundsammlung, das bearbeitet wurde (lässt sich zurücksetzen) */
         edited: builtIn.has(String(rowBy.get(r.name)?.replaces ?? "")),
-        unsuitable: violatesHealthConditions(r, ctx.healthConditions),
+        // Nie geplant: Gesundheitseinstellungen, „Kommt nie in den Plan“ oder Abneigung der Mehrheit
+        unsuitable:
+          violatesHealthConditions(r, ctx.healthConditions) ||
+          excludedByDislikes(r, ctx.familyDislikes, ctx.familyMembers, (d) => dislikeMatches(r, d)),
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, "de"));

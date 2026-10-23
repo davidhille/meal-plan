@@ -1,4 +1,5 @@
 // Profil, Familie, Bewertungen, Routinen
+import { FAMILY_DISLIKE_IDS } from "../dislikes";
 import type { Ctx } from "../http";
 import { json } from "../http";
 import { ROUTINE_COLS, getProfile } from "../repo";
@@ -25,6 +26,24 @@ export async function profileRoutes({ request, sql, body, parts, route, id, user
     const rows = await sql`UPDATE profiles
       SET health_focus = ${focus}, health_conditions = ${conditions}, meat_max_per_week = ${meatLimit}, updated_at = now()
       WHERE id = ${p.id} RETURNING *`;
+    return json(rows[0]);
+  }
+
+  // „Kommt nie in den Plan“: { id: "fisch", on: true } bzw. { ids: [...] } (ganze Liste, z. B. aus den Einstellungen)
+  if (route === "PUT /profile/family-dislikes") {
+    const p = await getProfile(sql, user);
+    if (Array.isArray(body.ids)) {
+      const ids = onlyKnown(body.ids, FAMILY_DISLIKE_IDS);
+      const rows = await sql`UPDATE profiles SET family_dislikes = ${ids}, updated_at = now() WHERE id = ${p.id} RETURNING *`;
+      return json(rows[0]);
+    }
+    const did = String(body.id ?? "");
+    if (!FAMILY_DISLIKE_IDS.includes(did)) return json({ error: "Unbekannte Hauptzutat" }, 400);
+    const rows = body.on
+      ? await sql`UPDATE profiles SET family_dislikes = array_append(array_remove(family_dislikes, ${did}), ${did}), updated_at = now()
+          WHERE id = ${p.id} RETURNING *`
+      : await sql`UPDATE profiles SET family_dislikes = array_remove(family_dislikes, ${did}), updated_at = now()
+          WHERE id = ${p.id} RETURNING *`;
     return json(rows[0]);
   }
 
