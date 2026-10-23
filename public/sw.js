@@ -1,6 +1,6 @@
 // Service Worker: macht die App installierbar und lädt die Oberfläche schneller.
 // Daten (/api) kommen immer live vom Server und werden nie zwischengespeichert.
-const CACHE = 'speiseplaner-v5';
+const CACHE = 'speiseplaner-v6';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(['/', '/manifest.webmanifest', '/icons/icon-192.png'])));
@@ -21,16 +21,20 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
 
-  // Seite selbst: immer zuerst frisch vom Server (neue Version sofort), offline die gespeicherte
+  // Seite selbst: immer frisch vom Server (neue Version sofort), offline die gespeicherte.
+  // Eigene Anfrage ohne Browser-Cache: das Weiterreichen der Navigations-Anfrage schlug teils fehl,
+  // dann blieb die alte Version (bzw. „Server antwortet nicht“) hängen.
   if (req.mode === 'navigate') {
     event.respondWith(
-      fetch(req)
+      fetch(url.origin + url.pathname + url.search, { cache: 'no-store', credentials: 'same-origin' })
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put('/', copy));
+          if (res.ok && url.pathname === '/') {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put('/', copy));
+          }
           return res;
         })
-        .catch(() => caches.match('/'))
+        .catch(() => fetch(req).catch(() => caches.match('/')))
     );
     return;
   }
