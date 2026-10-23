@@ -19,7 +19,13 @@ export default {
     if (pathname === "/api" || pathname.startsWith("/api/")) {
       return handleApi(request, env, (p) => ctx.waitUntil(p));
     }
-    return env.ASSETS.fetch(request);
+    const res = await env.ASSETS.fetch(request);
+    // Fehlende Build-Datei (z. B. alte Seite nach einem Deploy): 404 statt der App-Seite,
+    // damit niemand HTML unter einem .js-Namen speichert
+    if (pathname.startsWith("/assets/") && (res.headers.get("content-type") || "").includes("text/html")) {
+      return new Response("Nicht gefunden", { status: 404, headers: { "cache-control": "no-store" } });
+    }
+    return res;
   },
 
   // Cron (siehe wrangler.jsonc): fällige Routinen erzeugen automatisch neue Pläne
