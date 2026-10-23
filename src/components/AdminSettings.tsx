@@ -3,6 +3,7 @@ import { Ban, Check, Copy, Link2, Pencil, Plus, Share2, ShieldCheck, Trash2 } fr
 import AdminStats from './AdminStats';
 import AdminInbox from './AdminInbox';
 import CollapsibleCard from './CollapsibleCard';
+import SettingsGroup from './SettingsGroup';
 import ConfirmDialog from './ConfirmDialog';
 import {
   createFamily, deleteFamily, getAuthStatus, listFamilies, newFamilyInvite, updateFamily, type Family, type InviteResult,
@@ -78,7 +79,7 @@ export default function AdminSettings() {
   const others = families.filter((f) => !f.own).length;
 
   return (
-    <>
+    <SettingsGroup title="Administration">
     <CollapsibleCard
       storageKey="administration"
       title="Administration"
@@ -199,6 +200,6 @@ export default function AdminSettings() {
     </CollapsibleCard>
     <AdminStats />
     <AdminInbox />
-    </>
+    </SettingsGroup>
   );
 }

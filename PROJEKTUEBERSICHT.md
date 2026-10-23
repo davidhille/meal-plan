@@ -227,6 +227,11 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
 
 ## 5. Einstellungen
 
+Die Karten sind in Gruppen mit kleiner Überschrift geordnet (`SettingsGroup`): **Familie & Ernährung**
+(Familienmitglieder, Gesundheit & Ernährung, Hinweise), **Planung** (Wochentage, Routinen, Rezept-Filter, Erinnerung),
+**Einkaufen** (Shops, Einkaufslisten), **Konto** (Zugänge, Feedback) und – nur für den Betreiber – **Administration**
+(Familien, Statistik, Meldungen).
+
 Auf- und zuklappbare Karten:
 - **Gesundheit & Ernährung:**
   - **Schwerpunkte** (mehrere): Kalorienbewusst, Proteinreich, Low Carb, Viel Gemüse, Vollkorn & Ballaststoffe,
