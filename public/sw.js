@@ -1,6 +1,6 @@
 // Service Worker: macht die App installierbar und lädt die Oberfläche schneller.
 // Daten (/api) kommen immer live vom Server und werden nie zwischengespeichert.
-const CACHE = 'speiseplaner-v6';
+const CACHE = 'speiseplaner-v7';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(['/', '/manifest.webmanifest', '/icons/icon-192.png'])));
@@ -44,9 +44,12 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches.match(req).then(
         (hit) =>
-          hit ||
+          (hit && !(hit.headers.get('content-type') || '').includes('text/html') && hit) ||
           fetch(req).then((res) => {
-            if (res.ok) {
+            // Nur echte Dateien speichern: Während eines Deploys kann statt der Datei die HTML-Seite kommen –
+            // die darf nie unter dem Datei-Namen hängen bleiben (sonst bleibt die App leer)
+            const type = res.headers.get('content-type') || '';
+            if (res.ok && !type.includes('text/html')) {
               const copy = res.clone();
               caches.open(CACHE).then((c) => c.put(req, copy));
             }
