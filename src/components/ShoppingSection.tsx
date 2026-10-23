@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Copy, Check, ShoppingCart, ChevronDown, X, Tag, Link2, Package, FileDown } from 'lucide-react';
+import { Copy, Check, ShoppingCart, ChevronDown, X, Link2, Package, FileDown, MoreHorizontal } from 'lucide-react';
 import { ShopProvider, ShoppingItem, ShoppingLabel } from '../types';
 import { packagesNeeded } from '../lib/unitPrice';
 
@@ -76,7 +76,6 @@ export default function ShoppingSection({
   const otherLabels = allLabels.filter((l) => l.id !== label.id && !shopLabelIds.has(l.id));
   const provider = label.provider ?? null;
   const isShopList = !!deliveryShops || provider === 'knuspr' || provider === 'picnic';
-  const labelOf = (item: ShoppingItem) => allLabels.find((l) => l.id === item.label) ?? label;
 
   const handleCopy = useCallback(async () => {
     const text = open.map((i) => i.name).join('\n');
@@ -138,72 +137,88 @@ export default function ShoppingSection({
                   <span className={`flex-1 min-w-0 ${nameClass}`}>{nameContent}</span>
                 )}
 
-                {!item.checked && isShopList && !deliveryShops && onFindProduct && !item.productId && (
-                  <button
-                    onClick={() => onFindProduct(item)}
-                    title="Produkt auswählen"
-                    aria-label={`${item.baseName}: Produkt auswählen`}
-                    className="tap w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-lg text-gray-500 hover:text-brand-700 hover:bg-brand-50"
-                  >
-                    <Link2 size={14} />
-                  </button>
-                )}
-
+                {/* Ein Menü statt mehrerer unbeschrifteter Symbole */}
                 <button
                   onClick={() => setOpenPickerId(openPickerId === item.id ? null : item.id)}
-                  className="flex-shrink-0 h-7 px-1.5 rounded-lg flex items-center gap-0.5 hover:bg-gray-100"
-                  style={{ color: deliveryShops ? "#A396A7" : labelOf(item).color }}
-                  title="Liste ändern"
-                  aria-label={`${item.baseName}: Liste ändern`}
+                  className="tap flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                  title="Mehr"
+                  aria-label={`${item.baseName}: mehr`}
                   aria-haspopup="menu"
                   aria-expanded={openPickerId === item.id}
                 >
-                  <Tag size={13} />
-                  <ChevronDown size={10} />
+                  <MoreHorizontal size={16} />
                 </button>
-
-                {onMoveToPantry && item.id.startsWith('p:') && !item.checked && (
-                  <button
-                    onClick={() => onMoveToPantry(item)}
-                    title="Haben wir immer da – in den Vorrat legen"
-                    aria-label={`${item.baseName}: haben wir immer da`}
-                    className="tap flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-amber-700 hover:bg-amber-50"
-                  >
-                    <Package size={13} />
-                  </button>
-                )}
-
-                {onRemove && item.id.startsWith('x:') && !item.isBasic && (
-                  <button
-                    onClick={() => onRemove(item)}
-                    title="Entfernen"
-                    aria-label={`${item.name} entfernen`}
-                    className="tap flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-600 hover:bg-red-50"
-                  >
-                    <X size={13} />
-                  </button>
-                )}
 
                 {openPickerId === item.id && (
                   <div
                     ref={pickerRef}
                     role="menu"
-                    className="absolute right-4 top-full -mt-1 z-30 bg-white rounded-xl shadow-lg border border-gray-200 py-1 w-44"
+                    aria-label={`${item.baseName}: Aktionen`}
+                    className="absolute right-4 top-full -mt-1 z-30 bg-white rounded-xl shadow-lg border border-gray-200 py-1 w-60"
                   >
-                    {otherLabels.map((l) => (
+                    {!item.checked && isShopList && onFindProduct && (
                       <button
-                        key={l.id}
                         role="menuitem"
                         onClick={() => {
-                          onLabelChange(item.id, l.id);
                           setOpenPickerId(null);
+                          onFindProduct(item);
                         }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
                       >
-                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: l.color }} />
-                        {l.name}
+                        <Link2 size={15} className="text-gray-500" aria-hidden="true" />
+                        {item.productId ? 'Anderes Produkt wählen' : 'Produkt auswählen'}
                       </button>
-                    ))}
+                    )}
+                    {onMoveToPantry && item.id.startsWith('p:') && !item.checked && (
+                      <button
+                        role="menuitem"
+                        onClick={() => {
+                          setOpenPickerId(null);
+                          onMoveToPantry(item);
+                        }}
+                        className="w-full flex items-start gap-2.5 px-3 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        <Package size={15} className="mt-0.5 text-gray-500" aria-hidden="true" />
+                        <span>
+                          Haben wir immer da
+                          <span className="block text-xs text-gray-500">In den Vorrat – kommt nicht mehr auf die Liste</span>
+                        </span>
+                      </button>
+                    )}
+                    {otherLabels.length > 0 && (
+                      <>
+                        <p className="px-3 pt-2.5 pb-1 text-xs font-semibold text-gray-500 border-t border-gray-100 first:border-t-0">
+                          In andere Liste
+                        </p>
+                        {otherLabels.map((l) => (
+                          <button
+                            key={l.id}
+                            role="menuitem"
+                            onClick={() => {
+                              onLabelChange(item.id, l.id);
+                              setOpenPickerId(null);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                          >
+                            <span className="w-2.5 h-2.5 mx-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: l.color }} />
+                            {l.name}
+                          </button>
+                        ))}
+                      </>
+                    )}
+                    {onRemove && item.id.startsWith('x:') && !item.isBasic && (
+                      <button
+                        role="menuitem"
+                        onClick={() => {
+                          setOpenPickerId(null);
+                          onRemove(item);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-sm text-red-700 hover:bg-red-50 border-t border-gray-100"
+                      >
+                        <X size={15} aria-hidden="true" />
+                        Entfernen
+                      </button>
+                    )}
                   </div>
                 )}
 
