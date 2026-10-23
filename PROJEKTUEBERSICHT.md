@@ -144,8 +144,9 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
   („6 Zwiebeln“, „2 Dosen Kokosmilch“), Stückware aufgerundet. Unterschiedliche Schreibweisen landen auf einer Zeile
   („Knoblauch (2 Zehen)“ + „2 Knoblauchzehen“, „Paprika (1 rote)“ + „3 Paprikaschoten“; Menge in Klammern zählt).
 - **„Einkauf für“:** eigene Wochenauswahl („Diese Woche“, „Nächste Woche“ …), mehrere Wochen kombinierbar; Häkchen je Woche.
-  Gerichte vergangener Tage zählen standardmäßig nicht mit („2 Gerichte aus vergangenen Tagen ausgeblendet · einblenden“;
+  Gerichte vergangener Tage zählen standardmäßig nicht mit (Hinweis unter der Zusammenfassung mit „einrechnen“;
   `?since=` an `GET /plans/:id/shopping`, die Häkchen bleiben dabei erhalten).
+- **Abgehakt:** steht zusammengeklappt unten in jeder Liste („7 erledigt“), sind alle abgehakt: „Alles erledigt“.
 - **Listen:** Lieferdienst (Knuspr/Picnic), Metzger (Fleisch automatisch, abschaltbar), eigene Listen (Aldi, DM …).
   Zuordnungen pro Zutat werden für künftige Pläne gemerkt. Listen sind auf- und zuklappbar.
 - **PDF:** Listen ohne Shop (Metzger, Aldi, DM …) über das PDF-Symbol im Kopf der jeweiligen Liste herunterladen –

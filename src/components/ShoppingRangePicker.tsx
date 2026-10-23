@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { CalendarRange } from 'lucide-react';
 import { PlanWeek, formatShortDate } from '../lib/dateUtils';
 
@@ -10,6 +11,8 @@ interface ShoppingRangePickerProps {
   onChange: (start: number, end: number) => void;
   /** Zusammenfassung unter der Auswahl, z. B. „7 Gerichte“ */
   summary: string;
+  /** Zusatz unter der Zusammenfassung (z. B. vergangene Tage einblenden) */
+  summaryExtra?: ReactNode;
 }
 
 function weekName(index: number, currentIndex: number, kw: number) {
@@ -23,7 +26,7 @@ function weekName(index: number, currentIndex: number, kw: number) {
  * Für welche Wochen eingekauft wird. Mehrere aufeinanderfolgende Wochen lassen sich kombinieren:
  * Antippen einer Woche außerhalb erweitert den Bereich, Antippen eines Randes nimmt ihn wieder heraus.
  */
-export default function ShoppingRangePicker({ weeks, currentIndex, start, end, onChange, summary }: ShoppingRangePickerProps) {
+export default function ShoppingRangePicker({ weeks, currentIndex, start, end, onChange, summary, summaryExtra }: ShoppingRangePickerProps) {
   const toggle = (i: number) => {
     if (i < start) onChange(i, end);
     else if (i > end) onChange(start, i);
@@ -62,6 +65,7 @@ export default function ShoppingRangePicker({ weeks, currentIndex, start, end, o
       <p className="px-1 mt-2 text-xs text-gray-600" aria-live="polite">
         {summary}
       </p>
+      {summaryExtra}
       {start === end && end < weeks.length - 1 && (
         <p className="px-1 mt-0.5 text-[11px] text-gray-500">Tipp: Weitere Woche antippen, um gleich mit einzukaufen.</p>
       )}

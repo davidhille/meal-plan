@@ -70,6 +70,8 @@ export default function ShoppingSection({
   }, [openPickerId]);
 
   const open = items.filter((i) => !i.checked);
+  const done = items.filter((i) => i.checked);
+  const [showDone, setShowDone] = useState(false);
   const shopLabelIds = new Set((deliveryShops ?? []).map((s) => s.label.id));
   const otherLabels = allLabels.filter((l) => l.id !== label.id && !shopLabelIds.has(l.id));
   const provider = label.provider ?? null;
@@ -93,64 +95,7 @@ export default function ShoppingSection({
     setTimeout(() => setCopied(false), 2000);
   }, [open]);
 
-  return (
-    <section className="bg-white rounded-xl shadow-sm border border-gray-100">
-      {/* Kopf */}
-      <div className={`flex items-center justify-between gap-2 pl-2 pr-4 py-2 ${expanded ? 'border-b border-gray-100' : ''}`}>
-        <button
-          onClick={toggleExpanded}
-          aria-expanded={expanded}
-          aria-label={`${label.name}: ${expanded ? 'zuklappen' : 'aufklappen'}`}
-          className="flex items-center gap-2 min-w-0 flex-1 px-2 py-1.5 rounded-lg text-left hover:bg-gray-50"
-        >
-          <ChevronDown
-            size={15}
-            className={`flex-shrink-0 text-gray-400 transition-transform ${expanded ? '' : '-rotate-90'}`}
-            aria-hidden="true"
-          />
-          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: label.color }} />
-          <h2 className="text-sm font-semibold text-gray-800 truncate">{label.name}</h2>
-          {open.length > 0 && (
-            <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-0.5 rounded-full">{open.length}</span>
-          )}
-        </button>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          {onDownloadPdf && (
-            <button
-              onClick={onDownloadPdf}
-              disabled={open.length === 0}
-              title="Offene Einträge als PDF"
-              aria-label={`${label.name}: offene Einträge als PDF herunterladen`}
-              className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
-                open.length === 0 ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              <FileDown size={14} />
-            </button>
-          )}
-          <button
-            onClick={handleCopy}
-            disabled={open.length === 0}
-            title="Offene Einträge als Text kopieren"
-            aria-label={copied ? `${label.name}: kopiert` : `${label.name}: offene Einträge kopieren`}
-            className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
-              copied
-                ? 'bg-brand-100 text-brand-700'
-                : open.length === 0
-                ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            {copied ? <Check size={14} /> : <Copy size={14} />}
-          </button>
-        </div>
-      </div>
-
-      {!expanded ? null : items.length === 0 ? (
-        <div className="px-4 py-6 text-center text-sm text-gray-500">Keine Einträge</div>
-      ) : (
-        <ul className="divide-y divide-gray-100">
-          {items.map((item) => {
+  const renderItem = (item: ShoppingItem) => {
             const nameClass = `text-sm leading-snug ${item.checked ? 'line-through text-gray-500' : 'text-gray-700'}`;
             const nameContent = (
               <>
@@ -272,8 +217,86 @@ export default function ShoppingSection({
                 )}
               </li>
             );
-          })}
-        </ul>
+  };
+
+  return (
+    <section className="bg-white rounded-xl shadow-sm border border-gray-100">
+      {/* Kopf */}
+      <div className={`flex items-center justify-between gap-2 pl-2 pr-4 py-2 ${expanded ? 'border-b border-gray-100' : ''}`}>
+        <button
+          onClick={toggleExpanded}
+          aria-expanded={expanded}
+          aria-label={`${label.name}: ${expanded ? 'zuklappen' : 'aufklappen'}`}
+          className="flex items-center gap-2 min-w-0 flex-1 px-2 py-1.5 rounded-lg text-left hover:bg-gray-50"
+        >
+          <ChevronDown
+            size={15}
+            className={`flex-shrink-0 text-gray-400 transition-transform ${expanded ? '' : '-rotate-90'}`}
+            aria-hidden="true"
+          />
+          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: label.color }} />
+          <h2 className="text-sm font-semibold text-gray-800 truncate">{label.name}</h2>
+          {open.length > 0 && (
+            <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-0.5 rounded-full">{open.length}</span>
+          )}
+        </button>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {onDownloadPdf && (
+            <button
+              onClick={onDownloadPdf}
+              disabled={open.length === 0}
+              title="Offene Einträge als PDF"
+              aria-label={`${label.name}: offene Einträge als PDF herunterladen`}
+              className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+                open.length === 0 ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <FileDown size={14} />
+            </button>
+          )}
+          <button
+            onClick={handleCopy}
+            disabled={open.length === 0}
+            title="Offene Einträge als Text kopieren"
+            aria-label={copied ? `${label.name}: kopiert` : `${label.name}: offene Einträge kopieren`}
+            className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+              copied
+                ? 'bg-brand-100 text-brand-700'
+                : open.length === 0
+                ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {copied ? <Check size={14} /> : <Copy size={14} />}
+          </button>
+        </div>
+      </div>
+
+      {!expanded ? null : items.length === 0 ? (
+        <div className="px-4 py-6 text-center text-sm text-gray-500">Keine Einträge</div>
+      ) : (
+        <>
+          {open.length > 0 && <ul className="divide-y divide-gray-100">{open.map(renderItem)}</ul>}
+          {open.length === 0 && (
+            <p className="flex items-center justify-center gap-1.5 px-4 py-4 text-sm font-medium text-brand-800">
+              <Check size={15} aria-hidden="true" /> Alles erledigt
+            </p>
+          )}
+          {/* Abgehakte Einträge zusammengeklappt unten – die offenen bleiben im Blick */}
+          {done.length > 0 && (
+            <div className="border-t border-gray-100">
+              <button
+                onClick={() => setShowDone((v) => !v)}
+                aria-expanded={showDone}
+                className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-medium text-gray-500 hover:bg-gray-50 rounded-b-xl"
+              >
+                <ChevronDown size={14} className={`transition-transform ${showDone ? '' : '-rotate-90'}`} aria-hidden="true" />
+                {done.length} erledigt
+              </button>
+              {showDone && <ul className="divide-y divide-gray-100 border-t border-gray-100 bg-gray-50/50">{done.map(renderItem)}</ul>}
+            </div>
+          )}
+        </>
       )}
     </section>
   );

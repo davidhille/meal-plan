@@ -469,6 +469,21 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
     .filter((i) => shopLabelIds.has(i.label))
     .sort((a, b) => Number(a.checked) - Number(b.checked));
 
+  // Vergangene Tage: kleiner Umschalter direkt unter der Zusammenfassung
+  const pastToggle =
+    pastCount > 0 ? (
+      <button
+        type="button"
+        onClick={() => setShowPast((v) => !v)}
+        className="px-1 mt-0.5 text-left text-[11px] text-gray-500"
+      >
+        {showPast
+          ? 'Vergangene Tage sind eingerechnet · '
+          : `${pastCount} ${pastCount === 1 ? 'Gericht' : 'Gerichte'} aus vergangenen Tagen nicht eingerechnet · `}
+        <span className="font-semibold text-brand-700 underline underline-offset-2">{showPast ? 'ausblenden' : 'einrechnen'}</span>
+      </button>
+    ) : null;
+
   return (
     <>
       <div className="px-4 py-4 space-y-4">
@@ -480,20 +495,13 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
             end={endIdx}
             onChange={changeRange}
             summary={summary}
+            summaryExtra={pastToggle}
           />
         ) : (
-          <p className="px-1 text-xs text-gray-600">{summary}</p>
-        )}
-        {pastCount > 0 && (
-          <button
-            type="button"
-            onClick={() => setShowPast((v) => !v)}
-            className="-mt-2 px-1 text-xs font-medium text-brand-700 hover:text-brand-900 underline underline-offset-2"
-          >
-            {showPast
-              ? 'Vergangene Tage wieder ausblenden'
-              : `${pastCount} ${pastCount === 1 ? 'Gericht' : 'Gerichte'} aus vergangenen Tagen ausgeblendet · einblenden`}
-          </button>
+          <div>
+            <p className="px-1 text-xs text-gray-600">{summary}</p>
+            {pastToggle}
+          </div>
         )}
 
         {synced && (
