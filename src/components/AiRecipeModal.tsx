@@ -219,7 +219,7 @@ export default function AiRecipeModal({ onSaved, onClose, onChefkoch }: AiRecipe
               <>
                 <label className="flex items-center gap-2 text-sm text-gray-700">
                   <input type="checkbox" checked={favorite} onChange={(e) => setFavorite(e.target.checked)} className="accent-brand-700" />
-                  <Heart size={14} className="text-rose-500" aria-hidden="true" />
+                  <Heart size={14} className="text-coral-500" aria-hidden="true" />
                   Auch als Favorit merken (wird öfter geplant)
                 </label>
                 <div className="grid grid-cols-2 gap-2">
