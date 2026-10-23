@@ -147,6 +147,7 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
 - **„Einkauf für“:** eigene Wochenauswahl („Diese Woche“, „Nächste Woche“ …), mehrere Wochen kombinierbar; Häkchen je Woche.
   Gerichte vergangener Tage zählen standardmäßig nicht mit (Hinweis unter der Zusammenfassung mit „einrechnen“;
   `?since=` an `GET /plans/:id/shopping`, die Häkchen bleiben dabei erhalten).
+- **„⋯“ an jedem Eintrag:** Produkt auswählen, „Haben wir immer da“ (Vorrat), in andere Liste, Entfernen (eigene Artikel).
 - **Abgehakt:** steht zusammengeklappt unten in jeder Liste („7 erledigt“), sind alle abgehakt: „Alles erledigt“.
 - **Listen:** Lieferdienst (Knuspr/Picnic), Metzger (Fleisch automatisch, abschaltbar), eigene Listen (Aldi, DM …).
   Zuordnungen pro Zutat werden für künftige Pläne gemerkt. Listen sind auf- und zuklappbar.
@@ -154,7 +155,7 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
   nur offene Einträge, mit Kästchen zum Abhaken, Umlaute und € passen.
 - **Vorrat** (ein Bereich unter den Listen): alles, was ihr immer im Haus habt – kommt nicht automatisch auf die Liste.
   Vorbelegt mit Salz, Pfeffer, Öl, Mehl, Brühe, Tomatenmark und gängigen Gewürzen; eigene Einträge per Eingabefeld
-  „Zum Vorrat“ oder Kisten-Symbol an einer Zutat. Gelb = braucht der Plan, kurz nachschauen. **Antippen = ist alle** →
+  „Zum Vorrat“ oder „⋯“ an einer Zutat → „Haben wir immer da“. Gelb = braucht der Plan, kurz nachschauen. **Antippen = ist alle** →
   auf eine Liste setzen (abgehakt wandert es zurück in den Vorrat). **Bearbeiten** → Eintrag antippen nimmt ihn aus dem
   Vorrat (auch Standard-Einträge); er kommt dann wieder auf die Liste, wenn ein Rezept ihn braucht. Wieder eintippen holt
   ihn zurück. Eigene Artikel per Eingabefeld in den Listen.
