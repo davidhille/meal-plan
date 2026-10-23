@@ -110,6 +110,8 @@ export default function MealModal({
   const familyRate = family.rate;
   const onRate =
     onRateProp ?? (allowRating && familyRate ? (rating: number, notes: string) => familyRate(meal.meal, rating, notes) : undefined);
+  // Schon bewertet: Ändern geht über den Bewertungs-Kasten, unten kein zweiter Knopf
+  const showRateButton = !!onRate && !(currentRating > 0 || note);
   const [cooking, setCooking] = useState(startCooking && steps.length > 0);
   const [generating, setGenerating] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
@@ -220,17 +222,6 @@ export default function MealModal({
               <Pencil size={14} />
             </button>
           )}
-          {currentRating > 0 && (
-            <div className="flex items-center gap-1 flex-shrink-0" role="img" aria-label={`Bewertet mit ${currentRating} von 5 Sternen`}>
-              {[...Array(5)].map((_, i) => (
-                <Star
-                  key={i}
-                  size={12}
-                  className={i < currentRating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}
-                />
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Scrollbereich: Bild, Badge, Reiter, Inhalt */}
@@ -326,18 +317,18 @@ export default function MealModal({
         )}
 
         {(currentRating > 0 || note) && (
-          <section aria-label="Eure Bewertung" className="mx-4 mt-4 px-3 py-2.5 rounded-xl bg-amber-50/70 border border-amber-100">
+          <section aria-label="Eure Bewertung" className="mx-4 mt-4 px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-100">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-amber-900">Eure Bewertung</span>
+              <span className="text-xs font-semibold text-gray-800">Eure Bewertung</span>
               {currentRating > 0 && (
                 <span className="flex items-center gap-0.5" role="img" aria-label={`${currentRating} von 5 Sternen`}>
                   {[1, 2, 3, 4, 5].map((n) => (
-                    <Star key={n} size={13} className={n <= currentRating ? 'fill-yellow-400 text-yellow-500' : 'text-amber-200'} />
+                    <Star key={n} size={13} className={n <= currentRating ? 'fill-yellow-400 text-yellow-500' : 'text-gray-300'} />
                   ))}
                 </span>
               )}
               {formatRatingDate(note?.updatedAt) && (
-                <span className="ml-auto text-[11px] text-amber-800/80">{formatRatingDate(note?.updatedAt)}</span>
+                <span className="ml-auto text-[11px] text-gray-500">{formatRatingDate(note?.updatedAt)}</span>
               )}
               {onRate && (
                 <button
@@ -350,7 +341,7 @@ export default function MealModal({
             </div>
             {note && (
               <p className="mt-1.5 flex gap-1.5 text-sm text-gray-800">
-                <MessageSquare size={14} className="flex-shrink-0 mt-0.5 text-amber-700" aria-hidden="true" />
+                <MessageSquare size={14} className="flex-shrink-0 mt-0.5 text-gray-500" aria-hidden="true" />
                 <span className="whitespace-pre-line">{note.notes}</span>
               </p>
             )}
@@ -470,10 +461,10 @@ export default function MealModal({
         {extra && extraBelow && <div className="mx-4 mb-4">{extra}</div>}
         </div>
 
-        {(onChoose || onRate) && (
+        {(onChoose || showRateButton) && (
           <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
             <div className="flex gap-2">
-              {onRate && (
+              {showRateButton && (
                 <button
                   onClick={() => setShowRating(true)}
                   className={`${onChoose ? 'flex-none px-3.5' : 'flex-1 px-4'} py-2.5 rounded-lg text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2`}
