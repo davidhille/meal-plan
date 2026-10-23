@@ -287,6 +287,8 @@ export interface Favorite {
   turnus_weeks: number | null;
   last_planned: string | null;
   created_at: string;
+  /** Bild des Gerichts (falls vorhanden) */
+  image_url?: string | null;
 }
 
 export type ShopProvider = 'knuspr' | 'picnic';
