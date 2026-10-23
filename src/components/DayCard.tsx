@@ -1,8 +1,9 @@
-import { Meal, MealType, PlanDessert } from '../types';
-import { ChevronRight, Leaf, Beef, Fish, Sunset, Star, X, Heart, RefreshCw, Clock, Loader2, CakeSlice, CalendarDays, Sprout, UserPlus } from 'lucide-react';
+import { Meal, PlanDessert } from '../types';
+import { ChevronRight, Star, X, Heart, RefreshCw, Clock, Loader2, CakeSlice, CalendarDays, Sprout, UserPlus } from 'lucide-react';
 import { dessertPreview } from '../lib/desserts';
 import CardActionBar, { CardAction } from './CardActionBar';
-import { isFishDish } from '../lib/recipeCategories';
+import { dishKind } from '../lib/dishType';
+import DishTypeLabel, { DISH_KIND_STYLE } from './DishTypeLabel';
 
 interface DayCardProps {
   meal: Meal;
@@ -29,30 +30,6 @@ interface DayCardProps {
   guests?: number;
 }
 
-const typeConfig: Record<MealType, { bar: string; label: string; icon: React.ReactNode }> = {
-  vegetarisch: {
-    bar: 'bg-brand-600',
-    label: 'Vegetarisch',
-    icon: <Leaf size={11} className="text-brand-700" aria-hidden="true" />,
-  },
-  fleisch: {
-    bar: 'bg-coral-500',
-    label: 'Fleisch',
-    icon: <Beef size={11} className="text-coral-700" aria-hidden="true" />,
-  },
-  wochenende: {
-    bar: 'bg-brand-900',
-    label: 'Wochenende',
-    icon: <Sunset size={11} className="text-brand-900" aria-hidden="true" />,
-  },
-};
-
-const fishConfig = {
-  bar: 'bg-coral-300',
-  label: 'Fisch',
-  icon: <Fish size={11} className="text-coral-700" aria-hidden="true" />,
-};
-
 /** Gerichtkarte: Farbbalken, Bild, Typ; unten die Aktionsleiste (Merken, Nachtisch, Verlegen, Tauschen, Ausblenden) */
 export default function DayCard({
   meal,
@@ -72,9 +49,8 @@ export default function DayCard({
   season,
   guests = 0,
 }: DayCardProps) {
-  // „Fleisch“-Tage mit Fisch oder Meeresfrüchten (ohne Fleisch) als „Fisch“ anzeigen
-  const config =
-    meal.type === 'fleisch' && isFishDish({ name: meal.meal, ingredients: meal.ingredients ?? [] }) ? fishConfig : typeConfig[meal.type];
+  // „Fleisch“-Tage mit Fisch oder Meeresfrüchten (ohne Fleisch) heißen „Fisch“ – gleiche Logik wie in den Rezepten
+  const kind = dishKind(meal.type, meal.meal, meal.ingredients ?? []);
   const actions: CardAction[] = [];
   if (onToggleFavorite)
     actions.push({
@@ -136,7 +112,7 @@ export default function DayCard({
         onClick={onClick}
         className="w-full text-left flex hover:bg-gray-50/60 active:bg-gray-50 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-600"
       >
-        <div className={`w-1 flex-shrink-0 ${config.bar}`} />
+        <div className={`w-1 flex-shrink-0 ${DISH_KIND_STYLE[kind].bar}`} />
         <div className="flex items-center gap-3.5 p-3.5 flex-1 min-w-0">
           {meal.imageUrl ? (
             <img src={meal.imageUrl} alt="" loading="lazy" className="flex-shrink-0 w-20 h-20 rounded-xl object-cover bg-gray-100" />
@@ -153,10 +129,7 @@ export default function DayCard({
             <h3 className="mt-0.5 text-[15px] font-semibold text-gray-900 leading-snug line-clamp-2">{meal.meal}</h3>
             {/* Infozeile: Teile brechen als Ganzes um, nie mitten im Wort („35 Min“) */}
             <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-1.5 text-xs text-gray-500 whitespace-nowrap tabular-nums">
-              <span className="flex items-center gap-1">
-                {config.icon}
-                {config.label}
-              </span>
+              <DishTypeLabel kind={kind} />
               {meal.durationMin ? (
                 <span className="flex items-center gap-1">
                   <Clock size={11} aria-hidden="true" />

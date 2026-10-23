@@ -3,6 +3,8 @@ import { BatteryLow, ChefHat, Clock, Heart, Loader2, Pencil, RefreshCw, Sparkles
 import { MealType, RecipeCatalog, RecipeDraft } from '../types';
 import { isQuotaError, previewAiRecipe, saveAiRecipe } from '../lib/api';
 import { toSteps } from '../lib/cooking';
+import DishTypeLabel from './DishTypeLabel';
+import { dishKind } from '../lib/dishType';
 import { useDialog } from '../lib/useDialog';
 import RecipeEditModal from './RecipeEditModal';
 
@@ -21,7 +23,6 @@ const TYPES: { id: MealType | null; label: string }[] = [
   { id: 'wochenende', label: 'Wochenende' },
 ];
 
-const TYPE_LABEL: Record<MealType, string> = { vegetarisch: 'Vegetarisch', fleisch: 'Fleisch & Fisch', wochenende: 'Wochenende' };
 
 const IDEAS = ['etwas mit Kürbis', 'schnell & kindgerecht', 'Ofengericht ohne viel Abwasch', 'Suppe zum Aufwärmen', 'Resteessen mit Reis'];
 
@@ -152,7 +153,7 @@ export default function AiRecipeModal({ onSaved, onClose, onChefkoch }: AiRecipe
                   <div className="flex-1 min-w-0">
                     <h3 className="text-base font-semibold text-gray-900 leading-snug">{draft.name}</h3>
                     <p className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
-                      <span>{TYPE_LABEL[draft.type]}</span>
+                      <DishTypeLabel kind={dishKind(draft.type, draft.name, draft.ingredients)} />
                       {draft.durationMin ? (
                         <span className="flex items-center gap-1">
                           <Clock size={12} aria-hidden="true" />
