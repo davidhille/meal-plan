@@ -60,7 +60,7 @@ export default function CollapsibleCard({ storageKey, title, icon, summary, acti
         </button>
         {action && <div className="absolute right-10 top-1/2 -translate-y-1/2 flex items-center">{action}</div>}
       </div>
-      <div id={contentId} hidden={!open}>
+      <div id={contentId} hidden={!open} className="pt-3 border-t border-gray-100">
         {open && children}
       </div>
     </section>
