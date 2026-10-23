@@ -72,19 +72,19 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
   - **Kalender** (Verschieben oder Tag leeren): Gericht auf einen anderen Tag legen – steht dort schon eins, tauschen beide;
     auch bis 2 Wochen nach Planende (der Plan wird verlängert). Oder „Tag leeren – nicht kochen“: Gericht kommt aus dem
     Plan (nicht abgelehnt), die Zutaten verschwinden von der Einkaufsliste.
-- **Komplett neuen Plan generieren** für denselben Zeitraum; **Plan löschen** mit Bestätigung.
+- Unter dem Plan: **Neuen Zeitraum planen** (Hauptknopf), daneben zurückhaltend **Neu generieren** (gleicher Zeitraum) und **Plan löschen**, beide mit Bestätigung.
 - **Plan herunterladen:** „Herunterladen“ neben dem Zeitraum öffnet den ganzen Plan als Druckseite (Übersicht, alle Rezepte
   mit auf die Familie umgerechneten Zutaten und Zubereitung, Nachtische) → „Als PDF speichern“. Ohne Pop-up als HTML-Datei.
-- **Rückfrage vor dem Ersetzen:** Läuft der Plan noch, fragen „Komplett neuen Plan generieren“ und „Neuer Zeitraum“ nach –
+- **Rückfrage vor dem Ersetzen:** Läuft der Plan noch, fragen „Neu generieren“ und „Neuen Zeitraum planen“ nach –
   mit „Vorher herunterladen“, damit die Rezepte zum schon erledigten Einkauf nicht verloren gehen.
-- **Plan verlängern statt ersetzen** (in der Rückfrage bei „Neuer Zeitraum“): Der laufende Plan wird auf den neuen
+- **Plan verlängern statt ersetzen** (in der Rückfrage bei „Neuen Zeitraum planen“): Der laufende Plan wird auf den neuen
   Zeitraum erweitert. Geplante Tage bleiben – auch Gerichte, die man in die Zukunft verschoben hat –, ebenso bewusst
   leere Tage („Tag leeren“ oder Gericht weg verschoben). Nur freie Tage bekommen ein Gericht; Abwechslung, Fleisch-Grenze
   und Turnus-Favoriten berücksichtigen die schon geplanten Gerichte. „Neuen Plan erstellen“ ersetzt wie bisher alles.
 - **Leere Tage bleiben sichtbar:** Tage ohne Gericht (geleert, verschoben oder nicht geplant) stehen im Plan als schmale Zeile
   „leer, nichts geplant“ mit „Gericht planen“ (füllt nur diesen Tag, ohne automatische Brotzeit); freie Wochentage als
   „frei (Wochentag)“.
-- **Nur leere Tage füllen** (in der Rückfrage bei „Komplett neuen Plan generieren“): gleicher Zeitraum, aber nur Tage
+- **Nur leere Tage füllen** (in der Rückfrage bei „Neu generieren“): gleicher Zeitraum, aber nur Tage
   ohne Gericht werden geplant – z. B. die Lücke, die ein in die Zukunft verschobenes Gericht hinterlässt. Mit „Tag leeren“
   freigemachte Tage bleiben frei.
 - **Gäste pro Tag:** In der Rezept-Ansicht eines Plan-Gerichts „Gäste an diesem Tag“ (+/−). Die Portionen dieses Gerichts,
