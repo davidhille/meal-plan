@@ -237,9 +237,6 @@ export default function MealPlanView({
                 <Download size={13} aria-hidden="true" />
                 Herunterladen
               </button>
-              <button onClick={onCreatePlan} className="text-xs font-medium text-brand-700 hover:text-brand-800">
-                Neuer Zeitraum
-              </button>
             </span>
           </div>
         )}
@@ -334,17 +331,25 @@ export default function MealPlanView({
 
         {/* Plan-Aktionen */}
         <div className="pt-2 space-y-2">
-          {onRegeneratePlan && (
-            <button
-              onClick={() => setConfirmRegenerate(true)}
-              disabled={regeneratingPlan}
-              className="w-full py-3 flex items-center justify-center gap-2 rounded-xl bg-brand-700 text-white text-sm font-medium hover:bg-brand-800 disabled:bg-brand-300 transition-colors"
-            >
-              {regeneratingPlan ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
-              {regeneratingPlan ? 'Wird neu geplant …' : 'Komplett neuen Plan generieren'}
-            </button>
-          )}
+          {/* Häufigste Aktion: nächsten Zeitraum planen (Hauptknopf); Neu generieren und Löschen zurückhaltend */}
+          <button
+            onClick={onCreatePlan}
+            className="w-full py-3 flex items-center justify-center gap-2 rounded-xl bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 transition-colors"
+          >
+            <CalendarPlus size={16} aria-hidden="true" />
+            Neuen Zeitraum planen
+          </button>
           <div className="flex gap-2">
+            {onRegeneratePlan && (
+              <button
+                onClick={() => setConfirmRegenerate(true)}
+                disabled={regeneratingPlan}
+                className="flex-1 py-2.5 flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+              >
+                {regeneratingPlan ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
+                {regeneratingPlan ? 'Wird neu geplant …' : 'Neu generieren'}
+              </button>
+            )}
             {onDeletePlan &&
               (confirmDelete ? (
                 <button
@@ -366,7 +371,7 @@ export default function MealPlanView({
               ) : (
                 <button
                   onClick={() => setConfirmDelete(true)}
-                  className="flex-1 py-2.5 flex items-center justify-center gap-2 rounded-xl border border-gray-100 bg-white text-sm font-medium text-red-600 hover:bg-red-50"
+                  className="flex-1 py-2.5 flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white text-sm font-medium text-red-600 hover:bg-red-50"
                 >
                   <Trash2 size={15} />
                   Plan löschen
