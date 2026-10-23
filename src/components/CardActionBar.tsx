@@ -9,7 +9,7 @@ export interface CardAction {
   ariaLabel: string;
   title?: string;
   pressed?: boolean;
-  /** danger = rot (z. B. Ablehnen), active = hervorgehoben (z. B. gemerkt) */
+  /** danger = rot (z. B. Ausblenden), active = hervorgehoben (z. B. gemerkt) */
   tone?: 'default' | 'danger' | 'active';
 }
 
