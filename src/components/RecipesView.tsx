@@ -12,12 +12,14 @@ interface RecipesViewProps {
   defaultPortions?: number;
   /** Gericht bearbeitet – Plan und Favoriten neu laden */
   onRecipesChanged?: () => void;
+  /** Namen der Favoriten (für die Sortierung „Empfohlen“) */
+  favoriteNames?: string[];
 }
 
 type Section = 'gerichte' | 'nachtische';
 
 /** Rezept-Übersicht: Hauptgerichte und Nachtische */
-export default function RecipesView({ planMeals, onReplace, onAssignDessert, defaultPortions, onRecipesChanged }: RecipesViewProps) {
+export default function RecipesView({ planMeals, onReplace, onAssignDessert, defaultPortions, onRecipesChanged, favoriteNames }: RecipesViewProps) {
   const [section, setSection] = useState<Section>(() => {
     try {
       return localStorage.getItem('rezepte-bereich') === 'nachtische' ? 'nachtische' : 'gerichte';
@@ -74,6 +76,7 @@ export default function RecipesView({ planMeals, onReplace, onAssignDessert, def
           customFilters={filtersFor(customFilters, 'gerichte')}
           onFiltersChange={setCustomFilters}
           onRecipesChanged={onRecipesChanged}
+          favoriteNames={favoriteNames}
         />
       ) : (
         <DessertsView
