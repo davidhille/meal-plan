@@ -40,7 +40,7 @@ export default function CardActionBar({ actions, disabled }: { actions: CardActi
           }`}
         >
           <span aria-hidden="true">{a.icon}</span>
-          <span className="max-w-full truncate px-0.5">{a.label}</span>
+          <span className="max-w-full truncate tracking-tight">{a.label}</span>
         </button>
       ))}
     </div>

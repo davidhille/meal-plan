@@ -2,6 +2,19 @@
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
+    <!-- Direkt nach einem Deploy kann eine neue Datei kurz fehlen: dann einmal neu laden statt leerer/ungestalteter Seite -->
+    <script>
+      addEventListener('error', function (e) {
+        var t = e.target, u = t && (t.src || t.href);
+        if (!u || String(u).indexOf(location.origin + '/assets/') !== 0) return;
+        try {
+          // höchstens einmal pro Minute, damit es keine Endlosschleife gibt
+          if (Date.now() - Number(sessionStorage.getItem('asset-retry') || 0) < 60000) return;
+          sessionStorage.setItem('asset-retry', String(Date.now()));
+        } catch (_) { return; }
+        setTimeout(function () { location.reload(); }, 1500);
+      }, true);
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>miyummy – Familien-Speiseplaner</title>
     <meta name="description" content="Speiseplan, Rezepte und Einkaufsliste für die Familie" />
