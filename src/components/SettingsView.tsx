@@ -231,7 +231,7 @@ export default function SettingsView({
                     <p className="text-xs text-gray-500 mb-1">Krankheiten & Einschränkungen</p>
                     <div className="flex flex-wrap gap-1">
                       {profile.health_conditions.map((cond) => (
-                        <span key={cond} className="text-xs bg-orange-50 text-orange-700 px-2 py-1 rounded border border-orange-200">
+                        <span key={cond} className="text-xs bg-coral-50 text-coral-700 px-2 py-1 rounded border border-coral-100">
                           {CONDITION_LABELS[cond] || cond}
                         </span>
                       ))}

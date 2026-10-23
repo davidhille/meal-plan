@@ -70,7 +70,8 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
   Spross-Symbol). Saison-Liste in `src/lib/season.ts`, dieselbe wie für den Schwerpunkt „saisonal“.
 - Tagesrhythmus: Sa/So aufwendigere **Wochenend**-Gerichte, unter der Woche abwechselnd **vegetarisch** und **Fleisch/Fisch**.
 - Gerichtkarte: Bild, Typ, Zubereitungszeit, Bewertung, ggf. Nachtisch. Gerichte mit Fisch oder Meeresfrüchten (ohne Fleisch)
-  heißen „Fisch“ statt „Fleisch“ (blauer Balken, auch im Plan-Download). Aktionen:
+  heißen „Fisch“ statt „Fleisch“ (auch im Plan-Download). Farbbalken nur aus der Palette: Vegetarisch Pflaume,
+  Fleisch Koralle, Fisch helle Koralle, Wochenende dunkle Aubergine. Aktionen:
   - **♥ Merken** (Favorit) · **↻ Neu generieren** (nur austauschen) · **✕ Ablehnen** (kommt nie wieder) · **Kuchen** (Nachtisch dazu)
   - **Kalender** (Verschieben oder Tag leeren): Gericht auf einen anderen Tag legen – steht dort schon eins, tauschen beide;
     auch bis 2 Wochen nach Planende (der Plan wird verlängert). Oder „Tag leeren – nicht kochen“: Gericht kommt aus dem

@@ -35,21 +35,21 @@ const typeConfig: Record<MealType, { bar: string; label: string; icon: React.Rea
     icon: <Leaf size={11} className="text-brand-700" aria-hidden="true" />,
   },
   fleisch: {
-    bar: 'bg-orange-400',
+    bar: 'bg-coral-500',
     label: 'Fleisch',
-    icon: <Beef size={11} className="text-orange-600" aria-hidden="true" />,
+    icon: <Beef size={11} className="text-coral-700" aria-hidden="true" />,
   },
   wochenende: {
-    bar: 'bg-blue-500',
+    bar: 'bg-brand-900',
     label: 'Wochenende',
-    icon: <Sunset size={11} className="text-blue-600" aria-hidden="true" />,
+    icon: <Sunset size={11} className="text-brand-900" aria-hidden="true" />,
   },
 };
 
 const fishConfig = {
-  bar: 'bg-sky-500',
+  bar: 'bg-coral-300',
   label: 'Fisch',
-  icon: <Fish size={11} className="text-sky-700" aria-hidden="true" />,
+  icon: <Fish size={11} className="text-coral-700" aria-hidden="true" />,
 };
 
 /** Gerichtkarte im Stil der Juli-Version: Farbbalken, Bild, Typ; rechts die Aktionen */
