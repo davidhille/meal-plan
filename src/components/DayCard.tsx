@@ -100,7 +100,7 @@ export default function DayCard({
   if (onMove)
     actions.push({
       key: 'move',
-      label: 'Verschieben',
+      label: 'Verlegen',
       icon: <CalendarDays size={16} />,
       onClick: onMove,
       title: 'Verschieben oder Tag leeren',
@@ -146,7 +146,7 @@ export default function DayCard({
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
               {isToday && <span className="mr-1.5 px-1.5 py-px rounded bg-brand-700 text-white normal-case tracking-normal">Heute</span>}
               {meal.day}
             </p>
@@ -209,7 +209,7 @@ export default function DayCard({
               <CakeSlice size={16} className="flex-shrink-0 text-coral-700" aria-hidden="true" />
             )}
             <span className="flex-1 min-w-0">
-              <span className="block text-[11px] font-semibold text-coral-700 uppercase tracking-wider">Nachtisch</span>
+              <span className="block text-xs font-semibold text-coral-700 uppercase tracking-wider">Nachtisch</span>
               <span className="block text-xs font-medium text-gray-800 truncate">{dessert.name}</span>
             </span>
             <ChevronRight size={14} className="text-gray-300 flex-shrink-0" aria-hidden="true" />

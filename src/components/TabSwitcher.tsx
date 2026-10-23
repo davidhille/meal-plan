@@ -42,7 +42,7 @@ export default function TabSwitcher({ activeTab, onTabChange, variant = 'top' }:
                 >
                   <Icon size={20} strokeWidth={active ? 2.4 : 2} />
                 </span>
-                <span className={`max-w-full truncate px-0.5 text-[10px] leading-none tracking-tight ${active ? 'font-bold' : 'font-medium'}`}>
+                <span className={`whitespace-nowrap text-xs leading-none tracking-[-0.025em] ${active ? 'font-bold' : 'font-medium'}`}>
                   {short}
                 </span>
               </button>

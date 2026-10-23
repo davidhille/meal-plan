@@ -35,7 +35,7 @@ export default function CardActionBar({ actions, disabled }: { actions: CardActi
           title={a.title}
           aria-label={a.ariaLabel}
           aria-pressed={a.pressed}
-          className={`min-w-0 h-12 flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors duration-150 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-600 ${
+          className={`min-w-0 h-12 flex flex-col items-center justify-center gap-0.5 text-xs font-medium transition-colors duration-150 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-600 ${
             TONE[a.tone ?? 'default']
           }`}
         >

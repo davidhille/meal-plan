@@ -33,7 +33,7 @@ function ShopRuleFields({ name, rule, onSave }: { name: string; rule: ShopRule; 
   return (
     <div className="mt-2 grid grid-cols-2 gap-2 pl-5">
       <label className="block">
-        <span className="text-[11px] font-semibold text-gray-500">Mindestbestellwert (€)</span>
+        <span className="text-xs font-semibold text-gray-500">Mindestbestellwert (€)</span>
         <input
           inputMode="decimal"
           value={minOrder}
@@ -44,7 +44,7 @@ function ShopRuleFields({ name, rule, onSave }: { name: string; rule: ShopRule; 
         />
       </label>
       <label className="block">
-        <span className="text-[11px] font-semibold text-gray-500">Liefergebühr (€)</span>
+        <span className="text-xs font-semibold text-gray-500">Liefergebühr (€)</span>
         <input
           inputMode="decimal"
           value={fee}
@@ -245,7 +245,7 @@ export default function ShopSettings() {
                         aria-label={`Passwort bei ${shop.name}`}
                         className="w-full h-10 px-3 rounded-xl border border-gray-200 text-sm"
                       />
-                      <p className="text-[11px] text-gray-500">
+                      <p className="text-xs text-gray-500">
                         Wird verschlüsselt gespeichert und nur für die Suche{shop.id === 'knuspr' ? ' und den Warenkorb' : ''} genutzt.
                         Die Anbindung ist inoffiziell und kann jederzeit ausfallen.
                       </p>

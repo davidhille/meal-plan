@@ -40,7 +40,7 @@ export default function RecipeCategoryAssign({ recipe, overrides, onChange }: Re
 
   const chips = (title: string, list: RecipeCategory[]) => (
     <div>
-      <p className="mb-1 text-[11px] font-semibold text-gray-500">{title}</p>
+      <p className="mb-1 text-xs font-semibold text-gray-500">{title}</p>
       <div className="flex flex-wrap gap-1.5" role="group" aria-label={title}>
         {list.map((c) => {
           const on = inCategory(c, recipe, overrides);

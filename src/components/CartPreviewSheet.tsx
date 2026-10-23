@@ -64,7 +64,7 @@ function MinOrderBar({ current, added, unknown, rule }: { current: number; added
         {rule.deliveryFee > 0 && <span className="font-normal text-gray-600"> · Liefergebühr {euro(rule.deliveryFee)}</span>}
       </p>
       {unknown > 0 && (
-        <p className="text-[11px] text-gray-500">
+        <p className="text-xs text-gray-500">
           Für {unknown} {unknown === 1 ? 'Produkt' : 'Produkte'} ist kein Preis bekannt – nochmal im Produkt-Dialog auswählen, dann wird er gemerkt.
         </p>
       )}
@@ -244,15 +244,15 @@ export default function CartPreviewSheet({
                     )}
                     <span className="flex-1 min-w-0">
                       <span className="block text-sm text-gray-800 truncate">{name}</span>
-                      <span className="block text-[11px] text-gray-500 truncate">für: {i.name}</span>
+                      <span className="block text-xs text-gray-500 truncate">für: {i.name}</span>
                       {i.productPrice != null && (
-                        <span className="block text-[11px] text-gray-600">
+                        <span className="block text-xs text-gray-600">
                           ca. {euro(i.productPrice)}
                           {i.productAmount ? ` · ${i.productAmount}` : ''}
                         </span>
                       )}
                       {already && (
-                        <span className="block text-[11px] font-medium text-amber-700">Schon im Warenkorb ({already.quantity}×)</span>
+                        <span className="block text-xs font-medium text-amber-700">Schon im Warenkorb ({already.quantity}×)</span>
                       )}
                     </span>
                     {on && (
@@ -300,7 +300,7 @@ export default function CartPreviewSheet({
                     <span className="flex-1 min-w-0">
                       <span className="block text-sm text-gray-800 truncate">{c.name}</span>
                       {(c.lineTotal != null || c.price) && (
-                        <span className="block text-[11px] text-gray-500">
+                        <span className="block text-xs text-gray-500">
                           {c.lineTotal != null ? euro(c.lineTotal) : c.price}
                           {c.quantity > 1 && c.price ? ` (${c.quantity} × ${c.price})` : ''}
                         </span>

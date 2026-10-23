@@ -107,7 +107,7 @@ export default function MoveMealSheet({ pm, plan, planMeals, dayRules, onMove, o
             <div className="flex-1 overflow-y-auto">
               {weeks.map((w) => (
                 <div key={w.kw}>
-                  <p className="sticky top-0 px-4 py-1.5 bg-gray-50 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+                  <p className="sticky top-0 px-4 py-1.5 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                     KW {w.kw}
                   </p>
                   <ul className="divide-y divide-gray-100">

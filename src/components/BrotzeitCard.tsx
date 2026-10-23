@@ -18,7 +18,7 @@ export default function BrotzeitCard({ day, isToday, busy, onMove, onCook }: Bro
   if (onMove)
     actions.push({
       key: 'move',
-      label: 'Verschieben',
+      label: 'Verlegen',
       icon: <CalendarDays size={16} />,
       onClick: onMove,
       title: 'Verschieben oder Tag leeren',
@@ -47,7 +47,7 @@ export default function BrotzeitCard({ day, isToday, busy, onMove, onCook }: Bro
             <Wheat size={26} className="text-gray-500" aria-hidden="true" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
               {isToday && <span className="mr-1.5 px-1.5 py-px rounded bg-brand-700 text-white normal-case tracking-normal">Heute</span>}
               {day}
             </p>

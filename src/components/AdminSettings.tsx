@@ -143,7 +143,7 @@ export default function AdminSettings() {
                   <p className="text-sm font-medium text-gray-800 truncate">
                     {label}
                     {f.own && <span className="font-normal text-gray-500"> (ihr)</span>}
-                    {f.disabled && <span className="ml-1.5 align-middle text-[10px] font-semibold uppercase tracking-wide text-red-700">Gesperrt</span>}
+                    {f.disabled && <span className="ml-1.5 align-middle text-xs font-semibold uppercase tracking-wide text-red-700">Gesperrt</span>}
                   </p>
                   <p className="text-xs text-gray-500 truncate">
                     {f.userCount} {f.userCount === 1 ? 'Zugang' : 'Zugänge'} · {f.planCount} {f.planCount === 1 ? 'Plan' : 'Pläne'}
