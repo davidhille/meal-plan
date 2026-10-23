@@ -302,10 +302,10 @@ export default function MainDishesView({
           <p className="text-xs text-gray-500" aria-live="polite">
             {visible.length === shownTotal ? `${shownTotal} Gerichte` : `${visible.length} von ${shownTotal} Gerichten`}
           </p>
-          <label className="flex items-center gap-1.5 text-xs text-gray-600">
+          <div className="flex items-center gap-1.5 text-xs text-gray-600">
             <ArrowUpDown size={13} aria-hidden="true" />
-            <span className="sr-only">Sortieren nach</span>
             <select
+              aria-label="Sortieren nach"
               value={sort}
               onChange={(e) => changeSort(e.target.value as RecipeSort)}
               className="h-8 pl-2 pr-7 rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
@@ -316,7 +316,7 @@ export default function MainDishesView({
                 </option>
               ))}
             </select>
-          </label>
+          </div>
         </div>
         {unsuitableCount > 0 && (
           <label className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
