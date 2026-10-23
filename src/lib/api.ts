@@ -524,6 +524,12 @@ export async function getRecipeCatalog(): Promise<RecipeCatalog> {
 }
 
 /** Gericht ausblenden (wird nicht mehr vorgeschlagen) bzw. wieder einblenden; liefert die neue Übersicht */
+/** Ablehnen rückgängig: Gericht zurück an seinen Tag (der Ersatz wird gelöscht). Wirft bei Fehlern. */
+export async function unrejectMeal(planMealId: string, replacementId: string | null): Promise<PlanMeal> {
+  const result = await request<{ restored: PlanMeal }>('POST', `/plan-meals/${planMealId}/unreject`, { replacementId });
+  return result.restored;
+}
+
 export async function setRecipeHidden(name: string, hidden: boolean): Promise<RecipeCatalog> {
   return request<RecipeCatalog>('POST', hidden ? '/recipes/hide' : '/recipes/unhide', { name });
 }
