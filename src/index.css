@@ -26,3 +26,19 @@
     -moz-osx-font-smoothing: grayscale;
   }
 }
+
+/* Kleine Knöpfe (Symbole) bekommen eine unsichtbare Tippfläche von mindestens 44 px – die Optik bleibt gleich */
+@layer components {
+  .tap {
+    position: relative;
+  }
+  .tap::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+}

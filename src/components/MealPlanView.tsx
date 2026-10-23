@@ -227,7 +227,7 @@ export default function MealPlanView({
               <button
                 onClick={() => setSharing(true)}
                 title="Nur-Lese-Link für Familie und Freunde"
-                className="flex items-center gap-1 text-xs font-medium text-brand-700 hover:text-brand-800"
+                className="tap flex items-center gap-1 text-xs font-medium text-brand-700 hover:text-brand-800"
               >
                 <Share2 size={13} aria-hidden="true" />
                 Teilen
@@ -235,7 +235,7 @@ export default function MealPlanView({
               <button
                 onClick={() => exportPlan(plan, allPlanMeals ?? planMeals ?? [], defaultPortions ?? 4)}
                 title="Plan mit allen Rezepten herunterladen oder drucken"
-                className="flex items-center gap-1 text-xs font-medium text-brand-700 hover:text-brand-800"
+                className="tap flex items-center gap-1 text-xs font-medium text-brand-700 hover:text-brand-800"
               >
                 <Download size={13} aria-hidden="true" />
                 Herunterladen

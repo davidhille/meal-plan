@@ -118,7 +118,7 @@ export default function ShoppingSection({
                   role="checkbox"
                   aria-checked={item.checked}
                   aria-label={item.name}
-                  className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center border-2 transition-colors ${
+                  className={`tap w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center border-2 transition-colors ${
                     item.checked ? 'bg-brand-600 border-brand-500' : 'bg-white border-gray-300'
                   }`}
                 >
@@ -143,7 +143,7 @@ export default function ShoppingSection({
                     onClick={() => onFindProduct(item)}
                     title="Produkt auswählen"
                     aria-label={`${item.baseName}: Produkt auswählen`}
-                    className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-lg text-gray-500 hover:text-brand-700 hover:bg-brand-50"
+                    className="tap w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-lg text-gray-500 hover:text-brand-700 hover:bg-brand-50"
                   >
                     <Link2 size={14} />
                   </button>
@@ -167,7 +167,7 @@ export default function ShoppingSection({
                     onClick={() => onMoveToPantry(item)}
                     title="Haben wir immer da – in den Vorrat legen"
                     aria-label={`${item.baseName}: haben wir immer da`}
-                    className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-amber-700 hover:bg-amber-50"
+                    className="tap flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-amber-700 hover:bg-amber-50"
                   >
                     <Package size={13} />
                   </button>
@@ -178,7 +178,7 @@ export default function ShoppingSection({
                     onClick={() => onRemove(item)}
                     title="Entfernen"
                     aria-label={`${item.name} entfernen`}
-                    className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-600 hover:bg-red-50"
+                    className="tap flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-600 hover:bg-red-50"
                   >
                     <X size={13} />
                   </button>
@@ -247,7 +247,7 @@ export default function ShoppingSection({
               disabled={open.length === 0}
               title="Offene Einträge als PDF"
               aria-label={`${label.name}: offene Einträge als PDF herunterladen`}
-              className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+              className={`tap flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
                 open.length === 0 ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
@@ -259,7 +259,7 @@ export default function ShoppingSection({
             disabled={open.length === 0}
             title="Offene Einträge als Text kopieren"
             aria-label={copied ? `${label.name}: kopiert` : `${label.name}: offene Einträge kopieren`}
-            className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+            className={`tap flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
               copied
                 ? 'bg-brand-100 text-brand-700'
                 : open.length === 0

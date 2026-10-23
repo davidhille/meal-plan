@@ -107,7 +107,7 @@ export default function SettingsView({
               <button
                 onClick={() => setShowFamilyModal(true)}
                 aria-label="Familienmitglied hinzufügen"
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-brand-700 text-white hover:bg-brand-800 transition-colors"
+                className="tap w-8 h-8 flex items-center justify-center rounded-lg bg-brand-700 text-white hover:bg-brand-800 transition-colors"
               >
                 <Plus size={16} />
               </button>
@@ -150,7 +150,7 @@ export default function SettingsView({
                     <button
                       onClick={() => setEditingMember(member)}
                       aria-label={`${member.name} bearbeiten`}
-                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
+                      className="tap flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
                     >
                       <Edit2 size={14} />
                     </button>
@@ -167,7 +167,7 @@ export default function SettingsView({
                       <button
                         onClick={() => setConfirmDeleteId(member.id)}
                         aria-label={`${member.name} löschen`}
-                        className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                        className="tap flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -196,7 +196,7 @@ export default function SettingsView({
               <button
                 onClick={() => setShowPrefsModal(true)}
                 aria-label="Gesundheit & Ernährung bearbeiten"
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200"
+                className="tap w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200"
               >
                 <Edit2 size={14} />
               </button>
@@ -266,7 +266,7 @@ export default function SettingsView({
               <button
                 onClick={() => setShowRoutineModal(true)}
                 aria-label="Routine anlegen"
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-brand-700 text-white hover:bg-brand-800"
+                className="tap w-8 h-8 flex items-center justify-center rounded-lg bg-brand-700 text-white hover:bg-brand-800"
               >
                 <Plus size={16} />
               </button>
@@ -311,7 +311,7 @@ export default function SettingsView({
                       <button
                         onClick={() => setConfirmDeleteId(routine.id)}
                         aria-label={`Routine ${routine.name} löschen`}
-                        className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                        className="tap flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
                       >
                         <Trash2 size={14} />
                       </button>

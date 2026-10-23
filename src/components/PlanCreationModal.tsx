@@ -113,7 +113,7 @@ export default function PlanCreationModal({ onCreate, onClose }: PlanCreationMod
             onClick={onClose}
             disabled={loading}
             aria-label="Schließen"
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 disabled:opacity-50"
+            className="tap w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 disabled:opacity-50"
           >
             <X size={16} />
           </button>

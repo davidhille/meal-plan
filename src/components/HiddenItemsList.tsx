@@ -36,7 +36,7 @@ export default function HiddenItemsList({ title, names, onShow, onDelete, delete
       <button
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex items-center gap-1.5 px-1 text-xs font-medium text-gray-600 hover:text-gray-800"
+        className="tap flex items-center gap-1.5 px-1 text-xs font-medium text-gray-600 hover:text-gray-800"
       >
         <ChevronDown size={14} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
         {title} ({names.length})
@@ -49,7 +49,7 @@ export default function HiddenItemsList({ title, names, onShow, onDelete, delete
               <button
                 onClick={() => show(name)}
                 disabled={busy === name}
-                className="flex items-center gap-1 px-2.5 h-8 rounded-lg text-xs font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100"
+                className="tap flex items-center gap-1 px-2.5 h-8 rounded-lg text-xs font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100"
               >
                 {busy === name ? <Loader2 size={12} className="animate-spin" /> : <Eye size={12} />}
                 Einblenden
@@ -58,7 +58,7 @@ export default function HiddenItemsList({ title, names, onShow, onDelete, delete
                 onClick={() => setToDelete(name)}
                 aria-label={`${name} endgültig löschen`}
                 title="Endgültig löschen"
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50"
+                className="tap w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50"
               >
                 <Trash2 size={14} />
               </button>

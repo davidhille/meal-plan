@@ -175,7 +175,7 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
             <button
               onClick={() => setQuery('')}
               aria-label="Suche leeren"
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100"
+              className="tap absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100"
             >
               <X size={14} />
             </button>
@@ -255,7 +255,7 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
                     onClick={() => setHideCandidate(d)}
                     aria-label={`${d.name} ausblenden`}
                     title="Ausblenden – erscheint nicht mehr in der Sammlung"
-                    className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full bg-white/90 text-gray-600 shadow-sm hover:text-red-600 hover:bg-white"
+                    className="tap absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full bg-white/90 text-gray-600 shadow-sm hover:text-red-600 hover:bg-white"
                   >
                     <EyeOff size={14} />
                   </button>

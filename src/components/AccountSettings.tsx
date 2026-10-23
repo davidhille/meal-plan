@@ -104,11 +104,11 @@ export default function AccountSettings() {
                   {u.id !== me.id && (
                     <>
                       <button onClick={() => { setResetFor(u); setResetPw(''); }} aria-label={`Passwort von ${u.name} zurücksetzen`}
-                        title="Passwort zurücksetzen" className="w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100">
+                        title="Passwort zurücksetzen" className="tap w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100">
                         <KeyRound size={15} />
                       </button>
                       <button onClick={() => setRemoveUser(u)} aria-label={`Zugang von ${u.name} entfernen`}
-                        title="Zugang entfernen" className="w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:text-red-600 hover:bg-red-50">
+                        title="Zugang entfernen" className="tap w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:text-red-600 hover:bg-red-50">
                         <Trash2 size={15} />
                       </button>
                     </>

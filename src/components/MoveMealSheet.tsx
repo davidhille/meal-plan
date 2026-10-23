@@ -80,7 +80,7 @@ export default function MoveMealSheet({ pm, plan, planMeals, dayRules, onMove, o
             <button
               onClick={() => setStep({ kind: 'pick' })}
               aria-label="Zurück zur Tagesauswahl"
-              className="w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100"
+              className="tap w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100"
             >
               <ArrowLeft size={16} />
             </button>
@@ -96,7 +96,7 @@ export default function MoveMealSheet({ pm, plan, planMeals, dayRules, onMove, o
           <button
             onClick={onClose}
             aria-label="Schließen"
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200"
+            className="tap w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200"
           >
             <X size={16} />
           </button>

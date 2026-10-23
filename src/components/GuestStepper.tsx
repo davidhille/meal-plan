@@ -36,7 +36,7 @@ export default function GuestStepper({ guests, onChange }: GuestStepperProps) {
             onClick={() => set(Math.max(0, value - 1))}
             disabled={value <= 0}
             aria-label="Ein Gast weniger"
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-600 active:scale-95 disabled:opacity-40"
+            className="tap w-8 h-8 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-600 active:scale-95 disabled:opacity-40"
           >
             <Minus size={14} />
           </button>
@@ -46,7 +46,7 @@ export default function GuestStepper({ guests, onChange }: GuestStepperProps) {
           <button
             onClick={() => set(Math.min(20, value + 1))}
             aria-label="Ein Gast mehr"
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-600 active:scale-95"
+            className="tap w-8 h-8 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-600 active:scale-95"
           >
             <Plus size={14} />
           </button>

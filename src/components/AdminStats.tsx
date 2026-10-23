@@ -85,7 +85,7 @@ export default function AdminStats() {
       summary={`KI heute ${num(today)} von ${num(stats.dailyLimit)} Neurons`}
       action={
         <button onClick={load} disabled={loading} aria-label="Statistik aktualisieren" title="Aktualisieren"
-          className="w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 disabled:opacity-50">
+          className="tap w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 disabled:opacity-50">
           <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
         </button>
       }

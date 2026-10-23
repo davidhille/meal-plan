@@ -173,7 +173,7 @@ export default function CookingMode({ name, ingredients, steps, amountLabel, onR
                 <button
                   onClick={() => removeTimer(t.id)}
                   aria-label={t.done ? 'Timer bestätigen' : `Timer ${t.label} abbrechen`}
-                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-black/10"
+                  className="tap w-8 h-8 flex items-center justify-center rounded-full hover:bg-black/10"
                 >
                   {t.done ? <Check size={15} /> : <X size={15} />}
                 </button>

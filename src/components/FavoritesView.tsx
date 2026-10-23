@@ -160,7 +160,7 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
                 <button
                   onClick={() => setConfirmId(f.id)}
                   aria-label={`${f.meal_name} aus Favoriten entfernen`}
-                  className="w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:text-red-600 hover:bg-red-50"
+                  className="tap w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:text-red-600 hover:bg-red-50"
                 >
                   <Trash2 size={15} />
                 </button>
