@@ -70,6 +70,35 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
     return json({ replacement });
   }
 
+  // Ablehnen rückgängig: Gericht wieder an seinen Tag, Ersatz weg, nicht mehr ausgeblendet
+  if (parts[0] === "plan-meals" && id && parts[2] === "unreject" && request.method === "POST") {
+    const p = await getProfile(sql, user);
+    const rows = await sql`SELECT pm.id, pm.plan_id, pm.meal_date::text AS meal_date, pm.meal_name FROM plan_meals pm
+      JOIN meal_plans mp ON mp.id = pm.plan_id WHERE pm.id = ${id} AND mp.profile_id = ${p.id} AND pm.rejected`;
+    const orig = rows[0];
+    if (!orig) return json({ error: "Gericht nicht gefunden" }, 404);
+    const replacementId = typeof body.replacementId === "string" ? body.replacementId : null;
+    if (replacementId) {
+      // Nur den Ersatz am selben Tag desselben Plans löschen
+      await sql`DELETE FROM plan_meals WHERE id = ${replacementId} AND plan_id = ${orig.plan_id}
+        AND meal_date = ${orig.meal_date}::date AND NOT rejected`;
+    }
+    const busy = await sql`SELECT 1 FROM plan_meals WHERE plan_id = ${orig.plan_id} AND meal_date = ${orig.meal_date}::date AND NOT rejected`;
+    if (busy.length) return json({ error: "An diesem Tag steht inzwischen ein anderes Gericht" }, 409);
+    await sql`UPDATE plan_meals SET rejected = false WHERE id = ${id}`;
+    await sql`DELETE FROM rejected_meals WHERE profile_id = ${p.id} AND meal_name = ${orig.meal_name}`;
+    const restored = await sql.query(
+      `SELECT pm.id, pm.plan_id, pm.meal_date::text AS meal_date, pm.meal_name, pm.meal_type, pm.ingredients,
+              pm.instructions, pm.rejected, ${IMAGE_URL_SQL} AS image_url, ${IMAGE_CREDIT_SQL}, pm.duration_min, pm.dessert, pm.brotzeit, pm.guests, pm.created_at
+       FROM plan_meals pm
+       LEFT JOIN LATERAL (SELECT * FROM meal_images x WHERE x.meal_name = pm.meal_name
+         AND (x.profile_id IS NULL OR x.profile_id = $2) ORDER BY x.profile_id IS NULL LIMIT 1) mi ON true
+       WHERE pm.id = $1`,
+      [id, p.id]
+    );
+    return json({ restored: restored[0] });
+  }
+
   // Brotzeit statt Kochen (zurück geht es mit „regenerate“ = doch kochen)
   if (parts[0] === "plan-meals" && id && parts[2] === "brotzeit" && request.method === "POST") {
     const p = await getProfile(sql, user);

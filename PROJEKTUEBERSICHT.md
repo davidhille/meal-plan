@@ -74,7 +74,7 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
   heißen „Fisch“ statt „Fleisch“ (auch im Plan-Download). Farbbalken nur aus der Palette: Vegetarisch Pflaume,
   Fleisch Koralle, Fisch helle Koralle, Wochenende dunkle Aubergine, Brotzeit neutral grau. Aktionen als beschriftete
   Leiste unten in der Karte (`CardActionBar`):
-  - **Merken** (Favorit) · **Nachtisch** (dazu/ändern) · **Tauschen** (nur austauschen) · **Ablehnen** (kommt nie wieder)
+  - **Merken** (Favorit) · **Nachtisch** (dazu/ändern) · **Tauschen** (nur austauschen) · **Ablehnen** (kommt nie wieder; 8 Sek. lang „Rückgängig“, `POST /plan-meals/:id/unreject`)
   - **Verlegen** (oder Tag leeren): Gericht auf einen anderen Tag legen – steht dort schon eins, tauschen beide;
     auch bis 2 Wochen nach Planende (der Plan wird verlängert). Oder „Tag leeren – nicht kochen“: Gericht kommt aus dem
     Plan (nicht abgelehnt), die Zutaten verschwinden von der Einkaufsliste.

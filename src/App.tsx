@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import AppIcon from './components/AppIcon';
 import Logo from './components/Logo';
 import { ViewTab, Profile, FamilyMember, Routine, MealPlan, PlanMeal, Favorite, Dessert, CatalogRecipe } from './types';
@@ -32,6 +32,7 @@ import {
   removeFavorite,
   setFavoriteTurnus,
   rejectMeal,
+  unrejectMeal,
   UnauthorizedError,
   getAuthStatus,
   setMealDessert,
@@ -309,11 +310,34 @@ export default function App() {
       [...prev.filter((m) => m.id !== oldId), replacement].sort((a, b) => a.meal_date.localeCompare(b.meal_date))
     );
 
+  // Zuletzt abgelehntes Gericht – kurz rückgängig machbar
+  const [undoReject, setUndoReject] = useState<{ id: string; name: string; replacementId: string | null } | null>(null);
+  const undoTimer = useRef<number | undefined>(undefined);
+
   const handleRejectMeal = async (planMealId: string, mealName: string) => {
     if (!profile) return;
     const replacement = await rejectMeal(profile.id, planMealId, mealName);
     if (replacement) swapMeal(planMealId, replacement);
     else setPlanMeals((prev) => prev.map((m) => (m.id === planMealId ? { ...m, rejected: true } : m)));
+    setUndoReject({ id: planMealId, name: mealName, replacementId: replacement?.id ?? null });
+    window.clearTimeout(undoTimer.current);
+    undoTimer.current = window.setTimeout(() => setUndoReject(null), 8000);
+  };
+
+  const handleUndoReject = async () => {
+    if (!undoReject) return;
+    const { id, replacementId } = undoReject;
+    window.clearTimeout(undoTimer.current);
+    setUndoReject(null);
+    try {
+      const restored = await unrejectMeal(id, replacementId);
+      setPlanMeals((prev) =>
+        [...prev.filter((m) => m.id !== id && m.id !== replacementId), restored].sort((a, b) => a.meal_date.localeCompare(b.meal_date))
+      );
+    } catch {
+      // Hat sich inzwischen etwas geändert: Plan neu laden
+      loadPlanMeals();
+    }
   };
 
   const handleRegenerateMeal = async (planMealId: string) => {
@@ -534,6 +558,23 @@ export default function App() {
 
       <div className="sm:hidden">
         <TabSwitcher variant="bottom" activeTab={activeTab} onTabChange={setActiveTab} />
+      </div>
+
+      {/* Nach „Ablehnen“: kurz rückgängig machbar; role=status, damit Screenreader es ansagen */}
+      <div role="status" className="fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] sm:bottom-6 z-40 flex justify-center pointer-events-none">
+        {undoReject && (
+          <div className="pointer-events-auto w-full max-w-md flex items-center gap-3 pl-4 pr-2 py-2 rounded-2xl bg-gray-800 text-white shadow-lg">
+            <p className="flex-1 min-w-0 text-sm">
+              <span className="line-clamp-2">„{undoReject.name}“ abgelehnt – kommt nicht wieder.</span>
+            </p>
+            <button
+              onClick={handleUndoReject}
+              className="flex-shrink-0 h-10 px-3 rounded-xl text-sm font-semibold text-coral-300 hover:bg-white/10"
+            >
+              Rückgängig
+            </button>
+          </div>
+        )}
       </div>
 
       {rateRequest && profile && (
