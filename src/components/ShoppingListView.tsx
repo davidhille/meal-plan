@@ -643,7 +643,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
                       <span
                         key={entry.name}
                         title="Steht schon auf einer Liste"
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-400"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-500"
                       >
                         <Check size={12} aria-hidden="true" />
                         {entry.name}

@@ -50,7 +50,7 @@ export default function WeekReviewCard({ review, onOpen }: WeekReviewCardProps) 
         <button
           onClick={dismiss}
           aria-label="Rückblick ausblenden"
-          className="tap w-8 h-8 -mr-2 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100"
+          className="tap w-8 h-8 -mr-2 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100"
         >
           <X size={15} />
         </button>

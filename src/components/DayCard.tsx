@@ -220,7 +220,7 @@ export default function DayCard({
               disabled={busy}
               aria-label={`Nachtisch ${dessert.name} entfernen`}
               title="Nachtisch entfernen"
-              className="w-11 flex-shrink-0 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50"
+              className="w-11 flex-shrink-0 flex items-center justify-center text-gray-500 hover:text-red-600 hover:bg-red-50"
             >
               <X size={15} />
             </button>

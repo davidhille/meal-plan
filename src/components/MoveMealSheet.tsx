@@ -123,7 +123,7 @@ export default function MoveMealSheet({ pm, plan, planMeals, dayRules, onMove, o
                             className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-gray-50 disabled:bg-brand-50"
                           >
                             <span className="w-32 flex-shrink-0 text-sm font-medium text-gray-800">{label(d)}</span>
-                            <span className={`flex-1 min-w-0 truncate text-xs ${other && !current ? 'text-gray-600' : 'text-gray-400'}`}>
+                            <span className={`flex-1 min-w-0 truncate text-xs ${other && !current ? 'text-gray-600' : 'text-gray-500'}`}>
                               {current ? 'aktueller Tag' : other ? `tauschen mit ${other.meal_name}` : off ? 'frei (Wochentag)' : 'frei'}
                             </span>
                           </button>
