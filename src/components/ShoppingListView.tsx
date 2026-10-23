@@ -394,7 +394,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
       <div className="px-4 py-12 flex flex-col items-center text-center gap-3">
         <ShoppingCart size={32} className="text-gray-300" aria-hidden="true" />
         <p className="text-base font-semibold text-gray-800">Noch keine Einkaufsliste</p>
-        <p className="text-sm text-gray-500 max-w-xs">Die Einkaufsliste entsteht automatisch aus deinem Speiseplan.</p>
+        <p className="text-sm text-gray-500 max-w-xs">Die Einkaufsliste entsteht automatisch aus dem Speiseplan.</p>
         <button
           onClick={onCreatePlan}
           className="mt-3 px-6 h-11 rounded-lg text-sm font-semibold bg-brand-700 text-white hover:bg-brand-800"

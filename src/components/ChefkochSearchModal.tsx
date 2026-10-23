@@ -208,7 +208,7 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
       }
       onSaved(finalName, favorite);
       setTaken((prev) => new Set(prev).add(r.name).add(finalName));
-      setNotice(`„${finalName}“ ist jetzt ${isDessert ? 'bei deinen Nachtischen' : 'in deinen Rezepten'}.`);
+      setNotice(`„${finalName}“ ist jetzt ${isDessert ? 'bei den Nachtischen' : 'in den Rezepten'}.`);
       backToList();
     } catch (e) {
       setError((e as Error).message || 'Das Rezept konnte nicht gespeichert werden.');
@@ -365,7 +365,7 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
               )}
               {already && (
                 <p className="p-3 rounded-xl bg-brand-50 text-sm text-brand-900">
-                  Ein Rezept mit diesem Namen ist schon in deiner Sammlung – Übernehmen ersetzt es.
+                  Ein Rezept mit diesem Namen ist schon in der Sammlung – Übernehmen ersetzt es.
                 </p>
               )}
 
