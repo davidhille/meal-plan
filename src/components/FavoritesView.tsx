@@ -73,7 +73,7 @@ export default function FavoritesView({ favorites, ratings, defaultPortions, onS
         />
       )}
       {notice && (
-        <div role="status" className="fixed bottom-6 inset-x-4 z-40 max-w-md mx-auto px-4 py-3 rounded-2xl bg-gray-800 text-white text-sm shadow-lg">
+        <div role="status" className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] sm:bottom-6 inset-x-4 z-40 max-w-md mx-auto px-4 py-3 rounded-2xl bg-gray-800 text-white text-sm shadow-lg">
           {notice}
         </div>
       )}

@@ -110,6 +110,8 @@ export default function App() {
   const [currentPlan, setCurrentPlan] = useState<MealPlan | null>(null);
   const [planMeals, setPlanMeals] = useState<PlanMeal[]>([]);
   const [loading, setLoading] = useState(true);
+  /** Für welchen Plan die Gerichte geladen sind (vorher: Platzhalter statt „leerer“ Tage) */
+  const [mealsLoadedFor, setMealsLoadedFor] = useState<string | null>(null);
   const [locked, setLocked] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
 
@@ -181,6 +183,7 @@ export default function App() {
     setImagePolls(0);
     const meals = await getPlanMeals(currentPlan.id);
     setPlanMeals(meals);
+    setMealsLoadedFor(currentPlan.id);
   };
 
   const handleUpdateProfile = async (focus: string[], conditions: string[], meatMaxPerWeek: number | null) => {
@@ -418,10 +421,12 @@ export default function App() {
   return (
     <RatingsContext.Provider value={{ ratings: mealRatings, notes: ratingNotes, rate: handleRateMeal }}>
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Sticky top bar */}
-      <div className="sticky top-0 z-10 flex flex-col">
-        <Header />
+      {/* Kopf scrollt mit; fest bleibt oben nur die Wochenauswahl. Bereiche: am Handy unten, ab Tablet oben */}
+      <Header />
+      <div className="hidden sm:block">
         <TabSwitcher activeTab={activeTab} onTabChange={setActiveTab} />
+      </div>
+      <div className="sticky top-0 z-10 flex flex-col">
         {showWeeks && (
           <WeekSelector
             weeks={shownWeeks}
@@ -438,12 +443,13 @@ export default function App() {
       </div>
 
       {/* Scrollable content area */}
-      <main className="flex-1 pb-8 w-full max-w-2xl mx-auto">
+      <main className="flex-1 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-8 w-full max-w-2xl mx-auto">
         {activeTab === 'speiseplan' ? (
           <MealPlanView
             key={`meals-${currentPlan?.id || 'none'}`}
             onCreatePlan={() => setShowPlanModal(true)}
             planMeals={currentPlan ? visiblePlanMeals : undefined}
+            mealsLoading={!!currentPlan && mealsLoadedFor !== currentPlan.id}
             ratings={mealRatings}
             onRate={handleRateMeal}
             onReject={currentPlan ? handleRejectMeal : undefined}
@@ -525,6 +531,10 @@ export default function App() {
           />
         )}
       </main>
+
+      <div className="sm:hidden">
+        <TabSwitcher variant="bottom" activeTab={activeTab} onTabChange={setActiveTab} />
+      </div>
 
       {rateRequest && profile && (
         <MealRatingModal

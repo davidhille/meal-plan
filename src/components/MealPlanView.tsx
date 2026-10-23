@@ -51,6 +51,8 @@ interface MealPlanViewProps {
   onRemove?: (pm: PlanMeal) => Promise<void>;
   /** Brotzeit statt Kochen (zurück über onRegenerate = doch kochen) */
   onBrotzeit?: (pm: PlanMeal) => Promise<void>;
+  /** Gerichte des Plans werden noch geladen: Platzhalter statt leerer Tage */
+  mealsLoading?: boolean;
   /** Leeren Tag wieder mit einem Gericht füllen */
   onFillDay?: (date: string) => Promise<void>;
   /** Plan wurde geteilt bzw. der Link zurückgezogen */
@@ -115,6 +117,7 @@ export default function MealPlanView({
   onSetGuests,
   onSharedChange,
   onFillDay,
+  mealsLoading,
 }: MealPlanViewProps) {
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   /** Plan-Eintrag des geöffneten Gerichts (für die Gäste) */
@@ -240,6 +243,21 @@ export default function MealPlanView({
             </span>
           </div>
         )}
+        {mealsLoading ? (
+          <div className="space-y-3" role="status" aria-label="Gerichte werden geladen">
+            {[0, 1, 2].map((n) => (
+              <div key={n} className="h-24 rounded-xl bg-white border border-gray-100 shadow-sm flex items-center gap-3 px-4 animate-pulse">
+                <div className="w-14 h-14 rounded-lg bg-gray-100" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-2.5 w-24 rounded bg-gray-100" />
+                  <div className="h-3.5 w-3/4 rounded bg-gray-100" />
+                  <div className="h-2.5 w-1/3 rounded bg-gray-100" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <>
         <TodayCard
           todayIso={todayIso}
           today={todayMeal}
@@ -327,6 +345,9 @@ export default function MealPlanView({
           <div className="text-center py-8 text-gray-500 text-sm">
             Alle Gerichte dieser Woche wurden abgelehnt. Erstelle einen neuen Plan.
           </div>
+        )}
+
+          </>
         )}
 
         {/* Plan-Aktionen */}

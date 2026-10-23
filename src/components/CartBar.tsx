@@ -36,7 +36,7 @@ export default function CartBar({ shops, carts, pending, rules, onOpen, onRefres
   };
 
   return (
-    <div className="sticky bottom-0 z-20 px-4 pb-3 pt-2 bg-gradient-to-t from-gray-50 via-gray-50 to-gray-50/0">
+    <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] sm:bottom-0 z-20 px-4 pb-3 pt-2 bg-gradient-to-t from-gray-50 via-gray-50 to-gray-50/0">
       {note && (
         <p role="status" className="mb-1.5 px-3 py-1.5 rounded-lg bg-gray-800 text-white text-xs text-center">
           {note}
