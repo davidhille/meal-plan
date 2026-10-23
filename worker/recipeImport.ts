@@ -10,6 +10,21 @@ export interface ImportedRecipe extends Recipe {
   sourcePortions: number | null;
 }
 
+
+/**
+ * Chefkoch hängt oft den Nutzernamen an den Titel: „Knoblauch-Hähnchen … von DasperfekteDinner“, „… von bettina_uphus“.
+ * Entfernt wird „von X“ am Ende, wenn X der Autor ist oder wie ein Nutzername aussieht (Unterstrich, Ziffer, Großbuchstabe
+ * mitten im Wort, nur Kleinbuchstaben) – „Gulasch von Oma“ bleibt.
+ */
+export function stripAuthorSuffix(rawName: string, author = ""): string {
+  const m = rawName.match(/^(.*\S)\s+von\s+(\S+)$/);
+  if (!m) return rawName;
+  const [, title, who] = m;
+  const isAuthor = !!author && who.toLowerCase() === author.toLowerCase();
+  const looksLikeUser = /[_\d]/.test(who) || /^[a-zäöüß]/.test(who) || /[a-zäöüß][A-ZÄÖÜ]/.test(who);
+  return isAuthor || looksLikeUser ? title.trim() : rawName;
+}
+
 export class ImportError extends Error {}
 
 const MAX_HTML_BYTES = 3_000_000;
@@ -56,7 +71,7 @@ export function parseRecipeHtml(html: string, sourceUrl: string): ImportedRecipe
   // Chefkoch hängt den Autor an den Namen („Paprika-Hähnchen von Sister“) – für die Sammlung weglassen
   const author = clean(text((toArray(node.author)[0] as Json | undefined)?.name ?? toArray(node.author)[0]));
   const rawName = clean(text(node.name));
-  const name = author && rawName.endsWith(` von ${author}`) ? rawName.slice(0, -` von ${author}`.length).trim() : rawName;
+  const name = stripAuthorSuffix(rawName, author);
   const rawIngredients = toArray(node.recipeIngredient ?? node.ingredients).map((i) => clean(text(i))).filter(Boolean);
   if (!name || rawIngredients.length === 0) return null;
 
