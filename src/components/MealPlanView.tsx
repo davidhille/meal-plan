@@ -220,10 +220,10 @@ export default function MealPlanView({
       <div className="px-4 py-4 space-y-3">
         {plan && (
           <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-white border border-gray-100 text-sm">
-            <span className="text-gray-600">
+            <span className="min-w-0 truncate whitespace-nowrap text-xs font-medium text-gray-600">
               {formatShortDate(plan.start_date)} – {formatShortDate(plan.end_date)}
             </span>
-            <span className="flex items-center gap-3">
+            <span className="flex flex-shrink-0 items-center gap-3">
               <button
                 onClick={() => setSharing(true)}
                 title="Nur-Lese-Link für Familie und Freunde"
