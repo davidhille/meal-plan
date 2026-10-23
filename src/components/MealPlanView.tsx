@@ -267,6 +267,8 @@ export default function MealPlanView({
           onCook={(pm) => openPlanMeal(pm, true)}
           onRate={onRate ? (name, stars) => onRate(name, stars, '') : undefined}
           todayOff={!todayMeal && ruleForDate(todayIso, dayRules).off === true}
+          /* Heute liegt im Plan, ist aber leer: direkt hier planen (wie „Gericht planen“ am Tag) */
+          onPlanToday={onFillDay && rows.some((r) => r.date === todayIso && !r.pm) ? () => onFillDay(todayIso) : undefined}
         />
         {review && <WeekReviewCard key={review.weekStart} review={review} onOpen={(pm) => openPlanMeal(pm)} />}
         {rows.map(({ date, pm }) => {

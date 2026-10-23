@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CakeSlice, ChefHat, ChevronRight, Clock, Loader2, Star } from 'lucide-react';
+import { CakeSlice, CalendarPlus, ChefHat, ChevronRight, Clock, Loader2, Star } from 'lucide-react';
 import { PlanMeal } from '../types';
 
 interface TodayCardProps {
@@ -14,18 +14,21 @@ interface TodayCardProps {
   onRate?: (mealName: string, rating: number) => Promise<void>;
   /** Heute ist laut Wochentag-Regel frei */
   todayOff?: boolean;
+  /** Heute ist nichts geplant: direkt ein Gericht für heute planen */
+  onPlanToday?: () => Promise<void>;
 }
 
 const longDate = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
 
 /** Oben im Speiseplan: was gibt es heute, was morgen, und kurz das letzte Essen bewerten */
-export default function TodayCard({ todayIso, today, tomorrow, toRate, onOpen, onCook, onRate, todayOff }: TodayCardProps) {
+export default function TodayCard({ todayIso, today, tomorrow, toRate, onOpen, onCook, onRate, todayOff, onPlanToday }: TodayCardProps) {
   const [saving, setSaving] = useState<number | null>(null);
   const [thanks, setThanks] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [planning, setPlanning] = useState(false);
 
-  if (!today && !tomorrow && !toRate && !thanks) return null;
+  if (!today && !tomorrow && !toRate && !thanks && !onPlanToday) return null;
 
   const rate = async (pm: PlanMeal, stars: number) => {
     if (!onRate || saving) return;
@@ -95,7 +98,26 @@ export default function TodayCard({ todayIso, today, tomorrow, toRate, onOpen, o
           </div>
         </div>
       ) : (
-        <p className="px-4 pb-3 text-sm text-gray-500">{todayOff ? 'Heute ist frei – nichts geplant.' : 'Für heute ist nichts geplant.'}</p>
+        <div className="flex items-center gap-3 px-4 pb-3">
+          <p className="flex-1 text-sm text-gray-500">{todayOff ? 'Heute ist frei – nichts geplant.' : 'Für heute ist nichts geplant.'}</p>
+          {onPlanToday && !todayOff && (
+            <button
+              onClick={async () => {
+                setPlanning(true);
+                try {
+                  await onPlanToday();
+                } finally {
+                  setPlanning(false);
+                }
+              }}
+              disabled={planning}
+              className="flex-shrink-0 h-10 px-3.5 flex items-center gap-1.5 rounded-xl bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 disabled:opacity-60"
+            >
+              {planning ? <Loader2 size={15} className="animate-spin" /> : <CalendarPlus size={15} aria-hidden="true" />}
+              Gericht planen
+            </button>
+          )}
+        </div>
       )}
 
       {tomorrow && (
