@@ -526,7 +526,6 @@ export default function App() {
             onDeleteFamilyMember={handleDeleteFamilyMember}
             onCreateRoutine={handleCreateRoutine}
             onDeleteRoutine={handleDeleteRoutine}
-            onCreatePlan={requestCreatePlan}
             onReminderTimeChange={(time) => setProfile((p) => (p ? { ...p, reminder_time: time } : p))}
             onProfileChange={setProfile}
           />
