@@ -225,7 +225,7 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
               <li key={d.name} data-dessert={d.name} className="relative">
                 <button
                   onClick={() => setSelected(d)}
-                  className="w-full h-full text-left bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                  className="w-full h-full flex flex-col justify-start text-left bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
                 >
                   <div className="relative aspect-[4/3] bg-gray-100">
                     <CakeSlice size={28} aria-hidden="true" className="absolute inset-0 m-auto text-gray-300" />
