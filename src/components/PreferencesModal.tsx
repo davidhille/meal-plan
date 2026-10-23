@@ -124,7 +124,7 @@ export default function PreferencesModal({ healthFocus, healthConditions, meatMa
                   onClick={() => setConditions(toggle(conditions, c.id))}
                   className={`px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
                     conditions.has(c.id)
-                      ? 'bg-orange-50 border-orange-300 text-orange-700'
+                      ? 'bg-coral-50 border-coral-300 text-coral-700'
                       : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
                   }`}
                 >
