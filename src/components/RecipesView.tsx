@@ -14,12 +14,14 @@ interface RecipesViewProps {
   onRecipesChanged?: () => void;
   /** Namen der Favoriten (für die Sortierung „Empfohlen“) */
   favoriteNames?: string[];
+  familyDislikes?: string[];
+  onFamilyDislike?: (groupId: string) => Promise<void>;
 }
 
 type Section = 'gerichte' | 'nachtische';
 
 /** Rezept-Übersicht: Hauptgerichte und Nachtische */
-export default function RecipesView({ planMeals, onReplace, onAssignDessert, defaultPortions, onRecipesChanged, favoriteNames }: RecipesViewProps) {
+export default function RecipesView({ planMeals, onReplace, onAssignDessert, defaultPortions, onRecipesChanged, favoriteNames, familyDislikes, onFamilyDislike }: RecipesViewProps) {
   const [section, setSection] = useState<Section>(() => {
     try {
       return localStorage.getItem('rezepte-bereich') === 'nachtische' ? 'nachtische' : 'gerichte';
@@ -77,6 +79,8 @@ export default function RecipesView({ planMeals, onReplace, onAssignDessert, def
           onFiltersChange={setCustomFilters}
           onRecipesChanged={onRecipesChanged}
           favoriteNames={favoriteNames}
+          familyDislikes={familyDislikes}
+          onFamilyDislike={onFamilyDislike}
         />
       ) : (
         <DessertsView

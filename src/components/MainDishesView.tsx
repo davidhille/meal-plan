@@ -41,7 +41,7 @@ import MealModal from './MealModal';
 import DishTypeLabel from './DishTypeLabel';
 import { DISH_KIND_LABEL, dishKind } from '../lib/dishType';
 import DayAssignSheet from './DayAssignSheet';
-import ConfirmDialog from './ConfirmDialog';
+import HideMealDialog from './HideMealDialog';
 
 interface MainDishesViewProps {
   planMeals: PlanMeal[];
@@ -56,6 +56,9 @@ interface MainDishesViewProps {
   onRecipesChanged?: () => void;
   /** Namen der Favoriten (für die Sortierung „Empfohlen“) */
   favoriteNames?: string[];
+  /** „Kommt nie in den Plan“ – beim Ausblenden anbieten */
+  familyDislikes?: string[];
+  onFamilyDislike?: (groupId: string) => Promise<void>;
 }
 
 function readSort(): RecipeSort {
@@ -97,6 +100,8 @@ export default function MainDishesView({
   onFiltersChange,
   onRecipesChanged,
   favoriteNames = [],
+  familyDislikes,
+  onFamilyDislike,
 }: MainDishesViewProps) {
   const [catalog, setCatalog] = useState<RecipeCatalog | null>(null);
   const { ratings, notes } = useRatings();
@@ -572,17 +577,14 @@ export default function MainDishesView({
       )}
 
       {hideCandidate && (
-        <ConfirmDialog
-          title="Gericht ausblenden?"
-          message={
-            <>
-              <strong>{hideCandidate.name}</strong> wird nicht mehr vorgeschlagen. Unten unter „Ausgeblendete Gerichte“ kannst du es wieder
-              einblenden oder endgültig löschen.
-            </>
-          }
-          confirmLabel="Ausblenden"
-          danger
-          onConfirm={async () => {
+        <HideMealDialog
+          name={hideCandidate.name}
+          ingredients={hideCandidate.ingredients}
+          effect="wird nicht mehr vorgeschlagen."
+          undoHint="Unten unter „Ausgeblendete Gerichte“ kannst du es wieder einblenden oder endgültig löschen."
+          familyDislikes={familyDislikes}
+          onFamilyNo={onFamilyDislike}
+          onHide={async () => {
             setCatalog(await setRecipeHidden(hideCandidate.name, true));
             flash(`„${hideCandidate.name}“ ist ausgeblendet.`);
           }}

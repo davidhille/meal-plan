@@ -1,6 +1,7 @@
 // KI-Rezepte über Cloudflare Workers AI (Llama 3.3 70B, JSON-Modus).
 // Prompt-Idee übernommen aus der Juli-Version (lib/aiRecipes.ts), aber serverseitig und
 // mit Nachprüfung durch unsere eigenen Filter – die KI hält sich nicht immer an Vorgaben.
+import { FAMILY_DISLIKE_GROUPS, matchesDislikeGroup } from "./dislikes";
 import type { Sql } from "./db";
 import { isFamilyBudget, isQuotaError, type AiEnv } from "./images";
 import { guessType } from "./recipeImport";
@@ -14,6 +15,8 @@ export interface RecipeRequestContext {
   healthFocus: string[];
   healthConditions: string[];
   familyMembers: { type: string; age: number | null; favorite_foods: string[] | null; disliked_foods: string[] | null }[];
+  /** „Kommt nie in den Plan“ (z. B. „fisch“, „lamm“) – siehe dislikes.ts */
+  familyDislikes?: string[];
   /** Kommentare zu früheren Gerichten, z. B. „„Chili con Carne“ (2 von 5 Sternen): zu scharf für die Kinder“ */
   feedback?: string[];
   /** Familie, der neue KI-Rezepte gehören */
@@ -84,7 +87,12 @@ export function cleanWish(raw: unknown): string {
 const WISH_TYPE_LABEL = "passend zum Wunsch – unter der Woche schnell (max. 40 Minuten), außer der Wunsch verlangt etwas Aufwendigeres";
 
 function buildPrompt(type: Recipe["type"] | null, cuisine: string, ctx: RecipeRequestContext, avoid: string[], wish = ""): string {
-  const dislikes = [...new Set(ctx.familyMembers.flatMap((m) => m.disliked_foods ?? []).map((d) => d.trim()).filter(Boolean))];
+  const dislikes = [
+    ...new Set([
+      ...ctx.familyMembers.flatMap((m) => m.disliked_foods ?? []).map((d) => d.trim()).filter(Boolean),
+      ...(ctx.familyDislikes ?? []).map((id) => FAMILY_DISLIKE_GROUPS[id]?.label).filter(Boolean),
+    ]),
+  ];
   const likes = [...new Set(ctx.familyMembers.flatMap((m) => m.favorite_foods ?? []).map((d) => d.trim()).filter(Boolean))];
   const conditions = ctx.healthConditions.map((c) => CONDITION_LABEL[c] ?? c);
   return [
@@ -209,6 +217,7 @@ export async function generateRecipes(
     // Nachprüfen: Gesundheitsbedingungen und Abneigungen hart
     if (violatesHealthConditions(r, ctx.healthConditions)) continue;
     if (ctx.familyMembers.some((m) => (m.disliked_foods ?? []).some((d) => dislikeMatches(r, d)))) continue;
+    if ((ctx.familyDislikes ?? []).some((id) => matchesDislikeGroup(r, id))) continue;
     seen.add(r.name.toLowerCase());
     valid.push(r);
   }
@@ -226,7 +235,8 @@ export async function generateRecipes(
 function fitsFamily(r: Recipe, ctx: RecipeRequestContext) {
   return (
     !violatesHealthConditions(r, ctx.healthConditions) &&
-    !ctx.familyMembers.some((m) => (m.disliked_foods ?? []).some((d) => dislikeMatches(r, d)))
+    !ctx.familyMembers.some((m) => (m.disliked_foods ?? []).some((d) => dislikeMatches(r, d))) &&
+    !(ctx.familyDislikes ?? []).some((id) => matchesDislikeGroup(r, id))
   );
 }
 

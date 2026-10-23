@@ -291,6 +291,11 @@ export async function updateProfile(
   }
 }
 
+/** „Kommt nie in den Plan“: eine Hauptzutat dazu/weg (`id`) oder die ganze Liste (`ids`). Wirft bei Fehlern. */
+export function setFamilyDislikes(change: { id: string; on: boolean } | { ids: string[] }): Promise<Profile> {
+  return request<Profile>('PUT', '/profile/family-dislikes', change);
+}
+
 /** Nachtisch ausblenden, wieder einblenden oder endgültig löschen; liefert beide Listen. Wirft bei Fehlern. */
 export function setDessertVisibility(
   name: string,
