@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChefHat, Clock, Loader2, Search, EyeOff, X, ShieldAlert, MessageSquare, Star, SlidersHorizontal, Refrigerator, Plus, ArrowUpDown } from 'lucide-react';
 import { useRatings } from '../lib/ratings';
-import { CatalogRecipe, Meal, MealType, PlanMeal, RecipeCatalog, RecipeFilter } from '../types';
+import { CatalogRecipe, Meal, PlanMeal, RecipeCatalog, RecipeFilter } from '../types';
 import { CategoryOverride, toOverrideMap } from '../lib/recipeCategories';
 import {
   EMPTY_SELECTION,
@@ -38,6 +38,8 @@ import {
 import { RECIPE_BASE_PORTIONS } from '../lib/portions';
 import { RecipeSort, SORT_LABELS, sortRecipes } from '../lib/recipeSort';
 import MealModal from './MealModal';
+import DishTypeLabel from './DishTypeLabel';
+import { DISH_KIND_LABEL, dishKind } from '../lib/dishType';
 import DayAssignSheet from './DayAssignSheet';
 import ConfirmDialog from './ConfirmDialog';
 
@@ -65,7 +67,6 @@ function readSort(): RecipeSort {
   }
 }
 
-const TYPE_LABEL: Record<MealType, string> = { vegetarisch: 'Vegetarisch', fleisch: 'Fleisch & Fisch', wochenende: 'Wochenende' };
 
 const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
@@ -74,7 +75,7 @@ const thumb = (url: string) => (url.startsWith('https://www.themealdb.com/') ? `
 
 function toMeal(r: CatalogRecipe): Meal {
   return {
-    day: TYPE_LABEL[r.type],
+    day: DISH_KIND_LABEL[dishKind(r.type, r.name, r.ingredients)],
     dayShort: '',
     meal: r.name,
     description: '',
@@ -370,7 +371,7 @@ export default function MainDishesView({
                   <div className="p-3">
                     <h2 className="text-sm leading-snug font-semibold text-gray-800 line-clamp-2">{r.name}</h2>
                     <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 text-xs text-gray-500">
-                      <span className="whitespace-nowrap">{TYPE_LABEL[r.type]}</span>
+                      <DishTypeLabel kind={dishKind(r.type, r.name, r.ingredients)} />
                       {r.durationMin ? (
                         <span className="flex items-center gap-1 whitespace-nowrap">
                           <Clock size={12} aria-hidden="true" />

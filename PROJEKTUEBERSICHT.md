@@ -71,7 +71,8 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
   Spross-Symbol). Saison-Liste in `src/lib/season.ts`, dieselbe wie für den Schwerpunkt „saisonal“.
 - Tagesrhythmus: Sa/So aufwendigere **Wochenend**-Gerichte, unter der Woche abwechselnd **vegetarisch** und **Fleisch/Fisch**.
 - Gerichtkarte: Bild, Typ, Zubereitungszeit, Bewertung, ggf. Nachtisch. Gerichte mit Fisch oder Meeresfrüchten (ohne Fleisch)
-  heißen „Fisch“ statt „Fleisch“ (auch im Plan-Download). Farbbalken nur aus der Palette: Vegetarisch Pflaume,
+  heißen „Fisch“ statt „Fleisch“ – im Plan, auf den Rezeptkarten, in der Rezeptansicht und in der KI-Vorschau
+  (`lib/dishType.ts`, `DishTypeLabel`; auch im Plan-Download). Beim Auswählen (Filter „Art“, Bearbeiten, KI-Wunsch) bleibt „Fleisch & Fisch“. Farbbalken nur aus der Palette: Vegetarisch Pflaume,
   Fleisch Koralle, Fisch helle Koralle, Wochenende dunkle Aubergine, Brotzeit neutral grau. Aktionen als beschriftete
   Leiste unten in der Karte (`CardActionBar`):
   - **Merken** (Favorit) · **Nachtisch** (dazu/ändern) · **Tauschen** (nur austauschen) · **Ausblenden** (mit Rückfrage wie in den Rezepten; kommt nicht mehr in den Plan, gleiche Liste wie „Ausgeblendete Gerichte“ unter Rezepte; 8 Sek. lang „Rückgängig“, `POST /plan-meals/:id/unreject`)
