@@ -79,4 +79,14 @@ describe("Nutzername im Titel", () => {
     expect(stripAuthorSuffix("Filet von der Pute mit Reis")).toBe("Filet von der Pute mit Reis");
     expect(stripAuthorSuffix("Kürbissuppe")).toBe("Kürbissuppe");
   });
+  test("Chefkoch-Adresse ohne „von X“ → Autor, auch bei normalen Wörtern", () => {
+    const steak = "https://www.chefkoch.de/rezepte/4451211790310837/Steak-mit-Champignon-Rahmsauce.html";
+    expect(stripAuthorSuffix("Steak mit Champignon-Rahmsauce von Routinier", "", steak)).toBe("Steak mit Champignon-Rahmsauce");
+    const pizza = "https://www.chefkoch.de/rezepte/123/Kuerbis-Pizza.html";
+    expect(stripAuthorSuffix("Kürbis-Pizza von Kaufland", "", pizza)).toBe("Kürbis-Pizza");
+  });
+  test("„von X“ steht auch in der Adresse → gehört zum Titel", () => {
+    expect(stripAuthorSuffix("Gulasch von Oma", "", "https://www.chefkoch.de/rezepte/99/Gulasch-von-Oma.html")).toBe("Gulasch von Oma");
+    expect(stripAuthorSuffix("Lachs von Müller", "", "https://www.chefkoch.de/rezepte/98/Lachs-von-Mueller.html?portionen=2")).toBe("Lachs von Müller");
+  });
 });
