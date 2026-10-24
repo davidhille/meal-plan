@@ -35,7 +35,7 @@ export default function ChefkochAutoSettings({ profile, onSaved }: { profile: Pr
         <p className="text-sm text-gray-600 leading-relaxed">
           Jeden Tag bis zu 10 neue Hauptspeisen von Chefkoch in die Rezepte – nur mit mindestens 4,5 Sternen und 2 Bewertungen, und nur,
           was zu den Gesundheitseinstellungen und „Kommt nie in den Plan“ passt. Mit Foto und Link zum Original; sie werden wie eigene
-          Rezepte mit eingeplant.
+          Rezepte mit eingeplant. Neue sind unter Rezepte mit „Neu“ markiert – dort kannst du sie behalten oder ausblenden.
         </p>
         <label className="flex items-center justify-between gap-3">
           <span className="text-sm font-medium text-gray-800">Täglich automatisch übernehmen</span>
@@ -50,7 +50,7 @@ export default function ChefkochAutoSettings({ profile, onSaved }: { profile: Pr
             {busy && <Loader2 size={12} className="absolute inset-0 m-auto animate-spin text-white" />}
           </button>
         </label>
-        {on && <p className="text-xs text-gray-500">Heute übernommen: {today} von 10. Neue Rezepte findest du unter Rezepte.</p>}
+        {on && <p className="text-xs text-gray-500">Heute übernommen: {today} von 10. Neue Rezepte findest du unter Rezepte (Markierung „Neu“).</p>}
         {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
       </div>
     </CollapsibleCard>

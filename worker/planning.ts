@@ -361,7 +361,7 @@ export async function recipeCatalog(sql: Sql, profileId: string) {
     sql`SELECT DISTINCT ON (meal_name) meal_name, image_url, source, credit_name, credit_url FROM meal_images
       WHERE (image_data IS NOT NULL OR source = 'removed') AND (profile_id IS NULL OR profile_id = ${profileId})
       ORDER BY meal_name, profile_id IS NULL`,
-    sql`SELECT name, source, replaces FROM recipes
+    sql`SELECT name, source, replaces, auto_review FROM recipes
       WHERE profile_id = ${profileId} OR (source = 'ai' AND replaces IS NULL)
       ORDER BY profile_id = ${profileId}, created_at`,
   ]);
@@ -399,6 +399,8 @@ export async function recipeCatalog(sql: Sql, profileId: string) {
           ? img.source !== "ai" && img.source !== "removed" && img.credit_name ? { name: img.credit_name, url: img.credit_url } : null
           : r.imageUrl ? { name: "TheMealDB", url: "https://www.themealdb.com/" } : null,
         origin: origin(r.name),
+        /** Von der Chefkoch-Automatik übernommen und noch nicht behalten */
+        review: rowBy.get(r.name)?.auto_review === true,
         /** Gericht der Grundsammlung, das bearbeitet wurde (lässt sich zurücksetzen) */
         edited: builtIn.has(String(rowBy.get(r.name)?.replaces ?? "")),
         // Nie geplant: Gesundheitseinstellungen, „Kommt nie in den Plan“ oder Abneigung der Mehrheit

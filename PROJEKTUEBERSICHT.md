@@ -243,6 +243,9 @@ Auf- und zuklappbare Karten:
   „Neueste ab 4,5 ★“ (`chefkoch.de/rs/s0t21r4.5o6/…`), nur mit mind. 4,5 Sternen und 2 Bewertungen, passend zu Gesundheit und
   „Kommt nie in den Plan“, nicht schon vorhanden/ausgeblendet. Übernahme wie „In meine Rezepte übernehmen“ (Foto + Link). Läuft im
   Cron ab 6 Uhr in Portionen (je Lauf höchstens 6 Rezeptseiten); Geprüftes, aber Unpassendes merkt sich `chefkoch_auto_skipped`.
+  Übernommene Rezepte sind unter Rezepte → Gerichte mit „Neu“ markiert (`recipes.auto_review`): Banner mit „Nur neue zeigen“ und
+  „Alle behalten“; im geöffneten Rezept „Behalten“ oder „Ausblenden“ (Blättern in der „Nur neue“-Liste). Bis zur Prüfung werden sie
+  wie eigene Rezepte mit eingeplant.
 - **Kommt nie in den Plan** (in „Gesundheit & Ernährung“ und beim Ausblenden): Hauptzutaten, die die ganze Familie nicht will
   (Fisch, Meeresfrüchte, Lamm, Schwein, Rind, Geflügel; `profiles.family_dislikes`, `worker/dislikes.ts`). Solche Gerichte werden
   nie geplant, nie getauscht, nicht von der KI erzeugt und stehen in den Rezepten unter „passen nicht“. Beim Ausblenden erkennt die

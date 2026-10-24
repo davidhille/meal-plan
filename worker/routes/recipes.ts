@@ -168,6 +168,19 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
     return json(await recipeCatalog(sql, p.id));
   }
 
+  // Neue Rezepte der Chefkoch-Automatik behalten (Markierung „Neu“ weg): einzelne Namen oder alle
+  if (route === "POST /recipes/review") {
+    const p = await getProfile(sql, user);
+    if (body.all === true) {
+      await sql`UPDATE recipes SET auto_review = false WHERE profile_id = ${p.id} AND auto_review`;
+    } else {
+      const names = Array.isArray(body.names) ? body.names.map((n: unknown) => String(n).trim()).filter(Boolean) : [];
+      if (!names.length) return json({ error: "Name fehlt" }, 400);
+      await sql`UPDATE recipes SET auto_review = false WHERE profile_id = ${p.id} AND name = ANY(${names})`;
+    }
+    return json(await recipeCatalog(sql, p.id));
+  }
+
   if (route === "POST /recipes/delete") {
     const p = await getProfile(sql, user);
     const name = String(body.name ?? "").trim();

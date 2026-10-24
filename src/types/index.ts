@@ -17,6 +17,8 @@ export interface CatalogRecipe {
   edited?: boolean;
   /** Passt nicht zu den Gesundheitseinstellungen – wird nie automatisch geplant */
   unsuitable?: boolean;
+  /** Von der Chefkoch-Automatik übernommen, noch nicht geprüft („Neu“) */
+  review?: boolean;
 }
 
 /** Änderbare Angaben eines Gerichts (Mengen für 4 Portionen) */
