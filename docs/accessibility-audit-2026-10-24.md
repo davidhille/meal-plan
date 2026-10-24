@@ -3,7 +3,7 @@
 **Stand:** `main` bis PR #140, Live-Prüfung auf miyummy.com im Handy-Format (375 × 812 und 320 × 640), nur lesend.
 **Vorarbeit:** UX/UI-Audit vom 23.10. (fünf Tabs: Kontrast, Fokus, Struktur, Tap-Flächen; die Befunde sind umgesetzt).
 **Schwerpunkt hier:** was dort nicht abgedeckt war: Dialoge, Formularfelder, Anmeldung, Bewegung, Reflow.
-**Nicht geprüft:** echter Screenreader (VoiceOver/NVDA), Desktop-Layout, Kontraste in allen Dialogen außer der Rezept-Ansicht, Anmeldeseite im Browser (nur Code).
+**Nicht geprüft:** echter Screenreader (VoiceOver/NVDA; von David bewusst gestrichen), Desktop-Layout, Kontraste in allen Dialogen außer der Rezept-Ansicht, Anmeldeseite im Browser (nur Code).
 
 ## Befunde
 
@@ -28,6 +28,6 @@
 
 ## Empfehlung als Nächstes
 
-1. Einmal mit VoiceOver (iPhone) durch Plan, Einkaufsliste und ein Rezept-Fenster gehen; das lässt sich nicht automatisch prüfen.
+1. ~~Einmal mit VoiceOver (iPhone) durch Plan, Einkaufsliste und ein Rezept-Fenster gehen~~ – gestrichen (Entscheidung von David, 24.10.2026).
 2. ~~Sichtbare Beschriftungen auf der Anmeldeseite (Befund 3)~~ – erledigt.
 3. Desktop-Layout und die übrigen Dialoge auf Kontrast prüfen.

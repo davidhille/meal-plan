@@ -52,7 +52,7 @@ Live bestätigt: Tippflächen (#7), Menü im `overflow-hidden`‑Container (#5),
 3. **Handy-Bedienung** (#7, #8): Tippflächen 44 px, CartBar‑Klartext.
 4. **Ende des Weges** (#10) und Texte/Kontrast (#11–#13).
 
-Offen: Test mit echtem Screenreader und mit schlechtem Netz (Flugmodus im Laden).
+Offen: Test mit schlechtem Netz (Flugmodus im Laden). Screenreader-Test: von David gestrichen.
 
 ## Abschluss (24.10.2026)
 

@@ -125,7 +125,7 @@ Jedes Eingabefeld braucht einen Namen (sichtbares `<label>` oder `aria-label`); 
 sichtbar und per `aria-describedby` verbunden, nicht nur als Platzhalter. Fenster nur über `useDialog`: Escape, Fokus hinein und zurück und
 **Tab bleibt im Fenster** (`lib/focusTrap.ts`); ohne das wanderte der Fokus hinter das Fenster. Bewegung: `prefers-reduced-motion` in
 `index.css` (Übergänge und Pulsieren aus, Ladekreise laufen weiter). Stand der Prüfung: `docs/accessibility-audit-2026-10-24.md`
-(offen: Test mit echtem Screenreader; Felder immer mit sichtbarem Label, auf der Anmeldeseite `Field`).
+(Entscheidung von David: kein Test mit echtem Screenreader/VoiceOver, nicht wieder vorschlagen. Felder immer mit sichtbarem Label, auf der Anmeldeseite `Field`).
 
 ### Texte (UX-Writing)
 
