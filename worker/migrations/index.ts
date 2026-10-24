@@ -25,6 +25,7 @@ import adminWerkzeuge from "./0022_admin_werkzeuge";
 import familienNein from "./0023_familien_nein";
 import chefkochAutomatik from "./0024_chefkoch_automatik";
 import chefkochPruefen from "./0025_chefkoch_pruefen";
+import chefkochZeitFotos from "./0026_chefkoch_zeit_fotos";
 
 export interface Migration {
   /** Eindeutig und aufsteigend, z. B. "0002_kochmodus" */
@@ -59,4 +60,5 @@ export const MIGRATIONS: Migration[] = [
   { id: "0023_familien_nein", statements: familienNein },
   { id: "0024_chefkoch_automatik", statements: chefkochAutomatik },
   { id: "0025_chefkoch_pruefen", statements: chefkochPruefen },
+  { id: "0026_chefkoch_zeit_fotos", statements: chefkochZeitFotos },
 ];

@@ -192,6 +192,8 @@ export interface Profile {
   chefkoch_auto?: boolean;
   /** Tag (JJJJ-MM-TT) und Anzahl der heute übernommenen Rezepte */
   chefkoch_auto_day?: string | null;
+  /** Uhrzeit (HH:MM, Berliner Zeit), ab der die Automatik täglich holt */
+  chefkoch_auto_time?: string;
   chefkoch_auto_count?: number;
   /** So oft pro Woche Brotzeit (feste Brotzeit-Tage zählen mit) */
   brotzeit_per_week?: number;

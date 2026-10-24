@@ -242,10 +242,12 @@ Auf- und zuklappbare Karten:
 - **Neue Rezepte von Chefkoch** (Einstellungen → Planung, Schalter pro Familie): täglich bis zu 10 neue Hauptspeisen aus
   „Neueste ab 4,5 ★“ (`chefkoch.de/rs/s0t21r4.5o6/…`), nur mit mind. 4,5 Sternen und 2 Bewertungen, passend zu Gesundheit und
   „Kommt nie in den Plan“, nicht schon vorhanden/ausgeblendet. Übernahme wie „In meine Rezepte übernehmen“ (Foto + Link). Läuft im
-  Cron ab 6 Uhr in Portionen (je Lauf höchstens 6 Rezeptseiten); Geprüftes, aber Unpassendes merkt sich `chefkoch_auto_skipped`.
+  Cron ab der eingestellten Uhrzeit (`profiles.chefkoch_auto_time`, Standard 6:00, Berliner Zeit) in Portionen (je Lauf höchstens 6 Rezeptseiten); Geprüftes, aber Unpassendes merkt sich `chefkoch_auto_skipped`.
   Übernommene Rezepte sind unter Rezepte → Gerichte mit „Neu“ markiert (`recipes.auto_review`): Banner mit „Nur neue zeigen“ und
   „Alle behalten“; im geöffneten Rezept „Behalten“ oder „Ausblenden“ (Blättern in der „Nur neue“-Liste). Bis zur Prüfung werden sie
-  wie eigene Rezepte mit eingeplant.
+  wie eigene Rezepte mit eingeplant. „Jetzt Rezepte holen“ startet eine Portion von Hand (`POST /profile/chefkoch-auto/run`, auch bei
+  ausgeschalteter Automatik, Tageslimit gilt). Fehlt einem übernommenen Rezept das Foto, holt `healChefkochPhotos` es im Cron nach
+  (höchstens 5 Versuche je Rezept, `recipes.photo_attempts`; ein entferntes Foto bleibt weg).
 - **Kommt nie in den Plan** (in „Gesundheit & Ernährung“ und beim Ausblenden): Hauptzutaten, die die ganze Familie nicht will
   (Fisch, Meeresfrüchte, Lamm, Schwein, Rind, Geflügel; `profiles.family_dislikes`, `worker/dislikes.ts`). Solche Gerichte werden
   nie geplant, nie getauscht, nicht von der KI erzeugt und stehen in den Rezepten unter „passen nicht“. Beim Ausblenden erkennt die

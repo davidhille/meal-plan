@@ -5,7 +5,8 @@
 import type { Sql } from "./db";
 import { listRecipeUrls, loadChefkochRecipe, newestTopMainUrl } from "./chefkoch";
 import { excludedByDislikes } from "./dislikes";
-import { storeSourcePhoto } from "./images";
+import { logError } from "./adminTools";
+import { storeSourcePhotoChecked } from "./images";
 import { dislikeMatches, MEAL_DATABASE, violatesHealthConditions } from "./meals";
 import { loadContext, sourceKey } from "./repo";
 
@@ -63,10 +64,45 @@ export async function importChefkochBatch(sql: Sql, profileId: string, today: st
         ON CONFLICT (profile_id, name) DO NOTHING RETURNING name`;
       if (!inserted.length) continue;
       knownNames.add(r.name.toLowerCase());
-      if (d.imageUrl) await storeSourcePhoto(sql, r.name, d.imageUrl, "Chefkoch", url, profileId);
+      // Ohne Foto bleibt das Rezept trotzdem; `healChefkochPhotos` holt es später nach (Grund steht in den Fehlern)
+      if (d.imageUrl) {
+        await storeSourcePhotoChecked(sql, r.name, d.imageUrl, "Chefkoch", url, profileId).catch((e) =>
+          logError(sql, `Chefkoch-Automatik: Foto für „${r.name}“`, e, profileId)
+        );
+      }
       added.push(r.name);
     }
   }
   await sql`UPDATE profiles SET chefkoch_auto_day = ${today}, chefkoch_auto_count = ${done + added.length} WHERE id = ${profileId}`;
   return added;
+}
+
+const PHOTO_ATTEMPTS = 5;
+
+/**
+ * Fehlende Fotos von Chefkoch-Rezepten nachholen (z. B. wenn der Abruf beim Übernehmen scheiterte): Rezeptseite neu lesen,
+ * Foto laden. Je Rezept höchstens 5 Versuche; ein bewusst entferntes Foto bleibt weg. Gibt die Zahl nachgeholter Fotos zurück.
+ */
+export async function healChefkochPhotos(sql: Sql, profileId: string, limit = 3): Promise<number> {
+  const rows = await sql`SELECT r.name, r.source_url, r.photo_attempts FROM recipes r
+    WHERE r.profile_id = ${profileId} AND r.source = 'import' AND r.source_url LIKE '%chefkoch.de%' AND r.photo_attempts < ${PHOTO_ATTEMPTS}
+      AND NOT EXISTS (SELECT 1 FROM meal_images mi WHERE mi.profile_id = r.profile_id AND mi.meal_name = r.name
+        AND (mi.image_data IS NOT NULL OR mi.source = 'removed'))
+    ORDER BY r.created_at DESC LIMIT ${limit}`;
+  let healed = 0;
+  for (const row of rows) {
+    const name = row.name as string;
+    const url = row.source_url as string;
+    await sql`UPDATE recipes SET photo_attempts = photo_attempts + 1 WHERE profile_id = ${profileId} AND name = ${name}`;
+    try {
+      const d = await loadChefkochRecipe(url);
+      if (!d.imageUrl) throw new Error("Auf der Rezeptseite ist kein Foto zu finden");
+      await storeSourcePhotoChecked(sql, name, d.imageUrl, "Chefkoch", url, profileId);
+      healed++;
+    } catch (e) {
+      // Nur beim letzten Versuch melden, damit die Fehlerliste nicht überläuft
+      if (Number(row.photo_attempts) + 1 >= PHOTO_ATTEMPTS) await logError(sql, `Chefkoch-Foto für „${name}“ nicht übernommen`, e, profileId);
+    }
+  }
+  return healed;
 }

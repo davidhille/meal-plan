@@ -594,6 +594,32 @@ export async function serveImage(sql: Sql, mealName: string, profileId: string |
 }
 
 /** Foto der Rezept-Quelle (z. B. Chefkoch) übernehmen – mit Nennung und Link zum Original */
+/** Chefkoch-Bilder kommen vom CDN; mit Browser-Kennung und Referer geladen (die App-Kennung wird dort leicht abgewiesen) */
+const CHEFKOCH_PHOTO_HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36",
+  Accept: "image/avif,image/webp,image/jpeg,image/*;q=0.8",
+  Referer: "https://www.chefkoch.de/",
+};
+
+/** Foto einer Quelle laden und als Bild des Gerichts speichern; wirft mit lesbarem Grund, wenn es nicht klappt */
+export async function storeSourcePhotoChecked(
+  sql: Sql,
+  mealName: string,
+  photoUrl: string,
+  creditName: string,
+  creditUrl: string,
+  profileId: string | null = null
+): Promise<string> {
+  const img = await fetch(photoUrl, { headers: /chefkoch/i.test(photoUrl) ? CHEFKOCH_PHOTO_HEADERS : UA });
+  const type = img.headers.get("content-type") || "";
+  if (!img.ok) throw new Error(`Foto von ${new URL(photoUrl).host} nicht abrufbar (HTTP ${img.status})`);
+  if (!type.startsWith("image/")) throw new Error(`Foto von ${new URL(photoUrl).host} ist kein Bild (${type || "ohne Typ"})`);
+  const buf = await img.arrayBuffer();
+  if (buf.byteLength > 4_000_000) throw new Error("Foto ist größer als 4 MB");
+  return storeImage(sql, mealName, { base64: toBase64(buf), contentType: type, source: "chefkoch", creditName, creditUrl }, profileId);
+}
+
 export async function storeSourcePhoto(
   sql: Sql,
   mealName: string,
@@ -603,12 +629,7 @@ export async function storeSourcePhoto(
   profileId: string | null = null
 ): Promise<string | null> {
   try {
-    const img = await fetch(photoUrl, { headers: UA });
-    const type = img.headers.get("content-type") || "";
-    if (!img.ok || !type.startsWith("image/")) return null;
-    const buf = await img.arrayBuffer();
-    if (buf.byteLength > 4_000_000) return null;
-    return await storeImage(sql, mealName, { base64: toBase64(buf), contentType: type, source: "chefkoch", creditName, creditUrl }, profileId);
+    return await storeSourcePhotoChecked(sql, mealName, photoUrl, creditName, creditUrl, profileId);
   } catch (err) {
     console.warn(`Foto für ${mealName} nicht übernommen:`, err);
     return null;
