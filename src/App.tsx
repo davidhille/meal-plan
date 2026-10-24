@@ -548,6 +548,7 @@ export default function App() {
             favoriteNames={favorites.map((f) => f.meal_name)}
             familyDislikes={profile?.family_dislikes}
             onFamilyDislike={handleFamilyDislike}
+            onDislikeHint={(hint) => setDislikeHint({ ...hint, phase: 'ask' })}
             onRecipesChanged={() => {
               loadPlanMeals();
               getFavorites().then(setFavorites).catch(() => {});

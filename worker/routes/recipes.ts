@@ -8,6 +8,7 @@ import { violatesHealthConditions } from "../meals";
 import { PLAN_MEAL_COLS, getProfile, loadContext, loadFavorites, loadPool, recipesBySource, sourceKey } from "../repo";
 import { cleanWish, generateWishRecipe } from "../aiRecipes";
 import { recipeCatalog } from "../planning";
+import { loadDislikeHintFor } from "../dislikePattern";
 import { RecipeEditError, parseRecipeInput, resetRecipe, saveRecipeEdit } from "../recipeEdits";
 import type { Sql } from "../db";
 
@@ -171,7 +172,9 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
     } else {
       await sql`DELETE FROM rejected_meals WHERE profile_id = ${p.id} AND meal_name = ${name}`;
     }
-    return json(await recipeCatalog(sql, p.id));
+    // Beim Ausblenden: Muster erkannt? Dann bietet die App an, die Hauptzutat ganz wegzulassen (`dislikeHint`, sonst `null`)
+    const dislikeHint = route === "POST /recipes/hide" ? await loadDislikeHintFor(sql, p.id, name) : null;
+    return json({ ...(await recipeCatalog(sql, p.id)), dislikeHint });
   }
 
   // Neue Rezepte der Chefkoch-Automatik behalten (Markierung „Neu“ weg): einzelne Namen oder alle

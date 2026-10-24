@@ -33,12 +33,12 @@ export function dislikeHint(rejected: Dish[], justHidden: Dish, familyDislikes: 
   return null;
 }
 
-/** Hinweis nach dem Ausblenden eines Plan-Gerichts; Fehler hier dürfen das Ausblenden nie stören */
-export async function loadDislikeHint(sql: Sql, profileId: string, planMealId: string): Promise<DislikeHint | null> {
+/**
+ * Hinweis nach dem Ausblenden eines Gerichts; Fehler hier dürfen das Ausblenden nie stören.
+ * Zutaten kommen aus der Sammlung (`loadPool`), `ingredients` ist der Ersatz, falls das Gericht dort nicht steht.
+ */
+export async function loadDislikeHintFor(sql: Sql, profileId: string, name: string, ingredients: string[] = []): Promise<DislikeHint | null> {
   try {
-    const hidden = await sql`SELECT pm.meal_name, pm.ingredients FROM plan_meals pm
-      JOIN meal_plans mp ON mp.id = pm.plan_id WHERE pm.id = ${planMealId} AND mp.profile_id = ${profileId}`;
-    if (!hidden[0]) return null;
     const [rejected, ctx, { pool }] = await Promise.all([
       // Endgültig gelöschte Gerichte zählen nicht (gleiche Regel wie in den Kennzahlen)
       sql`SELECT DISTINCT meal_name FROM rejected_meals WHERE profile_id = ${profileId} AND reason IS DISTINCT FROM 'geloescht'`,
@@ -47,8 +47,19 @@ export async function loadDislikeHint(sql: Sql, profileId: string, planMealId: s
     ]);
     const byName = new Map(pool.map((m) => [m.name, m.ingredients]));
     const dishes: Dish[] = rejected.map((r) => ({ name: r.meal_name as string, ingredients: byName.get(r.meal_name as string) ?? [] }));
-    const justHidden: Dish = { name: hidden[0].meal_name as string, ingredients: (hidden[0].ingredients as string[]) ?? [] };
-    return dislikeHint(dishes, justHidden, ctx.familyDislikes ?? []);
+    return dislikeHint(dishes, { name, ingredients: byName.get(name) ?? ingredients }, ctx.familyDislikes ?? []);
+  } catch {
+    return null;
+  }
+}
+
+/** Hinweis nach dem Ausblenden eines Plan-Gerichts */
+export async function loadDislikeHint(sql: Sql, profileId: string, planMealId: string): Promise<DislikeHint | null> {
+  try {
+    const hidden = await sql`SELECT pm.meal_name, pm.ingredients FROM plan_meals pm
+      JOIN meal_plans mp ON mp.id = pm.plan_id WHERE pm.id = ${planMealId} AND mp.profile_id = ${profileId}`;
+    if (!hidden[0]) return null;
+    return await loadDislikeHintFor(sql, profileId, hidden[0].meal_name as string, (hidden[0].ingredients as string[]) ?? []);
   } catch {
     return null;
   }

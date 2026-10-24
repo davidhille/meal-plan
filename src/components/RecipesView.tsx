@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CatalogRecipe, Dessert, PlanMeal, RecipeFilter } from '../types';
-import { getRecipeFilters } from '../lib/api';
+import { getRecipeFilters, type DislikeHint } from '../lib/api';
 import { filtersFor } from '../lib/recipeFilters';
 import MainDishesView from './MainDishesView';
 import DessertsView from './DessertsView';
@@ -16,12 +16,13 @@ interface RecipesViewProps {
   favoriteNames?: string[];
   familyDislikes?: string[];
   onFamilyDislike?: (groupId: string) => Promise<void>;
+  onDislikeHint?: (hint: DislikeHint) => void;
 }
 
 type Section = 'gerichte' | 'nachtische';
 
 /** Rezept-Übersicht: Hauptgerichte und Nachtische */
-export default function RecipesView({ planMeals, onReplace, onAssignDessert, defaultPortions, onRecipesChanged, favoriteNames, familyDislikes, onFamilyDislike }: RecipesViewProps) {
+export default function RecipesView({ planMeals, onReplace, onAssignDessert, defaultPortions, onRecipesChanged, favoriteNames, familyDislikes, onFamilyDislike, onDislikeHint }: RecipesViewProps) {
   const [section, setSection] = useState<Section>(() => {
     try {
       return localStorage.getItem('rezepte-bereich') === 'nachtische' ? 'nachtische' : 'gerichte';
@@ -81,6 +82,7 @@ export default function RecipesView({ planMeals, onReplace, onAssignDessert, def
           favoriteNames={favoriteNames}
           familyDislikes={familyDislikes}
           onFamilyDislike={onFamilyDislike}
+          onDislikeHint={onDislikeHint}
         />
       ) : (
         <DessertsView

@@ -578,15 +578,20 @@ export async function getRecipeCatalog(): Promise<RecipeCatalog> {
   return request<RecipeCatalog>('GET', '/recipes/catalog');
 }
 
-/** Gericht ausblenden (wird nicht mehr vorgeschlagen) bzw. wieder einblenden; liefert die neue Übersicht */
 /** Ablehnen rückgängig: Gericht zurück an seinen Tag (der Ersatz wird gelöscht). Wirft bei Fehlern. */
 export async function unrejectMeal(planMealId: string, replacementId: string | null): Promise<PlanMeal> {
   const result = await request<{ restored: PlanMeal }>('POST', `/plan-meals/${planMealId}/unreject`, { replacementId });
   return result.restored;
 }
 
-export async function setRecipeHidden(name: string, hidden: boolean): Promise<RecipeCatalog> {
-  return request<RecipeCatalog>('POST', hidden ? '/recipes/hide' : '/recipes/unhide', { name });
+/** Gericht ausblenden (wird nicht mehr vorgeschlagen) bzw. wieder einblenden; liefert die neue Übersicht und ggf. den Muster-Hinweis */
+export async function setRecipeHidden(name: string, hidden: boolean): Promise<{ catalog: RecipeCatalog; hint: DislikeHint | null }> {
+  const { dislikeHint, ...catalog } = await request<RecipeCatalog & { dislikeHint?: DislikeHint | null }>(
+    'POST',
+    hidden ? '/recipes/hide' : '/recipes/unhide',
+    { name }
+  );
+  return { catalog: catalog as RecipeCatalog, hint: dislikeHint ?? null };
 }
 
 /** Gericht bearbeiten; liefert den (neuen) Namen und die aktualisierte Übersicht. Wirft bei Fehlern. */
