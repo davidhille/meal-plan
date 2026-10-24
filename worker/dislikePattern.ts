@@ -48,7 +48,7 @@ export async function loadDislikeHint(sql: Sql, profileId: string, planMealId: s
     const byName = new Map(pool.map((m) => [m.name, m.ingredients]));
     const dishes: Dish[] = rejected.map((r) => ({ name: r.meal_name as string, ingredients: byName.get(r.meal_name as string) ?? [] }));
     const justHidden: Dish = { name: hidden[0].meal_name as string, ingredients: (hidden[0].ingredients as string[]) ?? [] };
-    return dislikeHint(dishes, justHidden, ctx.familyDislikes);
+    return dislikeHint(dishes, justHidden, ctx.familyDislikes ?? []);
   } catch {
     return null;
   }
