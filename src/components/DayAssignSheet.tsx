@@ -63,7 +63,7 @@ export default function DayAssignSheet({ mode, itemName, planMeals, onConfirm, o
             </button>
           )}
           <h2 id="day-assign-title" className="flex-1 text-base font-semibold text-gray-900">
-            {chosen ? 'Bitte bestätigen' : mode === 'replace' ? 'Für welchen Tag?' : 'Nachtisch für welchen Tag?'}
+            {chosen ? (mode === 'replace' ? 'Gericht ersetzen?' : 'Nachtisch festlegen?') : mode === 'replace' ? 'Für welchen Tag?' : 'Nachtisch für welchen Tag?'}
           </h2>
           <button
             onClick={onClose}

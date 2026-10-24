@@ -123,6 +123,16 @@ sichtbar und per `aria-describedby` verbunden, nicht nur als Platzhalter. Fenste
 `index.css` (Übergänge und Pulsieren aus, Ladekreise laufen weiter). Stand der Prüfung: `docs/accessibility-audit-2026-10-24.md`
 (offen: Test mit echtem Screenreader, sichtbare Beschriftungen auf der Anmeldeseite).
 
+### Texte (UX-Writing)
+
+**Anrede:** eine Person und ihre Handlung = **du** („Tippe auf …“), die Familie und Gemeinsames = **ihr/euer** („Was hättet ihr gern?“,
+„Eure Pläne bleiben“), Hinweise und Fehler ohne Handelnde neutral („Bitte Netz prüfen …“). Nie „Sie“.
+**Fehlermeldungen:** sagen, was nicht ging (mit Gegenstand: „Das Rezept konnte nicht gespeichert werden.“, nicht „Speichern hat nicht
+geklappt.“), und wenn möglich, was zu tun ist. Netz- und Serverfehler wandelt `lib/errorText.ts` in `request`/`requestPublic` um
+(nie „Failed to fetch“ oder „HTTP 502“ anzeigen); eine deutsche Meldung vom Server hat Vorrang. Neue Fehlertexte im Worker auf Deutsch schreiben.
+**Titel von Fenstern** nennen die Handlung („Tag leeren?“), nie „Bitte bestätigen“. Knöpfe sind Verben, kein „OK“/„Ja“. Leerzustände
+erklären kurz und bieten den nächsten Schritt. Stand der Prüfung: `docs/ux-writing-audit-2026-10-24.md`.
+
 ## UX-Discovery
 
 Anker für Produktentscheidungen: `docs/ux-discovery/2026-10-23-miyummy-discovery.md` (Problem: „Der Plan lernt zu wenig“). Stand der

@@ -87,7 +87,7 @@ export default function MoveMealSheet({ pm, plan, planMeals, dayRules, onMove, o
           )}
           <div className="flex-1 min-w-0">
             <h2 id="move-title" className="text-base font-semibold text-gray-900">
-              {step.kind === 'pick' ? (onBrotzeit ? 'Verschieben, Brotzeit oder leeren' : 'Verschieben oder Tag leeren') : 'Bitte bestätigen'}
+              {step.kind === 'pick' ? (onBrotzeit ? 'Verschieben, Brotzeit oder leeren' : 'Verschieben oder Tag leeren') : step.kind === 'move' ? (target ? 'Tauschen?' : 'Verschieben?') : step.kind === 'brotzeit' ? 'Brotzeit machen?' : 'Tag leeren?'}
             </h2>
             <p className="text-xs text-gray-500 truncate">
               {pm.meal_name} · {label(pm.meal_date)}

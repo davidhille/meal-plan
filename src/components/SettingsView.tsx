@@ -96,7 +96,7 @@ export default function SettingsView({
             <div className="px-3 pb-3">
             {familyMembers.length === 0 ? (
               <div className="px-4 py-6 text-center">
-                <p className="text-sm text-gray-500">Keine Familienmitglieder hinzugefügt</p>
+                <p className="text-sm text-gray-500">Noch keine Familienmitglieder</p>
                 <p className="text-xs text-gray-500 mt-1">Tippe auf +, damit Portionen und Vorlieben passen.</p>
               </div>
             ) : (

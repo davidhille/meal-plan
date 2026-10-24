@@ -70,7 +70,7 @@ export default function RecipeImportModal({ onSaved, onClose }: RecipeImportModa
       );
       onSaved(favorites, recipe.name.trim());
     } catch (e) {
-      setError((e as Error).message || 'Speichern hat nicht geklappt.');
+      setError((e as Error).message || 'Das Rezept konnte nicht gespeichert werden.');
       setSaving(false);
     }
   };

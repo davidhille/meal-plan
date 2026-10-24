@@ -3,6 +3,7 @@ import {
   ShopState, ShopProvider, ProductResult, CartItem, ShopRule, PlanDessert, Dessert, DessertCategory, RecipeCatalog, RecipeFilter, RecipeFilterInput, RecipeDraft, DayRules, RatingNote,
 } from '../types';
 import type { CategoryOverride } from './recipeCategories';
+import { fetchErrorText, httpErrorText } from './errorText';
 
 // Alle Daten laufen über den Cloudflare Worker unter /api (→ Neon).
 // Angemeldet wird per Sitzungs-Cookie (HttpOnly, schickt der Browser selbst mit).
@@ -30,20 +31,25 @@ export function setPassword(pw: string) {
 export class UnauthorizedError extends Error {}
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`/api${path}`, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(getPassword() ? { 'X-App-Password': getPassword() } : {}),
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-    // Lesende Anfragen nicht ewig hängen lassen (Planen/KI darf länger dauern)
-    signal: method === 'GET' ? AbortSignal.timeout(25000) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`/api${path}`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(getPassword() ? { 'X-App-Password': getPassword() } : {}),
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      // Lesende Anfragen nicht ewig hängen lassen (Planen/KI darf länger dauern)
+      signal: method === 'GET' ? AbortSignal.timeout(25000) : undefined,
+    });
+  } catch (e) {
+    throw new Error(fetchErrorText(e)); // statt „Failed to fetch“
+  }
   if (res.status === 401) throw new UnauthorizedError();
   const data = await res.json().catch(() => ({}));
   // quota: KI-Kontingent aufgebraucht (Gratis-Tageskontingent oder Budget der Familie)
-  if (!res.ok) throw Object.assign(new Error(data.error || `HTTP ${res.status}`), { status: res.status, quota: !!data.quota });
+  if (!res.ok) throw Object.assign(new Error(httpErrorText(res.status, data.error)), { status: res.status, quota: !!data.quota });
   return data as T;
 }
 
@@ -267,13 +273,18 @@ export async function deleteUser(id: string): Promise<AuthUser[]> {
 
 /** Wie request, aber ein 401 ist hier eine normale Fehlermeldung (falsches Passwort), kein „abgemeldet“ */
 async function requestPublic<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`/api${path}`, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`/api${path}`, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch (e) {
+    throw new Error(fetchErrorText(e));
+  }
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  if (!res.ok) throw new Error(httpErrorText(res.status, data.error));
   return data as T;
 }
 

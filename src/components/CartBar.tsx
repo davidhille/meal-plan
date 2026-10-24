@@ -28,7 +28,7 @@ export default function CartBar({ shops, carts, pending, rules, onOpen, onRefres
     try {
       setNote(await onRefresh());
     } catch (e) {
-      setNote((e as Error).message || 'Aktualisieren hat nicht geklappt.');
+      setNote((e as Error).message || 'Der Warenkorb ließ sich nicht aktualisieren.');
     } finally {
       setRefreshing(false);
       setTimeout(() => setNote(null), 4000);

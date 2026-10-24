@@ -120,7 +120,7 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
     } catch (e) {
       setHits(null);
       setNext(null);
-      setError((e as Error).message || 'Die Suche hat nicht geklappt.');
+      setError((e as Error).message || 'Die Suche ließ sich nicht ausführen.');
     } finally {
       setSearching(false);
     }
