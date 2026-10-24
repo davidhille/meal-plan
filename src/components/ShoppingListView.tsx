@@ -540,7 +540,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
       <button
         type="button"
         onClick={() => setShowPast((v) => !v)}
-        className="px-1 mt-0.5 text-left text-xs text-gray-500"
+        className="px-1 min-h-11 py-2 text-left text-xs text-gray-500"
       >
         {showPast
           ? 'Vergangene Tage sind eingerechnet · '
@@ -612,13 +612,13 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
             onChange={(e) => setNewItemName(e.target.value)}
             placeholder="Artikel hinzufügen, z. B. Klopapier"
             aria-label="Eigenen Artikel hinzufügen"
-            className="flex-1 px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
+            className="flex-1 h-11 px-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
           />
           <button
             type="submit"
             disabled={!newItemName.trim() || adding}
             aria-label="Hinzufügen"
-            className="w-10 flex items-center justify-center rounded-xl bg-brand-700 text-white disabled:bg-gray-200 disabled:text-gray-500"
+            className="w-11 h-11 flex items-center justify-center rounded-xl bg-brand-700 text-white disabled:bg-gray-200 disabled:text-gray-500"
           >
             <Plus size={16} />
           </button>
@@ -667,7 +667,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
           <button
             onClick={() => setShowBasics(!showBasics)}
             aria-expanded={showBasics}
-            className="w-full flex items-center justify-between px-4 py-3 border-b border-gray-50"
+            className="w-full flex items-center justify-between min-h-11 px-4 py-3 border-b border-gray-50"
           >
             <div className="flex items-center gap-2">
               <Package size={15} className="text-gray-500" />
@@ -703,7 +703,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
                     setEditPantry(!editPantry);
                     setBasicPickerTarget(null);
                   }}
-                  className="flex-shrink-0 text-xs font-semibold text-brand-700 hover:text-brand-800"
+                  className="tap flex-shrink-0 px-2 py-1 text-xs font-semibold text-brand-700 hover:text-brand-800"
                 >
                   {editPantry ? 'Fertig' : 'Bearbeiten'}
                 </button>
@@ -717,7 +717,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
                         key={entry.name}
                         onClick={() => takeFromPantry(entry.name)}
                         aria-label={`${entry.name} aus dem Vorrat nehmen`}
-                        className="inline-flex items-center gap-1 pl-3 pr-2 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-600 hover:bg-red-50 hover:text-red-700"
+                        className="inline-flex items-center gap-1 pl-3 pr-2 py-2.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-600 hover:bg-red-50 hover:text-red-700"
                       >
                         {entry.name}
                         <X size={12} aria-hidden="true" />
@@ -729,7 +729,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
                       <span
                         key={entry.name}
                         title="Steht schon auf einer Liste"
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-500"
+                        className="inline-flex items-center gap-1 px-3 py-2.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-500"
                       >
                         <Check size={12} aria-hidden="true" />
                         {entry.name}
@@ -743,7 +743,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
                         aria-haspopup="menu"
                         aria-expanded={basicPickerTarget === entry.name}
                         aria-label={`${entry.name} ist alle – auf eine Liste setzen${entry.needed ? ' (braucht der Plan)' : ''}`}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium active:scale-95 transition-all ${
+                        className={`px-3 py-2.5 rounded-lg text-xs font-medium active:scale-95 transition-all ${
                           entry.needed
                             ? 'bg-amber-50 text-amber-800 hover:bg-amber-100'
                             : 'bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-800'
@@ -762,7 +762,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
                                 setBasicPickerTarget(null);
                                 await addItem(entry.name, l.id, true);
                               }}
-                              className="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs text-gray-600 hover:bg-gray-50 transition-colors"
+                              className="w-full flex items-center gap-2 min-h-11 px-3 py-1.5 text-left text-xs text-gray-600 hover:bg-gray-50 transition-colors"
                             >
                               <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: l.color }} />
                               {l.name}
@@ -796,12 +796,12 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
                   onChange={(e) => setNewPantryName(e.target.value)}
                   placeholder="z. B. Reis, Nudeln, Eier"
                   aria-label="Zum Vorrat hinzufügen"
-                  className="flex-1 h-9 px-3 rounded-xl border border-gray-200 text-xs"
+                  className="flex-1 h-11 px-3 rounded-xl border border-gray-200 text-xs"
                 />
                 <button
                   type="submit"
                   disabled={!newPantryName.trim()}
-                  className="px-3 h-9 rounded-xl text-xs font-semibold bg-gray-100 text-gray-700 disabled:text-gray-300"
+                  className="px-3 h-11 rounded-xl text-xs font-semibold bg-gray-100 text-gray-700 disabled:text-gray-500"
                 >
                   Zum Vorrat
                 </button>

@@ -248,12 +248,12 @@ export default function ShoppingSection({
   return (
     <section className="bg-white rounded-xl shadow-sm border border-gray-100">
       {/* Kopf */}
-      <div className={`flex items-center justify-between gap-2 pl-2 pr-4 py-2 ${expanded ? 'border-b border-gray-100' : ''}`}>
+      <div className={`flex items-center justify-between gap-2 pl-2 pr-2 py-1 ${expanded ? 'border-b border-gray-100' : ''}`}>
         <button
           onClick={toggleExpanded}
           aria-expanded={expanded}
           aria-label={`${label.name}: ${expanded ? 'zuklappen' : 'aufklappen'}`}
-          className="flex items-center gap-2 min-w-0 flex-1 px-2 py-1.5 rounded-lg text-left hover:bg-gray-50"
+          className="flex items-center gap-2 min-w-0 flex-1 min-h-11 px-2 py-1.5 rounded-lg text-left hover:bg-gray-50"
         >
           <ChevronDown
             size={15}
@@ -266,14 +266,14 @@ export default function ShoppingSection({
             <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-0.5 rounded-full">{open.length}</span>
           )}
         </button>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center flex-shrink-0">
           {onDownloadPdf && (
             <button
               onClick={onDownloadPdf}
               disabled={open.length === 0}
               title="Offene Einträge als PDF"
               aria-label={`${label.name}: offene Einträge als PDF herunterladen`}
-              className={`tap flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+              className={`flex items-center justify-center w-11 h-11 rounded-lg transition-colors ${
                 open.length === 0 ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
@@ -285,7 +285,7 @@ export default function ShoppingSection({
             disabled={open.length === 0}
             title="Offene Einträge als Text kopieren"
             aria-label={copied ? `${label.name}: kopiert` : `${label.name}: offene Einträge kopieren`}
-            className={`tap flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+            className={`flex items-center justify-center w-11 h-11 rounded-lg transition-colors ${
               copied
                 ? 'bg-brand-100 text-brand-700'
                 : open.length === 0
@@ -314,7 +314,7 @@ export default function ShoppingSection({
               <button
                 onClick={() => setShowDone((v) => !v)}
                 aria-expanded={showDone}
-                className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-medium text-gray-500 hover:bg-gray-50 rounded-b-xl"
+                className="w-full flex items-center gap-2 min-h-11 px-4 py-2.5 text-xs font-medium text-gray-500 hover:bg-gray-50 rounded-b-xl"
               >
                 <ChevronDown size={14} className={`transition-transform ${showDone ? '' : '-rotate-90'}`} aria-hidden="true" />
                 {done.length} erledigt
@@ -372,7 +372,7 @@ function ShopChips({
                 ? `Bei ${o.label.name} bestellen: ${text}${isCheapest ? ', günstiger' : ''}`
                 : `${o.label.name}: Produkt wählen`
             }
-            className={`inline-flex items-center gap-1 h-8 px-3 rounded-full border text-xs font-bold transition-colors ${
+            className={`tap inline-flex items-center gap-1 h-8 px-3 rounded-full border text-xs font-bold transition-colors ${
               o.active
                 ? 'bg-brand-700 border-brand-700 text-white'
                 : isCheapest

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Loader2, RefreshCw, ShoppingCart } from 'lucide-react';
 import { ShopProvider, ShopRule, ShoppingLabel } from '../types';
 import type { CartSummary } from '../lib/api';
@@ -21,6 +21,9 @@ const euro = (v: number) => v.toLocaleString('de-DE', { style: 'currency', curre
 export default function CartBar({ shops, carts, pending, rules, onOpen, onRefresh }: CartBarProps) {
   const [refreshing, setRefreshing] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const noteTimer = useRef<number | undefined>(undefined);
+  // Timer beim Schließen der Ansicht aufräumen
+  useEffect(() => () => window.clearTimeout(noteTimer.current), []);
 
   const refresh = async () => {
     setRefreshing(true);
@@ -31,7 +34,8 @@ export default function CartBar({ shops, carts, pending, rules, onOpen, onRefres
       setNote((e as Error).message || 'Der Warenkorb ließ sich nicht aktualisieren.');
     } finally {
       setRefreshing(false);
-      setTimeout(() => setNote(null), 4000);
+      window.clearTimeout(noteTimer.current);
+      noteTimer.current = window.setTimeout(() => setNote(null), 4000);
     }
   };
 
@@ -104,7 +108,7 @@ export default function CartBar({ shops, carts, pending, rules, onOpen, onRefres
           disabled={refreshing}
           aria-label="Warenkörbe und Preise aktualisieren"
           title="Warenkörbe und Preise aktualisieren"
-          className="w-10 flex-shrink-0 flex items-center justify-center rounded-2xl bg-gray-50 text-gray-600 hover:bg-brand-50"
+          className="w-11 flex-shrink-0 flex items-center justify-center rounded-2xl bg-gray-50 text-gray-600 hover:bg-brand-50"
         >
           {refreshing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
         </button>
