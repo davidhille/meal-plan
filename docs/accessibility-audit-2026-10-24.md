@@ -11,7 +11,7 @@
 |---|---|---|---|---|
 | 1 | Mittel | 2.4.3 (A) | Tab verließ jeden Dialog und landete auf der Tab-Leiste dahinter (live bestätigt: nach 14× Tab Fokus auf „Rezepte“ in der Navigation). Betrifft alle 21 Fenster über `useDialog`. | behoben: Tab bleibt im Fenster (`lib/focusTrap.ts`, `useDialog.ts`) |
 | 2 | Mittel | 1.3.1, 3.3.2, 4.1.2 (A) | Routine: Eingabefeld für eigene Tage-Anzahl ohne Namen. | behoben: `aria-label="Anzahl Tage"` |
-| 3 | Mittel | 3.3.2 (A) | Anmeldung: Beschriftung nur als Platzhalter; „mind. 8 Zeichen“ verschwand beim Tippen. | teilweise behoben: Hinweis „Mindestens 8 Zeichen.“ steht jetzt dauerhaft und ist mit dem Feld verbunden. Sichtbare Beschriftungen über den Feldern wären die vollständige Lösung (Gestaltungsentscheidung). |
+| 3 | Mittel | 3.3.2 (A) | Anmeldung: Beschriftung nur als Platzhalter; „mind. 8 Zeichen“ verschwand beim Tippen. | behoben: Hinweis „Mindestens 8 Zeichen.“ steht dauerhaft und ist mit dem Feld verbunden; alle Felder haben jetzt eine sichtbare Beschriftung über dem Feld (`Field` in `LoginScreen.tsx`, kein Platzhalter mehr). Im Browser noch nicht angesehen. |
 | 4 | Niedrig | 2.3.3 (AAA), Best Practice | Kein `prefers-reduced-motion`. | behoben in `index.css`: keine Übergänge, kein Pulsieren; Ladekreise laufen weiter |
 | 5 | Niedrig | 2.4.1 (A) | Kein „Zum Inhalt springen“-Link. Gelöst über Landmarken (`header`, 3× `nav`, `main`), daher kein Verstoß; nur Komfort. | offen, optional |
 
@@ -29,5 +29,5 @@
 ## Empfehlung als Nächstes
 
 1. Einmal mit VoiceOver (iPhone) durch Plan, Einkaufsliste und ein Rezept-Fenster gehen; das lässt sich nicht automatisch prüfen.
-2. Sichtbare Beschriftungen auf der Anmeldeseite (Befund 3).
+2. ~~Sichtbare Beschriftungen auf der Anmeldeseite (Befund 3)~~ – erledigt.
 3. Desktop-Layout und die übrigen Dialoge auf Kontrast prüfen.
