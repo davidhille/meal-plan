@@ -3,7 +3,7 @@ import { meteredEnv } from "./aiUsage";
 import { alertOwnerOncePerDay, cleanupOldRows, logError } from "./adminTools";
 import { runBackupStep } from "./backup";
 import { checkStorageWarning } from "./storage";
-import { MAX_ROUTINE_ATTEMPTS, routineDue, shouldRetryRoutine } from "./routineRules";
+import { MAX_ROUTINE_ATTEMPTS, cronTick, pickAutoFamily, routineDue, shouldRetryRoutine } from "./routineRules";
 import { neon } from "@neondatabase/serverless";
 import type { Env } from "./http";
 import { ensureSchema } from "./migrate";
@@ -75,11 +75,10 @@ export async function runRoutines(env: Env) {
   const families = await sql`SELECT id, chefkoch_auto_time <= ${now.time} AS due,
       (chefkoch_auto_day IS DISTINCT FROM ${now.date} OR chefkoch_auto_count < ${AUTO_PER_DAY}) AS open
     FROM profiles WHERE chefkoch_auto AND NOT disabled`;
-  for (const f of families) {
-    const id = f.id as string;
-    // Ohne Fotos: im Cron weist das Chefkoch-CDN Abrufe ab; die Fotos holt `GET /profile` beim nächsten App-Aufruf nach
-    if (f.due && f.open) await importChefkochBatch(sql, id, now.date, false).catch((e) => logError(sql, "Chefkoch-Automatik", e, id));
-  }
+  // Nur eine Familie je Lauf (Free-Limit: 50 Unteranfragen; eine Familie braucht ca. 20), reihum
+  const auto = pickAutoFamily(families.map((f) => ({ id: f.id as string, due: !!f.due, open: !!f.open })), cronTick(Date.now()));
+  // Ohne Fotos: im Cron weist das Chefkoch-CDN Abrufe ab; die Fotos holt `GET /profile` beim nächsten App-Aufruf nach
+  if (auto) await importChefkochBatch(sql, auto.id, now.date, false).catch((e) => logError(sql, "Chefkoch-Automatik", e, auto.id));
 
   // Erinnerung zum Bewerten (Fehler hier sollen die Bilder nicht aufhalten)
   await sendRatingReminders(env, sql, now).catch((e) => logError(sql, "Bewertungs-Erinnerung", e));
