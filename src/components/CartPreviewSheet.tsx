@@ -279,7 +279,7 @@ export default function CartPreviewSheet({
                 <button
                   onClick={() => setConfirmClear(true)}
                   disabled={!!cartBusyId}
-                  className="flex items-center gap-1 px-2.5 h-7 rounded-lg text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100"
+                  className="tap flex items-center gap-1 px-2.5 h-7 rounded-lg text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100"
                 >
                   <Trash2 size={12} /> Leeren
                 </button>

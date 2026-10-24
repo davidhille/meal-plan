@@ -136,7 +136,7 @@ geklappt.“), und wenn möglich, was zu tun ist. Netz- und Serverfehler wandelt
 (nie „Failed to fetch“ oder „HTTP 502“ anzeigen); eine deutsche Meldung vom Server hat Vorrang. Neue Fehlertexte im Worker auf Deutsch schreiben.
 **Titel von Fenstern** nennen die Handlung („Tag leeren?“), nie „Bitte bestätigen“. Knöpfe sind Verben, kein „OK“/„Ja“. Leerzustände
 erklären kurz und bieten den nächsten Schritt. Stand der Prüfung: `docs/ux-writing-audit-2026-10-24.md`.
-Interaktions-Audit der Einkaufsliste (Befunde #1–#5 umgesetzt, Rest offen): `docs/interaction-audit-einkaufsliste-2026-10-24.md`.
+Interaktions-Audit der Einkaufsliste (Befunde #1–#5, #7, #8 umgesetzt, Rest offen): `docs/interaction-audit-einkaufsliste-2026-10-24.md`.
 
 ## UX-Discovery
 
