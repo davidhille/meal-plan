@@ -20,7 +20,7 @@ export default function GuestStepper({ guests, onChange }: GuestStepperProps) {
       await onChange(next);
     } catch (e) {
       setValue(prev);
-      setError((e as Error).message || 'Konnte nicht gespeichert werden.');
+      setError((e as Error).message || 'Die Gästezahl konnte nicht gespeichert werden.');
     }
   };
 

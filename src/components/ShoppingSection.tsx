@@ -288,7 +288,7 @@ export default function ShoppingSection({
       </div>
 
       {!expanded ? null : items.length === 0 ? (
-        <div className="px-4 py-6 text-center text-sm text-gray-500">Keine Einträge</div>
+        <div className="px-4 py-6 text-center text-sm text-gray-500">Diese Liste ist leer.</div>
       ) : (
         <>
           {open.length > 0 && <ul className="divide-y divide-gray-100">{open.map(renderItem)}</ul>}

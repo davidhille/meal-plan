@@ -340,7 +340,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
       const result = await addToShopCart(p, wanted);
       await refreshCart(p);
       return result.failed.length
-        ? `${result.added} übertragen, ${result.failed.length} fehlgeschlagen.`
+        ? `${result.added} übertragen, ${result.failed.length} ließen sich nicht übertragen.`
         : `${result.added} ${result.added === 1 ? 'Produkt liegt' : 'Produkte liegen'} jetzt in deinem ${shopName(p)}-Warenkorb.`;
     } catch (e) {
       throw shopError(p, e);

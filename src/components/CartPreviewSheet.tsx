@@ -180,7 +180,7 @@ export default function CartPreviewSheet({
     try {
       await onSetQuantity(productId, quantity);
     } catch (e) {
-      setCartError((e as Error).message || 'Die Änderung hat nicht geklappt.');
+      setCartError((e as Error).message || 'Die Menge ließ sich nicht ändern.');
     } finally {
       setCartBusyId(null);
     }
