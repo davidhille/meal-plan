@@ -62,11 +62,22 @@ export default function ShoppingSection({
   const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!openPickerId) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setOpenPickerId(null);
+      const target = e.target as Element;
+      // Der „Mehr“-Knopf schaltet das Menü selbst um (sonst würde es sofort wieder aufgehen)
+      if (target.closest('[aria-haspopup="menu"]')) return;
+      if (pickerRef.current && !pickerRef.current.contains(target)) setOpenPickerId(null);
     };
-    if (openPickerId) document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpenPickerId(null);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
   }, [openPickerId]);
 
   const open = items.filter((i) => !i.checked);
