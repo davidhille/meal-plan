@@ -4,7 +4,7 @@ Weg: Plan → Einkaufsliste → Shop-Warenkorb (Knuspr/Picnic).
 Methode: Code gelesen (`ShoppingListView`, `ShoppingSection`, `CartBar`, `CartPreviewSheet`) und lesend live geprüft
 (miyummy.com, Handy-Format 375×812, Daten der Familie Hille, nichts geändert). Maßstab: Skill `interaction-design`
 (Mikrointeraktionen, Excise, Zustände, Fehlervermeidung, Reaktionszeiten, Tippflächen ≥ 44 px).
-Es wurde **nichts am Code geändert**; die Empfehlungen warten auf Davids Auswahl.
+Stand: **#1–#3 umgesetzt** (Paket „Vertrauen“, 24.10.2026: Fehlerzeile mit Rollback, Eingaben erst nach Erfolg leeren, Rückgängig beim Abhaken von Basis-Zutaten). Der Rest wartet auf Davids Auswahl.
 
 Posture: **transient** (kurze Nutzung im Laden/Zuhause, Handy). Folge: wenige Entscheidungen, Rückgängig statt Rückfrage,
 Fehler sichtbar, Eingaben nie verlieren.

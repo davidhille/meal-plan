@@ -80,6 +80,10 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
     }
   };
   const [loading, setLoading] = useState(true);
+  /** Rückmeldung zu Aktionen: Fehler (bleibt länger) oder Hinweis mit optionalem Rückgängig */
+  const [notice, setNotice] = useState<{ text: string; kind: 'error' | 'info'; undo?: () => void } | null>(null);
+  const noticeTimer = useRef<number | undefined>(undefined);
+  const [adding, setAdding] = useState(false);
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [labels, setLabels] = useState<ShoppingLabel[]>([...DEFAULT_LABELS]);
   const [pantry, setPantry] = useState<PantryEntry[]>([]);
@@ -162,6 +166,14 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planId, week?.from, week?.to, scope.since]);
 
+  const showNotice = (text: string, kind: 'error' | 'info', undo?: () => void) => {
+    window.clearTimeout(noticeTimer.current);
+    setNotice({ text, kind, undo });
+    noticeTimer.current = window.setTimeout(() => setNotice(null), kind === 'error' ? 8000 : 6000);
+  };
+  useEffect(() => () => window.clearTimeout(noticeTimer.current), []);
+  const failed = (what: string) => showNotice(`${what} Bitte Netz prüfen und noch einmal versuchen.`, 'error');
+
   // --- Artikel ---
 
   const patchLocal = (id: string, change: Partial<ShoppingItem>) =>
@@ -174,14 +186,25 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
     // Abgehakte Basics wandern zurück in den Vorrat
     if (item.isBasic && !item.checked) {
       setItems((prev) => prev.filter((i) => i.id !== id));
-      await removeShoppingItem(planId, id);
+      if (await removeShoppingItem(planId, id)) {
+        showNotice(`„${item.name}“ ist abgehakt und liegt wieder im Vorrat.`, 'info', () => {
+          setNotice(null);
+          void addItem(item.baseName, item.label, true);
+        });
+      } else {
+        setItems((prev) => (prev.some((i) => i.id === id) ? prev : [...prev, item]));
+        failed(`„${item.name}“ ließ sich nicht abhaken.`);
+      }
       return;
     }
     patchLocal(id, { checked: !item.checked });
     pendingToggles.current.add(id);
     const ok = await updateShoppingItem(planId, item, { checked: !item.checked });
     pendingToggles.current.delete(id);
-    if (!ok) patchLocal(id, { checked: item.checked });
+    if (!ok) {
+      patchLocal(id, { checked: item.checked });
+      failed(`„${item.name}“ ließ sich nicht abhaken.`);
+    }
   };
 
   const changeLabel = async (id: string, label: string) => {
@@ -190,32 +213,55 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
     if (!item) return;
     patchLocal(id, { label });
     const ok = await updateShoppingItem(planId, item, { label });
-    if (!ok) patchLocal(id, { label: item.label });
+    if (!ok) {
+      patchLocal(id, { label: item.label });
+      failed(`„${item.name}“ ließ sich nicht verschieben.`);
+    }
   };
 
-  const addItem = async (name: string, label: string, isBasic = false) => {
-    if (!planId || !name.trim()) return;
+  /** true, wenn der Artikel auf der Liste gelandet ist; sonst Fehlermeldung */
+  const addItem = async (name: string, label: string, isBasic = false): Promise<boolean> => {
+    if (!planId || !name.trim()) return false;
     const data = await addShoppingItem(planId, name.trim(), label, isBasic, scope);
-    if (data) setItems(data.items);
+    if (!data) {
+      failed(`„${name.trim()}“ ließ sich nicht hinzufügen.`);
+      return false;
+    }
+    setItems(data.items);
+    return true;
   };
 
   const removeItem = async (item: ShoppingItem) => {
     if (!planId) return;
     setItems((prev) => prev.filter((i) => i.id !== item.id));
-    await removeShoppingItem(planId, item.id);
+    if (!(await removeShoppingItem(planId, item.id))) {
+      setItems((prev) => (prev.some((i) => i.id === item.id) ? prev : [...prev, item]));
+      failed(`„${item.name}“ ließ sich nicht entfernen.`);
+    }
   };
 
   // --- Vorrat ---
 
   const moveToPantry = async (item: ShoppingItem) => {
     setItems((prev) => prev.filter((i) => i.id !== item.id));
-    if (await addToPantry(item.baseName)) await load();
+    if (await addToPantry(item.baseName)) {
+      await load();
+    } else {
+      setItems((prev) => (prev.some((i) => i.id === item.id) ? prev : [...prev, item]));
+      failed(`„${item.baseName}“ ließ sich nicht in den Vorrat legen.`);
+    }
   };
 
   /** Aus dem Vorrat nehmen: kommt dann wieder auf die Liste, wenn ein Rezept es braucht */
   const takeFromPantry = async (name: string) => {
+    const entry = pantry.find((e) => e.name === name);
     setPantry((prev) => prev.filter((e) => e.name !== name));
-    if (await removeFromPantry(name)) await load();
+    if (await removeFromPantry(name)) {
+      await load();
+    } else {
+      if (entry) setPantry((prev) => (prev.some((e) => e.name === name) ? prev : [...prev, entry]));
+      failed(`„${name}“ ließ sich nicht aus dem Vorrat nehmen.`);
+    }
   };
 
   // --- Shops ---
@@ -504,6 +550,25 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
           </div>
         )}
 
+        {notice && (
+          <div
+            role={notice.kind === 'error' ? 'alert' : 'status'}
+            className={`sticky top-2 z-30 flex items-center gap-3 px-3 py-2.5 rounded-xl border text-sm shadow-md ${
+              notice.kind === 'error' ? 'bg-red-50 border-red-200 text-red-800' : 'bg-gray-800 border-gray-800 text-white'
+            }`}
+          >
+            <span className="flex-1">{notice.text}</span>
+            {notice.undo && (
+              <button
+                onClick={notice.undo}
+                className="flex-shrink-0 px-3 h-11 -my-2 rounded-lg text-sm font-semibold underline underline-offset-2"
+              >
+                Rückgängig
+              </button>
+            )}
+          </div>
+        )}
+
         {synced && (
           <p role="status" className="px-3 py-2 rounded-xl bg-brand-50 border border-brand-200 text-xs font-medium text-brand-800">
             {synced}
@@ -514,9 +579,11 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
         <form
           onSubmit={async (e) => {
             e.preventDefault();
-            const name = newItemName;
-            setNewItemName('');
-            await addItem(name, standardLabel);
+            if (adding) return;
+            setAdding(true);
+            // Text erst nach Erfolg leeren – bei einem Fehler bleibt er stehen
+            if (await addItem(newItemName, standardLabel)) setNewItemName('');
+            setAdding(false);
           }}
           className="flex gap-2"
         >
@@ -530,7 +597,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
           />
           <button
             type="submit"
-            disabled={!newItemName.trim()}
+            disabled={!newItemName.trim() || adding}
             aria-label="Hinzufügen"
             className="w-10 flex items-center justify-center rounded-xl bg-brand-700 text-white disabled:bg-gray-200 disabled:text-gray-500"
           >
@@ -695,8 +762,13 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
                   e.preventDefault();
                   const name = newPantryName.trim();
                   if (!name) return;
-                  setNewPantryName('');
-                  if (await addToPantry(name)) await load();
+                  // Text erst nach Erfolg leeren – bei einem Fehler bleibt er stehen
+                  if (await addToPantry(name)) {
+                    setNewPantryName('');
+                    await load();
+                  } else {
+                    failed(`„${name}“ ließ sich nicht zum Vorrat hinzufügen.`);
+                  }
                 }}
                 className="flex gap-2 mt-4 pt-3 border-t border-gray-100"
               >
