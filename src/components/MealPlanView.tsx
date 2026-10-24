@@ -101,6 +101,8 @@ function planMealToMeal(pm: PlanMeal): Meal {
   };
 }
 
+const FIRST_PLAN_HINT = 'miyummy.firstPlanHint';
+
 export default function MealPlanView({
   onCreatePlan,
   planMeals,
@@ -152,13 +154,40 @@ export default function MealPlanView({
   // Neu erzeugte Bilder sofort anzeigen (Gerichtname → Bild)
   const [imageOverrides, setImageOverrides] = useState<Record<string, { url: string; credit: ImageCredit | null }>>({});
 
+  // Einmaliger Hinweis nach dem ersten Plan einer neuen Familie
+  const [showFirstHint, setShowFirstHint] = useState(() => {
+    try {
+      return localStorage.getItem(FIRST_PLAN_HINT) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const dismissFirstHint = () => {
+    setShowFirstHint(false);
+    try {
+      localStorage.removeItem(FIRST_PLAN_HINT);
+    } catch {
+      /* egal */
+    }
+  };
+
   const displayItems = (planMeals ?? []).filter((pm) => !pm.rejected);
   const selectedPm = selectedPmId ? (allPlanMeals ?? planMeals ?? []).find((pm) => pm.id === selectedPmId) ?? null : null;
 
   if (!plan) {
     return (
       <EmptyPlanStart
-        onCreatePlan={onCreatePlan}
+        onCreatePlan={() => {
+          // Nur Komfort: nach dem allerersten Plan einmal den Hinweis zeigen
+          if (isFreshFamily) {
+            try {
+              localStorage.setItem(FIRST_PLAN_HINT, '1');
+            } catch {
+              /* ohne Speicher kein Hinweis */
+            }
+          }
+          onCreatePlan();
+        }}
         familyDislikes={familyDislikes ?? []}
         onToggleDislike={onToggleDislike ?? (async () => {})}
         fresh={!!isFreshFamily}
@@ -226,6 +255,19 @@ export default function MealPlanView({
   return (
     <>
       <div className="px-4 py-4 space-y-3">
+        {plan && showFirstHint && displayItems.length > 0 && (
+          <div role="status" className="flex items-start gap-3 px-3 py-3 rounded-xl bg-brand-50 border border-brand-100 text-sm text-gray-800">
+            <p className="flex-1">
+              <strong>Euer erster Plan steht.</strong> Passt ein Gericht nicht? Unter jedem Gericht kannst du es tauschen oder ausblenden – der Plan lernt daraus.
+            </p>
+            <button
+              onClick={dismissFirstHint}
+              className="tap h-11 px-2 -my-2 text-sm font-semibold text-brand-700 hover:text-brand-800"
+            >
+              Verstanden
+            </button>
+          </div>
+        )}
         {plan && (
           <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-white border border-gray-100 text-sm">
             <span className="min-w-0 truncate whitespace-nowrap text-xs font-medium text-gray-600">
