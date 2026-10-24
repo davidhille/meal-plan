@@ -69,4 +69,4 @@ der Plan geht auch ohne Angaben.
 
 ## Umgesetzt: Kennzahl „Einrichtung“ (#9)
 
-- Admin → Statistik zeigt je Familie „Einrichtung: n Mitglieder · n Ausschlüsse“ (`memberCount`, `dislikeCount` aus `GET /admin/stats`); ohne Plan, Mitglieder und Ausschlüsse mit dem Zusatz „noch nichts eingerichtet“.
+- Admin → Statistik zeigt je Familie „Einrichtung: n Mitglieder · Familien-Nein: n“ (`memberCount`, `dislikeCount` aus `GET /admin/stats`); ohne Plan, Mitglieder und Familien-Nein mit dem Zusatz „noch nichts eingerichtet“.

@@ -26,7 +26,7 @@ für sie; Ausblenden/Löschen ebenso. Neue Familien starten mit den Listen „Ei
 
 **Statistik (nur Betreiber):** Karte **„Statistik“** unter der Administration. KI-Verbrauch heute gegen das
 Gratis-Kontingent (10.000 Neurons, neu ab 00:00 UTC), Verlauf der letzten 30 Tage mit Gratis-Grenze, und pro Familie:
-Zugänge, zuletzt aktiv, Einrichtung (Mitglieder, Ausschlüsse), Pläne, geplante Gerichte (30 Tage), Bewertungen, Favoriten, KI-Rezepte, Importe sowie KI-Verbrauch
+Zugänge, zuletzt aktiv, Einrichtung (Mitglieder, Familien-Nein), Pläne, geplante Gerichte (30 Tage), Bewertungen, Favoriten, KI-Rezepte, Importe sowie KI-Verbrauch
 (heute/7/30 Tage, aufgeteilt in Rezepte und Bilder). „Automatisch“ = Bilder, die der Cron nachzieht. Cloudflare meldet
 Neurons nur fürs ganze Konto – die App schreibt deshalb jeden KI-Aufruf selbst mit (Tabelle `ai_usage`) und schätzt die
 Neurons nach der Preisliste (Tokens bzw. Bildgröße und Schritte). Gezählt wird ab Version mit Migration 0018.
