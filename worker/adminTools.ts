@@ -7,10 +7,25 @@ import { DAILY_FREE_NEURONS } from "./aiUsage";
 /** Beginn des heutigen KI-Tages (das Gratis-Kontingent läuft um 00:00 UTC neu an) */
 export const UTC_TODAY = `date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'`;
 
-/** Fehler für die Übersicht in der Administration merken – darf selbst nie scheitern */
-export async function logError(sql: Sql, source: string, message: unknown, profileId: string | null = null): Promise<void> {
+/**
+ * Fehler für die Übersicht in der Administration merken – darf selbst nie scheitern.
+ * `oncePerDay`: gleiche Quelle derselben Familie innerhalb von 24 Stunden nur einmal (für Fehler, die sich dauernd wiederholen,
+ * damit sie die seltenen, echten Fehler nicht verdecken).
+ */
+export async function logError(
+  sql: Sql,
+  source: string,
+  message: unknown,
+  profileId: string | null = null,
+  opts: { oncePerDay?: boolean } = {}
+): Promise<void> {
   try {
     const text = String((message as Error)?.message ?? message).slice(0, 500);
+    if (opts.oncePerDay) {
+      const seen = await sql`SELECT 1 FROM app_errors WHERE source = ${source.slice(0, 120)}
+        AND profile_id IS NOT DISTINCT FROM ${profileId} AND created_at > now() - interval '1 day' LIMIT 1`;
+      if (seen.length) return;
+    }
     await sql`INSERT INTO app_errors (profile_id, source, message) VALUES (${profileId}, ${source.slice(0, 120)}, ${text})`;
     // Alte Einträge gelegentlich aufräumen
     if (Math.random() < 0.05) await sql`DELETE FROM app_errors WHERE created_at < now() - interval '60 days'`;
@@ -48,6 +63,36 @@ export async function checkAiWarning(env: Env, sql: Sql): Promise<void> {
     }
   } catch (err) {
     console.error("KI-Warnung fehlgeschlagen:", err);
+  }
+}
+
+/**
+ * Push an den Betreiber, höchstens einmal pro Tag und Anlass (`key`). So fällt ein Ausfall auf, ohne dass
+ * ein dauernder Fehler das Handy zuspammt. Darf nie scheitern.
+ */
+export async function alertOwnerOncePerDay(
+  env: Env,
+  sql: Sql,
+  key: string,
+  msg: { title: string; body: string; url?: string }
+): Promise<void> {
+  try {
+    const day = new Date().toISOString().slice(0, 10);
+    const claimed = await sql`INSERT INTO app_settings (key, value) VALUES (${`alert_${key}_day`}, ${day})
+      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now() WHERE app_settings.value <> EXCLUDED.value
+      RETURNING key`;
+    if (!claimed.length) return;
+    const owners = await sql`SELECT DISTINCT profile_id FROM users WHERE is_owner`;
+    for (const o of owners) {
+      await sendToProfile(env, sql, o.profile_id as string, {
+        title: msg.title.slice(0, 80),
+        body: msg.body.slice(0, 200),
+        url: msg.url ?? "/#einstellungen",
+        tag: `alert-${key}`,
+      });
+    }
+  } catch (err) {
+    console.error("Alarm an den Betreiber fehlgeschlagen:", err);
   }
 }
 

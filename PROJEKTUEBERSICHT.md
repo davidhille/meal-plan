@@ -42,7 +42,7 @@ Ergebnis steht auch als Text da („erreicht“/„verfehlt“), nicht nur als F
 - **Warnung bei 80 %** des Gratis-Kontingents: einmal am Tag eine Push-Nachricht an den Betreiber (wenn die Erinnerung auf
   seinem Gerät an ist), dazu ein Hinweis in der Statistik.
 - **Meldungen** (Karte unter der Statistik): Feedback der Familien (erledigt/wieder offen, löschen) und Fehler der App
-  (Server-Fehler, Shop-Fehler, KI-Fehler, Routinen, Bilder nachziehen; Tabelle `app_errors`, 60 Tage).
+  (Server-Fehler, Shop-Fehler, KI-Fehler, Routinen, Bilder nachziehen; Tabelle `app_errors`, 60 Tage). Sich wiederholende Fehler (z. B. Chefkoch-Fotos) stehen höchstens einmal am Tag drin. Bei einem Server-Fehler (500) oder einer gescheiterten Routine bekommt der Betreiber eine Push-Nachricht (einmal am Tag je Anlass).
 - **Feedback & Wünsche** (Einstellungen, für alle): Nachricht an den Betreiber (höchstens 20 pro Tag und Familie).
 - **Datensicherung** (Statistik, je Familie): „Sichern“ lädt alle Daten der Familie als JSON herunter (ohne Zugänge und
   Push-Geräte); „Wiederherstellen“ spielt eine Sicherung **derselben** Familie zurück und ersetzt deren Daten (Name, Sperre
@@ -266,7 +266,7 @@ Auf- und zuklappbare Karten:
   - **Fleisch pro Woche:** keine Grenze, kein Fleisch oder höchstens 1–5× pro Kalenderwoche (Fisch zählt nicht mit);
     gilt beim Planen und beim „Alle tauschen“.
 - **Familienmitglieder:** Name, Erwachsener/Kind mit Alter, mag/mag nicht – anlegen, bearbeiten, löschen (mit Bestätigung).
-- **Routinen:** wöchentlich oder monatlich automatisch einen neuen Plan erstellen (Cron alle 15 Minuten, deutsche Zeit).
+- **Routinen:** wöchentlich oder monatlich automatisch einen neuen Plan erstellen (Cron alle 15 Minuten, deutsche Zeit). Scheitert das Erstellen, versucht es der nächste Lauf erneut (höchstens 3 Versuche am Tag); danach bekommt der Betreiber eine Push-Nachricht.
 - **Einkaufslisten verwalten:** eigene Listen anlegen, umbenennen, umfärben, löschen.
 - **Eigene Rezept-Filter:** Name, Suchbegriffe und/oder maximale Zubereitungszeit, für Gerichte, Nachtische oder beide;
   bearbeiten und löschen. Einzelne Gerichte werden im Rezept zugeordnet oder ausgenommen (auch ganz ohne Suchbegriffe).

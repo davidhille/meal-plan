@@ -1,6 +1,7 @@
 // Rezept per Link importieren: Fast alle Rezeptseiten (Chefkoch, Lecker, EatSmarter, Foodblogs …)
 // liefern ihre Daten zusätzlich maschinenlesbar als schema.org „Recipe“ (JSON-LD).
 // Wir lesen nur diese Daten, rechnen auf 4 Portionen um und schätzen den Typ.
+import { UserError } from "./http";
 import { type Recipe, looksMeaty } from "./meals";
 import { RECIPE_BASE_PORTIONS, scaleIngredient } from "../src/lib/portions";
 
@@ -34,7 +35,11 @@ export function stripAuthorSuffix(rawName: string, author = "", sourceUrl = ""):
   return isAuthor || looksLikeUser ? title.trim() : rawName;
 }
 
-export class ImportError extends Error {}
+export class ImportError extends UserError {
+  constructor(message: string) {
+    super(message, 422);
+  }
+}
 
 const MAX_HTML_BYTES = 3_000_000;
 

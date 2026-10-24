@@ -150,6 +150,18 @@ export async function findInvite(sql: Sql, token: string): Promise<{ hash: strin
   return rows[0] ? { hash, profileId: rows[0].profile_id, familyName: rows[0].name ?? null } : null;
 }
 
+/**
+ * Darf der erste Zugang angelegt werden? Nur mit dem Familien-Passwort aus `APP_PASSWORD`. Ist es nicht gesetzt, ist die
+ * Einrichtung gesperrt (nie offen): Sonst würde auf einer leeren Datenbank die erste Person, die die Adresse aufruft, Betreiber.
+ */
+export function checkSetupPassword(configured: string | undefined, given: string): "unavailable" | "wrong" | "ok" {
+  if (!configured) return "unavailable";
+  if (configured.length !== given.length) return "wrong";
+  let diff = 0;
+  for (let i = 0; i < configured.length; i++) diff |= configured.charCodeAt(i) ^ given.charCodeAt(i);
+  return diff === 0 ? "ok" : "wrong";
+}
+
 /** Gibt es schon Zugänge? (Solange nicht, gilt noch das alte Familien-Passwort.) Einmal true, bleibt true. */
 let usersExistCache = false;
 export async function usersExist(sql: Sql): Promise<boolean> {

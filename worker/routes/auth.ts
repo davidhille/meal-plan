@@ -3,7 +3,7 @@ import type { Ctx } from "../http";
 import { json } from "../http";
 import { getProfile } from "../repo";
 import {
-  MIN_PASSWORD, clearSessionCookie, createSession, deleteSession, findInvite, hashPassword, login, markUsersExist, normEmail,
+  MIN_PASSWORD, checkSetupPassword, clearSessionCookie, createSession, deleteSession, findInvite, hashPassword, login, markUsersExist, normEmail,
   usersExist, validEmail, verifyPassword, type SessionUser,
 } from "../auth";
 
@@ -33,9 +33,9 @@ export async function publicAuthRoutes({ request, env, sql, body, parts, route }
   // Erster Zugang (nur solange es noch keinen gibt): bisheriges Familien-Passwort bestätigt, dass es die Familie ist
   if (route === "POST /auth/setup") {
     if (await usersExist(sql)) return json({ error: "Es gibt schon Zugänge – bitte anmelden." }, 409);
-    if (env.APP_PASSWORD && String(body.familyPassword ?? "") !== env.APP_PASSWORD) {
-      return json({ error: "Das Familien-Passwort stimmt nicht." }, 401);
-    }
+    const allowed = checkSetupPassword(env.APP_PASSWORD, String(body.familyPassword ?? ""));
+    if (allowed === "unavailable") return json({ error: "Die Ersteinrichtung ist nicht freigeschaltet." }, 503);
+    if (allowed === "wrong") return json({ error: "Das Familien-Passwort stimmt nicht." }, 401);
     const input = checkInput(body);
     if ("error" in input) return json({ error: input.error }, 400);
     const p = await getProfile(sql);
@@ -58,13 +58,22 @@ export async function publicAuthRoutes({ request, env, sql, body, parts, route }
       if ("error" in input) return json({ error: input.error }, 400);
       const exists = await sql`SELECT 1 FROM users WHERE lower(email) = ${input.email}`;
       if (exists[0]) return json({ error: "Diese E-Mail-Adresse hat schon einen Zugang – bitte anmelden." }, 409);
+      const passwordHash = await hashPassword(input.password); // vor dem Verbrauchen: Rechnen darf die Einladung nicht kosten
       // Einladung zuerst verbrauchen (gegen doppeltes Absenden)
       const used = await sql`UPDATE invites SET used_at = now() WHERE token_hash = ${invite.hash} AND used_at IS NULL RETURNING token_hash`;
       if (!used[0]) return json({ error: "Der Einladungslink wurde schon benutzt." }, 410);
-      const rows = await sql`INSERT INTO users (profile_id, email, name, password_hash, is_admin)
-        VALUES (${invite.profileId}, ${input.email}, ${input.name}, ${await hashPassword(input.password)}, true) RETURNING id`;
+      let userId: string;
+      try {
+        const rows = await sql`INSERT INTO users (profile_id, email, name, password_hash, is_admin)
+          VALUES (${invite.profileId}, ${input.email}, ${input.name}, ${passwordHash}, true) RETURNING id`;
+        userId = rows[0].id;
+      } catch (err) {
+        // Zugang nicht angelegt: Link wieder freigeben, sonst steht die neue Familie vor einem toten Link
+        await sql`UPDATE invites SET used_at = NULL WHERE token_hash = ${invite.hash}`.catch(() => {});
+        throw err;
+      }
       markUsersExist();
-      return withCookie(json({ ok: true }), await createSession(sql, rows[0].id));
+      return withCookie(json({ ok: true }), await createSession(sql, userId));
     }
   }
   return null;

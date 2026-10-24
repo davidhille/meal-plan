@@ -1,6 +1,7 @@
 // Routinen automatisch ausführen (Cloudflare Cron, alle 15 Min)
 import { meteredEnv } from "./aiUsage";
-import { logError } from "./adminTools";
+import { alertOwnerOncePerDay, logError } from "./adminTools";
+import { MAX_ROUTINE_ATTEMPTS, routineDue, shouldRetryRoutine } from "./routineRules";
 import { neon } from "@neondatabase/serverless";
 import type { Env } from "./http";
 import { ensureSchema } from "./migrate";
@@ -31,20 +32,21 @@ export async function runRoutines(env: Env) {
 
   const routines = await sql.query(
     `SELECT id, profile_id, name, frequency, day_of_week, to_char(time, 'HH24:MI') AS time, duration_days,
-            to_char(last_run_at AT TIME ZONE 'Europe/Berlin', 'YYYY-MM-DD') AS last_run_date
+            to_char(last_run_at AT TIME ZONE 'Europe/Berlin', 'YYYY-MM-DD') AS last_run_date, last_run_at::text AS prev_run
      FROM routines WHERE active = true AND profile_id IN (SELECT id FROM profiles WHERE NOT disabled)`
   );
 
   for (const r of routines) {
-    const dueToday = r.frequency === "weekly" ? r.day_of_week === now.weekday : now.day === 1;
-    const timeReached = now.time >= (r.time || "00:00");
-    if (!dueToday || !timeReached || r.last_run_date === now.date) continue;
+    if (!routineDue(r as Parameters<typeof routineDue>[0], now)) continue;
 
-    // Erst als ausgeführt markieren, damit parallele Läufe keinen doppelten Plan erzeugen
-    const claimed = await sql`UPDATE routines SET last_run_at = now()
+    // Erst als ausgeführt markieren, damit parallele Läufe keinen doppelten Plan erzeugen; dabei die Versuche des Tages zählen
+    const claimed = await sql`UPDATE routines SET last_run_at = now(),
+        run_attempts = CASE WHEN run_attempt_date = ${now.date}::date THEN run_attempts + 1 ELSE 1 END,
+        run_attempt_date = ${now.date}::date
       WHERE id = ${r.id} AND (last_run_at IS NULL OR (last_run_at AT TIME ZONE 'Europe/Berlin')::date < ${now.date}::date)
-      RETURNING id`;
+      RETURNING run_attempts`;
     if (!claimed.length) continue;
+    const attempts = Number(claimed[0].run_attempts);
 
     const start = addDaysIso(now.date, 1);
     const end = addDaysIso(start, Math.max(1, r.duration_days) - 1);
@@ -55,6 +57,15 @@ export async function runRoutines(env: Env) {
       // Eine fehlgeschlagene Routine soll Erinnerungen und Bilder nicht aufhalten
       console.error(`Routine "${r.name}" fehlgeschlagen:`, e);
       await logError(sql, `Routine „${r.name}“`, e, r.profile_id);
+      if (shouldRetryRoutine(attempts)) {
+        // Markierung zurücknehmen: der nächste Cron-Lauf (in 15 Min) versucht es noch einmal
+        await sql`UPDATE routines SET last_run_at = ${r.prev_run ?? null}::timestamptz WHERE id = ${r.id}`.catch(() => {});
+      } else {
+        await alertOwnerOncePerDay(env, sql, "routine", {
+          title: "Routine fehlgeschlagen",
+          body: `„${r.name}“ ist heute ${MAX_ROUTINE_ATTEMPTS}× gescheitert. Wochenplan fehlt noch.`,
+        });
+      }
     }
   }
 
