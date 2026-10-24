@@ -31,6 +31,32 @@ Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHu
 - UI-Texte, Kommentare, Commit- und PR-Texte auf **Deutsch**. Code-Bezeichner und DB-Spalten Englisch, DB in snake_case.
 - PR-Beschreibung: „## Was“ mit Stichpunkten, bei Fehlerbehebungen zuerst „## Problem“.
 - Nach Änderungen an Funktionen `PROJEKTUEBERSICHT.md` mitpflegen; bei neuen Secrets `SETUP_NEON_CLOUDFLARE.md`.
+- **Doku immer selbst nachziehen, ohne Aufforderung, im selben PR:** Was eine spätere Session wissen muss, gehört hierher
+  (CLAUDE.md), nicht nur in den Chat. Gemeint sind gefundene Fehlerursachen, Stolperfallen, Zugänge/Werkzeuge und Entscheidungen
+  von David (z. B. „Dubletten nur über die URL“). Erledigte Einzelheiten und Verlauf gehören nicht hierher.
+- **Merge:** Nach grüner CI (GitHub Actions + Workers Builds) direkt squash-mergen. David merged nicht selbst. Ist die CI rot,
+  nicht mergen und Bescheid geben. Danach den lokalen Branch löschen und auf `main` wechseln (sonst meldet der Stop-Hook ungepushte
+  Commits).
+- PRs, Merges und Checks über die REST-API (`gh api repos/davidhille/meal-plan/...`); GraphQL (`gh pr create`) ist in
+  Claude-Sessions gesperrt.
+- Weiß diese Datei etwas nicht, das David voraussetzt: in früheren Chats des Claude-Projekts suchen (Chat-Suche), bevor man
+  „geht nicht“ sagt.
+
+## Live prüfen
+
+- Die Claude-Cloud-Umgebung erreicht **weder Neon noch die Cloudflare-API noch miyummy.com** (der Proxy antwortet mit 403). Die
+  Secrets liegen nur in Cloudflare und kommen nicht ins Repo.
+- **Weg zu den Live-Daten:** der eingebaute Browser der Claude-Desktop-App auf Davids Rechner (Tools `Claude_Browser__*`; die App
+  muss laufen und die Session mit dem Rechner verknüpft sein). Dort ist David in https://miyummy.com angemeldet (Eigentümer/Admin).
+  Mit `javascript_tool` die API samt Sitzungs-Cookie aufrufen, z. B.:
+  - `fetch('/api/admin/errors')`: Fehlerliste (`app_errors`, wie Administration → Fehler)
+  - `fetch('/api/recipes/catalog')`: Rezept-Übersicht (u. a. `review`, `imageUrl`)
+  - `fetch('/api/auth/status')`, `fetch('/api/profile')`: Anmeldung und Familien-Einstellungen
+  - Schreibende Aufrufe nur, wenn sie zur Aufgabe gehören, z. B. `POST /api/profile/chefkoch-auto/run` zum Testen der Automatik.
+- Nach Merge und Deploy (ca. 1 Minute, Migrationen laufen beim ersten Aufruf) Änderungen dort prüfen und das Ergebnis nennen,
+  statt nur auf die CI zu verweisen.
+- Lokal in der Cloud-Umgebung: `bun install` schlägt fehl (kein Paket-Registry-Zugriff). `bun test <datei>` geht für Module ohne
+  Abhängigkeiten. Typen, Lint und Build prüft die CI im PR.
 
 ## Architektur
 
