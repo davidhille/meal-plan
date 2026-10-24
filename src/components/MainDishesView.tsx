@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChefHat, Clock, Loader2, Search, EyeOff, X, ShieldAlert, MessageSquare, Star, SlidersHorizontal, Refrigerator, Plus, ArrowUpDown } from 'lucide-react';
+import { ChefHat, Clock, Eye, Loader2, Search, EyeOff, X, ShieldAlert, MessageSquare, Star, SlidersHorizontal, Refrigerator, Plus, ArrowUpDown } from 'lucide-react';
 import { useRatings } from '../lib/ratings';
 import { CatalogRecipe, Meal, PlanMeal, RecipeCatalog, RecipeFilter } from '../types';
 import { CategoryOverride, toOverrideMap } from '../lib/recipeCategories';
@@ -126,9 +126,23 @@ export default function MainDishesView({
   const [hideCandidate, setHideCandidate] = useState<CatalogRecipe | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [editing, setEditing] = useState<CatalogRecipe | null>(null);
-  const [showUnsuitable, setShowUnsuitable] = useState(false);
-  /** Unpassende Gerichte, die einzeln eingeblendet wurden (ohne alle zu zeigen) */
-  const [revealed, setRevealed] = useState<string[]>([]);
+  /** Unpassende Gerichte, die in der Übersicht gezeigt werden sollen (Entscheidung pro Gericht, im Browser gemerkt) */
+  const [revealed, setRevealedState] = useState<string[]>(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem('mp_revealed_unsuitable') ?? '[]');
+      return Array.isArray(raw) ? raw.filter((x): x is string => typeof x === 'string') : [];
+    } catch {
+      return [];
+    }
+  });
+  const setRevealed = (names: string[]) => {
+    setRevealedState(names);
+    try {
+      localStorage.setItem('mp_revealed_unsuitable', JSON.stringify(names));
+    } catch {
+      /* ohne Speicher geht es auch – dann gilt die Auswahl nur für diese Sitzung */
+    }
+  };
   const [showUnsuitableList, setShowUnsuitableList] = useState(false);
   const [showAi, setShowAi] = useState(false);
   const [showChefkoch, setShowChefkoch] = useState(false);
@@ -159,10 +173,10 @@ export default function MainDishesView({
     const q = normalize(query.trim());
     return catalog.recipes.filter(
       (r) =>
-        (showUnsuitable || !r.unsuitable || revealed.includes(r.name)) &&
+        (!r.unsuitable || revealed.includes(r.name)) &&
         (!q || normalize(r.name).includes(q) || r.ingredients.some((i) => normalize(i).includes(q)))
     );
-  }, [catalog, query, showUnsuitable, revealed]);
+  }, [catalog, query, revealed]);
 
   // Eigene Filter, die es nicht mehr gibt, nicht mitzählen
   const activeSelection = useMemo(
@@ -205,9 +219,8 @@ export default function MainDishesView({
   const suitableCount = catalog.recipes.filter((r) => !r.unsuitable).length;
   const unsuitableCount = catalog.recipes.length - suitableCount;
   const unsuitableRecipes = catalog.recipes.filter((r) => r.unsuitable);
-  const shownTotal = showUnsuitable
-    ? catalog.recipes.length
-    : suitableCount + unsuitableRecipes.filter((r) => revealed.includes(r.name)).length;
+  const revealedCount = unsuitableRecipes.filter((r) => revealed.includes(r.name)).length;
+  const shownTotal = suitableCount + revealedCount;
   const conditions = (catalog.healthConditions ?? []).map((c) => CONDITION_LABELS[c] ?? c).join(', ');
   const example = swapExample(catalog.healthConditions ?? []);
 
@@ -333,54 +346,66 @@ export default function MainDishesView({
         </div>
         {unsuitableCount > 0 && (
           <div className="rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
-            <label className="flex items-start gap-2 px-3 py-2.5">
-              <input
-                type="checkbox"
-                checked={showUnsuitable}
-                onChange={(e) => setShowUnsuitable(e.target.checked)}
-                className="mt-0.5 accent-amber-700"
-              />
-              <span>
+            <button
+              type="button"
+              onClick={() => setShowUnsuitableList((v) => !v)}
+              aria-expanded={showUnsuitableList}
+              className="w-full flex items-start gap-2 px-3 py-2.5 text-left"
+            >
+              <ShieldAlert size={14} className="flex-shrink-0 mt-px" aria-hidden="true" />
+              <span className="flex-1">
                 {unsuitableCount} weitere Gerichte passen nicht zu euren Einstellungen{conditions ? ` (${conditions})` : ''} und werden
-                nie geplant. <strong>Alle zeigen</strong> – z. B. um Zutaten auszutauschen{example ? ` (${example})` : ''}.
+                nie geplant{revealedCount > 0 ? `, ${revealedCount} davon sind in der Liste` : ''}.{' '}
+                <strong className="underline underline-offset-2">{showUnsuitableList ? 'Schließen' : 'Ansehen und auswählen'}</strong>
+                {!showUnsuitableList && example ? ` – z. B. um Zutaten auszutauschen (${example})` : ''}
               </span>
-            </label>
-            <div className="px-3 pb-2.5">
-              <button
-                type="button"
-                onClick={() => setShowUnsuitableList((v) => !v)}
-                aria-expanded={showUnsuitableList}
-                className="h-8 text-xs font-semibold text-amber-900 underline underline-offset-2"
-              >
-                {showUnsuitableList ? 'Liste ausblenden' : 'Welche Gerichte sind das?'}
-              </button>
-              {showUnsuitableList && (
-                <ul className="mt-1 divide-y divide-amber-200">
+            </button>
+            {showUnsuitableList && (
+              <div className="px-3 pb-2.5">
+                <div className="flex items-center gap-3 pb-1">
+                  <button
+                    type="button"
+                    onClick={() => setRevealed([...new Set([...revealed, ...unsuitableRecipes.map((r) => r.name)])])}
+                    className="h-8 font-semibold underline underline-offset-2"
+                  >
+                    Alle zeigen
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRevealed(revealed.filter((n) => !unsuitableRecipes.some((r) => r.name === n)))}
+                    className="h-8 font-semibold underline underline-offset-2"
+                  >
+                    Alle ausblenden
+                  </button>
+                </div>
+                <ul className="divide-y divide-amber-200">
                   {unsuitableRecipes.map((r) => {
-                    const shown = showUnsuitable || revealed.includes(r.name);
+                    const shown = revealed.includes(r.name);
                     return (
-                      <li key={r.name} className="flex items-center justify-between gap-3 py-1.5">
+                      <li key={r.name} className="flex items-center justify-between gap-3 py-1">
                         <button type="button" onClick={() => setSelected(r)} className="min-w-0 text-left font-medium truncate hover:underline">
                           {r.name}
                         </button>
-                        {shown ? (
-                          <span className="flex-shrink-0 text-amber-800">in der Liste</span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setRevealed((v) => [...v, r.name])}
-                            aria-label={`${r.name} in der Liste zeigen`}
-                            className="flex-shrink-0 h-8 px-2.5 rounded-lg bg-white border border-amber-300 font-semibold text-amber-900 hover:bg-amber-100"
-                          >
-                            Zeigen
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => setRevealed(shown ? revealed.filter((n) => n !== r.name) : [...revealed, r.name])}
+                          aria-pressed={shown}
+                          aria-label={`${r.name} in der Liste ${shown ? 'ausblenden' : 'zeigen'}`}
+                          title={shown ? 'In der Liste – antippen zum Ausblenden' : 'Nicht in der Liste – antippen zum Zeigen'}
+                          className={`tap flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full border ${
+                            shown
+                              ? 'bg-amber-700 border-amber-700 text-white'
+                              : 'bg-white border-amber-300 text-amber-900 hover:bg-amber-100'
+                          }`}
+                        >
+                          {shown ? <Eye size={16} aria-hidden="true" /> : <EyeOff size={16} aria-hidden="true" />}
+                        </button>
                       </li>
                     );
                   })}
                 </ul>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -388,8 +413,8 @@ export default function MainDishesView({
           <div className="py-10 flex flex-col items-center text-center gap-2">
             <ChefHat size={28} className="text-gray-300" />
             <p className="text-sm text-gray-500">Nichts gefunden – versuch es mit einem anderen Begriff.</p>
-            {!showUnsuitable && unsuitableCount > 0 && (
-              <button onClick={() => setShowUnsuitable(true)} className="text-xs font-semibold text-brand-700 hover:underline">
+            {revealedCount < unsuitableCount && (
+              <button onClick={() => setRevealed(unsuitableRecipes.map((r) => r.name))} className="text-xs font-semibold text-brand-700 hover:underline">
                 Auch unpassende Gerichte durchsuchen
               </button>
             )}
