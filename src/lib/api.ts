@@ -586,6 +586,17 @@ export async function rejectMeal(
   }
 }
 
+/** Gründe, warum ein Gericht im Plan steht („Warum dieses Gericht?“); null bei Fehlern */
+export async function getMealWhy(planMealId: string): Promise<string[] | null> {
+  try {
+    const result = await request<{ reasons: string[] }>('GET', `/plan-meals/${planMealId}/why`);
+    return result.reasons;
+  } catch (error) {
+    console.error('Error loading meal reasons:', error);
+    return null;
+  }
+}
+
 /** Gericht nur austauschen (ohne es auszuschließen) */
 export async function regenerateMeal(planMealId: string): Promise<PlanMeal | null> {
   try {
