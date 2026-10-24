@@ -14,16 +14,19 @@ Ein Worker (`/api/*` + statische App), Neon Postgres über HTTP, Workers AI, Cro
 | # | Befund | Stand |
 |---|---|---|
 | 1 | Offener Zugriff bei leerer Datenbank | behoben: kein `X-App-Password`-Übergang mehr, ohne Sitzung immer 401; Ersteinrichtung nur mit gesetztem `APP_PASSWORD` (`checkSetupPassword`) |
-| 2 | Sicherung | offen, Entscheidung David |
+| 2 | Sicherung | gebaut: wöchentlich je Familie nach R2 (`backup.ts`); läuft, sobald der Bucket `miyummy-backups` angelegt und das Binding in `wrangler.jsonc` aktiv ist (`SETUP_NEON_CLOUDFLARE.md` 3b) |
 | 3 | Routine ohne Wiederholung | behoben: bis zu 3 Versuche am Tag (Migration 0029), danach Push. Rest-Risiko: Bricht die Datenbank mitten im Einfügen ab, könnte ein Wiederholungsversuch einen zweiten Plan anlegen (die KI-Schritte laufen vor dem ersten `INSERT`, daher selten) |
-| 4 | Free-Limits | offen, im Cloudflare-Dashboard zu bestätigen |
-| 5 | Login-Drosselung | offen, Cloudflare-Regel (Dashboard) |
+| 4 | Free-Limits | offen, im Cloudflare-Dashboard zu bestätigen (Schritte in `SETUP_NEON_CLOUDFLARE.md` 3b). Entschärft: Export als ein Batch, Sicherung eine Familie je Lauf |
+| 5 | Login-Drosselung | offen, Cloudflare-Regel im Dashboard (Schritte in `SETUP_NEON_CLOUDFLARE.md` 3b) |
 | 6 | Interne Fehlertexte | behoben: `UserError`; alles andere zeigt nur den allgemeinen Text |
 | 7 | Fehlerliste und Alarm | behoben: Foto-Fehler höchstens einmal am Tag je Familie; Push bei 500-Fehlern und gescheiterten Routinen (einmal am Tag je Anlass) |
-| 8 | Speicher-Monitoring | offen |
+| 8 | Speicher-Monitoring | behoben: Anzeige in Admin → Statistik, Push ab 80 % (`storage.ts`) |
 | 9 | Einladung geht verloren | behoben: Link wird bei Fehler freigegeben |
 | 10 | `Origin: null` | behoben: `sameHost` → 403 |
-| 11–14 | Kleinigkeiten | offen |
+| 11 | Health-Endpunkt | behoben: `/api/health`; Uptime-Monitor noch einzurichten |
+| 12 | Aufräumen alter Zeilen | behoben: täglich 4 Uhr (`cleanupOldRows`) |
+| 13 | Migrationen additiv | behoben: Regel in `CLAUDE.md` |
+| 14 | `serveImage` ohne Base64 | bewusst nicht umgesetzt: Browser-Cache (1 Jahr) macht es unkritisch, Änderung bringt wenig bei etwas Risiko |
 
 ## Verdict: MIT ÄNDERUNGEN FREIGEGEBEN
 

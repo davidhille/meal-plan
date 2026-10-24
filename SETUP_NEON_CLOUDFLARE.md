@@ -29,6 +29,21 @@ Worker `meal-plan` → **Settings → Variables and Secrets** → *Add* → Typ 
 
 Secrets wirken sofort, kein neuer Deploy nötig.
 
+## 3b. Betrieb: Sicherung und Login-Schutz (Dashboard, einmalig)
+
+**Wöchentliche Sicherung (R2):** Cloudflare → **R2 Object Storage** → *Create bucket* → Name `miyummy-backups` (Standort automatisch).
+Dann in `wrangler.jsonc` den auskommentierten Block `r2_buckets` aktivieren (Binding `BACKUPS`) und nach `main` pushen. Der Cron sichert
+danach je Lauf eine Familie, wöchentlich, und behält die letzten 8 Dateien (`<Familien-ID>/<Datum>.json`). Ohne Bucket passiert nichts.
+Zurückspielen: Datei aus dem Bucket laden → Administration → Familie → *Wiederherstellen*. Bilddaten sind nicht enthalten, Zugänge auch nicht.
+
+**Login-Schutz:** Cloudflare → Domain `miyummy.com` → **Security → WAF → Rate limiting rules** → *Create rule*: Feld *URI Path* *equals*
+`/api/auth/login`, Methode `POST`; 10 Anfragen je 1 Minute je IP; Aktion *Block* für 10 Minuten. (Der Free-Plan erlaubt eine Regel.)
+
+**Uptime-Monitor:** kostenloser Dienst (z. B. UptimeRobot) auf `https://miyummy.com/api/health` (erwartet `200` und `{"ok":true}`).
+
+**Tarif prüfen:** Cloudflare → *Workers & Pages* → `meal-plan` → *Metrics*: Anfragen/Tag (Free: 100.000) und Fehler „Too many subrequests“.
+Neon → *Billing*: Tarif und Verlauf (Free: 6 Stunden, 1 GB Speicher).
+
 ## Lokal testen (optional)
 `.dev.vars.example` → `.dev.vars` kopieren, Werte eintragen, dann `npm install && npm run dev:worker`.
 

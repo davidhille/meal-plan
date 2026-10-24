@@ -41,6 +41,9 @@ Ergebnis steht auch als Text da („erreicht“/„verfehlt“), nicht nur als F
   Familien läuft weiter. „Rezept mit KI“ zeigt dann „Euer KI-Budget für heute ist aufgebraucht“ mit Chefkoch-Ersatz.
 - **Warnung bei 80 %** des Gratis-Kontingents: einmal am Tag eine Push-Nachricht an den Betreiber (wenn die Erinnerung auf
   seinem Gerät an ist), dazu ein Hinweis in der Statistik.
+- **Speicher** (in der Statistik): belegte Datenbankgröße gegen die Grenze von 1 GB; ab 80 % Hinweis und eine Push-Nachricht.
+- **Sicherung:** Einmal pro Woche legt die App je Familie eine Sicherung in einem R2-Speicher ab (sobald dieser eingerichtet ist; die letzten 8 bleiben,
+  ohne Bilder und Zugänge). Zurückspielen über Administration → Familie → Wiederherstellen. Zusätzlich `/api/health` für einen Uptime-Monitor.
 - **Meldungen** (Karte unter der Statistik): Feedback der Familien (erledigt/wieder offen, löschen) und Fehler der App
   (Server-Fehler, Shop-Fehler, KI-Fehler, Routinen, Bilder nachziehen; Tabelle `app_errors`, 60 Tage). Sich wiederholende Fehler (z. B. Chefkoch-Fotos) stehen höchstens einmal am Tag drin. Bei einem Server-Fehler (500) oder einer gescheiterten Routine bekommt der Betreiber eine Push-Nachricht (einmal am Tag je Anlass).
 - **Feedback & Wünsche** (Einstellungen, für alle): Nachricht an den Betreiber (höchstens 20 pro Tag und Familie).

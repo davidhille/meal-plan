@@ -161,6 +161,8 @@ export interface FamilyStats {
 }
 
 export interface AdminStats {
+  /** Größe der Datenbank und Grenze des Tarifs (Neon Free: 1 GB) */
+  storage: { bytes: number; limitBytes: number };
   dailyLimit: number;
   /** Seit wann der KI-Verbrauch gezählt wird (null = noch nichts gezählt) */
   since: string | null;

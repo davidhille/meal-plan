@@ -20,4 +20,7 @@
   "ai": { "binding": "AI" },
   "triggers": { "crons": ["*/15 * * * *"] },
   "observability": { "enabled": true }
+  // Wöchentliche Sicherung (worker/backup.ts): erst den Bucket "miyummy-backups" im Cloudflare-Dashboard anlegen (R2),
+  // dann diese Zeilen einkommentieren (Komma hinter "observability" ergänzen). Ohne Bucket schlägt der Deploy fehl.
+  // "r2_buckets": [{ "binding": "BACKUPS", "bucket_name": "miyummy-backups" }]
 }
