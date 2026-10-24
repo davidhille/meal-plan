@@ -150,6 +150,9 @@ export interface FamilyStats {
   aiDailyLimit: number | null;
   userCount: number;
   lastActiveAt: string | null;
+  /** Einrichtung: eingetragene Familienmitglieder und Familien-Nein (Hauptzutaten) */
+  memberCount: number;
+  dislikeCount: number;
   planCount: number;
   meals30: number;
   ratingCount: number;

@@ -28,6 +28,8 @@ async function familyStats(sql: Ctx["sql"], ownProfileId: string) {
       GREATEST(
         (SELECT max(s.last_seen_at) FROM sessions s JOIN users u ON u.id = s.user_id WHERE u.profile_id = p.id),
         (SELECT max(u.last_login_at) FROM users u WHERE u.profile_id = p.id))::text AS "lastActiveAt",
+      (SELECT count(*)::int FROM family_members m WHERE m.profile_id = p.id) AS "memberCount",
+      COALESCE(cardinality(p.family_dislikes), 0)::int AS "dislikeCount",
       (SELECT count(*)::int FROM meal_plans mp WHERE mp.profile_id = p.id) AS "planCount",
       (SELECT count(*)::int FROM plan_meals pm JOIN meal_plans mp ON mp.id = pm.plan_id
         WHERE mp.profile_id = p.id AND NOT pm.rejected AND NOT pm.brotzeit AND pm.meal_date >= current_date - 30 AND pm.meal_date <= current_date) AS "meals30",
