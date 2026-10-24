@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState, type InputHTMLAttributes } from 'react';
 import { Loader2 } from 'lucide-react';
 import AppIcon from './AppIcon';
 import Logo from './Logo';
@@ -11,6 +11,25 @@ interface Props {
 
 const input =
   'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500';
+
+/** Eingabefeld mit sichtbarer Beschriftung (kein Platzhalter als Ersatz); `hint` bleibt dauerhaft stehen und ist mit dem Feld verbunden */
+function Field({ label, hint, ...props }: { label: string; hint?: string } & InputHTMLAttributes<HTMLInputElement>) {
+  const id = useId();
+  const hintId = `${id}-hint`;
+  return (
+    <div className="flex flex-col gap-1">
+      <label htmlFor={id} className="text-sm font-medium text-gray-800">
+        {label}
+      </label>
+      <input id={id} aria-describedby={hint ? hintId : undefined} className={input} {...props} />
+      {hint && (
+        <p id={hintId} className="text-xs text-gray-600">
+          {hint}
+        </p>
+      )}
+    </div>
+  );
+}
 
 /** Einladungslink: ?einladung=<token> */
 export const inviteToken = () => {
@@ -118,14 +137,12 @@ export default function LoginScreen({ onDone }: Props) {
                   Willkommen{familyName ? <> bei <strong>{familyName}</strong></> : ''}! Lege deinen Zugang an. Weitere Personen
                   deiner Familie lädst du danach in den Einstellungen unter „Zugänge“ ein.
                 </p>
-                <input
+                <Field
+                  label="Dein Name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Dein Name"
-                  aria-label="Dein Name"
                   autoComplete="given-name"
                   required
-                  className={input}
                 />
               </>
             )}
@@ -135,58 +152,44 @@ export default function LoginScreen({ onDone }: Props) {
                   Neu: Jeder meldet sich mit eigener E-Mail und eigenem Passwort an. Lege zuerst deinen Zugang an – zur
                   Bestätigung mit dem bisherigen Familien-Passwort. Weitere Zugänge legst du danach in den Einstellungen an.
                 </p>
-                <input
+                <Field
+                  label="Bisheriges Familien-Passwort"
                   type="password"
                   value={familyPassword}
                   onChange={(e) => setFamilyPassword(e.target.value)}
-                  placeholder="Bisheriges Familien-Passwort"
-                  aria-label="Bisheriges Familien-Passwort"
                   autoComplete="off"
                   required
-                  className={input}
                 />
-                <input
+                <Field
+                  label="Dein Name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Dein Name"
-                  aria-label="Dein Name"
                   autoComplete="given-name"
                   required
-                  className={input}
                 />
               </>
             )}
             {mode !== 'invalid-invite' && (
             <>
-            <input
+            <Field
+              label="E-Mail"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="E-Mail"
-              aria-label="E-Mail"
               autoComplete="email"
               autoFocus={mode === 'login'}
               required
-              className={input}
             />
-            <input
+            <Field
+              label={mode === 'login' ? 'Passwort' : 'Neues Passwort'}
+              hint={mode === 'login' ? undefined : 'Mindestens 8 Zeichen.'}
               type="password"
               value={password}
               onChange={(e) => setPw(e.target.value)}
-              placeholder={mode === 'login' ? 'Passwort' : 'Neues Passwort (mind. 8 Zeichen)'}
-              aria-label={mode === 'login' ? 'Passwort' : 'Neues Passwort'}
               autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               minLength={mode === 'login' ? undefined : 8}
-              aria-describedby={mode === 'login' ? undefined : 'pw-hint'}
               required
-              className={input}
             />
-            {/* Hinweis bleibt stehen, auch wenn man tippt (der Platzhalter verschwindet dann) */}
-            {mode !== 'login' && (
-              <p id="pw-hint" className="text-xs text-gray-600">
-                Mindestens 8 Zeichen.
-              </p>
-            )}
             {error && (
               <p role="alert" className="text-xs text-red-600">
                 {error}
@@ -201,7 +204,7 @@ export default function LoginScreen({ onDone }: Props) {
               {mode === 'login' ? 'Anmelden' : 'Zugang anlegen'}
             </button>
             {mode === 'login' && (
-              <p className="text-xs text-gray-500 text-center">Passwort vergessen? Ein Admin eurer Familie kann es zurücksetzen.</p>
+              <p className="text-xs text-gray-600 text-center">Passwort vergessen? Ein Admin eurer Familie kann es zurücksetzen.</p>
             )}
             </>
             )}
