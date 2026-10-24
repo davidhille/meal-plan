@@ -14,3 +14,16 @@ export function routineDue(
   const dueToday = r.frequency === "weekly" ? r.day_of_week === now.weekday : now.day === 1;
   return dueToday && now.time >= (r.time || "00:00") && r.last_run_date !== now.date;
 }
+
+/**
+ * Chefkoch-Automatik: welche Familie ist in diesem Cron-Lauf dran? Je Lauf nur eine – eine Familie braucht ca. 20 Unteranfragen
+ * (Datenbank + Chefkoch), das Free-Limit liegt bei 50 je Lauf. Reihum unter den fälligen Familien, die das Tageslimit noch nicht
+ * erreicht haben (`tick` = laufende Nummer des 15-Minuten-Takts); so kommt jede dran, auch wenn eine gerade nichts Passendes findet.
+ */
+export function pickAutoFamily<T extends { id: string; due: boolean; open: boolean }>(families: T[], tick: number): T | undefined {
+  const candidates = families.filter((f) => f.due && f.open).sort((a, b) => a.id.localeCompare(b.id));
+  return candidates.length ? candidates[tick % candidates.length] : undefined;
+}
+
+/** Laufende Nummer des 15-Minuten-Takts (für `pickAutoFamily`) */
+export const cronTick = (nowMs: number) => Math.floor(nowMs / (15 * 60 * 1000));
