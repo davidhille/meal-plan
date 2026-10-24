@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { newestTopMainUrl } from "./chefkoch";
+import { duplicateOf } from "./meals";
 import { sourceKey } from "./repo";
 
 describe("Chefkoch-Automatik", () => {
@@ -17,5 +18,18 @@ describe("Gleiche Quelle", () => {
   });
   test("andere Seiten: Adresse ohne Parameter", () => {
     expect(sourceKey("https://blog.de/rezept/curry/?utm=x")).toBe("https://blog.de/rezept/curry");
+  });
+});
+
+describe("Dubletten-Prüfung", () => {
+  test("gleicher Name, egal wie geschrieben", () => {
+    expect(duplicateOf("Spaghetti  Carbonara!", ["Gulasch", "spaghetti carbonara"])).toBe("spaghetti carbonara");
+    expect(duplicateOf("Käsespätzle", ["Kasespatzle"])).toBe("Kasespatzle");
+  });
+  test("ähnliche Variante desselben Gerichts", () => {
+    expect(duplicateOf("Hähnchenbrust in cremiger Knoblauchsauce", ["Hähnchenbrust in Knoblauchsauce"])).not.toBeNull();
+  });
+  test("verschiedene Gerichte sind keine Dubletten", () => {
+    expect(duplicateOf("Linseneintopf", ["Kartoffelsuppe", "Spaghetti Bolognese"])).toBeNull();
   });
 });

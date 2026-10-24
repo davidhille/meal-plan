@@ -618,6 +618,12 @@ export default function MainDishesView({
                     <strong>Neu von der Chefkoch-Automatik.</strong> Gefällt es dir? Dann behalten – sonst ausblenden, es wird nicht wieder
                     vorgeschlagen.
                   </p>
+                  {selected.similarTo && (
+                    <p className="flex items-start gap-1.5 font-medium text-amber-900">
+                      <ShieldAlert size={14} className="flex-shrink-0 mt-px" aria-hidden="true" />
+                      Ähnlich wie „{selected.similarTo}“ – möglicherweise eine Dublette.
+                    </p>
+                  )}
                   <div className="flex gap-2">
                     <button
                       type="button"
