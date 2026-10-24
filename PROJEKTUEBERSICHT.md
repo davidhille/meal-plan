@@ -16,7 +16,7 @@ und entfernen Zugänge.
 
 **Mehrere Familien:** Der Betreiber (erster Zugang überhaupt) sieht in den Einstellungen die Karte **„Administration“**:
 Familie anlegen → **Einladungslink** (7 Tage gültig, einmal nutzbar; kopieren oder teilen). Wer ihn öffnet, legt den
-ersten Zugang an und ist Admin seiner Familie. Außerdem: neuer Link, umbenennen, sperren (Anmeldung geht nicht mehr,
+ersten Zugang an und ist Admin seiner Familie. Ist der Link benutzt oder abgelaufen, nennt die Meldung die Familie und den Grund. Außerdem: neuer Link, umbenennen, sperren (Anmeldung geht nicht mehr,
 Routinen ruhen), endgültig löschen. Pro Familie getrennt: Pläne, Einkaufslisten, Favoriten, Bewertungen, Einstellungen,
 Shop-Zugänge **und eigene Rezepte** (Import, Chefkoch, Bearbeitungen, eigene Nachtische) sowie Filter-Anpassungen
 (Kategorien) und eigene Filter. Gemeinsam: Grundsammlung (383 Gerichte, 161 Nachtische), Bilder und **KI-Rezepte** – was

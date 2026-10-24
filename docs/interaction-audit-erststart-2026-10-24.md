@@ -3,7 +3,7 @@
 Weg: Einladungslink → Zugang anlegen → erster Blick in die App → Familie einrichten → erster Plan.
 Methode: Code gelesen (`LoginScreen`, `routes/admin.ts`, `MealPlanView`, `SettingsView`, `PlanCreationModal`), live nur lesend
 (Admin → Familien und Statistik; keine Daten der Familien selbst, keine Einladung angelegt). Maßstab: Skill `interaction-design`
-(Usage-/Origin-Story mit Peak-End, Excise, Zustände, Fehlervermeidung). Stand: **Block 1 (#1, #2, #4) und Block 2 (#3, #5) umgesetzt, dazu #6, #7 und #9**; nur #8 offen.
+(Usage-/Origin-Story mit Peak-End, Excise, Zustände, Fehlervermeidung). Stand: **Block 1 (#1, #2, #4) und Block 2 (#3, #5) umgesetzt, dazu #6, #7, #8 und #9** – alle Befunde bearbeitet.
 
 Posture: **transient** (einmaliger, kurzer Einstieg). Die Hürde ist hier nicht Technik, sondern dass die App erst *nach* dem ersten Plan
 erfährt, was die Familie nicht isst.
@@ -74,3 +74,7 @@ der Plan geht auch ohne Angaben.
 ## Umgesetzt: Familienmitglieder im Einstieg (#6)
 
 - Im leeren Plan steht unter den Chips „Wer isst mit?“ mit dem Knopf „Familie eintragen“ (springt zu Einstellungen, dort ist „Familienmitglieder“ die erste Karte). Nur sichtbar, solange keine Mitglieder eingetragen sind; freiwillig, „Plan erstellen“ geht immer.
+
+## Umgesetzt: Einladungs-Fehlertext (#8)
+
+- Ist der Link benutzt, abgelaufen oder ungültig, nennt die Meldung die Familie (falls der Link bekannt und die Familie nicht gesperrt ist) und den Grund; bei „benutzt“ der Hinweis auf die Anmeldung, sonst wer einen neuen Link gibt. `GET /auth/invite/:token` liefert dafür `reason` (`used` | `expired`) und `familyName` (`inviteProblem` in `worker/auth.ts`). Unbekannte Links verraten nichts.

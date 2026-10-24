@@ -3,7 +3,7 @@ import type { Ctx } from "../http";
 import { json } from "../http";
 import { getProfile } from "../repo";
 import {
-  MIN_PASSWORD, checkSetupPassword, clearSessionCookie, createSession, deleteSession, findInvite, hashPassword, login, markUsersExist, normEmail,
+  MIN_PASSWORD, checkSetupPassword, clearSessionCookie, createSession, deleteSession, findInvite, hashPassword, inviteProblem, login, markUsersExist, normEmail,
   usersExist, validEmail, verifyPassword, type SessionUser,
 } from "../auth";
 
@@ -50,7 +50,8 @@ export async function publicAuthRoutes({ request, env, sql, body, parts, route }
   if (parts[0] === "auth" && parts[1] === "invite" && parts[2]) {
     const invite = await findInvite(sql, decodeURIComponent(parts[2]));
     if (request.method === "GET") {
-      return json(invite ? { valid: true, familyName: invite.familyName } : { valid: false });
+      if (invite) return json({ valid: true, familyName: invite.familyName });
+      return json({ valid: false, ...(await inviteProblem(sql, decodeURIComponent(parts[2]))) });
     }
     if (request.method === "POST") {
       if (!invite) return json({ error: "Der Einladungslink ist abgelaufen oder wurde schon benutzt." }, 410);
