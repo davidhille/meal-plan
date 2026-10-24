@@ -127,6 +127,9 @@ export default function MainDishesView({
   const [notice, setNotice] = useState<string | null>(null);
   const [editing, setEditing] = useState<CatalogRecipe | null>(null);
   const [showUnsuitable, setShowUnsuitable] = useState(false);
+  /** Unpassende Gerichte, die einzeln eingeblendet wurden (ohne alle zu zeigen) */
+  const [revealed, setRevealed] = useState<string[]>([]);
+  const [showUnsuitableList, setShowUnsuitableList] = useState(false);
   const [showAi, setShowAi] = useState(false);
   const [showChefkoch, setShowChefkoch] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
@@ -156,9 +159,10 @@ export default function MainDishesView({
     const q = normalize(query.trim());
     return catalog.recipes.filter(
       (r) =>
-        (showUnsuitable || !r.unsuitable) && (!q || normalize(r.name).includes(q) || r.ingredients.some((i) => normalize(i).includes(q)))
+        (showUnsuitable || !r.unsuitable || revealed.includes(r.name)) &&
+        (!q || normalize(r.name).includes(q) || r.ingredients.some((i) => normalize(i).includes(q)))
     );
-  }, [catalog, query, showUnsuitable]);
+  }, [catalog, query, showUnsuitable, revealed]);
 
   // Eigene Filter, die es nicht mehr gibt, nicht mitzählen
   const activeSelection = useMemo(
@@ -200,7 +204,10 @@ export default function MainDishesView({
 
   const suitableCount = catalog.recipes.filter((r) => !r.unsuitable).length;
   const unsuitableCount = catalog.recipes.length - suitableCount;
-  const shownTotal = showUnsuitable ? catalog.recipes.length : suitableCount;
+  const unsuitableRecipes = catalog.recipes.filter((r) => r.unsuitable);
+  const shownTotal = showUnsuitable
+    ? catalog.recipes.length
+    : suitableCount + unsuitableRecipes.filter((r) => revealed.includes(r.name)).length;
   const conditions = (catalog.healthConditions ?? []).map((c) => CONDITION_LABELS[c] ?? c).join(', ');
   const example = swapExample(catalog.healthConditions ?? []);
 
@@ -325,18 +332,56 @@ export default function MainDishesView({
           </div>
         </div>
         {unsuitableCount > 0 && (
-          <label className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
-            <input
-              type="checkbox"
-              checked={showUnsuitable}
-              onChange={(e) => setShowUnsuitable(e.target.checked)}
-              className="mt-0.5 accent-amber-700"
-            />
-            <span>
-              {unsuitableCount} weitere Gerichte passen nicht zu euren Einstellungen{conditions ? ` (${conditions})` : ''} und werden nie
-              geplant. <strong>Auch diese zeigen</strong> – z. B. um Zutaten auszutauschen{example ? ` (${example})` : ''}.
-            </span>
-          </label>
+          <div className="rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
+            <label className="flex items-start gap-2 px-3 py-2.5">
+              <input
+                type="checkbox"
+                checked={showUnsuitable}
+                onChange={(e) => setShowUnsuitable(e.target.checked)}
+                className="mt-0.5 accent-amber-700"
+              />
+              <span>
+                {unsuitableCount} weitere Gerichte passen nicht zu euren Einstellungen{conditions ? ` (${conditions})` : ''} und werden
+                nie geplant. <strong>Alle zeigen</strong> – z. B. um Zutaten auszutauschen{example ? ` (${example})` : ''}.
+              </span>
+            </label>
+            <div className="px-3 pb-2.5">
+              <button
+                type="button"
+                onClick={() => setShowUnsuitableList((v) => !v)}
+                aria-expanded={showUnsuitableList}
+                className="h-8 text-xs font-semibold text-amber-900 underline underline-offset-2"
+              >
+                {showUnsuitableList ? 'Liste ausblenden' : 'Welche Gerichte sind das?'}
+              </button>
+              {showUnsuitableList && (
+                <ul className="mt-1 divide-y divide-amber-200">
+                  {unsuitableRecipes.map((r) => {
+                    const shown = showUnsuitable || revealed.includes(r.name);
+                    return (
+                      <li key={r.name} className="flex items-center justify-between gap-3 py-1.5">
+                        <button type="button" onClick={() => setSelected(r)} className="min-w-0 text-left font-medium truncate hover:underline">
+                          {r.name}
+                        </button>
+                        {shown ? (
+                          <span className="flex-shrink-0 text-amber-800">in der Liste</span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setRevealed((v) => [...v, r.name])}
+                            aria-label={`${r.name} in der Liste zeigen`}
+                            className="flex-shrink-0 h-8 px-2.5 rounded-lg bg-white border border-amber-300 font-semibold text-amber-900 hover:bg-amber-100"
+                          >
+                            Zeigen
+                          </button>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
         )}
 
         {visible.length === 0 ? (
