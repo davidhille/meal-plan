@@ -17,7 +17,12 @@ const onlyKnown = (raw: unknown, allowed: readonly string[]) =>
 
 export async function profileRoutes({ request, sql, body, parts, route, id, user, waitUntil }: Ctx): Promise<Response | null> {
   // ---------- Profil ----------
-  if (route === "GET /profile") return json(await getProfile(sql, user));
+  if (route === "GET /profile") {
+    const p = await getProfile(sql, user);
+    // Fehlende Chefkoch-Fotos im Hintergrund nachholen: nur aus einer Anfrage heraus klappt der Abruf beim Chefkoch-CDN
+    waitUntil(healChefkochPhotos(sql, p.id).catch((e) => logError(sql, "Chefkoch-Fotos nachholen", e, p.id)));
+    return json(p);
+  }
 
   if (route === "PUT /profile") {
     const p = await getProfile(sql, user);

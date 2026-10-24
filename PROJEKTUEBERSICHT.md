@@ -246,7 +246,7 @@ Auf- und zuklappbare Karten:
   Übernommene Rezepte sind unter Rezepte → Gerichte mit „Neu“ markiert (`recipes.auto_review`): Banner mit „Nur neue zeigen“ und
   „Alle behalten“; im geöffneten Rezept „Behalten“ oder „Ausblenden“ (Blättern in der „Nur neue“-Liste). Bis zur Prüfung werden sie
   wie eigene Rezepte mit eingeplant. „Jetzt Rezepte holen“ startet eine Portion von Hand (`POST /profile/chefkoch-auto/run`, auch bei
-  ausgeschalteter Automatik, Tageslimit gilt). Fehlt einem übernommenen Rezept das Foto, holt `healChefkochPhotos` es im Cron nach
+  ausgeschalteter Automatik, Tageslimit gilt). Fotos lädt nur eine Anfrage aus der App (im Cron blockt das Chefkoch-CDN): Fehlt einem übernommenen Rezept das Foto, holt `healChefkochPhotos` es beim nächsten App-Start nach (`GET /profile`)
   (höchstens 5 Versuche je Rezept, `recipes.photo_attempts`; ein entferntes Foto bleibt weg).
 - **Kommt nie in den Plan** (in „Gesundheit & Ernährung“ und beim Ausblenden): Hauptzutaten, die die ganze Familie nicht will
   (Fisch, Meeresfrüchte, Lamm, Schwein, Rind, Geflügel; `profiles.family_dislikes`, `worker/dislikes.ts`). Solche Gerichte werden

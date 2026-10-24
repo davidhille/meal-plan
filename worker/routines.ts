@@ -7,7 +7,7 @@ import { ensureSchema } from "./migrate";
 import { fillMissingImages, recheckStockPhotos } from "./images";
 import { addDaysIso, createPlan } from "./planning";
 import { sendRatingReminders } from "./push";
-import { AUTO_PER_DAY, healChefkochPhotos, importChefkochBatch } from "./chefkochAuto";
+import { AUTO_PER_DAY, importChefkochBatch } from "./chefkochAuto";
 
 /** Aktuelles Datum/Uhrzeit in Deutschland */
 function berlinNow() {
@@ -64,9 +64,8 @@ export async function runRoutines(env: Env) {
     FROM profiles WHERE chefkoch_auto AND NOT disabled`;
   for (const f of families) {
     const id = f.id as string;
-    if (f.due && f.open) await importChefkochBatch(sql, id, now.date).catch((e) => logError(sql, "Chefkoch-Automatik", e, id));
-    // Fehlende Fotos übernommener Rezepte nachholen (unabhängig von Uhrzeit und Tageslimit)
-    await healChefkochPhotos(sql, id).catch((e) => logError(sql, "Chefkoch-Fotos nachholen", e, id));
+    // Ohne Fotos: im Cron weist das Chefkoch-CDN Abrufe ab; die Fotos holt `GET /profile` beim nächsten App-Aufruf nach
+    if (f.due && f.open) await importChefkochBatch(sql, id, now.date, false).catch((e) => logError(sql, "Chefkoch-Automatik", e, id));
   }
 
   // Erinnerung zum Bewerten (Fehler hier sollen die Bilder nicht aufhalten)
