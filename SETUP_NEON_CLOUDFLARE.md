@@ -36,8 +36,8 @@ Der Block `r2_buckets` (Binding `BACKUPS`) steht aktiv in `wrangler.jsonc`; ohne
 danach je Lauf eine Familie, wöchentlich, und behält die letzten 8 Dateien (`<Familien-ID>/<Datum>.json`). Ohne Bucket passiert nichts.
 Zurückspielen: Datei aus dem Bucket laden → Administration → Familie → *Wiederherstellen*. Bilddaten sind nicht enthalten, Zugänge auch nicht.
 
-**Login-Schutz:** Cloudflare → Domain `miyummy.com` → **Security → WAF → Rate limiting rules** → *Create rule*: Feld *URI Path* *equals*
-`/api/auth/login`, Methode `POST`; 10 Anfragen je 1 Minute je IP; Aktion *Block* für 10 Minuten. (Der Free-Plan erlaubt eine Regel.)
+**Login-Schutz (eingerichtet):** Cloudflare → Domain `miyummy.com` → **Security → WAF → Rate limiting rules**: Feld *URI Path* *equals*
+`/api/auth/login`, je IP 10 Anfragen in 10 Sekunden, Aktion *Block* für 10 Sekunden (mehr erlaubt der Free-Plan nicht; er erlaubt eine Regel). Bei Überschreitung antwortet Cloudflare mit 429, die App zeigt „Zu viele Anfragen …“.
 
 **Uptime-Monitor:** kostenloser Dienst (z. B. UptimeRobot) auf `https://miyummy.com/api/health` (erwartet `200` und `{"ok":true}`).
 

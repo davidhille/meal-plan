@@ -17,7 +17,7 @@ Ein Worker (`/api/*` + statische App), Neon Postgres über HTTP, Workers AI, Cro
 | 2 | Sicherung | gebaut: wöchentlich je Familie nach R2 (`backup.ts`); Bucket `miyummy-backups` angelegt, Binding in `wrangler.jsonc` aktiv (`SETUP_NEON_CLOUDFLARE.md` 3b) |
 | 3 | Routine ohne Wiederholung | behoben: bis zu 3 Versuche am Tag (Migration 0029), danach Push. Rest-Risiko: Bricht die Datenbank mitten im Einfügen ab, könnte ein Wiederholungsversuch einen zweiten Plan anlegen (die KI-Schritte laufen vor dem ersten `INSERT`, daher selten) |
 | 4 | Free-Limits | offen, im Cloudflare-Dashboard zu bestätigen (Schritte in `SETUP_NEON_CLOUDFLARE.md` 3b). Entschärft: Export als ein Batch, Sicherung eine Familie je Lauf |
-| 5 | Login-Drosselung | offen, Cloudflare-Regel im Dashboard (Schritte in `SETUP_NEON_CLOUDFLARE.md` 3b) |
+| 5 | Login-Drosselung | behoben (24.10.2026): Cloudflare-Rate-Limit-Regel auf `/api/auth/login`, 10 Anfragen je 10 s und IP, Aktion Block (Free-Plan: nur 10 s Zeitspanne und Dauer möglich) |
 | 6 | Interne Fehlertexte | behoben: `UserError`; alles andere zeigt nur den allgemeinen Text |
 | 7 | Fehlerliste und Alarm | behoben: Foto-Fehler höchstens einmal am Tag je Familie; Push bei 500-Fehlern und gescheiterten Routinen (einmal am Tag je Anlass) |
 | 8 | Speicher-Monitoring | behoben: Anzeige in Admin → Statistik, Push ab 80 % (`storage.ts`) |
