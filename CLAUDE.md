@@ -137,7 +137,7 @@ geklappt.“), und wenn möglich, was zu tun ist. Netz- und Serverfehler wandelt
 **Titel von Fenstern** nennen die Handlung („Tag leeren?“), nie „Bitte bestätigen“. Knöpfe sind Verben, kein „OK“/„Ja“. Leerzustände
 erklären kurz und bieten den nächsten Schritt. Stand der Prüfung: `docs/ux-writing-audit-2026-10-24.md`.
 Interaktions-Audit der Einkaufsliste (abgeschlossen 24.10.2026, alle Befunde bearbeitet): `docs/interaction-audit-einkaufsliste-2026-10-24.md`.
-Interaktions-Audit Erststart neue Familie (Block 1 und 2 umgesetzt: Abneigungen im leeren Plan, ehrliche Zusammenfassung, Hinweis nach dem ersten Plan, Login-Politur #7, Kennzahl Einrichtung #9; #6, #8 offen): `docs/interaction-audit-erststart-2026-10-24.md`.
+Interaktions-Audit Erststart neue Familie (Block 1 und 2 umgesetzt: Abneigungen im leeren Plan, ehrliche Zusammenfassung, Hinweis nach dem ersten Plan, Login-Politur #7, Kennzahl Einrichtung #9, Familie im Einstieg #6; nur #8 offen): `docs/interaction-audit-erststart-2026-10-24.md`.
 
 ## UX-Discovery
 

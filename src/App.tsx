@@ -533,6 +533,8 @@ export default function App() {
             familyDislikes={profile?.family_dislikes}
             onFamilyDislike={handleFamilyDislike}
             onToggleDislike={handleToggleDislike}
+            memberCount={familyMembers.length}
+            onOpenFamily={() => setActiveTab('einstellungen')}
             isFreshFamily={!currentPlan && familyMembers.length === 0 && !(profile?.family_dislikes?.length)}
             onFillDay={
               currentPlan
