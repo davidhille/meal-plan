@@ -1,0 +1,53 @@
+# Interaction-Design-Audit: Einkaufsliste (24.10.2026)
+
+Weg: Plan → Einkaufsliste → Shop-Warenkorb (Knuspr/Picnic).
+Methode: Code gelesen (`ShoppingListView`, `ShoppingSection`, `CartBar`, `CartPreviewSheet`) und lesend live geprüft
+(miyummy.com, Handy-Format 375×812, Daten der Familie Hille, nichts geändert). Maßstab: Skill `interaction-design`
+(Mikrointeraktionen, Excise, Zustände, Fehlervermeidung, Reaktionszeiten, Tippflächen ≥ 44 px).
+Es wurde **nichts am Code geändert**; die Empfehlungen warten auf Davids Auswahl.
+
+Posture: **transient** (kurze Nutzung im Laden/Zuhause, Handy). Folge: wenige Entscheidungen, Rückgängig statt Rückfrage,
+Fehler sichtbar, Eingaben nie verlieren.
+
+## Befund-Tabelle
+
+Schwere: **H** = verliert Daten/Vertrauen, **M** = Reibung oder Fehlbedienung, **N** = Politur.
+
+| # | Schwere | Stelle | Befund | Empfehlung |
+|---|---|---|---|---|
+| 1 | H | Alle Schreibaktionen (`removeItem`, `moveToPantry`, `takeFromPantry`, `addItem`, `addToPantry`) | Fehler werden ignoriert. Bei Netzproblem (Laden, Funkloch) sieht der Nutzer keinen Fehler; die Liste kann vom Server abweichen. | Gemeinsame Fehlerzeile (`role="alert"`) mit „Erneut versuchen“; Zustand bei Fehler zurückrollen. |
+| 2 | H | Formulare „Eigenen Artikel hinzufügen“, Vorrat-Eingabe | Eingabefeld wird **vor** dem Ergebnis geleert. Scheitert der Aufruf, ist der Text weg. | Feld erst nach Erfolg leeren, bei Fehler Text behalten und Meldung zeigen. |
+| 3 | H | `toggleItem` bei Basics | Abgehakte Basis-Zutat wird **still** entfernt/verschoben, ohne Hinweis und ohne Rückgängig. | Kurzer Hinweis „X in den Vorrat gelegt · Rückgängig“ (5 s, modeless), kein Dialog. |
+| 4 | M | `load()` | Setzt jedes Mal `loading=true`; `if (loading)` ersetzt die **ganze Liste** durch einen Spinner (auch beim 10‑s‑Abgleich und nach jeder Aktion). Liste springt, Scrollposition und Fokus gehen verloren. | Spinner nur beim ersten Laden; danach stilles Nachladen (Stale-while-revalidate), Liste bleibt stehen. |
+| 5 | M | Vorrat-Karte | Das Menü (`role="menu"`) sitzt in einem Container mit `overflow-hidden` (live bestätigt: ein Container mit Vorrat + `overflow:hidden`). Das Menü kann abgeschnitten werden. Kein Escape, keine Pfeiltasten, kein Schließen beim Tippen daneben. | Menü per Portal oder ohne `overflow-hidden`; Escape/Außenklick schließen; Fokus zurück auf den Auslöser. |
+| 6 | M | Vorrat-Bearbeitung | Vorrat ändern ohne Rückgängig; auf dem Handy kein Hinweis, dass etwas langes Drücken/Menü braucht. | Rückgängig-Hinweis wie in #3; sichtbarer Menüknopf statt versteckter Geste. |
+| 7 | M | Tippflächen (live, Handy) | Unter 44 px: „Eigenen Artikel hinzufügen“ 38, „Hinzufügen“ 38×40, Gruppen-Köpfe „zuklappen“ 32, Symbolknöpfe „offene Einträge kopieren/als …“ **32×32**, „x erledigt“ 36, Zusammenfassung „3 Gerichte … einrechnen“ 32, Aktualisieren-Knopf der CartBar 40 breit. Im Warenkorb-Fenster: Stepper −/+ 28 px (mit `tap`-Fläche), Leeren 28 px hoch. | Mindestens 44 px Höhe/Fläche; die Symbolknöpfe zusammenrücken oder in ein Menü „Mehr“ auslagern. |
+| 8 | M | CartBar | Zeigt „0,00 €“ und „noch 7“ (offene Einträge) ohne Erklärung, was „noch 7“ bedeutet; Fortschritt bis Mindestwert nur farbig + Zahl. Meldung verschwindet nach 4 s (`setTimeout` ohne Aufräumen). | Klartext („7 Artikel noch nicht im Warenkorb“); Timer in `useEffect` aufräumen. |
+| 9 | M | `CartPreviewSheet` – „Leeren“ | Bestätigungsdialog verlangt Entscheidung vor jedem Leeren; entfernt auch Artikel, die der Nutzer direkt im Shop gelegt hat. Dafür besteht keine Rückgängig-Möglichkeit. | Hier ist der Dialog berechtigt (Shop-API ohne Rückgängig); Text beibehalten, Knopf „Warenkorb leeren“ mit Anzahl. |
+| 10 | M | `CartPreviewSheet` – Übertragen | Erfolg/Fehler erscheint als kleine graue Zeile `text-xs` über dem Knopf, ohne Unterscheidung von Erfolg und Fehler; nach Erfolg wird die Auswahl geleert, der Knopf sagt „Nichts zum Übertragen ausgewählt“ (Sackgasse, kein nächster Schritt). | Erfolg und Fehler farblich/ikonisch trennen; nach Erfolg „Zum Shop öffnen“ oder „Schließen“ anbieten (Ende des Weges gestalten). |
+| 11 | N | Texte | Leerzustand „Gerade ist nichts mit Knuspr-Produkt bei Knuspr eingeplant.“ doppelt; „Das hat nicht geklappt.“ ohne Gegenstand (CLAUDE.md verlangt Gegenstand + Handlung). | Texte nach Regeln im UX‑Writing‑Abschnitt der CLAUDE.md überarbeiten. |
+| 12 | N | Kontrast | Viele `text-xs text-gray-500`‑Zeilen (Hinweise, Preise) auf Weiß/Grau‑50: knapp an AA. | Kontrast der betroffenen Texte messen, ggf. `gray-600`. |
+| 13 | N | Lade-Hinweis | „Warenkorb wird geladen …“ nur im Fenster, CartBar zeigt „lädt …“ pro Shop: ok. Kein Zeitlimit; bleibt der Shop stumm, steht „lädt …“ dauerhaft. | Nach ca. 10 s „Antwort dauert länger. Erneut versuchen“. |
+
+Live bestätigt: Tippflächen (#7), Menü im `overflow-hidden`‑Container (#5), Wechsel in den Tab zeigt sofort Inhalt
+(Spinner-Flash bei #4 liegt unter der Messgrenze, per Code belegt). Nicht live prüfbar ohne Schreibaktionen: #1–#3, #10
+(Folge aus dem Code).
+
+## Zustandsübersicht (Liste)
+
+```
+[Laden erstes Mal] → [Liste]            Fehler → [Fehler + Erneut versuchen]   (heute: nur Spinner/leer)
+[Liste] --Haken--> [speichern] --ok--> [Liste]
+                              --Fehler--> [Liste mit Fehlerzeile, Rollback]      (heute: fehlt)
+[Liste] --Basis abhaken--> [Vorrat + „Rückgängig“ 5 s]                           (heute: still)
+[Liste] --10 s--> [stilles Nachladen]                                            (heute: Spinner ersetzt Liste)
+```
+
+## Empfohlene Reihenfolge
+
+1. **Vertrauen** (#1–#3): Fehler sichtbar, Eingabe behalten, Rückgängig bei stillen Änderungen.
+2. **Ruhe** (#4, #5): kein Spinner-Ersatz der Liste, Menü korrekt (Escape, nicht abgeschnitten).
+3. **Handy-Bedienung** (#7, #8): Tippflächen 44 px, CartBar‑Klartext.
+4. **Ende des Weges** (#10) und Texte/Kontrast (#11–#13).
+
+Offen: Test mit echtem Screenreader und mit schlechtem Netz (Flugmodus im Laden).
