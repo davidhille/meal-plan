@@ -8,7 +8,7 @@ das App-Icon (Teller mit Besteck) bleibt.
 **Technik:** React + Vite + TypeScript + Tailwind · Cloudflare Worker (API, Zeitplan, KI) · Neon Postgres.
 Entwickler-Infos stehen in `CLAUDE.md`, die Einrichtung in `SETUP_NEON_CLOUDFLARE.md`.
 
-**Zugang:** Jede Person meldet sich mit eigener E-Mail und eigenem Passwort an (Sitzung 180 Tage, verlängert sich bei
+**Zugang:** Jede Person meldet sich mit eigener E-Mail und eigenem Passwort an (Passwortfelder mit Anzeigen-Knopf; Sitzung 180 Tage, verlängert sich bei
 Nutzung; nach 8 Fehlversuchen 15 Minuten gesperrt). Den ersten Zugang legt man einmalig mit dem bisherigen
 Familien-Passwort (Secret `APP_PASSWORD`) an – danach gilt nur noch die Anmeldung. **Einstellungen → Zugänge:** eigenes
 Passwort ändern, abmelden; Admins legen Zugänge für die Familie an, setzen Passwörter zurück (meldet die Person überall ab)

@@ -3,7 +3,7 @@
 Weg: Einladungslink → Zugang anlegen → erster Blick in die App → Familie einrichten → erster Plan.
 Methode: Code gelesen (`LoginScreen`, `routes/admin.ts`, `MealPlanView`, `SettingsView`, `PlanCreationModal`), live nur lesend
 (Admin → Familien und Statistik; keine Daten der Familien selbst, keine Einladung angelegt). Maßstab: Skill `interaction-design`
-(Usage-/Origin-Story mit Peak-End, Excise, Zustände, Fehlervermeidung). Stand: **Block 1 (#1, #2, #4) und Block 2 (#3, #5) umgesetzt** (24.10.2026); #6–#9 offen.
+(Usage-/Origin-Story mit Peak-End, Excise, Zustände, Fehlervermeidung). Stand: **Block 1 (#1, #2, #4) und Block 2 (#3, #5) umgesetzt, dazu #7**; #6, #8, #9 offen.
 
 Posture: **transient** (einmaliger, kurzer Einstieg). Die Hürde ist hier nicht Technik, sondern dass die App erst *nach* dem ersten Plan
 erfährt, was die Familie nicht isst.
@@ -61,3 +61,8 @@ der Plan geht auch ohne Angaben.
 
 - #3: Zusammenfassung der Karte „Gesundheit & Ernährung“ ohne Einträge: „Nichts ausgeschlossen – tippe, um z. B. Fisch oder Lamm auszuschließen.“
 - #5: Hinweis „Euer erster Plan steht …“ mit „Verstanden“ über dem Plan. Er erscheint nur, wenn der Plan aus dem Willkommens-Leerzustand erstellt wurde (Merker in `localStorage`, nur Komfort; ohne Speicher kein Hinweis) und verschwindet dauerhaft nach „Verstanden“.
+
+## Umgesetzt: Login-Politur (#7)
+
+- Fehlertext mit Gegenstand und nächstem Schritt (Anmelden bzw. Zugang anlegen); eine deutsche Meldung vom Server hat weiter Vorrang.
+- Passwortfelder mit Anzeigen-Knopf (44 px, `aria-pressed`); `autoFocus` auf „Dein Name“ bei Einladung.
