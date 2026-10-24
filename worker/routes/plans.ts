@@ -4,6 +4,7 @@ import type { Ctx } from "../http";
 import { json } from "../http";
 import { IMAGE_URL_SQL, IMAGE_CREDIT_SQL, fillMissingImages } from "../images";
 import { PLAN_COLS, getProfile, latestPlan, planOwned } from "../repo";
+import { loadDislikeHint } from "../dislikePattern";
 import { createPlan, replaceMeal, replaceWithRecipe, setBrotzeit } from "../planning";
 
 /** Nachtisch aus dem Request prüfen und auf die erlaubten Felder beschränken */
@@ -67,7 +68,9 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
     const p = await getProfile(sql, user);
     const replacement = await replaceMeal(env, sql, p.id, id, parts[2] === "reject", waitUntil);
     if (!replacement) return json({ error: "Kein passender Ersatz gefunden" }, 404);
-    return json({ replacement });
+    // Beim Ausblenden: Muster erkannt? Dann bietet die App an, die Hauptzutat ganz wegzulassen
+    const dislikeHint = parts[2] === "reject" ? await loadDislikeHint(sql, p.id, id) : null;
+    return json({ replacement, dislikeHint });
   }
 
   // Ablehnen rückgängig: Gericht wieder an seinen Tag, Ersatz weg, nicht mehr ausgeblendet
