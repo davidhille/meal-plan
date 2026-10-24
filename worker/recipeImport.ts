@@ -11,15 +11,24 @@ export interface ImportedRecipe extends Recipe {
 }
 
 
+/** So schreibt Chefkoch Titel in die Adresse: Umlaute ausgeschrieben, alles andere zu Bindestrichen */
+const slugify = (s: string) =>
+  s.toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss").replace(/[^a-z0-9]+/g, "-");
+
 /**
- * Chefkoch hängt oft den Nutzernamen an den Titel: „Knoblauch-Hähnchen … von DasperfekteDinner“, „… von bettina_uphus“.
- * Entfernt wird „von X“ am Ende, wenn X der Autor ist oder wie ein Nutzername aussieht (Unterstrich, Ziffer, Großbuchstabe
- * mitten im Wort, nur Kleinbuchstaben) – „Gulasch von Oma“ bleibt.
+ * Chefkoch hängt oft den Nutzernamen an den Titel: „Knoblauch-Hähnchen … von DasperfekteDinner“, „… von Routinier“.
+ * Entfernt wird „von X“ am Ende, wenn
+ * - die Chefkoch-Adresse den Titel ohne „von X“ enthält (sicherstes Zeichen: `…/rezepte/123/Steak-mit-Rahmsauce.html`),
+ * - X der Autor ist oder
+ * - X wie ein Nutzername aussieht (Unterstrich, Ziffer, Großbuchstabe mitten im Wort, nur Kleinbuchstaben).
+ * „Gulasch von Oma“ bleibt (steht so auch in der Adresse).
  */
-export function stripAuthorSuffix(rawName: string, author = ""): string {
+export function stripAuthorSuffix(rawName: string, author = "", sourceUrl = ""): string {
   const m = rawName.match(/^(.*\S)\s+von\s+(\S+)$/);
   if (!m) return rawName;
   const [, title, who] = m;
+  const slug = sourceUrl.match(/chefkoch\.de\/rezepte\/\d+\/([^/?#]+?)(?:\.html)?(?:[?#]|$)/i)?.[1]?.toLowerCase() ?? "";
+  if (slug) return `-${slug}-`.includes(`-von-${slugify(who).replace(/^-+|-+$/g, "")}-`) ? rawName : title.trim();
   const isAuthor = !!author && who.toLowerCase() === author.toLowerCase();
   const looksLikeUser = /[_\d]/.test(who) || /^[a-zäöüß]/.test(who) || /[a-zäöüß][A-ZÄÖÜ]/.test(who);
   return isAuthor || looksLikeUser ? title.trim() : rawName;
@@ -71,7 +80,7 @@ export function parseRecipeHtml(html: string, sourceUrl: string): ImportedRecipe
   // Chefkoch hängt den Autor an den Namen („Paprika-Hähnchen von Sister“) – für die Sammlung weglassen
   const author = clean(text((toArray(node.author)[0] as Json | undefined)?.name ?? toArray(node.author)[0]));
   const rawName = clean(text(node.name));
-  const name = stripAuthorSuffix(rawName, author);
+  const name = stripAuthorSuffix(rawName, author, sourceUrl);
   const rawIngredients = toArray(node.recipeIngredient ?? node.ingredients).map((i) => clean(text(i))).filter(Boolean);
   if (!name || rawIngredients.length === 0) return null;
 
