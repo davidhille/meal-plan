@@ -34,6 +34,7 @@ import {
   reviewRecipes,
   saveRecipeEdit,
   setRecipeHidden,
+  type DislikeHint,
   wishToQuery,
 } from '../lib/api';
 import { RECIPE_BASE_PORTIONS } from '../lib/portions';
@@ -60,6 +61,8 @@ interface MainDishesViewProps {
   /** „Kommt nie in den Plan“ – beim Ausblenden anbieten */
   familyDislikes?: string[];
   onFamilyDislike?: (groupId: string) => Promise<void>;
+  /** Muster erkannt (z. B. das 3. Lammgericht ausgeblendet): die App fragt, ob die Hauptzutat ganz wegfallen soll */
+  onDislikeHint?: (hint: DislikeHint) => void;
 }
 
 function readSort(): RecipeSort {
@@ -103,6 +106,7 @@ export default function MainDishesView({
   favoriteNames = [],
   familyDislikes,
   onFamilyDislike,
+  onDislikeHint,
 }: MainDishesViewProps) {
   const [catalog, setCatalog] = useState<RecipeCatalog | null>(null);
   const { ratings, notes } = useRatings();
@@ -275,7 +279,7 @@ export default function MainDishesView({
 
   const restore = async (name: string) => {
     try {
-      setCatalog(await setRecipeHidden(name, false));
+      setCatalog((await setRecipeHidden(name, false)).catalog);
       flash(`„${name}“ wird wieder vorgeschlagen.`);
     } catch (e) {
       flash((e as Error).message || 'Das hat nicht geklappt.');
@@ -766,10 +770,12 @@ export default function MainDishesView({
             const hiddenName = hideCandidate.name;
             // Aus dem geöffneten Rezept heraus ausgeblendet: in der „Nur neue“-Ansicht mit dem nächsten weitermachen
             const next = selected?.name === hiddenName && onlyNew ? (visible[selectedIndex + 1] ?? visible[selectedIndex - 1] ?? null) : null;
-            const updated = await setRecipeHidden(hiddenName, true);
+            const { catalog: updated, hint } = await setRecipeHidden(hiddenName, true);
             setCatalog(updated);
             if (selected?.name === hiddenName) setSelected(next ? (updated.recipes.find((r) => r.name === next.name) ?? null) : null);
-            flash(`„${hiddenName}“ ist ausgeblendet.`);
+            // Muster erkannt („Lamm ganz weglassen?“): der Hinweis steht an derselben Stelle wie die Kurzmeldung und ersetzt sie
+            if (hint && onDislikeHint) onDislikeHint(hint);
+            else flash(`„${hiddenName}“ ist ausgeblendet.`);
           }}
           onClose={() => setHideCandidate(null)}
         />
