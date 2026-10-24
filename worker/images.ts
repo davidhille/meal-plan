@@ -594,12 +594,14 @@ export async function serveImage(sql: Sql, mealName: string, profileId: string |
 }
 
 /** Foto der Rezept-Quelle (z. B. Chefkoch) übernehmen – mit Nennung und Link zum Original */
-/** Chefkoch-Bilder kommen vom CDN; mit Browser-Kennung und Referer geladen (die App-Kennung wird dort leicht abgewiesen) */
-const CHEFKOCH_PHOTO_HEADERS = {
+/**
+ * Fallback für Chefkoch-Fotos, falls die App-Kennung abgewiesen wird. Zuerst immer die ehrliche App-Kennung (`UA`): Eine
+ * vorgetäuschte Browser-Kennung aus dem Rechenzentrum weist das Chefkoch-CDN mit 403 ab (so geschehen am 24.10.2026).
+ */
+const BROWSER_PHOTO_HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36",
   Accept: "image/avif,image/webp,image/jpeg,image/*;q=0.8",
-  Referer: "https://www.chefkoch.de/",
 };
 
 /** Foto einer Quelle laden und als Bild des Gerichts speichern; wirft mit lesbarem Grund, wenn es nicht klappt */
@@ -611,10 +613,16 @@ export async function storeSourcePhotoChecked(
   creditUrl: string,
   profileId: string | null = null
 ): Promise<string> {
-  const img = await fetch(photoUrl, { headers: /chefkoch/i.test(photoUrl) ? CHEFKOCH_PHOTO_HEADERS : UA });
+  const host = new URL(photoUrl).host;
+  let img = await fetch(photoUrl, { headers: UA });
+  const statuses = [`App-Kennung ${img.status}`];
+  if (!img.ok && img.status === 403) {
+    img = await fetch(photoUrl, { headers: BROWSER_PHOTO_HEADERS });
+    statuses.push(`Browser-Kennung ${img.status}`);
+  }
   const type = img.headers.get("content-type") || "";
-  if (!img.ok) throw new Error(`Foto von ${new URL(photoUrl).host} nicht abrufbar (HTTP ${img.status})`);
-  if (!type.startsWith("image/")) throw new Error(`Foto von ${new URL(photoUrl).host} ist kein Bild (${type || "ohne Typ"})`);
+  if (!img.ok) throw new Error(`Foto von ${host} nicht abrufbar (HTTP ${statuses.join(", ")})`);
+  if (!type.startsWith("image/")) throw new Error(`Foto von ${host} ist kein Bild (${type || "ohne Typ"})`);
   const buf = await img.arrayBuffer();
   if (buf.byteLength > 4_000_000) throw new Error("Foto ist größer als 4 MB");
   return storeImage(sql, mealName, { base64: toBase64(buf), contentType: type, source: "chefkoch", creditName, creditUrl }, profileId);
