@@ -117,6 +117,15 @@ Farben in `tailwind.config.js`: `brand-*` (Pflaume, Hauptfarbe), `coral-*` (Akze
 Kontraste auf WCAG AA; Icon-Knöpfe brauchen `aria-label`. Kleinste Schrift `text-xs` (12 px), keine `text-[10px]`/`text-[11px]`.
 Kleine Symbol-Knöpfe (unter 44 px) bekommen die Klasse `tap` (unsichtbare Tippfläche, `index.css`).
 
+## UX-Discovery
+
+Anker für Produktentscheidungen: `docs/ux-discovery/2026-10-23-miyummy-discovery.md` (Problem: „Der Plan lernt zu wenig“). Stand der
+Folgeschritte laut `docs/ux-discovery/2026-10-24-validation.md`: Abneigung = Ausschluss und Ausblenden mit „Keinen X mehr“ sind
+umgesetzt (#123); offen sind der Muster-Vorschlag nach dem 3. Ausblenden, die Kennzahlen in Admin → Statistik und „Warum dieser
+Vorschlag?“. Entscheidung von David: Familien-Nein schließt immer aus, „Mag nicht“ einzelner Mitglieder nur bei Mehrheit.
+**Stolperfalle:** Familien-Nein „Fisch“ deckt Garnelen & Co. nicht ab, dafür gibt es die eigene Gruppe „Meeresfrüchte“.
+Vor dem Ausliefern größerer UX-Änderungen den Skill `ux-validate` gegen dieses Doc laufen lassen.
+
 ## Datenbank
 
 Das Schema steht vollständig in `worker/migrations/` (`0001_basis.ts` = alles bis Oktober 2026). Der Worker führt
