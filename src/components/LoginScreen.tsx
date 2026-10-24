@@ -177,9 +177,16 @@ export default function LoginScreen({ onDone }: Props) {
               aria-label={mode === 'login' ? 'Passwort' : 'Neues Passwort'}
               autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               minLength={mode === 'login' ? undefined : 8}
+              aria-describedby={mode === 'login' ? undefined : 'pw-hint'}
               required
               className={input}
             />
+            {/* Hinweis bleibt stehen, auch wenn man tippt (der Platzhalter verschwindet dann) */}
+            {mode !== 'login' && (
+              <p id="pw-hint" className="text-xs text-gray-600">
+                Mindestens 8 Zeichen.
+              </p>
+            )}
             {error && (
               <p role="alert" className="text-xs text-red-600">
                 {error}

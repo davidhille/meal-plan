@@ -117,6 +117,11 @@ Farben in `tailwind.config.js`: `brand-*` (Pflaume, Hauptfarbe), `coral-*` (Akze
 `gray-*` mit Pflaumenstich. Schrift Plus Jakarta Sans; Logo-Schriftzug `Logo.tsx` in Poppins (in `index.html` nur die Zeichen m/ı/y/u geladen), „mi“ fett, „yummy“ leicht, i-Punkt = Koralle-Ring. **Keine** `green-*`-Klassen mehr verwenden – alles ist auf `brand-*` umgestellt.
 Kontraste auf WCAG AA; Icon-Knöpfe brauchen `aria-label`. Kleinste Schrift `text-xs` (12 px), keine `text-[10px]`/`text-[11px]`.
 Kleine Symbol-Knöpfe (unter 44 px) bekommen die Klasse `tap` (unsichtbare Tippfläche, `index.css`).
+Jedes Eingabefeld braucht einen Namen (sichtbares `<label>` oder `aria-label`); Hinweise zu einem Feld (z. B. „mind. 8 Zeichen“) dauerhaft
+sichtbar und per `aria-describedby` verbunden, nicht nur als Platzhalter. Fenster nur über `useDialog`: Escape, Fokus hinein und zurück und
+**Tab bleibt im Fenster** (`lib/focusTrap.ts`); ohne das wanderte der Fokus hinter das Fenster. Bewegung: `prefers-reduced-motion` in
+`index.css` (Übergänge und Pulsieren aus, Ladekreise laufen weiter). Stand der Prüfung: `docs/accessibility-audit-2026-10-24.md`
+(offen: Test mit echtem Screenreader, sichtbare Beschriftungen auf der Anmeldeseite).
 
 ## UX-Discovery
 
