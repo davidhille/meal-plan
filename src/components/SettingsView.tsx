@@ -171,7 +171,7 @@ export default function SettingsView({
                 profile.family_dislikes?.length ? `nie ${profile.family_dislikes.map(familyDislikeLabel).join(', ')}` : null,
               ]
                 .filter(Boolean)
-                .join(' · ') || 'Ausgewogen, keine Einschränkungen'
+                .join(' · ') || 'Nichts ausgeschlossen – tippe, um z. B. Fisch oder Lamm auszuschließen.'
             }
             action={
               <button

@@ -62,7 +62,7 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
 
 ## 1. Speiseplan
 
-- **Leerer Speiseplan:** Frage „Was esst ihr nicht?“ mit Chips (Fisch, Meeresfrüchte, Lamm, Schwein, Rind, Geflügel), speichert sofort das Familien-Nein; überspringbar, „Plan erstellen“ geht immer. Neue Familien sehen zusätzlich „Willkommen bei miyummy“.
+- **Leerer Speiseplan:** Frage „Was esst ihr nicht?“ mit Chips (Fisch, Meeresfrüchte, Lamm, Schwein, Rind, Geflügel), speichert sofort das Familien-Nein; überspringbar, „Plan erstellen“ geht immer. Neue Familien sehen zusätzlich „Willkommen bei miyummy“ und nach dem ersten Plan einmalig einen Hinweis auf Tauschen/Ausblenden („Verstanden“ blendet ihn dauerhaft aus).
 - **Heute-Karte** oben: heutiges Gericht groß mit Bild, „Rezept“ und „Kochmodus“, darunter das Gericht von morgen. Ist heute
   nichts geplant, steht dort direkt „Gericht planen“.
   Gestern (bzw. heute ab der Erinnerungszeit, spätestens ab 18 Uhr) noch nicht bewertet? Direkt dort mit Sternen bewerten. Der heutige Tag ist im Plan markiert.
