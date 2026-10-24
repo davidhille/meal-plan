@@ -157,6 +157,9 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
   Gerichte vergangener Tage zählen standardmäßig nicht mit (Hinweis unter der Zusammenfassung mit „einrechnen“;
   `?since=` an `GET /plans/:id/shopping`, die Häkchen bleiben dabei erhalten).
 - **„⋯“ an jedem Eintrag:** Produkt auswählen, „Haben wir immer da“ (Vorrat), in andere Liste, Entfernen (eigene Artikel).
+- **Rückmeldung:** scheitert eine Aktion (abhaken, hinzufügen, entfernen, Vorrat), steht oben in der Liste eine rote Fehlerzeile
+  und die Änderung wird zurückgenommen; Eingaben in „Artikel hinzufügen“ und „Zum Vorrat“ bleiben dann stehen. Wird eine
+  Basis-Zutat abgehakt, erscheint 6 Sekunden lang „… liegt wieder im Vorrat“ mit **Rückgängig**.
 - **Abgehakt:** steht zusammengeklappt unten in jeder Liste („7 erledigt“), sind alle abgehakt: „Alles erledigt“.
 - **Listen:** Lieferdienst (Knuspr/Picnic), Metzger (Fleisch automatisch, abschaltbar), eigene Listen (Aldi, DM …).
   Zuordnungen pro Zutat werden für künftige Pläne gemerkt. Listen sind auf- und zuklappbar.
