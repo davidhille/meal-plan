@@ -77,7 +77,8 @@ function AiLine({ ai }: { ai: AiUsage }) {
         <span className="font-semibold text-gray-800">30 Tage {num(ai.month)}</span> Neurons
       </p>
       <p className="text-gray-500">
-        Rezepte {num(ai.recipes)} ({ai.recipeCalls}×) · Bilder {num(ai.images)} ({ai.imageCalls}×)
+        Rezepte {num(ai.recipes)} ({ai.recipeCalls} {ai.recipeCalls === 1 ? 'Aufruf' : 'Aufrufe'}) · Bilder {num(ai.images)} ({ai.imageCalls}{' '}
+        {ai.imageCalls === 1 ? 'Aufruf' : 'Aufrufe'})
       </p>
     </div>
   );
@@ -226,8 +227,7 @@ export default function AdminStats() {
                       {f.userCount} {f.userCount === 1 ? 'Zugang' : 'Zugänge'} · {last ? `zuletzt aktiv ${last}` : 'noch nicht angemeldet'}
                     </p>
                     <p className="text-xs text-gray-500">
-                      Einrichtung: {f.memberCount} {f.memberCount === 1 ? 'Mitglied' : 'Mitglieder'} · {f.dislikeCount}{' '}
-                      {f.dislikeCount === 1 ? 'Ausschluss' : 'Ausschlüsse'}
+                      Einrichtung: {f.memberCount} {f.memberCount === 1 ? 'Mitglied' : 'Mitglieder'} · Familien-Nein: {f.dislikeCount}
                       {f.planCount === 0 && f.memberCount === 0 && f.dislikeCount === 0 ? ' – noch nichts eingerichtet' : ''}
                     </p>
                   </div>
