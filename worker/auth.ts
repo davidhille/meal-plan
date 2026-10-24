@@ -151,6 +151,18 @@ export async function findInvite(sql: Sql, token: string): Promise<{ hash: strin
 }
 
 /**
+ * Warum gilt ein Einladungslink nicht mehr? Nur für die Meldung an die eingeladene Person: bekannter Link einer nicht
+ * gesperrten Familie → „abgelaufen“ bzw. „benutzt“ plus Familienname; sonst `null` (unbekannt, kein Hinweis).
+ */
+export async function inviteProblem(sql: Sql, token: string): Promise<{ reason: "used" | "expired"; familyName: string | null } | null> {
+  if (!token || token.length > 100) return null;
+  const hash = await sha256(token);
+  const rows = await sql`SELECT i.used_at IS NOT NULL AS used, p.name FROM invites i JOIN profiles p ON p.id = i.profile_id
+    WHERE i.token_hash = ${hash} AND NOT p.disabled`;
+  return rows[0] ? { reason: rows[0].used ? "used" : "expired", familyName: rows[0].name ?? null } : null;
+}
+
+/**
  * Darf der erste Zugang angelegt werden? Nur mit dem Familien-Passwort aus `APP_PASSWORD`. Ist es nicht gesetzt, ist die
  * Einrichtung gesperrt (nie offen): Sonst würde auf einer leeren Datenbank die erste Person, die die Adresse aufruft, Betreiber.
  */

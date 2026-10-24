@@ -80,7 +80,7 @@ export interface Family {
 }
 
 /** Einladungslink prüfen (ohne Anmeldung) */
-export async function getInvite(token: string): Promise<{ valid: boolean; familyName?: string | null }> {
+export async function getInvite(token: string): Promise<{ valid: boolean; familyName?: string | null; reason?: 'used' | 'expired' }> {
   return requestPublic('GET', `/auth/invite/${encodeURIComponent(token)}`);
 }
 

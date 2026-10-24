@@ -76,6 +76,7 @@ const dropInviteFromUrl = () => {
 export default function LoginScreen({ onDone }: Props) {
   const [mode, setMode] = useState<'loading' | 'login' | 'setup' | 'invite' | 'invalid-invite'>('loading');
   const [familyName, setFamilyName] = useState<string | null>(null);
+  const [inviteReason, setInviteReason] = useState<'used' | 'expired' | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPw] = useState('');
   const [name, setName] = useState('');
@@ -89,6 +90,7 @@ export default function LoginScreen({ onDone }: Props) {
       getInvite(token)
         .then((r) => {
           setFamilyName(r.familyName ?? null);
+          setInviteReason(r.reason ?? null);
           setMode(r.valid ? 'invite' : 'invalid-invite');
         })
         .catch(() => setMode('invalid-invite'));
@@ -143,8 +145,10 @@ export default function LoginScreen({ onDone }: Props) {
             {mode === 'invalid-invite' && (
               <>
                 <p role="alert" className="text-sm text-gray-700">
-                  Dieser Einladungslink ist abgelaufen oder wurde schon benutzt. Bitte frag nach einem neuen Link – oder melde
-                  dich an, wenn du schon einen Zugang hast.
+                  {inviteReason === 'used'
+                    ? `Dieser Einladungslink${familyName ? ` für ${familyName}` : ''} wurde schon benutzt. Hast du schon einen Zugang? Dann melde dich an.`
+                    : `Dieser Einladungslink${familyName ? ` für ${familyName}` : ''} ist abgelaufen oder nicht gültig.`}{' '}
+                  Einen neuen Link bekommst du von der Person, die dich eingeladen hat.
                 </p>
                 <button
                   type="button"
