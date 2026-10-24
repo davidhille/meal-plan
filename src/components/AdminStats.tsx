@@ -225,6 +225,11 @@ export default function AdminStats() {
                     <p className="text-xs text-gray-500">
                       {f.userCount} {f.userCount === 1 ? 'Zugang' : 'Zugänge'} · {last ? `zuletzt aktiv ${last}` : 'noch nicht angemeldet'}
                     </p>
+                    <p className="text-xs text-gray-500">
+                      Einrichtung: {f.memberCount} {f.memberCount === 1 ? 'Mitglied' : 'Mitglieder'} · {f.dislikeCount}{' '}
+                      {f.dislikeCount === 1 ? 'Ausschluss' : 'Ausschlüsse'}
+                      {f.planCount === 0 && f.memberCount === 0 && f.dislikeCount === 0 ? ' – noch nichts eingerichtet' : ''}
+                    </p>
                   </div>
                   <div className="grid grid-cols-3 gap-1.5">
                     <Figure value={f.planCount} label={f.planCount === 1 ? 'Plan' : 'Pläne'} />

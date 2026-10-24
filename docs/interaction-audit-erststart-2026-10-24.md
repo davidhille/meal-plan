@@ -3,7 +3,7 @@
 Weg: Einladungslink → Zugang anlegen → erster Blick in die App → Familie einrichten → erster Plan.
 Methode: Code gelesen (`LoginScreen`, `routes/admin.ts`, `MealPlanView`, `SettingsView`, `PlanCreationModal`), live nur lesend
 (Admin → Familien und Statistik; keine Daten der Familien selbst, keine Einladung angelegt). Maßstab: Skill `interaction-design`
-(Usage-/Origin-Story mit Peak-End, Excise, Zustände, Fehlervermeidung). Stand: **Block 1 (#1, #2, #4) und Block 2 (#3, #5) umgesetzt, dazu #7**; #6, #8, #9 offen.
+(Usage-/Origin-Story mit Peak-End, Excise, Zustände, Fehlervermeidung). Stand: **Block 1 (#1, #2, #4) und Block 2 (#3, #5) umgesetzt, dazu #7 und #9**; #6, #8 offen.
 
 Posture: **transient** (einmaliger, kurzer Einstieg). Die Hürde ist hier nicht Technik, sondern dass die App erst *nach* dem ersten Plan
 erfährt, was die Familie nicht isst.
@@ -66,3 +66,7 @@ der Plan geht auch ohne Angaben.
 
 - Fehlertext mit Gegenstand und nächstem Schritt (Anmelden bzw. Zugang anlegen); eine deutsche Meldung vom Server hat weiter Vorrang.
 - Passwortfelder mit Anzeigen-Knopf (44 px, `aria-pressed`); `autoFocus` auf „Dein Name“ bei Einladung.
+
+## Umgesetzt: Kennzahl „Einrichtung“ (#9)
+
+- Admin → Statistik zeigt je Familie „Einrichtung: n Mitglieder · n Ausschlüsse“ (`memberCount`, `dislikeCount` aus `GET /admin/stats`); ohne Plan, Mitglieder und Ausschlüsse mit dem Zusatz „noch nichts eingerichtet“.
