@@ -32,7 +32,7 @@ Secrets wirken sofort, kein neuer Deploy nötig.
 ## 3b. Betrieb: Sicherung und Login-Schutz (Dashboard, einmalig)
 
 **Wöchentliche Sicherung (R2):** Cloudflare → **R2 Object Storage** → *Create bucket* → Name `miyummy-backups` (Standort automatisch).
-Dann in `wrangler.jsonc` den auskommentierten Block `r2_buckets` aktivieren (Binding `BACKUPS`) und nach `main` pushen. Der Cron sichert
+Der Block `r2_buckets` (Binding `BACKUPS`) steht aktiv in `wrangler.jsonc`; ohne den Bucket schlägt der Deploy fehl. Der Cron sichert
 danach je Lauf eine Familie, wöchentlich, und behält die letzten 8 Dateien (`<Familien-ID>/<Datum>.json`). Ohne Bucket passiert nichts.
 Zurückspielen: Datei aus dem Bucket laden → Administration → Familie → *Wiederherstellen*. Bilddaten sind nicht enthalten, Zugänge auch nicht.
 

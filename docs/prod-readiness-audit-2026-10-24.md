@@ -14,7 +14,7 @@ Ein Worker (`/api/*` + statische App), Neon Postgres über HTTP, Workers AI, Cro
 | # | Befund | Stand |
 |---|---|---|
 | 1 | Offener Zugriff bei leerer Datenbank | behoben: kein `X-App-Password`-Übergang mehr, ohne Sitzung immer 401; Ersteinrichtung nur mit gesetztem `APP_PASSWORD` (`checkSetupPassword`) |
-| 2 | Sicherung | gebaut: wöchentlich je Familie nach R2 (`backup.ts`); läuft, sobald der Bucket `miyummy-backups` angelegt und das Binding in `wrangler.jsonc` aktiv ist (`SETUP_NEON_CLOUDFLARE.md` 3b) |
+| 2 | Sicherung | gebaut: wöchentlich je Familie nach R2 (`backup.ts`); Bucket `miyummy-backups` angelegt, Binding in `wrangler.jsonc` aktiv (`SETUP_NEON_CLOUDFLARE.md` 3b) |
 | 3 | Routine ohne Wiederholung | behoben: bis zu 3 Versuche am Tag (Migration 0029), danach Push. Rest-Risiko: Bricht die Datenbank mitten im Einfügen ab, könnte ein Wiederholungsversuch einen zweiten Plan anlegen (die KI-Schritte laufen vor dem ersten `INSERT`, daher selten) |
 | 4 | Free-Limits | offen, im Cloudflare-Dashboard zu bestätigen (Schritte in `SETUP_NEON_CLOUDFLARE.md` 3b). Entschärft: Export als ein Batch, Sicherung eine Familie je Lauf |
 | 5 | Login-Drosselung | offen, Cloudflare-Regel im Dashboard (Schritte in `SETUP_NEON_CLOUDFLARE.md` 3b) |
