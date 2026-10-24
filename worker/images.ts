@@ -513,28 +513,6 @@ export async function removeImage(sql: Sql, mealName: string, profileId: string)
       rejected_photos = (SELECT array_agg(DISTINCT x) FROM unnest(COALESCE(meal_images.rejected_photos, '{}') || EXCLUDED.rejected_photos) AS x)`;
 }
 
-/**
- * Einmalig: vorhandene Ersatzfotos mit den strengeren Regeln nachprüfen. Pixabay-Links enthalten die Schlagworte
- * („cordon-bleu-pommes-frites“); zeigt ein Foto etwas, das nicht im Rezept ist, wird es verworfen und nachgesucht.
- */
-export async function recheckStockPhotos(sql: Sql): Promise<number> {
-  const done = await sql`SELECT 1 FROM app_settings WHERE key = 'photo_recheck_v1'`;
-  if (done[0]) return 0;
-  await sql`INSERT INTO app_settings (key, value) VALUES ('photo_recheck_v1', '1') ON CONFLICT (key) DO NOTHING`;
-  const rows = await sql`SELECT meal_name, credit_url FROM meal_images
-    WHERE profile_id IS NULL AND image_data IS NOT NULL AND source = ANY(${PHOTO_SOURCES}) AND credit_url IS NOT NULL`;
-  let cleared = 0;
-  for (const r of rows) {
-    const info = await dishInfo(sql, r.meal_name);
-    if (!photoConflict(recipeText(r.meal_name, info.ingredients, info.type), r.credit_url)) continue;
-    await sql`UPDATE meal_images SET image_data = NULL, image_url = '', source = NULL, credit_name = NULL, credit_url = NULL,
-      rejected_photos = array_append(COALESCE(rejected_photos, '{}'), ${r.credit_url}), updated_at = now()
-      WHERE meal_name = ${r.meal_name}`;
-    cleared++;
-  }
-  return cleared;
-}
-
 /** Fehlende Bilder für Gerichte in Plänen erzeugen (höchstens `limit` pro Aufruf) */
 export async function fillMissingImages(env: AiEnv, sql: Sql, limit = 5, planId?: string) {
   const rows = planId

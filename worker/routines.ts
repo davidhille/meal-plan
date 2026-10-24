@@ -7,7 +7,7 @@ import { MAX_ROUTINE_ATTEMPTS, routineDue, shouldRetryRoutine } from "./routineR
 import { neon } from "@neondatabase/serverless";
 import type { Env } from "./http";
 import { ensureSchema } from "./migrate";
-import { fillMissingImages, recheckStockPhotos } from "./images";
+import { fillMissingImages } from "./images";
 import { addDaysIso, createPlan } from "./planning";
 import { sendRatingReminders } from "./push";
 import { AUTO_PER_DAY, importChefkochBatch } from "./chefkochAuto";
@@ -84,8 +84,7 @@ export async function runRoutines(env: Env) {
   // Erinnerung zum Bewerten (Fehler hier sollen die Bilder nicht aufhalten)
   await sendRatingReminders(env, sql, now).catch((e) => logError(sql, "Bewertungs-Erinnerung", e));
 
-  // Einmalig: unpassende Ersatzfotos verwerfen (werden dann neu gesucht), danach fehlende Rezeptbilder nachziehen
-  await recheckStockPhotos(sql).catch((e) => console.error("Foto-Nachprüfung fehlgeschlagen:", e));
+  // Fehlende Rezeptbilder nachziehen
   await fillMissingImages(meteredEnv(env, sql, null), sql, 5).catch((e) => logError(sql, "Bilder nachziehen", e));
 
   // Betrieb: stündlich Speicher prüfen, um 4 Uhr aufräumen, wöchentlich je Familie sichern (nur mit R2-Bucket)
