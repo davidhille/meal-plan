@@ -77,8 +77,8 @@ export async function runRoutines(env: Env) {
     FROM profiles WHERE chefkoch_auto AND NOT disabled`;
   // Nur eine Familie je Lauf (Free-Limit: 50 Unteranfragen; eine Familie braucht ca. 20), reihum
   const auto = pickAutoFamily(families.map((f) => ({ id: f.id as string, due: !!f.due, open: !!f.open })), cronTick(Date.now()));
-  // Ohne Fotos: im Cron weist das Chefkoch-CDN Abrufe ab; die Fotos holt `GET /profile` beim nächsten App-Aufruf nach
-  if (auto) await importChefkochBatch(sql, auto.id, now.date, false).catch((e) => logError(sql, "Chefkoch-Automatik", e, auto.id));
+  // Fotos holt die App aus dem Browser (`chefkochPhotos.ts`)
+  if (auto) await importChefkochBatch(sql, auto.id, now.date).catch((e) => logError(sql, "Chefkoch-Automatik", e, auto.id));
 
   // Erinnerung zum Bewerten (Fehler hier sollen die Bilder nicht aufhalten)
   await sendRatingReminders(env, sql, now).catch((e) => logError(sql, "Bewertungs-Erinnerung", e));
