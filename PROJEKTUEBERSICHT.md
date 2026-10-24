@@ -241,10 +241,10 @@ Die Karten sind in Gruppen mit kleiner Überschrift geordnet (`SettingsGroup`): 
 Auf- und zuklappbare Karten:
 - **Neue Rezepte von Chefkoch** (Einstellungen → Planung, Schalter pro Familie): täglich bis zu 10 neue Hauptspeisen aus
   „Neueste ab 4,5 ★“ (`chefkoch.de/rs/s0t21r4.5o6/…`), nur mit mind. 4,5 Sternen und 2 Bewertungen, passend zu Gesundheit und
-  „Kommt nie in den Plan“, nicht schon vorhanden/ausgeblendet (Dubletten-Prüfung: gleicher Link, gleicher Name oder ähnliche Variante – `duplicateOf` – unter allen Gerichten, Favoriten, ausgeblendeten und gelöschten). Übernahme wie „In meine Rezepte übernehmen“ (Foto + Link). Läuft im
+  „Kommt nie in den Plan“, nicht schon vorhanden/ausgeblendet (Dubletten-Prüfung über den Link bzw. die Chefkoch-Rezeptnummer, `sourceKey`; gelöschte Chefkoch-Rezepte merkt sich `chefkoch_auto_skipped`, damit sie nicht wiederkommen). Übernahme wie „In meine Rezepte übernehmen“ (Foto + Link). Läuft im
   Cron ab der eingestellten Uhrzeit (`profiles.chefkoch_auto_time`, Standard 6:00, Berliner Zeit, nur 15-Minuten-Schritte) in Portionen (je Lauf höchstens 6 Rezeptseiten); Geprüftes, aber Unpassendes merkt sich `chefkoch_auto_skipped`.
   Übernommene Rezepte sind unter Rezepte → Gerichte mit „Neu“ markiert (`recipes.auto_review`): Banner mit „Nur neue zeigen“ und
-  „Alle behalten“; „Ähnlich wie …“ im Rezept weist auf eine mögliche Dublette hin (`similarTo`); im geöffneten Rezept „Behalten“ oder „Ausblenden“ (Blättern in der „Nur neue“-Liste). Bis zur Prüfung werden sie
+  „Alle behalten“; im geöffneten Rezept „Behalten“ oder „Ausblenden“ (Blättern in der „Nur neue“-Liste). Bis zur Prüfung werden sie
   wie eigene Rezepte mit eingeplant. „Jetzt Rezepte holen“ startet eine Portion von Hand (`POST /profile/chefkoch-auto/run`, auch bei
   ausgeschalteter Automatik, Tageslimit gilt). Fehlt einem übernommenen Rezept das Foto, holt `healChefkochPhotos` es im Cron nach
   (höchstens 5 Versuche je Rezept, `recipes.photo_attempts`; ein entferntes Foto bleibt weg).

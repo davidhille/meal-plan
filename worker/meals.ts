@@ -388,17 +388,6 @@ export function isSimilarDish(a: string, b: string): boolean {
   return shared >= 2 && shared / (ka.size + kb.size - shared) > 0.5;
 }
 
-/** Name zum Vergleichen: ohne Groß-/Kleinschreibung, Akzente und Satzzeichen */
-const normalizeDishName = (s: string) =>
-  s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
-
-/** Gibt es das Gericht (gleicher Name oder ähnliche Variante) schon unter den vorhandenen Namen? Liefert den Treffer. */
-export function duplicateOf(name: string, existing: Iterable<string>): string | null {
-  const n = normalizeDishName(name);
-  for (const e of existing) if (normalizeDishName(e) === n || isSimilarDish(e, name)) return e;
-  return null;
-}
-
 /** Wie viele Kennwörter teilt ein Gericht mit den zuletzt geplanten? (Grundlage für Abwechslung) */
 function overlapWithRecent(name: string, recent: string[]): number {
   const k = dishKeywords(name);
