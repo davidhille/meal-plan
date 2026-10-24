@@ -83,6 +83,7 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
   Fleisch Koralle, Fisch helle Koralle, Wochenende dunkle Aubergine, Brotzeit neutral grau. Aktionen als beschriftete
   Leiste unten in der Karte (`CardActionBar`):
   - **Merken** (Favorit) · **Nachtisch** (dazu/ändern) · **Tauschen** (nur austauschen) · **Ausblenden** (mit Rückfrage wie in den Rezepten; kommt nicht mehr in den Plan, gleiche Liste wie „Ausgeblendete Gerichte“ unter Rezepte; 8 Sek. lang „Rückgängig“, `POST /plan-meals/:id/unreject`)
+  - Wurde schon das 3. (und später das 6.) Gericht mit derselben Hauptzutat ausgeblendet (Fisch, Lamm, Schwein …), fragt ein Hinweis unten: „Lamm ganz weglassen?“ – „Lamm weglassen“ gilt für die ganze Familie (zurücknehmen unter Einstellungen → Gesundheit & Ernährung), „Nein, danke“ lässt alles, wie es ist.
   - **Verlegen** (oder Tag leeren): Gericht auf einen anderen Tag legen – steht dort schon eins, tauschen beide;
     auch bis 2 Wochen nach Planende (der Plan wird verlängert). Oder „Tag leeren – nicht kochen“: Gericht kommt aus dem
     Plan (nicht ausgeblendet), die Zutaten verschwinden von der Einkaufsliste.

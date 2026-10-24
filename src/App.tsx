@@ -38,6 +38,7 @@ import {
   getAuthStatus,
   setMealDessert,
   replacePlanMeal,
+  type DislikeHint,
 } from './lib/api';
 import LoginScreen, { inviteToken } from './components/LoginScreen';
 import { familyPortions } from './lib/portions';
@@ -322,12 +323,29 @@ export default function App() {
 
   const handleRejectMeal = async (planMealId: string, mealName: string) => {
     if (!profile) return;
-    const replacement = await rejectMeal(profile.id, planMealId, mealName);
+    const result = await rejectMeal(profile.id, planMealId, mealName);
+    const replacement = result?.replacement ?? null;
     if (replacement) swapMeal(planMealId, replacement);
     else setPlanMeals((prev) => prev.map((m) => (m.id === planMealId ? { ...m, rejected: true } : m)));
     setUndoReject({ id: planMealId, name: mealName, replacementId: replacement?.id ?? null });
     window.clearTimeout(undoTimer.current);
     undoTimer.current = window.setTimeout(() => setUndoReject(null), 8000);
+    // Muster erkannt (z. B. das 3. Lammgericht): anbieten, die Hauptzutat ganz wegzulassen
+    setDislikeHint(result?.hint ? { ...result.hint, phase: 'ask' } : null);
+  };
+
+  // „Lamm ganz weglassen?“ nach mehrfachem Ausblenden derselben Hauptzutat; bleibt, bis man antwortet (kein Zeitlimit)
+  const [dislikeHint, setDislikeHint] = useState<(DislikeHint & { phase: 'ask' | 'saving' | 'done' | 'error' }) | null>(null);
+  const acceptDislikeHint = async () => {
+    if (!dislikeHint) return;
+    setDislikeHint({ ...dislikeHint, phase: 'saving' });
+    try {
+      setProfile(await setFamilyDislikes({ id: dislikeHint.id, on: true }));
+      setDislikeHint({ ...dislikeHint, phase: 'done' });
+      window.setTimeout(() => setDislikeHint(null), 6000);
+    } catch {
+      setDislikeHint({ ...dislikeHint, phase: 'error' });
+    }
   };
 
   const handleUndoReject = async () => {
@@ -335,6 +353,7 @@ export default function App() {
     const { id, replacementId } = undoReject;
     window.clearTimeout(undoTimer.current);
     setUndoReject(null);
+    setDislikeHint(null); // Rückgängig gemacht: das Ausblenden zählt nicht mehr
     try {
       const restored = await unrejectMeal(id, replacementId);
       setPlanMeals((prev) =>
@@ -571,7 +590,41 @@ export default function App() {
       </div>
 
       {/* Nach „Ausblenden“: kurz rückgängig machbar; role=status, damit Screenreader es ansagen */}
-      <div role="status" className="fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] sm:bottom-6 z-40 flex justify-center pointer-events-none">
+      <div role="status" className="fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] sm:bottom-6 z-40 flex flex-col items-center gap-2 pointer-events-none">
+        {dislikeHint && (
+          <div className="pointer-events-auto w-full max-w-md p-4 rounded-2xl bg-white text-gray-800 shadow-lg border border-brand-200">
+            {dislikeHint.phase === 'done' ? (
+              <p className="text-sm">
+                {dislikeHint.label} kommt nicht mehr in den Plan. Zurücknehmen unter Einstellungen → Gesundheit &amp; Ernährung.
+              </p>
+            ) : (
+              <>
+                <p className="text-sm font-semibold">{dislikeHint.label} ganz weglassen?</p>
+                <p className="mt-1 text-sm text-gray-600">
+                  Ihr habt schon {dislikeHint.count} Gerichte mit {dislikeHint.label} ausgeblendet.
+                </p>
+                {dislikeHint.phase === 'error' && (
+                  <p className="mt-1 text-sm text-red-700">Die Einstellung konnte nicht gespeichert werden. Bitte noch einmal versuchen.</p>
+                )}
+                <div className="mt-3 flex gap-2">
+                  <button
+                    onClick={acceptDislikeHint}
+                    disabled={dislikeHint.phase === 'saving'}
+                    className="h-10 px-4 rounded-xl text-sm font-semibold bg-brand-700 text-white hover:bg-brand-800 disabled:opacity-60"
+                  >
+                    {dislikeHint.label} weglassen
+                  </button>
+                  <button
+                    onClick={() => setDislikeHint(null)}
+                    className="h-10 px-4 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-100"
+                  >
+                    Nein, danke
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
         {undoReject && (
           <div className="pointer-events-auto w-full max-w-md flex items-center gap-3 pl-4 pr-2 py-2 rounded-2xl bg-gray-800 text-white shadow-lg">
             <p className="flex-1 min-w-0 text-sm">

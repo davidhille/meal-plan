@@ -514,14 +514,21 @@ export async function getPlanMeals(planId: string): Promise<PlanMeal[]> {
   }
 }
 
+/** Hinweis nach dem Ausblenden: dieselbe Hauptzutat wurde schon mehrfach ausgeblendet (id wie `family_dislikes`) */
+export interface DislikeHint {
+  id: string;
+  label: string;
+  count: number;
+}
+
 export async function rejectMeal(
   _profileId: string,
   planMealId: string,
   _mealName: string
-): Promise<PlanMeal | null> {
+): Promise<{ replacement: PlanMeal; hint: DislikeHint | null } | null> {
   try {
-    const result = await request<{ replacement: PlanMeal }>('POST', `/plan-meals/${planMealId}/reject`);
-    return result.replacement;
+    const result = await request<{ replacement: PlanMeal; dislikeHint?: DislikeHint | null }>('POST', `/plan-meals/${planMealId}/reject`);
+    return { replacement: result.replacement, hint: result.dislikeHint ?? null };
   } catch (error) {
     console.error('Error rejecting meal:', error);
     return null;
