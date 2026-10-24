@@ -1,6 +1,6 @@
 // Profil, Familie, Bewertungen, Routinen
 import { FAMILY_DISLIKE_IDS } from "../dislikes";
-import { healChefkochPhotos, importChefkochBatch } from "../chefkochAuto";
+import { importChefkochBatch } from "../chefkochAuto";
 import { logError } from "../adminTools";
 import type { Ctx } from "../http";
 import { json } from "../http";
@@ -19,8 +19,6 @@ export async function profileRoutes({ request, sql, body, parts, route, id, user
   // ---------- Profil ----------
   if (route === "GET /profile") {
     const p = await getProfile(sql, user);
-    // Fehlende Chefkoch-Fotos im Hintergrund nachholen: nur aus einer Anfrage heraus klappt der Abruf beim Chefkoch-CDN
-    waitUntil(healChefkochPhotos(sql, p.id).catch((e) => logError(sql, "Chefkoch-Fotos nachholen", e, p.id)));
     return json(p);
   }
 
@@ -65,7 +63,6 @@ export async function profileRoutes({ request, sql, body, parts, route, id, user
     const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date());
     try {
       const added = await importChefkochBatch(sql, p.id, today);
-      await healChefkochPhotos(sql, p.id).catch((e) => logError(sql, "Chefkoch-Fotos nachholen", e, p.id));
       const rows = await sql`SELECT * FROM profiles WHERE id = ${p.id}`;
       return json({ added, profile: rows[0] });
     } catch (e) {

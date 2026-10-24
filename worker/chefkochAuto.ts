@@ -5,8 +5,6 @@
 import type { Sql } from "./db";
 import { listRecipeUrls, loadChefkochRecipe, newestTopMainUrl } from "./chefkoch";
 import { excludedByDislikes } from "./dislikes";
-import { logError } from "./adminTools";
-import { storeSourcePhotoChecked } from "./images";
 import { dislikeMatches, violatesHealthConditions } from "./meals";
 import { loadContext, loadPool, sourceKey } from "./repo";
 
@@ -21,11 +19,8 @@ const DETAILS_PER_RUN = 3;
 const PAGES_PER_RUN = 2;
 
 /** Nächste Portion für eine Familie; liefert die Namen der übernommenen Rezepte */
-/**
- * `withPhotos`: Fotos gleich mitladen. Nur in Anfragen von Nutzern (fetch-Handler) – im Cron antwortet das Chefkoch-CDN
- * mit 403 (siehe CLAUDE.md, Stolperfallen); dort holt `healChefkochPhotos` die Fotos beim nächsten App-Aufruf nach.
- */
-export async function importChefkochBatch(sql: Sql, profileId: string, today: string, withPhotos = true): Promise<string[]> {
+/** Fotos lädt der Worker nie selbst (das Chefkoch-CDN weist ihn ab): die App holt sie aus dem Browser, siehe `chefkochPhotos.ts` */
+export async function importChefkochBatch(sql: Sql, profileId: string, today: string): Promise<string[]> {
   const rows = await sql`SELECT chefkoch_auto_day, chefkoch_auto_count FROM profiles WHERE id = ${profileId}`;
   const done = rows[0]?.chefkoch_auto_day === today ? Number(rows[0]?.chefkoch_auto_count) || 0 : 0;
   if (done >= AUTO_PER_DAY) return [];
@@ -79,45 +74,9 @@ export async function importChefkochBatch(sql: Sql, profileId: string, today: st
       }
       takenNames.add(r.name.toLowerCase());
       knownUrls.add(sourceKey(url));
-      // Ohne Foto bleibt das Rezept trotzdem; `healChefkochPhotos` holt es später nach (Grund steht in den Fehlern)
-      if (d.imageUrl && withPhotos) {
-        await storeSourcePhotoChecked(sql, r.name, d.imageUrl, "Chefkoch", url, profileId).catch((e) =>
-          logError(sql, "Chefkoch-Fotos nicht übernommen", `„${r.name}“: ${(e as Error).message}`, profileId, { oncePerDay: true })
-        );
-      }
       added.push(r.name);
     }
   }
   await sql`UPDATE profiles SET chefkoch_auto_day = ${today}, chefkoch_auto_count = ${done + added.length} WHERE id = ${profileId}`;
   return added;
-}
-
-const PHOTO_ATTEMPTS = 5;
-
-/**
- * Fehlende Fotos von Chefkoch-Rezepten nachholen (z. B. wenn der Abruf beim Übernehmen scheiterte): Rezeptseite neu lesen,
- * Foto laden. Je Rezept höchstens 5 Versuche; ein bewusst entferntes Foto bleibt weg. Gibt die Zahl nachgeholter Fotos zurück.
- */
-export async function healChefkochPhotos(sql: Sql, profileId: string, limit = 2): Promise<number> {
-  const rows = await sql`SELECT r.name, r.source_url, r.photo_attempts FROM recipes r
-    WHERE r.profile_id = ${profileId} AND r.source = 'import' AND r.source_url LIKE '%chefkoch.de%' AND r.photo_attempts < ${PHOTO_ATTEMPTS}
-      AND NOT EXISTS (SELECT 1 FROM meal_images mi WHERE mi.profile_id = r.profile_id AND mi.meal_name = r.name
-        AND (mi.image_data IS NOT NULL OR mi.source = 'removed'))
-    ORDER BY r.created_at DESC LIMIT ${limit}`;
-  let healed = 0;
-  for (const row of rows) {
-    const name = row.name as string;
-    const url = row.source_url as string;
-    await sql`UPDATE recipes SET photo_attempts = photo_attempts + 1 WHERE profile_id = ${profileId} AND name = ${name}`;
-    try {
-      const d = await loadChefkochRecipe(url);
-      if (!d.imageUrl) throw new Error("Auf der Rezeptseite ist kein Foto zu finden");
-      await storeSourcePhotoChecked(sql, name, d.imageUrl, "Chefkoch", url, profileId);
-      healed++;
-    } catch (e) {
-      // Nur beim letzten Versuch melden, damit die Fehlerliste nicht überläuft
-      if (Number(row.photo_attempts) + 1 >= PHOTO_ATTEMPTS) await logError(sql, "Chefkoch-Fotos nicht übernommen", `„${name}“: ${(e as Error).message}`, profileId, { oncePerDay: true });
-    }
-  }
-  return healed;
 }

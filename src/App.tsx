@@ -39,6 +39,7 @@ import {
   setMealDessert,
   replacePlanMeal,
   type DislikeHint,
+  fillChefkochPhotos,
 } from './lib/api';
 import LoginScreen, { inviteToken } from './components/LoginScreen';
 import { familyPortions } from './lib/portions';
@@ -106,6 +107,11 @@ export default function App() {
     window.history.replaceState(null, '', url);
   }, [activeTab]);
   const [profile, setProfile] = useState<Profile | null>(null);
+  // Fehlende Chefkoch-Fotos nachholen: aus dem Browser, weil das Chefkoch-CDN den Server abweist (lib/api.ts); einmal je Start
+  const profileId = profile?.id;
+  useEffect(() => {
+    if (profileId) void fillChefkochPhotos();
+  }, [profileId]);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [mealRatings, setMealRatings] = useState<Record<string, number>>({});

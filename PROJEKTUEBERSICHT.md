@@ -249,8 +249,9 @@ Die Karten sind in Gruppen mit kleiner Überschrift geordnet (`SettingsGroup`): 
 Auf- und zuklappbare Karten:
 - **Neue Rezepte von Chefkoch** (Einstellungen → Planung, Schalter pro Familie): täglich bis zu 10 neue Hauptspeisen aus
   „Neueste ab 4,5 ★“ (`chefkoch.de/rs/s0t21r4.5o6/…`), nur mit mind. 4,5 Sternen und 2 Bewertungen, passend zu Gesundheit und
-  „Kommt nie in den Plan“, nicht schon vorhanden/ausgeblendet (Dubletten-Prüfung über den Link bzw. die Chefkoch-Rezeptnummer, `sourceKey`; gelöschte Chefkoch-Rezepte merkt sich `chefkoch_auto_skipped`, damit sie nicht wiederkommen). Übernahme wie „In meine Rezepte übernehmen“ (Foto + Link). Läuft im
+  „Kommt nie in den Plan“, nicht schon vorhanden/ausgeblendet (Dubletten-Prüfung über den Link bzw. die Chefkoch-Rezeptnummer, `sourceKey`; gelöschte Chefkoch-Rezepte merkt sich `chefkoch_auto_skipped`, damit sie nicht wiederkommen). Übernahme wie „In meine Rezepte übernehmen“ (Link; das Foto holt die App danach aus dem Browser, siehe unten). Läuft im
   Cron ab der eingestellten Uhrzeit (`profiles.chefkoch_auto_time`, Standard 6:00, Berliner Zeit, nur 15-Minuten-Schritte) in Portionen (je Lauf nur eine Familie, reihum, und höchstens 3 Rezeptseiten); Geprüftes, aber Unpassendes merkt sich `chefkoch_auto_skipped`.
+  **Chefkoch-Fotos kommen aus dem Browser:** Das Chefkoch-CDN weist den Server mit 403 ab, den Browser nicht. Beim App-Start und nach „Jetzt Rezepte holen“ fragt die App den Server nach Rezepten ohne Foto (`POST /recipes/photo-todo`), lädt die Bilder selbst und schickt sie zurück (`POST /recipes/photo`, Format- und Größenprüfung auf dem Server). Höchstens 5 Versuche je Rezept; ein bewusst entferntes Foto bleibt weg.
   Übernommene Rezepte sind unter Rezepte → Gerichte mit „Neu“ markiert (`recipes.auto_review`): Banner mit „Nur neue zeigen“ und
   „Alle behalten“; im geöffneten Rezept „Behalten“ oder „Ausblenden“ (Blättern in der „Nur neue“-Liste). Bis zur Prüfung werden sie
   wie eigene Rezepte mit eingeplant. „Jetzt Rezepte holen“ startet eine Portion von Hand (`POST /profile/chefkoch-auto/run`, auch bei

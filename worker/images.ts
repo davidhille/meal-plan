@@ -406,7 +406,7 @@ function toBase64(buf: ArrayBuffer): string {
 }
 
 /** Bild speichern: gemeinsam (ohne profileId) oder als eigene Fassung einer Familie */
-async function storeImage(
+export async function storeImage(
   sql: Sql,
   mealName: string,
   img: { base64: string; contentType?: string; source: ImageSource; creditName?: string; creditUrl?: string },

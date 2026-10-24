@@ -9,6 +9,7 @@ import { PLAN_MEAL_COLS, getProfile, loadContext, loadFavorites, loadPool, recip
 import { cleanWish, generateWishRecipe } from "../aiRecipes";
 import { recipeCatalog } from "../planning";
 import { loadDislikeHintFor } from "../dislikePattern";
+import { chefkochPhotoTodo, saveChefkochPhoto } from "../chefkochPhotos";
 import { RecipeEditError, parseRecipeInput, resetRecipe, saveRecipeEdit } from "../recipeEdits";
 import type { Sql } from "../db";
 
@@ -159,6 +160,16 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
       if (e instanceof RecipeEditError) return json({ error: e.message }, e.status);
       throw e;
     }
+  }
+  // Chefkoch-Fotos aus dem Browser: Aufgabenliste (Rezepte ohne Foto + Bild-Adresse) und Foto entgegennehmen (siehe chefkochPhotos.ts)
+  if (route === "POST /recipes/photo-todo") {
+    const p = await getProfile(sql, user);
+    return json({ items: await chefkochPhotoTodo(sql, p.id) });
+  }
+  if (route === "POST /recipes/photo") {
+    const p = await getProfile(sql, user);
+    const url = await saveChefkochPhoto(sql, p.id, String(body.name ?? "").trim(), String(body.data ?? ""));
+    return json({ imageUrl: url });
   }
   // Gericht ausblenden (wird nie mehr vorgeschlagen) bzw. wieder einblenden
   if (route === "POST /recipes/hide" || route === "POST /recipes/unhide") {

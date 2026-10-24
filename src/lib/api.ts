@@ -330,8 +330,50 @@ export function setChefkochAutoTime(time: string): Promise<Profile> {
 }
 
 /** Chefkoch-Automatik jetzt starten: liefert die übernommenen Rezepte. Wirft bei Fehlern. */
-export function runChefkochAuto(): Promise<{ added: string[]; profile: Profile }> {
-  return request<{ added: string[]; profile: Profile }>('POST', '/profile/chefkoch-auto/run');
+export async function runChefkochAuto(): Promise<{ added: string[]; profile: Profile }> {
+  const result = await request<{ added: string[]; profile: Profile }>('POST', '/profile/chefkoch-auto/run');
+  await fillChefkochPhotos(); // Fotos der neuen Rezepte gleich mitholen
+  return result;
+}
+
+const CHEFKOCH_IMAGE_HOST = 'img.chefkoch-cdn.de';
+const MAX_PHOTO_BYTES = 4_000_000;
+
+/** Bytes als Base64 (ohne Umweg über data:-Adressen) */
+async function blobToBase64(blob: Blob): Promise<string> {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(binary);
+}
+
+/**
+ * Fehlende Chefkoch-Fotos aus dem Browser holen: Das Chefkoch-CDN weist den Worker ab (403), den Browser nicht (CORS erlaubt).
+ * Der Server nennt Rezepte ohne Foto samt Bild-Adresse, die App lädt das Bild und schickt es zurück.
+ * Still: bei Fehlern passiert nichts, der nächste Start versucht es erneut (höchstens 5 Versuche je Rezept). Liefert die Zahl gespeicherter Fotos.
+ */
+export async function fillChefkochPhotos(): Promise<number> {
+  let stored = 0;
+  try {
+    const { items } = await request<{ items: { name: string; photoUrl: string }[] }>('POST', '/recipes/photo-todo');
+    for (const item of items) {
+      try {
+        const url = new URL(item.photoUrl);
+        if (url.protocol !== 'https:' || url.host !== CHEFKOCH_IMAGE_HOST) continue;
+        const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
+        if (!res.ok) continue;
+        const blob = await res.blob();
+        if (!blob.type.startsWith('image/') || blob.size > MAX_PHOTO_BYTES) continue;
+        await request('POST', '/recipes/photo', { name: item.name, data: await blobToBase64(blob) });
+        stored++;
+      } catch {
+        // Dieses Foto klappt gerade nicht – weiter mit dem nächsten
+      }
+    }
+  } catch {
+    // Keine Aufgabenliste (offline o. Ä.): nichts zu tun
+  }
+  return stored;
 }
 
 /** „Kommt nie in den Plan“: eine Hauptzutat dazu/weg (`id`) oder die ganze Liste (`ids`). Wirft bei Fehlern. */
