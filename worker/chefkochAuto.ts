@@ -21,7 +21,11 @@ const DETAILS_PER_RUN = 3;
 const PAGES_PER_RUN = 2;
 
 /** Nächste Portion für eine Familie; liefert die Namen der übernommenen Rezepte */
-export async function importChefkochBatch(sql: Sql, profileId: string, today: string): Promise<string[]> {
+/**
+ * `withPhotos`: Fotos gleich mitladen. Nur in Anfragen von Nutzern (fetch-Handler) – im Cron antwortet das Chefkoch-CDN
+ * mit 403 (siehe CLAUDE.md, Stolperfallen); dort holt `healChefkochPhotos` die Fotos beim nächsten App-Aufruf nach.
+ */
+export async function importChefkochBatch(sql: Sql, profileId: string, today: string, withPhotos = true): Promise<string[]> {
   const rows = await sql`SELECT chefkoch_auto_day, chefkoch_auto_count FROM profiles WHERE id = ${profileId}`;
   const done = rows[0]?.chefkoch_auto_day === today ? Number(rows[0]?.chefkoch_auto_count) || 0 : 0;
   if (done >= AUTO_PER_DAY) return [];
@@ -76,7 +80,7 @@ export async function importChefkochBatch(sql: Sql, profileId: string, today: st
       takenNames.add(r.name.toLowerCase());
       knownUrls.add(sourceKey(url));
       // Ohne Foto bleibt das Rezept trotzdem; `healChefkochPhotos` holt es später nach (Grund steht in den Fehlern)
-      if (d.imageUrl) {
+      if (d.imageUrl && withPhotos) {
         await storeSourcePhotoChecked(sql, r.name, d.imageUrl, "Chefkoch", url, profileId).catch((e) =>
           logError(sql, `Chefkoch-Automatik: Foto für „${r.name}“`, e, profileId)
         );
