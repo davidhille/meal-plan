@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { X, Loader2, Check, ShoppingCart, ImageOff, Minus, Plus, Trash2 } from 'lucide-react';
+import { X, Loader2, Check, ShoppingCart, ImageOff, Minus, Plus, Trash2, AlertCircle } from 'lucide-react';
 import { useDialog } from '../lib/useDialog';
 import { CartItem, ShopRule, ShoppingItem } from '../types';
 import ConfirmDialog from './ConfirmDialog';
@@ -133,7 +133,7 @@ export default function CartPreviewSheet({
   // Vorschlag: so viele Packungen, wie das Rezept braucht
   const qtyOf = (i: ShoppingItem) => qty[i.id] ?? Math.min(packagesNeeded(i.name, i.productAmount), 50);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
   const [cartBusyId, setCartBusyId] = useState<string | null>(null);
   const [cartError, setCartError] = useState<string | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
@@ -165,10 +165,10 @@ export default function CartPreviewSheet({
     setBusy(true);
     setMessage(null);
     try {
-      setMessage(await onTransfer(chosen.map((i) => ({ productId: i.productId!, quantity: qtyOf(i) }))));
+      setMessage({ text: await onTransfer(chosen.map((i) => ({ productId: i.productId!, quantity: qtyOf(i) }))), ok: true });
       setSelected(new Set());
     } catch (e) {
-      setMessage((e as Error).message || 'Das hat nicht geklappt.');
+      setMessage({ text: (e as Error).message || `Die Produkte konnten nicht in den ${shopName}-Warenkorb gelegt werden. Bitte noch einmal versuchen.`, ok: false });
     } finally {
       setBusy(false);
     }
@@ -180,7 +180,7 @@ export default function CartPreviewSheet({
     try {
       await onSetQuantity(productId, quantity);
     } catch (e) {
-      setCartError((e as Error).message || 'Die Menge ließ sich nicht ändern.');
+      setCartError((e as Error).message || 'Die Menge im Warenkorb ließ sich nicht ändern. Bitte noch einmal versuchen.');
     } finally {
       setCartBusyId(null);
     }
@@ -215,7 +215,7 @@ export default function CartPreviewSheet({
           <h3 className="px-4 pt-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Hinzufügen</h3>
           <p className="px-4 pb-1 text-xs text-gray-500">Abgehakt wird übertragen. Was schon im Warenkorb liegt, ist abgewählt.</p>
           {items.length === 0 ? (
-            <p className="px-4 py-3 text-sm text-gray-500">Gerade ist nichts mit {shopName}-Produkt bei {shopName} eingeplant.</p>
+            <p className="px-4 py-3 text-sm text-gray-500">Noch kein Artikel hat ein {shopName}-Produkt. Tippe in der Liste auf einen Artikel und wähle eines aus.</p>
           ) : (
             <ul className="divide-y divide-gray-100">
               {items.map((i) => {
@@ -339,19 +339,27 @@ export default function CartPreviewSheet({
             <MinOrderBar current={currentTotal} added={addedPrice} unknown={unknownPrices} rule={rule} />
           )}
           {message && (
-            <p role="status" className="text-xs text-center text-gray-700">
-              {message}
+            <p
+              role={message.ok ? 'status' : 'alert'}
+              className={`flex items-start justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium ${
+                message.ok ? 'bg-brand-50 text-brand-800' : 'bg-red-50 text-red-700'
+              }`}
+            >
+              {message.ok ? <Check size={14} className="flex-shrink-0 mt-px" aria-hidden="true" /> : <AlertCircle size={14} className="flex-shrink-0 mt-px" aria-hidden="true" />}
+              <span>{message.text}</span>
             </p>
           )}
           <button
-            onClick={transfer}
-            disabled={!chosen.length || busy}
+            onClick={message?.ok && !chosen.length ? onClose : transfer}
+            disabled={(!chosen.length && !message?.ok) || busy}
             className="w-full h-11 rounded-xl text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 disabled:bg-gray-200 disabled:text-gray-500 flex items-center justify-center gap-2"
           >
             {busy ? <Loader2 size={15} className="animate-spin" /> : <ShoppingCart size={15} />}
             {chosen.length
               ? `${chosen.length} ${chosen.length === 1 ? 'Produkt' : 'Produkte'}${totalPieces > chosen.length ? ` (${totalPieces} Stück)` : ''} übertragen`
-              : 'Nichts zum Übertragen ausgewählt'}
+              : message?.ok
+              ? 'Fertig'
+              : 'Wähle oben Produkte zum Übertragen aus'}
           </button>
         </div>
       </div>

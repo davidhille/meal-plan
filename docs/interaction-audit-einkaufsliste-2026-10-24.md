@@ -4,7 +4,7 @@ Weg: Plan → Einkaufsliste → Shop-Warenkorb (Knuspr/Picnic).
 Methode: Code gelesen (`ShoppingListView`, `ShoppingSection`, `CartBar`, `CartPreviewSheet`) und lesend live geprüft
 (miyummy.com, Handy-Format 375×812, Daten der Familie Hille, nichts geändert). Maßstab: Skill `interaction-design`
 (Mikrointeraktionen, Excise, Zustände, Fehlervermeidung, Reaktionszeiten, Tippflächen ≥ 44 px).
-Stand: **#1–#5, #7 und #8 umgesetzt** (24.10.2026; „Vertrauen“: Fehlerzeile mit Rollback, Eingaben erst nach Erfolg leeren, Rückgängig beim Abhaken von Basis-Zutaten; „Ruhe“: stilles Nachladen nach Aktionen ohne Spinner-Ersatz, Vorrat-Karte ohne `overflow-hidden`, Menüs schließen mit Escape/Außenklick, ⋯-Knopf öffnet das Menü nicht mehr sofort wieder). Der Rest wartet auf Davids Auswahl.
+Stand: **alle Befunde bearbeitet** (#1–#8, #10, #11, #13 umgesetzt; #9 und #12 geprüft, bewusst unverändert) (24.10.2026; „Vertrauen“: Fehlerzeile mit Rollback, Eingaben erst nach Erfolg leeren, Rückgängig beim Abhaken von Basis-Zutaten; „Ruhe“: stilles Nachladen nach Aktionen ohne Spinner-Ersatz, Vorrat-Karte ohne `overflow-hidden`, Menüs schließen mit Escape/Außenklick, ⋯-Knopf öffnet das Menü nicht mehr sofort wieder). 
 
 Posture: **transient** (kurze Nutzung im Laden/Zuhause, Handy). Folge: wenige Entscheidungen, Rückgängig statt Rückfrage,
 Fehler sichtbar, Eingaben nie verlieren.
@@ -53,3 +53,12 @@ Live bestätigt: Tippflächen (#7), Menü im `overflow-hidden`‑Container (#5),
 4. **Ende des Weges** (#10) und Texte/Kontrast (#11–#13).
 
 Offen: Test mit echtem Screenreader und mit schlechtem Netz (Flugmodus im Laden).
+
+## Abschluss (24.10.2026)
+
+- **#6** Vorrat: „liegt jetzt im Vorrat“ bzw. „ist nicht mehr im Vorrat“ mit **Rückgängig** (gleiche Hinweiszeile wie bei #3).
+- **#9** bewusst unverändert: Der Dialog „Warenkorb leeren?“ bleibt, weil die Shop-Schnittstelle kein Rückgängig kennt; der Text nennt schon die Anzahl und dass auch Artikel aus dem Shop betroffen sind.
+- **#10** Warenkorb-Fenster: Erfolg (Haken, Pflaume) und Fehler (Warnsymbol, rot, `role="alert"`) getrennt; nach dem Übertragen heißt der Knopf **Fertig** und schließt das Fenster; ohne Auswahl: „Wähle oben Produkte zum Übertragen aus“.
+- **#11** Texte: Leerzustand „Noch kein Artikel hat ein Knuspr-Produkt. Tippe in der Liste auf einen Artikel und wähle eines aus.“; Fehlertexte mit Gegenstand und nächstem Schritt.
+- **#12** gemessen, keine Änderung nötig: `gray-500` auf Weiß 6,5 : 1, auf `gray-50` 6,1 : 1, `coral-700` und `amber-700` über 4,8 : 1. `gray-300`/`gray-400` stehen nur bei Symbolen und deaktivierten Knöpfen.
+- **#13** CartBar: nach 10 s ohne Antwort „dauert länger – mit ↻ neu laden“ statt dauerhaft „lädt …“.

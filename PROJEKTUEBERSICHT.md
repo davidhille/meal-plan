@@ -159,7 +159,9 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
 - **„⋯“ an jedem Eintrag:** Produkt auswählen, „Haben wir immer da“ (Vorrat), in andere Liste, Entfernen (eigene Artikel).
 - **Rückmeldung:** scheitert eine Aktion (abhaken, hinzufügen, entfernen, Vorrat), steht oben in der Liste eine rote Fehlerzeile
   und die Änderung wird zurückgenommen; Eingaben in „Artikel hinzufügen“ und „Zum Vorrat“ bleiben dann stehen. Wird eine
-  Basis-Zutat abgehakt, erscheint 6 Sekunden lang „… liegt wieder im Vorrat“ mit **Rückgängig**.
+  Basis-Zutat abgehakt, erscheint 6 Sekunden lang „… liegt wieder im Vorrat“ mit **Rückgängig**; ebenso beim Hinein- und
+  Herausnehmen aus dem Vorrat. Im Warenkorb-Fenster steht das Ergebnis des Übertragens als grüne bzw. rote Zeile, danach „Fertig“.
+  Antwortet ein Shop 10 Sekunden nicht, sagt die Leiste unten „dauert länger – mit ↻ neu laden“.
 - **Abgehakt:** steht zusammengeklappt unten in jeder Liste („7 erledigt“), sind alle abgehakt: „Alles erledigt“.
 - **Listen:** Lieferdienst (Knuspr/Picnic), Metzger (Fleisch automatisch, abschaltbar), eigene Listen (Aldi, DM …).
   Zuordnungen pro Zutat werden für künftige Pläne gemerkt. Listen sind auf- und zuklappbar.
