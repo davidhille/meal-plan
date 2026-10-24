@@ -4,6 +4,7 @@ import {
 } from '../types';
 import type { CategoryOverride } from './recipeCategories';
 import { fetchErrorText, httpErrorText } from './errorText';
+import { photoCandidates } from './chefkochPhoto';
 
 // Alle Daten laufen über den Cloudflare Worker unter /api (→ Neon).
 // Angemeldet wird per Sitzungs-Cookie (HttpOnly, schickt der Browser selbst mit).
@@ -360,12 +361,20 @@ export async function fillChefkochPhotos(): Promise<number> {
       try {
         const url = new URL(item.photoUrl);
         if (url.protocol !== 'https:' || url.host !== CHEFKOCH_IMAGE_HOST) continue;
-        const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
-        if (!res.ok) continue;
-        const blob = await res.blob();
-        if (!blob.type.startsWith('image/') || blob.size > MAX_PHOTO_BYTES) continue;
-        await request('POST', '/recipes/photo', { name: item.name, data: await blobToBase64(blob) });
-        stored++;
+        // Nicht jeder Zuschnitt hat CORS-Header: erlaubte Größen zuerst (lib/chefkochPhoto.ts)
+        for (const candidate of photoCandidates(url.href)) {
+          try {
+            const res = await fetch(candidate, { mode: 'cors', credentials: 'omit' });
+            if (!res.ok) continue;
+            const blob = await res.blob();
+            if (!blob.type.startsWith('image/') || blob.size > MAX_PHOTO_BYTES) continue;
+            await request('POST', '/recipes/photo', { name: item.name, data: await blobToBase64(blob) });
+            stored++;
+            break;
+          } catch {
+            // nächster Zuschnitt
+          }
+        }
       } catch {
         // Dieses Foto klappt gerade nicht – weiter mit dem nächsten
       }
