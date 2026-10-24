@@ -42,7 +42,7 @@ export function whyReasons({ meal, date, ctx, isFavorite, daysSinceLast }: WhyIn
   const noGos = (ctx.familyDislikes ?? []).map((id) => FAMILY_DISLIKE_GROUPS[id]?.label).filter((l): l is string => !!l);
   if (noGos.length) reasons.push(`Ohne ${joinList(noGos)} – so, wie ihr es festgelegt habt`);
 
-  if (ctx.healthConditions.length) reasons.push("Passt zu euren Gesundheitseinstellungen");
+  if (ctx.healthConditions.length) reasons.push("Berücksichtigt eure Gesundheitseinstellungen (ohne Garantie)");
 
   if (isFavorite) reasons.push("Ein Favorit von euch");
 
@@ -64,7 +64,7 @@ export function whyReasons({ meal, date, ctx, isFavorite, daysSinceLast }: WhyIn
     reasons.push(`Dauert ${meal.durationMin} Min. – innerhalb eures Limits von ${max} Min. für diesen Tag`);
   }
 
-  if (daysSinceLast === null) reasons.push("Neu für euch: bisher nicht in euren Plänen");
+  if (daysSinceLast === null) reasons.push("Noch nicht in euren Plänen gewesen – bringt Abwechslung");
   else if (daysSinceLast >= 21) reasons.push(`Zuletzt vor ${Math.round(daysSinceLast / 7)} Wochen im Plan – bringt Abwechslung`);
 
   return reasons.slice(0, MAX_REASONS);

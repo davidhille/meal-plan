@@ -37,7 +37,7 @@ describe("whyReasons", () => {
     expect(whyReasons(withCtx({ dayRules: { "3": { maxMinutes: 15 } } }))).toEqual([]);
   });
   test("Abwechslung: nie geplant und lange her", () => {
-    expect(whyReasons({ ...base, daysSinceLast: null })).toEqual(["Neu für euch: bisher nicht in euren Plänen"]);
+    expect(whyReasons({ ...base, daysSinceLast: null })).toEqual(["Noch nicht in euren Plänen gewesen – bringt Abwechslung"]);
     expect(whyReasons({ ...base, daysSinceLast: 35 })).toEqual(["Zuletzt vor 5 Wochen im Plan – bringt Abwechslung"]);
   });
   test("höchstens fünf Gründe", () => {
