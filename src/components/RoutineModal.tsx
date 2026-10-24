@@ -157,6 +157,7 @@ export default function RoutineModal({ onSave, onClose }: RoutineModalProps) {
             {![7, 14, 30].includes(durationDays) && (
               <input
                 type="number"
+                aria-label="Anzahl Tage"
                 value={durationDays}
                 onChange={(e) => setDurationDays(Math.max(1, parseInt(e.target.value) || 1))}
                 min="1"

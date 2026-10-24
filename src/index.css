@@ -42,3 +42,17 @@
     transform: translate(-50%, -50%);
   }
 }
+
+/* Wer „Bewegung reduzieren“ eingestellt hat, bekommt keine Übergänge und kein Pulsieren.
+   Die Ladekreise (animate-spin) laufen weiter: sie zeigen, dass etwas passiert. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-pulse {
+    animation: none !important;
+  }
+}
