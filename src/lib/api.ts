@@ -296,6 +296,16 @@ export function setChefkochAuto(on: boolean): Promise<Profile> {
   return request<Profile>('PUT', '/profile/chefkoch-auto', { on });
 }
 
+/** Uhrzeit der Chefkoch-Automatik („HH:MM“). Wirft bei Fehlern. */
+export function setChefkochAutoTime(time: string): Promise<Profile> {
+  return request<Profile>('PUT', '/profile/chefkoch-auto-time', { time });
+}
+
+/** Chefkoch-Automatik jetzt starten: liefert die übernommenen Rezepte. Wirft bei Fehlern. */
+export function runChefkochAuto(): Promise<{ added: string[]; profile: Profile }> {
+  return request<{ added: string[]; profile: Profile }>('POST', '/profile/chefkoch-auto/run');
+}
+
 /** „Kommt nie in den Plan“: eine Hauptzutat dazu/weg (`id`) oder die ganze Liste (`ids`). Wirft bei Fehlern. */
 export function setFamilyDislikes(change: { id: string; on: boolean } | { ids: string[] }): Promise<Profile> {
   return request<Profile>('PUT', '/profile/family-dislikes', change);

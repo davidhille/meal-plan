@@ -1,6 +1,6 @@
 // Profil, Familie, Bewertungen, Routinen
 import { FAMILY_DISLIKE_IDS } from "../dislikes";
-import { importChefkochBatch } from "../chefkochAuto";
+import { healChefkochPhotos, importChefkochBatch } from "../chefkochAuto";
 import { logError } from "../adminTools";
 import type { Ctx } from "../http";
 import { json } from "../http";
@@ -40,6 +40,30 @@ export async function profileRoutes({ request, sql, body, parts, route, id, user
       waitUntil(importChefkochBatch(sql, p.id, today).catch((e) => logError(sql, "Chefkoch-Automatik", e, p.id)));
     }
     return json(rows[0]);
+  }
+
+  // Uhrzeit der Chefkoch-Automatik (Berliner Zeit): { time: "06:30" }
+  if (route === "PUT /profile/chefkoch-auto-time") {
+    const p = await getProfile(sql, user);
+    const time = String(body.time ?? "");
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return json({ error: "Bitte eine Uhrzeit wie 06:30 angeben." }, 400);
+    const rows = await sql`UPDATE profiles SET chefkoch_auto_time = ${time}, updated_at = now() WHERE id = ${p.id} RETURNING *`;
+    return json(rows[0]);
+  }
+
+  // Chefkoch-Automatik jetzt von Hand starten (auch bei ausgeschalteter Automatik): eine Portion, Tageslimit gilt weiter
+  if (route === "POST /profile/chefkoch-auto/run") {
+    const p = await getProfile(sql, user);
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date());
+    try {
+      const added = await importChefkochBatch(sql, p.id, today);
+      await healChefkochPhotos(sql, p.id).catch((e) => logError(sql, "Chefkoch-Fotos nachholen", e, p.id));
+      const rows = await sql`SELECT * FROM profiles WHERE id = ${p.id}`;
+      return json({ added, profile: rows[0] });
+    } catch (e) {
+      await logError(sql, "Chefkoch-Automatik (manuell)", e, p.id);
+      return json({ error: (e as Error).message || "Chefkoch konnte nicht abgerufen werden." }, 502);
+    }
   }
 
   // „Kommt nie in den Plan“: { id: "fisch", on: true } bzw. { ids: [...] } (ganze Liste, z. B. aus den Einstellungen)

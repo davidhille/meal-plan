@@ -7,7 +7,7 @@ import { ensureSchema } from "./migrate";
 import { fillMissingImages, recheckStockPhotos } from "./images";
 import { addDaysIso, createPlan } from "./planning";
 import { sendRatingReminders } from "./push";
-import { AUTO_PER_DAY, importChefkochBatch } from "./chefkochAuto";
+import { AUTO_PER_DAY, healChefkochPhotos, importChefkochBatch } from "./chefkochAuto";
 
 /** Aktuelles Datum/Uhrzeit in Deutschland */
 function berlinNow() {
@@ -58,13 +58,15 @@ export async function runRoutines(env: Env) {
     }
   }
 
-  // Chefkoch-Automatik: ab 6 Uhr in kleinen Portionen, bis 10 neue Rezepte pro Familie und Tag
-  if (now.time >= "06:00") {
-    const families = await sql`SELECT id FROM profiles WHERE chefkoch_auto AND NOT disabled
-      AND (chefkoch_auto_day IS DISTINCT FROM ${now.date} OR chefkoch_auto_count < ${AUTO_PER_DAY})`;
-    for (const f of families) {
-      await importChefkochBatch(sql, f.id as string, now.date).catch((e) => logError(sql, "Chefkoch-Automatik", e, f.id as string));
-    }
+  // Chefkoch-Automatik: ab der eingestellten Uhrzeit (Standard 6:00) in kleinen Portionen, bis 10 neue Rezepte pro Familie und Tag
+  const families = await sql`SELECT id, chefkoch_auto_time <= ${now.time} AS due,
+      (chefkoch_auto_day IS DISTINCT FROM ${now.date} OR chefkoch_auto_count < ${AUTO_PER_DAY}) AS open
+    FROM profiles WHERE chefkoch_auto AND NOT disabled`;
+  for (const f of families) {
+    const id = f.id as string;
+    if (f.due && f.open) await importChefkochBatch(sql, id, now.date).catch((e) => logError(sql, "Chefkoch-Automatik", e, id));
+    // Fehlende Fotos übernommener Rezepte nachholen (unabhängig von Uhrzeit und Tageslimit)
+    await healChefkochPhotos(sql, id).catch((e) => logError(sql, "Chefkoch-Fotos nachholen", e, id));
   }
 
   // Erinnerung zum Bewerten (Fehler hier sollen die Bilder nicht aufhalten)
