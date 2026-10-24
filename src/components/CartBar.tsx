@@ -22,6 +22,15 @@ export default function CartBar({ shops, carts, pending, rules, onOpen, onRefres
   const [refreshing, setRefreshing] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const noteTimer = useRef<number | undefined>(undefined);
+  // Antwortet ein Shop länger als 10 s nicht, sagt die Leiste das (statt dauerhaft „lädt …“)
+  const [slow, setSlow] = useState(false);
+  const anyLoading = shops.some(({ provider }) => carts[provider] === undefined);
+  useEffect(() => {
+    setSlow(false);
+    if (!anyLoading) return;
+    const t = window.setTimeout(() => setSlow(true), 10_000);
+    return () => window.clearTimeout(t);
+  }, [anyLoading]);
   // Timer beim Schließen der Ansicht aufräumen
   useEffect(() => () => window.clearTimeout(noteTimer.current), []);
 
@@ -69,7 +78,8 @@ export default function CartBar({ shops, carts, pending, rules, onOpen, onRefres
               </span>
               {cart === undefined ? (
                 <span className="flex items-center gap-1 mt-1 text-xs text-gray-500">
-                  <Loader2 size={11} className="animate-spin" /> lädt …
+                  <Loader2 size={11} className="animate-spin flex-shrink-0" aria-hidden="true" />
+                  {slow ? 'dauert länger – mit ↻ neu laden' : 'lädt …'}
                 </span>
               ) : cart === null ? (
                 <span className="block mt-1 text-xs text-gray-500">nicht lesbar</span>

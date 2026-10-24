@@ -265,6 +265,11 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
     setItems((prev) => prev.filter((i) => i.id !== item.id));
     if (await addToPantry(item.baseName)) {
       await load(true);
+      showNotice(`„${item.baseName}“ liegt jetzt im Vorrat.`, 'info', async () => {
+        setNotice(null);
+        if (await removeFromPantry(item.baseName)) await load(true);
+        else failed(`„${item.baseName}“ ließ sich nicht aus dem Vorrat nehmen.`);
+      });
     } else {
       setItems((prev) => (prev.some((i) => i.id === item.id) ? prev : [...prev, item]));
       failed(`„${item.baseName}“ ließ sich nicht in den Vorrat legen.`);
@@ -277,6 +282,11 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
     setPantry((prev) => prev.filter((e) => e.name !== name));
     if (await removeFromPantry(name)) {
       await load(true);
+      showNotice(`„${name}“ ist nicht mehr im Vorrat.`, 'info', async () => {
+        setNotice(null);
+        if (await addToPantry(name)) await load(true);
+        else failed(`„${name}“ ließ sich nicht in den Vorrat legen.`);
+      });
     } else {
       if (entry) setPantry((prev) => (prev.some((e) => e.name === name) ? prev : [...prev, entry]));
       failed(`„${name}“ ließ sich nicht aus dem Vorrat nehmen.`);
