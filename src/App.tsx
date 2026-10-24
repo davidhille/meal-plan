@@ -200,6 +200,11 @@ export default function App() {
     setProfile(await setFamilyDislikes({ id: groupId, on: true }));
   };
 
+  // Leerer Speiseplan: Familien-Nein einzeln ein-/ausschalten
+  const handleToggleDislike = async (id: string, on: boolean) => {
+    setProfile(await setFamilyDislikes({ id, on }));
+  };
+
   const handleUpdateProfile = async (focus: string[], conditions: string[], meatMaxPerWeek: number | null, never?: string[]) => {
     if (!profile) return;
     const updated = await updateProfile(profile.id, focus, conditions, meatMaxPerWeek);
@@ -527,6 +532,8 @@ export default function App() {
             onSharedChange={(shared) => setCurrentPlan((p) => (p ? { ...p, shared } : p))}
             familyDislikes={profile?.family_dislikes}
             onFamilyDislike={handleFamilyDislike}
+            onToggleDislike={handleToggleDislike}
+            isFreshFamily={!currentPlan && familyMembers.length === 0 && !(profile?.family_dislikes?.length)}
             onFillDay={
               currentPlan
                 ? async (date) => {
