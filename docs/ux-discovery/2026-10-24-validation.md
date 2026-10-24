@@ -18,7 +18,7 @@ Der größte Schmerz (Abneigung wirkt nur als Abzug, das „Nein“ muss 46× ei
 | Journey: Planen / Durchsehen | ✅ | Ausschluss und Ausblenden mit „Keinen X mehr vorschlagen“ sind da (PR #123). |
 | Journey: Lernen (Muster-Vorschlag nach 3. Ausblenden) | ✅ | Umgesetzt am 24.10. (`dislikePattern.ts`): beim 3. (und 6.) ausgeblendeten Gericht derselben Hauptzutat fragt die App „Lamm ganz weglassen?“. Beim Ausblenden im Plan und in der Rezept-Übersicht. |
 | Journey: Abschließen (Bewertungsquote) | ⚠️ | Erinnerung und Bewerten in der Heute-Karte bestehen schon; nichts Neues seit dem Doc, Quote nicht messbar (s. Telemetrie). |
-| Design-Prinzipien | ⚠️ | „Ein Nein reicht“ und „Abneigung heißt nie“ erfüllt (Familie: Familien-Nein; Einzelne: Mehrheit, Entscheidung von David). „Erklären statt rätseln“ fehlt: keine Anzeige, warum ein Gericht kommt oder fehlt. |
+| Design-Prinzipien | ⚠️ | „Ein Nein reicht“ und „Abneigung heißt nie“ erfüllt (Familie: Familien-Nein; Einzelne: Mehrheit, Entscheidung von David). „Erklären statt rätseln“: seit 24.10. zeigt das Gericht-Fenster im Plan „Warum dieses Gericht?“ (`whyMeal.ts`); offen bleibt, warum ein Gericht *fehlt*, und die Anzeige in der Rezept-Übersicht. |
 | Telemetrie | ✅ (Nachtrag 24.10.) | **Nachgezogen:** Die fünf Kennzahlen stehen jetzt pro Familie in Admin → Statistik („Passt der Plan auf Anhieb?“, `worker/planQuality.ts`). Stand bei der Prüfung: ❌, in Admin → Statistik gab es nur Pläne, Gerichte (30 T.), Bewertungen (Anzahl), Favoriten, KI-Rezepte, Importe. Keine der fünf Kennzahlen aus Abschnitt 5 des Docs (Abneigungs-Treffer im Plan, Ausblendungen/Woche, Eingriffe nach dem Planen, Bewertungsquote, „Plan passt auf Anhieb“). |
 | Annahmen | ⚠️ | Offene Wer-zählt-Frage ist entschieden (Familien-Nein: immer; einzelne Mitglieder: Mehrheit). Folge: Die Abneigungen der beiden Erwachsenen mit Eintrag (2 von 4) schließen allein nichts aus; der Schutz hängt am Familien-Nein. Die Annahme „Fisch trifft Garnelen“ aus dem Doc gilt für das Familien-Nein nicht, und das ist richtig so. |
 
@@ -31,7 +31,7 @@ Der größte Schmerz (Abneigung wirkt nur als Abzug, das „Nein“ muss 46× ei
 
 1. ~~**Kennzahlen (Schritt 4 des Docs)** in Admin → Statistik~~ – erledigt am 24.10. (alle fünf Kennzahlen aus Abschnitt 5 des Docs).
 2. ~~**Muster-Vorschlag (Schritt 3)**~~ – erledigt am 24.10. (Plan und Rezept-Übersicht).
-3. **Neuen Plan erstellen und prüfen** (Fisch und Lamm = 0), bevor Schritt 5 („Warum dieser Vorschlag?“) angegangen wird.
+3. **Neuen Plan erstellen und prüfen** (Fisch und Lamm = 0), bevor Schritt 5 („Warum dieser Vorschlag?“) angegangen wird. – Schritt 5 ist am 24.10. im Plan umgesetzt (vor dieser Prüfung, auf Davids Wunsch).
 
 ## Risiken, wenn so belassen
 

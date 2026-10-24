@@ -8,6 +8,7 @@ import { formatShortDate, toIso } from '../lib/dateUtils';
 import { ruleForDate } from '../lib/dayRules';
 import { seasonHighlights } from '../lib/season';
 import TodayCard from './TodayCard';
+import WhyMeal from './WhyMeal';
 import GuestStepper from './GuestStepper';
 import SharePlanDialog from './SharePlanDialog';
 import WeekReviewCard from './WeekReviewCard';
@@ -488,8 +489,11 @@ export default function MealPlanView({
           currentRating={ratings[selectedMeal.meal]}
           defaultPortions={(defaultPortions ?? 4) + (selectedPm?.guests ?? 0)}
           extra={
-            selectedPm && onSetGuests ? (
-              <GuestStepper guests={selectedPm.guests ?? 0} onChange={(n) => onSetGuests(selectedPm, n)} />
+            selectedPm && !selectedPm.brotzeit ? (
+              <div className="space-y-3">
+                <WhyMeal key={selectedPm.id} planMealId={selectedPm.id} />
+                {onSetGuests && <GuestStepper guests={selectedPm.guests ?? 0} onChange={(n) => onSetGuests(selectedPm, n)} />}
+              </div>
             ) : undefined
           }
           onRate={
