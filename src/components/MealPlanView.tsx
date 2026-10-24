@@ -64,6 +64,10 @@ interface MealPlanViewProps {
   onToggleDislike?: (id: string, on: boolean) => Promise<void>;
   /** Neue Familie ohne Angaben (Willkommen im leeren Plan) */
   isFreshFamily?: boolean;
+  /** Eingetragene Familienmitglieder (0 = Hinweis „Wer isst mit?“ im leeren Plan) */
+  memberCount?: number;
+  /** Im leeren Plan: zu den Familienmitgliedern in den Einstellungen */
+  onOpenFamily?: () => void;
   /** Plan wurde geteilt bzw. der Link zurückgezogen */
   onSharedChange?: (shared: boolean) => void;
   /** Gäste an einem Tag setzen (wirft bei Fehlern) */
@@ -132,6 +136,8 @@ export default function MealPlanView({
   onFamilyDislike,
   onToggleDislike,
   isFreshFamily,
+  memberCount,
+  onOpenFamily,
   mealsLoading,
 }: MealPlanViewProps) {
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
@@ -191,6 +197,8 @@ export default function MealPlanView({
         familyDislikes={familyDislikes ?? []}
         onToggleDislike={onToggleDislike ?? (async () => {})}
         fresh={!!isFreshFamily}
+        memberCount={memberCount ?? 1}
+        onOpenFamily={onOpenFamily}
       />
     );
   }

@@ -10,13 +10,17 @@ interface Props {
   onToggleDislike: (id: string, on: boolean) => Promise<void>;
   /** Frische Familie: noch keine Angaben – dann mit Willkommen */
   fresh: boolean;
+  /** Eingetragene Familienmitglieder (0 = Hinweis auf den freiwilligen zweiten Schritt) */
+  memberCount: number;
+  /** Zu den Familienmitgliedern in den Einstellungen */
+  onOpenFamily?: () => void;
 }
 
 /**
  * Leerer Speiseplan. Der erste Plan entsteht, bevor die App etwas über die Familie weiß –
  * darum die überspringbare Frage „Was esst ihr nicht?“. Sie blockiert nichts: „Plan erstellen“ geht immer.
  */
-export default function EmptyPlanStart({ onCreatePlan, familyDislikes, onToggleDislike, fresh }: Props) {
+export default function EmptyPlanStart({ onCreatePlan, familyDislikes, onToggleDislike, fresh, memberCount, onOpenFamily }: Props) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,6 +79,22 @@ export default function EmptyPlanStart({ onCreatePlan, familyDislikes, onToggleD
           </p>
         )}
       </section>
+
+      {memberCount === 0 && onOpenFamily && (
+        <section aria-labelledby="who-eats-title" className="w-full max-w-sm mt-1">
+          <h3 id="who-eats-title" className="text-sm font-medium text-gray-800">
+            Wer isst mit?
+          </h3>
+          <p className="text-xs text-gray-600 mt-1">Mit euren Familienmitgliedern stimmen Portionen und Lieblingsessen. Das geht auch später.</p>
+          <button
+            type="button"
+            onClick={onOpenFamily}
+            className="mt-2 px-4 h-11 rounded-xl text-sm font-semibold border border-brand-700 text-brand-700 hover:bg-brand-50"
+          >
+            Familie eintragen
+          </button>
+        </section>
+      )}
 
       <button
         onClick={onCreatePlan}
