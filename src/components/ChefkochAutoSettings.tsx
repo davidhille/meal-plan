@@ -95,6 +95,7 @@ export default function ChefkochAutoSettings({ profile, onSaved }: { profile: Pr
               {savingTime && <Loader2 size={14} className="animate-spin text-gray-400" aria-hidden="true" />}
               <input
                 type="time"
+                step={900}
                 value={profile.chefkoch_auto_time ?? '06:00'}
                 onChange={(e) => changeTime(e.target.value)}
                 aria-label="Uhrzeit, ab der die Automatik täglich neue Rezepte holt"

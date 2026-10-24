@@ -47,7 +47,10 @@ export async function profileRoutes({ request, sql, body, parts, route, id, user
     const p = await getProfile(sql, user);
     const time = String(body.time ?? "");
     if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return json({ error: "Bitte eine Uhrzeit wie 06:30 angeben." }, 400);
-    const rows = await sql`UPDATE profiles SET chefkoch_auto_time = ${time}, updated_at = now() WHERE id = ${p.id} RETURNING *`;
+    // Nur 15-Minuten-Schritte (der Cron läuft alle 15 Minuten): abrunden
+    const [h, m] = time.split(":").map(Number);
+    const rounded = `${String(h).padStart(2, "0")}:${String(m - (m % 15)).padStart(2, "0")}`;
+    const rows = await sql`UPDATE profiles SET chefkoch_auto_time = ${rounded}, updated_at = now() WHERE id = ${p.id} RETURNING *`;
     return json(rows[0]);
   }
 

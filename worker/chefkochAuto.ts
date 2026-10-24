@@ -7,15 +7,18 @@ import { listRecipeUrls, loadChefkochRecipe, newestTopMainUrl } from "./chefkoch
 import { excludedByDislikes } from "./dislikes";
 import { logError } from "./adminTools";
 import { storeSourcePhotoChecked } from "./images";
-import { dislikeMatches, MEAL_DATABASE, violatesHealthConditions } from "./meals";
-import { loadContext, sourceKey } from "./repo";
+import { dislikeMatches, duplicateOf, violatesHealthConditions } from "./meals";
+import { loadContext, loadPool, sourceKey } from "./repo";
 
 export const AUTO_PER_DAY = 10;
 const MIN_RATING = 4.5;
 const MIN_RATING_COUNT = 2;
-/** Pro Cron-Lauf höchstens so viele Rezeptseiten laden und so viele Ergebnisseiten durchsuchen */
-const DETAILS_PER_RUN = 6;
-const PAGES_PER_RUN = 3;
+/**
+ * Pro Cron-Lauf höchstens so viele Rezeptseiten laden und so viele Ergebnisseiten durchsuchen. Klein gehalten, weil ein Worker-Aufruf
+ * nur begrenzt viele Anfragen (Chefkoch, Fotos, Datenbank) stellen darf – sonst bleiben Fotos auf der Strecke.
+ */
+const DETAILS_PER_RUN = 3;
+const PAGES_PER_RUN = 2;
 
 /** Nächste Portion für eine Familie; liefert die Namen der übernommenen Rezepte */
 export async function importChefkochBatch(sql: Sql, profileId: string, today: string): Promise<string[]> {
@@ -24,10 +27,12 @@ export async function importChefkochBatch(sql: Sql, profileId: string, today: st
   if (done >= AUTO_PER_DAY) return [];
 
   const ctx = await loadContext(sql, profileId);
-  // Schon bekannt: eigene Rezepte (Name oder Link), Grundsammlung, ausgeblendete
-  const known = await sql`SELECT lower(name) AS name, source_url FROM recipes WHERE profile_id = ${profileId}`;
-  const knownNames = new Set([...known.map((r) => r.name as string), ...MEAL_DATABASE.map((m) => m.name.toLowerCase()), ...ctx.rejectedMeals.map((n) => n.toLowerCase())]);
-  const knownUrls = new Set(known.map((r) => r.source_url as string).filter(Boolean).map(sourceKey));
+  // Schon bekannt (Dubletten-Prüfung): Link, und der Name – auch als ähnliche Variante – unter allen Gerichten der Familie
+  // (Grundsammlung, eigene und KI-Rezepte, Favoriten) sowie unter ausgeblendeten und gelöschten
+  const known = await sql`SELECT source_url FROM recipes WHERE profile_id = ${profileId} AND source_url IS NOT NULL`;
+  const { pool } = await loadPool(sql, profileId);
+  const existing = [...pool.map((m) => m.name), ...ctx.rejectedMeals];
+  const knownUrls = new Set(known.map((r) => r.source_url as string).map(sourceKey));
   const skipped = await sql`SELECT url FROM chefkoch_auto_skipped WHERE profile_id = ${profileId}`;
   const skippedUrls = new Set(skipped.map((r) => r.url as string));
 
@@ -52,7 +57,7 @@ export async function importChefkochBatch(sql: Sql, profileId: string, today: st
       const fits =
         (d.rating ?? 0) >= MIN_RATING &&
         (d.ratingCount ?? 0) >= MIN_RATING_COUNT &&
-        !knownNames.has(r.name.toLowerCase()) &&
+        !duplicateOf(r.name, existing) &&
         !violatesHealthConditions(r, ctx.healthConditions) &&
         !excludedByDislikes(r, ctx.familyDislikes, ctx.familyMembers, (t) => dislikeMatches(r, t));
       if (!fits) {
@@ -63,7 +68,7 @@ export async function importChefkochBatch(sql: Sql, profileId: string, today: st
         VALUES (${profileId}, ${r.name}, ${r.type}, ${r.ingredients}, ${r.instructions}, ${r.durationMin ?? null}, 'import', ${url}, true)
         ON CONFLICT (profile_id, name) DO NOTHING RETURNING name`;
       if (!inserted.length) continue;
-      knownNames.add(r.name.toLowerCase());
+      existing.push(r.name);
       // Ohne Foto bleibt das Rezept trotzdem; `healChefkochPhotos` holt es später nach (Grund steht in den Fehlern)
       if (d.imageUrl) {
         await storeSourcePhotoChecked(sql, r.name, d.imageUrl, "Chefkoch", url, profileId).catch((e) =>
@@ -83,7 +88,7 @@ const PHOTO_ATTEMPTS = 5;
  * Fehlende Fotos von Chefkoch-Rezepten nachholen (z. B. wenn der Abruf beim Übernehmen scheiterte): Rezeptseite neu lesen,
  * Foto laden. Je Rezept höchstens 5 Versuche; ein bewusst entferntes Foto bleibt weg. Gibt die Zahl nachgeholter Fotos zurück.
  */
-export async function healChefkochPhotos(sql: Sql, profileId: string, limit = 3): Promise<number> {
+export async function healChefkochPhotos(sql: Sql, profileId: string, limit = 2): Promise<number> {
   const rows = await sql`SELECT r.name, r.source_url, r.photo_attempts FROM recipes r
     WHERE r.profile_id = ${profileId} AND r.source = 'import' AND r.source_url LIKE '%chefkoch.de%' AND r.photo_attempts < ${PHOTO_ATTEMPTS}
       AND NOT EXISTS (SELECT 1 FROM meal_images mi WHERE mi.profile_id = r.profile_id AND mi.meal_name = r.name
