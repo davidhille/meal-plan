@@ -1,5 +1,5 @@
 import { useEffect, useId, useState, type InputHTMLAttributes } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import AppIcon from './AppIcon';
 import Logo from './Logo';
 import { acceptInvite, getAuthStatus, getInvite, login, setPassword, setupFirstAccount } from '../lib/api';
@@ -13,15 +13,37 @@ const input =
   'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500';
 
 /** Eingabefeld mit sichtbarer Beschriftung (kein Platzhalter als Ersatz); `hint` bleibt dauerhaft stehen und ist mit dem Feld verbunden */
-function Field({ label, hint, ...props }: { label: string; hint?: string } & InputHTMLAttributes<HTMLInputElement>) {
+function Field({ label, hint, type, ...props }: { label: string; hint?: string } & InputHTMLAttributes<HTMLInputElement>) {
   const id = useId();
   const hintId = `${id}-hint`;
+  // Passwortfelder lassen sich einblenden (Tippfehler auf dem Handy vermeiden)
+  const [shown, setShown] = useState(false);
+  const isPassword = type === 'password';
   return (
     <div className="flex flex-col gap-1">
       <label htmlFor={id} className="text-sm font-medium text-gray-800">
         {label}
       </label>
-      <input id={id} aria-describedby={hint ? hintId : undefined} className={input} {...props} />
+      <div className="relative">
+        <input
+          id={id}
+          aria-describedby={hint ? hintId : undefined}
+          type={isPassword && shown ? 'text' : type}
+          className={isPassword ? `${input} pr-11` : input}
+          {...props}
+        />
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setShown((v) => !v)}
+            aria-label={shown ? 'Passwort verbergen' : 'Passwort anzeigen'}
+            aria-pressed={shown}
+            className="absolute right-0 top-0 h-full w-11 flex items-center justify-center text-gray-500 hover:text-gray-700"
+          >
+            {shown ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+          </button>
+        )}
+      </div>
       {hint && (
         <p id={hintId} className="text-xs text-gray-600">
           {hint}
@@ -90,7 +112,12 @@ export default function LoginScreen({ onDone }: Props) {
       setPassword('');
       onDone();
     } catch (err) {
-      setError((err as Error).message || 'Das hat nicht geklappt.');
+      setError(
+        (err as Error).message ||
+          (mode === 'login'
+            ? 'Die Anmeldung ist nicht gelungen. Bitte E-Mail und Passwort prüfen und noch einmal versuchen.'
+            : 'Der Zugang konnte nicht angelegt werden. Bitte Netz prüfen und noch einmal versuchen.')
+      );
     } finally {
       setBusy(false);
     }
@@ -142,6 +169,7 @@ export default function LoginScreen({ onDone }: Props) {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   autoComplete="given-name"
+                  autoFocus
                   required
                 />
               </>
