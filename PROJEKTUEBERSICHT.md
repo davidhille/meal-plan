@@ -102,10 +102,6 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
 - **Nur leere Tage füllen** (in der Rückfrage bei „Alle tauschen“): gleicher Zeitraum, aber nur Tage
   ohne Gericht werden geplant – z. B. die Lücke, die ein in die Zukunft verschobenes Gericht hinterlässt. Mit „Tag leeren“
   freigemachte Tage bleiben frei.
-- **Warum dieses Gericht?** In der Rezept-Ansicht eines Plan-Gerichts (nicht bei Brotzeit) klappt „Warum dieses Gericht?“ auf und
-  nennt bis zu fünf Gründe: „Ohne Fisch und Lamm“, Favorit, Bewertung ab 4 Sternen, Lieblingsessen, Ernährungs-Schwerpunkt,
-  Zeitlimit des Tages, Abwechslung. Gezeigt wird, wie das Gericht zu den Einstellungen von **heute** passt (nicht, was beim Planen
-  den Ausschlag gab). Ohne Treffer: „Kein besonderer Grund hinterlegt – das Gericht erfüllt eure Regeln.“
 - **Gäste pro Tag:** In der Rezept-Ansicht eines Plan-Gerichts „Gäste an diesem Tag“ (+/−). Die Portionen dieses Gerichts,
   die Einkaufsliste und der Export rechnen die Gäste mit ein; die Karte im Plan zeigt „+2“. Bleibt beim Austauschen am Tag.
 - **Rezept-Ansicht:** Bild mit Quellenangabe, Zutaten mit **Portionen-Umrechnung** (Familie: Erwachsene 1, Kinder je nach Alter

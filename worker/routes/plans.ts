@@ -3,8 +3,7 @@ import type { Sql } from "../db";
 import type { Ctx } from "../http";
 import { json } from "../http";
 import { IMAGE_URL_SQL, IMAGE_CREDIT_SQL, fillMissingImages } from "../images";
-import { PLAN_COLS, getProfile, latestPlan, loadContext, loadFavorites, planOwned } from "../repo";
-import { whyReasons } from "../whyMeal";
+import { PLAN_COLS, getProfile, latestPlan, planOwned } from "../repo";
 import { loadDislikeHint } from "../dislikePattern";
 import { createPlan, replaceMeal, replaceWithRecipe, setBrotzeit } from "../planning";
 
@@ -62,31 +61,6 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
         [id, p.id]
       )
     );
-  }
-
-  // „Warum dieses Gericht?“: Gründe aus den Einstellungen der Familie (nur lesend)
-  if (parts[0] === "plan-meals" && id && parts[2] === "why" && request.method === "GET") {
-    const p = await getProfile(sql, user);
-    const rows = await sql`
-      SELECT pm.meal_name, pm.meal_type, pm.ingredients, pm.duration_min, pm.meal_date::text AS meal_date,
-             (SELECT MAX(o.meal_date) FROM plan_meals o JOIN meal_plans op ON op.id = o.plan_id
-               WHERE op.profile_id = ${p.id} AND o.meal_name = pm.meal_name AND NOT o.rejected AND o.id <> pm.id
-                 AND o.meal_date < pm.meal_date)::text AS last_date
-      FROM plan_meals pm JOIN meal_plans mp ON mp.id = pm.plan_id
-      WHERE pm.id = ${id} AND mp.profile_id = ${p.id}`;
-    const pm = rows[0];
-    if (!pm) return json({ error: "Gericht nicht gefunden" }, 404);
-    const [ctx, favorites] = await Promise.all([loadContext(sql, p.id), loadFavorites(sql, p.id)]);
-    const day = (d: string) => Date.parse(`${d}T00:00:00Z`) / 86_400_000;
-    return json({
-      reasons: whyReasons({
-        meal: { name: pm.meal_name, type: pm.meal_type, ingredients: pm.ingredients ?? [], durationMin: pm.duration_min },
-        date: pm.meal_date,
-        ctx,
-        isFavorite: favorites.some((f) => f.meal_name === pm.meal_name),
-        daysSinceLast: pm.last_date ? Math.round(day(pm.meal_date) - day(pm.last_date)) : null,
-      }),
-    });
   }
 
   // Gericht ablehnen (kommt nicht wieder) bzw. neu generieren (nur austauschen)
