@@ -1,6 +1,7 @@
 // Chefkoch-Automatik: jeden Tag bis zu 10 neue Hauptspeisen ab 4,5 Sternen (mind. 2 Bewertungen) in die Sammlung
 // der Familie. Läuft im Cron (alle 15 Min.) in kleinen Portionen, damit ein Lauf kurz bleibt und Chefkoch nicht
-// mit Anfragen überhäuft wird. Übernommen wird wie „In meine Rezepte übernehmen“: Rezept + Chefkoch-Foto + Link.
+// mit Anfragen überhäuft wird. Übernommen wird wie „In meine Rezepte übernehmen“: Rezept + Chefkoch-Foto + Link;
+// zusätzlich `auto_review`: In der Übersicht „Neu“, bis man es behält (oder ausblendet).
 import type { Sql } from "./db";
 import { listRecipeUrls, loadChefkochRecipe, newestTopMainUrl } from "./chefkoch";
 import { excludedByDislikes } from "./dislikes";
@@ -57,8 +58,8 @@ export async function importChefkochBatch(sql: Sql, profileId: string, today: st
         await skip();
         continue;
       }
-      const inserted = await sql`INSERT INTO recipes (profile_id, name, type, ingredients, instructions, duration_min, source, source_url)
-        VALUES (${profileId}, ${r.name}, ${r.type}, ${r.ingredients}, ${r.instructions}, ${r.durationMin ?? null}, 'import', ${url})
+      const inserted = await sql`INSERT INTO recipes (profile_id, name, type, ingredients, instructions, duration_min, source, source_url, auto_review)
+        VALUES (${profileId}, ${r.name}, ${r.type}, ${r.ingredients}, ${r.instructions}, ${r.durationMin ?? null}, 'import', ${url}, true)
         ON CONFLICT (profile_id, name) DO NOTHING RETURNING name`;
       if (!inserted.length) continue;
       knownNames.add(r.name.toLowerCase());

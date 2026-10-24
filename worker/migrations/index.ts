@@ -24,6 +24,7 @@ import planTeilen from "./0021_plan_teilen";
 import adminWerkzeuge from "./0022_admin_werkzeuge";
 import familienNein from "./0023_familien_nein";
 import chefkochAutomatik from "./0024_chefkoch_automatik";
+import chefkochPruefen from "./0025_chefkoch_pruefen";
 
 export interface Migration {
   /** Eindeutig und aufsteigend, z. B. "0002_kochmodus" */
@@ -57,4 +58,5 @@ export const MIGRATIONS: Migration[] = [
   { id: "0022_admin_werkzeuge", statements: adminWerkzeuge },
   { id: "0023_familien_nein", statements: familienNein },
   { id: "0024_chefkoch_automatik", statements: chefkochAutomatik },
+  { id: "0025_chefkoch_pruefen", statements: chefkochPruefen },
 ];

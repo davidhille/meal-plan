@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChefHat, Clock, Eye, Loader2, Search, EyeOff, X, ShieldAlert, MessageSquare, Star, SlidersHorizontal, Refrigerator, Plus, ArrowUpDown } from 'lucide-react';
+import { Check, ChefHat, Clock, Eye, Loader2, Search, EyeOff, X, ShieldAlert, MessageSquare, Star, SlidersHorizontal, Refrigerator, Plus, ArrowUpDown } from 'lucide-react';
 import { useRatings } from '../lib/ratings';
 import { CatalogRecipe, Meal, PlanMeal, RecipeCatalog, RecipeFilter } from '../types';
 import { CategoryOverride, toOverrideMap } from '../lib/recipeCategories';
@@ -31,6 +31,7 @@ import {
   removeMealImage,
   getRecipeCatalog,
   resetRecipeEdit,
+  reviewRecipes,
   saveRecipeEdit,
   setRecipeHidden,
   wishToQuery,
@@ -144,6 +145,8 @@ export default function MainDishesView({
     }
   };
   const [showUnsuitableList, setShowUnsuitableList] = useState(false);
+  /** Nur die neuen Rezepte der Chefkoch-Automatik zeigen (zum Prüfen) */
+  const [onlyNew, setOnlyNew] = useState(false);
   /** Unpassende Gerichte, über die schon entschieden wurde („Fertig“); der Hinweis kommt erst bei neuen wieder */
   const [seenUnsuitable, setSeenUnsuitableState] = useState<string[]>(() => {
     try {
@@ -191,9 +194,10 @@ export default function MainDishesView({
     return catalog.recipes.filter(
       (r) =>
         (!r.unsuitable || revealed.includes(r.name)) &&
+        (!onlyNew || r.review) &&
         (!q || normalize(r.name).includes(q) || r.ingredients.some((i) => normalize(i).includes(q)))
     );
-  }, [catalog, query, revealed]);
+  }, [catalog, query, revealed, onlyNew]);
 
   // Eigene Filter, die es nicht mehr gibt, nicht mitzählen
   const activeSelection = useMemo(
@@ -238,6 +242,23 @@ export default function MainDishesView({
   const unsuitableRecipes = catalog.recipes.filter((r) => r.unsuitable);
   const revealedCount = unsuitableRecipes.filter((r) => revealed.includes(r.name)).length;
   const shownTotal = suitableCount + revealedCount;
+  const newCount = catalog.recipes.filter((r) => r.review).length;
+
+  /** Neue Rezepte behalten; in der „Nur neue“-Ansicht geht es mit dem nächsten weiter */
+  const keepNew = async (names: string[] | 'all') => {
+    const next = onlyNew && selected ? (visible[selectedIndex + 1] ?? visible[selectedIndex - 1] ?? null) : selected;
+    try {
+      const updated = await reviewRecipes(names === 'all' ? { all: true } : { names });
+      setCatalog(updated);
+      if (names === 'all') setOnlyNew(false);
+      const stillNew = next && names !== 'all' && !names.includes(next.name) ? updated.recipes.find((r) => r.name === next.name) : undefined;
+      setSelected(names === 'all' ? null : onlyNew ? (stillNew ?? null) : (updated.recipes.find((r) => r.name === selected?.name) ?? null));
+      flash(names === 'all' ? 'Alle neuen Rezepte behalten.' : 'Rezept behalten.');
+    } catch (e) {
+      flash((e as Error).message || 'Das hat nicht geklappt.');
+    }
+  };
+
   // Hinweis nur, solange es unpassende Gerichte gibt, über die noch nicht entschieden wurde (oder die Liste offen ist)
   const hasUndecided = unsuitableRecipes.some((r) => !seenUnsuitable.includes(r.name));
   const showHint = unsuitableCount > 0 && (hasUndecided || showUnsuitableList);
@@ -376,6 +397,24 @@ export default function MainDishesView({
             </select>
           </div>
         </div>
+        {newCount > 0 && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 rounded-xl bg-brand-50 border border-brand-200 text-xs text-brand-900">
+            <span className="flex-1 min-w-[12rem]">
+              <strong>{newCount} neue Rezepte</strong> von der Chefkoch-Automatik – schau sie dir an und behalte, was dir gefällt.
+            </span>
+            <button
+              type="button"
+              onClick={() => setOnlyNew((v) => !v)}
+              aria-pressed={onlyNew}
+              className="h-8 font-semibold underline underline-offset-2"
+            >
+              {onlyNew ? 'Alle Gerichte zeigen' : 'Nur neue zeigen'}
+            </button>
+            <button type="button" onClick={() => keepNew('all')} className="h-8 font-semibold underline underline-offset-2">
+              Alle behalten
+            </button>
+          </div>
+        )}
         {showHint && (
           <div className="rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
             <button
@@ -470,6 +509,9 @@ export default function MainDishesView({
                   className="w-full h-full flex flex-col justify-start text-left bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
                 >
                   <div className="relative aspect-[4/3] bg-gray-100">
+                    {r.review && (
+                      <span className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full bg-coral-700 text-white text-xs font-bold shadow-sm">Neu</span>
+                    )}
                     <ChefHat size={28} aria-hidden="true" className="absolute inset-0 m-auto text-gray-300" />
                     {r.imageUrl && (
                       <img
@@ -570,6 +612,30 @@ export default function MainDishesView({
           extraBelow
           extra={
             <div className="space-y-3">
+              {selected.review && (
+                <div className="px-3 py-2.5 rounded-xl bg-brand-50 border border-brand-200 text-xs text-brand-900 space-y-2">
+                  <p>
+                    <strong>Neu von der Chefkoch-Automatik.</strong> Gefällt es dir? Dann behalten – sonst ausblenden, es wird nicht wieder
+                    vorgeschlagen.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => keepNew([selected.name])}
+                      className="h-10 px-4 inline-flex items-center gap-1.5 rounded-xl bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800"
+                    >
+                      <Check size={16} aria-hidden="true" /> Behalten
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHideCandidate(selected)}
+                      className="h-10 px-4 inline-flex items-center gap-1.5 rounded-xl border border-brand-300 bg-white text-sm font-semibold text-brand-800 hover:bg-brand-50"
+                    >
+                      <EyeOff size={16} aria-hidden="true" /> Ausblenden
+                    </button>
+                  </div>
+                </div>
+              )}
               {selected.unsuitable && (
                 <p className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
                   <ShieldAlert size={14} className="flex-shrink-0 mt-px" aria-hidden="true" />
@@ -697,8 +763,13 @@ export default function MainDishesView({
           familyDislikes={familyDislikes}
           onFamilyNo={onFamilyDislike}
           onHide={async () => {
-            setCatalog(await setRecipeHidden(hideCandidate.name, true));
-            flash(`„${hideCandidate.name}“ ist ausgeblendet.`);
+            const hiddenName = hideCandidate.name;
+            // Aus dem geöffneten Rezept heraus ausgeblendet: in der „Nur neue“-Ansicht mit dem nächsten weitermachen
+            const next = selected?.name === hiddenName && onlyNew ? (visible[selectedIndex + 1] ?? visible[selectedIndex - 1] ?? null) : null;
+            const updated = await setRecipeHidden(hiddenName, true);
+            setCatalog(updated);
+            if (selected?.name === hiddenName) setSelected(next ? (updated.recipes.find((r) => r.name === next.name) ?? null) : null);
+            flash(`„${hiddenName}“ ist ausgeblendet.`);
           }}
           onClose={() => setHideCandidate(null)}
         />

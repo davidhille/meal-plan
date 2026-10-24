@@ -565,6 +565,11 @@ export async function resetRecipeEdit(name: string): Promise<{ name: string; cat
   return request('POST', '/recipes/reset', { name });
 }
 
+/** Neue Rezepte der Chefkoch-Automatik behalten (einzelne oder alle); wirft bei Fehlern */
+export async function reviewRecipes(target: { names: string[] } | { all: true }): Promise<RecipeCatalog> {
+  return request<RecipeCatalog>('POST', '/recipes/review', target);
+}
+
 /** Gericht endgültig löschen (eigene/KI-Rezepte aus der Datenbank, Grundsammlung dauerhaft ausgeschlossen) */
 export async function deleteRecipe(name: string): Promise<RecipeCatalog> {
   return request<RecipeCatalog>('POST', '/recipes/delete', { name });
