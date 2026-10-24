@@ -185,6 +185,7 @@ optional `PIXABAY_API_KEY`, `PEXELS_API_KEY`. Nie ins Repo, nie in `wrangler.jso
   Aus Anfragen von Nutzern klappt es (beobachtet am 24.10.2026). Vermutung: Der Cron läuft in irgendeinem Cloudflare-Rechenzentrum
   weltweit, Anfragen aus Deutschland in Frankfurt; das CDN lässt nur bestimmte Regionen/Adressen durch. Rezeptseiten von
   `www.chefkoch.de` lädt der Cron dagegen problemlos.
+- **Betrieb/Wiederherstellung:** Stand und offene Punkte (Altpfad `X-App-Password`, Sicherung nur manuell – Neon Free hält 6 Std. Verlauf, Routine ohne Wiederholung, Free-Limits des Workers) stehen in `docs/prod-readiness-audit-2026-10-24.md`. Migrationen nur additiv halten, damit ein Rollback der Worker-Version ohne Datenverlust geht.
 - **Amazon** wurde bewusst entfernt (keine Suche/Warenkorb aus Apps möglich) – nicht wieder einbauen.
 - **Gesundheitsfilter** (`violatesHealthConditions`) sind Heuristiken auf Zutatentext, keine Allergie-Garantie. KI-Rezepte
   werden immer nachgeprüft, die KI hält sich nicht zuverlässig an Vorgaben.
