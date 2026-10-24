@@ -20,6 +20,7 @@ import { exportPlan } from '../lib/planExport';
 import ReplacePlanDialog from './ReplacePlanDialog';
 import ConfirmDialog from './ConfirmDialog';
 import HideMealDialog from './HideMealDialog';
+import EmptyPlanStart from './EmptyPlanStart';
 
 interface MealPlanViewProps {
   onCreatePlan: () => void;
@@ -59,6 +60,10 @@ interface MealPlanViewProps {
   /** „Kommt nie in den Plan“ (Hauptzutaten) und Familien-Nein beim Ausblenden setzen */
   familyDislikes?: string[];
   onFamilyDislike?: (groupId: string) => Promise<void>;
+  /** Leerer Plan: Hauptzutat des Familien-Neins ein-/ausschalten */
+  onToggleDislike?: (id: string, on: boolean) => Promise<void>;
+  /** Neue Familie ohne Angaben (Willkommen im leeren Plan) */
+  isFreshFamily?: boolean;
   /** Plan wurde geteilt bzw. der Link zurückgezogen */
   onSharedChange?: (shared: boolean) => void;
   /** Gäste an einem Tag setzen (wirft bei Fehlern) */
@@ -123,6 +128,8 @@ export default function MealPlanView({
   onFillDay,
   familyDislikes,
   onFamilyDislike,
+  onToggleDislike,
+  isFreshFamily,
   mealsLoading,
 }: MealPlanViewProps) {
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
@@ -150,19 +157,12 @@ export default function MealPlanView({
 
   if (!plan) {
     return (
-      <div className="px-4 py-12 flex flex-col items-center text-center gap-3">
-        <CalendarPlus size={32} className="text-gray-300" aria-hidden="true" />
-        <p className="text-base font-semibold text-gray-800">Noch kein Speiseplan</p>
-        <p className="text-sm text-gray-500 max-w-xs">
-          Erstelle einen Plan – er berücksichtigt eure Familie, Vorlieben und Bewertungen.
-        </p>
-        <button
-          onClick={onCreatePlan}
-          className="mt-2 px-6 h-11 rounded-xl text-sm font-semibold bg-brand-700 text-white hover:bg-brand-800"
-        >
-          Plan erstellen
-        </button>
-      </div>
+      <EmptyPlanStart
+        onCreatePlan={onCreatePlan}
+        familyDislikes={familyDislikes ?? []}
+        onToggleDislike={onToggleDislike ?? (async () => {})}
+        fresh={!!isFreshFamily}
+      />
     );
   }
 

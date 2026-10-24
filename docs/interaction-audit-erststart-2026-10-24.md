@@ -3,7 +3,7 @@
 Weg: Einladungslink → Zugang anlegen → erster Blick in die App → Familie einrichten → erster Plan.
 Methode: Code gelesen (`LoginScreen`, `routes/admin.ts`, `MealPlanView`, `SettingsView`, `PlanCreationModal`), live nur lesend
 (Admin → Familien und Statistik; keine Daten der Familien selbst, keine Einladung angelegt). Maßstab: Skill `interaction-design`
-(Usage-/Origin-Story mit Peak-End, Excise, Zustände, Fehlervermeidung). Es wurde **nichts am Code geändert**.
+(Usage-/Origin-Story mit Peak-End, Excise, Zustände, Fehlervermeidung). Stand: **Block 1 (#1, #2, #4) umgesetzt** (24.10.2026, `EmptyPlanStart`); #3, #5–#9 offen.
 
 Posture: **transient** (einmaliger, kurzer Einstieg). Die Hürde ist hier nicht Technik, sondern dass die App erst *nach* dem ersten Plan
 erfährt, was die Familie nicht isst.
@@ -50,3 +50,9 @@ Schwere: **H** = bricht den Erstnutzen, **M** = Reibung, **N** = Politur.
 
 Wichtig: Der Einstieg darf **nicht blockieren** (Prinzip „Lernen nebenbei, nie als Pflicht“ aus der Discovery). Jede Frage lässt sich überspringen,
 der Plan geht auch ohne Angaben.
+
+## Umgesetzt: Einstieg mit Abneigungen (#1, #2, #4)
+
+- Leerer Speiseplan (`EmptyPlanStart`): Frage „Was esst ihr nicht?“ mit den sechs Chips aus `FAMILY_DISLIKES` (44 px, `aria-pressed`), speichert sofort über `PUT /profile/family-dislikes`; bei Fehler Meldung mit Gegenstand, Auswahl bleibt wie vorher.
+- Nichts blockiert: „Plan erstellen“ geht immer, die Angabe ist überspringbar.
+- Text ehrlich: statt „berücksichtigt eure Familie, Vorlieben und Bewertungen“ (gab es noch nicht) steht bei einer frischen Familie „Willkommen bei miyummy“ und der Hinweis, dass die Angabe später änderbar ist. Frisch = kein Plan, keine Mitglieder, kein Familien-Nein.
