@@ -29,6 +29,7 @@ import chefkochZeitFotos from "./0026_chefkoch_zeit_fotos";
 import fotoVersucheZuruecksetzen from "./0027_foto_versuche_zuruecksetzen";
 import fotoVersucheAnfrage from "./0028_foto_versuche_anfrage";
 import routineVersuche from "./0029_routine_versuche";
+import fotoVersucheBrowser from "./0030_foto_versuche_browser";
 
 export interface Migration {
   /** Eindeutig und aufsteigend, z. B. "0002_kochmodus" */
@@ -67,4 +68,5 @@ export const MIGRATIONS: Migration[] = [
   { id: "0027_foto_versuche_zuruecksetzen", statements: fotoVersucheZuruecksetzen },
   { id: "0028_foto_versuche_anfrage", statements: fotoVersucheAnfrage },
   { id: "0029_routine_versuche", statements: routineVersuche },
+  { id: "0030_foto_versuche_browser", statements: fotoVersucheBrowser },
 ];
