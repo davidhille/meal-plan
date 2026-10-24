@@ -144,6 +144,23 @@ export default function MainDishesView({
     }
   };
   const [showUnsuitableList, setShowUnsuitableList] = useState(false);
+  /** Unpassende Gerichte, über die schon entschieden wurde („Fertig“); der Hinweis kommt erst bei neuen wieder */
+  const [seenUnsuitable, setSeenUnsuitableState] = useState<string[]>(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem('mp_seen_unsuitable') ?? '[]');
+      return Array.isArray(raw) ? raw.filter((x): x is string => typeof x === 'string') : [];
+    } catch {
+      return [];
+    }
+  });
+  const setSeenUnsuitable = (names: string[]) => {
+    setSeenUnsuitableState(names);
+    try {
+      localStorage.setItem('mp_seen_unsuitable', JSON.stringify(names));
+    } catch {
+      /* ohne Speicher geht es auch – dann gilt „Fertig“ nur für diese Sitzung */
+    }
+  };
   const [showAi, setShowAi] = useState(false);
   const [showChefkoch, setShowChefkoch] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
@@ -221,6 +238,9 @@ export default function MainDishesView({
   const unsuitableRecipes = catalog.recipes.filter((r) => r.unsuitable);
   const revealedCount = unsuitableRecipes.filter((r) => revealed.includes(r.name)).length;
   const shownTotal = suitableCount + revealedCount;
+  // Hinweis nur, solange es unpassende Gerichte gibt, über die noch nicht entschieden wurde (oder die Liste offen ist)
+  const hasUndecided = unsuitableRecipes.some((r) => !seenUnsuitable.includes(r.name));
+  const showHint = unsuitableCount > 0 && (hasUndecided || showUnsuitableList);
   const conditions = (catalog.healthConditions ?? []).map((c) => CONDITION_LABELS[c] ?? c).join(', ');
   const example = swapExample(catalog.healthConditions ?? []);
 
@@ -327,6 +347,18 @@ export default function MainDishesView({
         <div className="flex items-center justify-between gap-2 px-1">
           <p className="text-xs text-gray-500" aria-live="polite">
             {visible.length === shownTotal ? `${shownTotal} Gerichte` : `${visible.length} von ${shownTotal} Gerichten`}
+            {unsuitableCount > 0 && !showHint && (
+              <>
+                {' · '}
+                <button
+                  type="button"
+                  onClick={() => setShowUnsuitableList(true)}
+                  className="font-semibold text-brand-700 hover:underline"
+                >
+                  {unsuitableCount} unpassende verwalten
+                </button>
+              </>
+            )}
           </p>
           <div className="flex items-center gap-1.5 text-xs text-gray-600">
             <ArrowUpDown size={13} aria-hidden="true" />
@@ -344,7 +376,7 @@ export default function MainDishesView({
             </select>
           </div>
         </div>
-        {unsuitableCount > 0 && (
+        {showHint && (
           <div className="rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
             <button
               type="button"
@@ -376,6 +408,16 @@ export default function MainDishesView({
                     className="h-8 font-semibold underline underline-offset-2"
                   >
                     Alle ausblenden
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSeenUnsuitable(unsuitableRecipes.map((r) => r.name));
+                      setShowUnsuitableList(false);
+                    }}
+                    className="h-8 ml-auto font-semibold underline underline-offset-2"
+                  >
+                    Fertig
                   </button>
                 </div>
                 <ul className="divide-y divide-amber-200">
