@@ -1,6 +1,8 @@
 // Routinen automatisch ausführen (Cloudflare Cron, alle 15 Min)
 import { meteredEnv } from "./aiUsage";
-import { alertOwnerOncePerDay, logError } from "./adminTools";
+import { alertOwnerOncePerDay, cleanupOldRows, logError } from "./adminTools";
+import { runBackupStep } from "./backup";
+import { checkStorageWarning } from "./storage";
 import { MAX_ROUTINE_ATTEMPTS, routineDue, shouldRetryRoutine } from "./routineRules";
 import { neon } from "@neondatabase/serverless";
 import type { Env } from "./http";
@@ -85,4 +87,13 @@ export async function runRoutines(env: Env) {
   // Einmalig: unpassende Ersatzfotos verwerfen (werden dann neu gesucht), danach fehlende Rezeptbilder nachziehen
   await recheckStockPhotos(sql).catch((e) => console.error("Foto-Nachprüfung fehlgeschlagen:", e));
   await fillMissingImages(meteredEnv(env, sql, null), sql, 5).catch((e) => logError(sql, "Bilder nachziehen", e));
+
+  // Betrieb: stündlich Speicher prüfen, um 4 Uhr aufräumen, wöchentlich je Familie sichern (nur mit R2-Bucket)
+  const firstOfHour = now.time.slice(3) < "15";
+  if (firstOfHour) await checkStorageWarning(env, sql);
+  if (firstOfHour && now.time.startsWith("04:")) await cleanupOldRows(sql).catch((e) => logError(sql, "Aufräumen", e, null, { oncePerDay: true }));
+  await runBackupStep(env, sql, now.date).catch(async (e) => {
+    await logError(sql, "Sicherung", e, null, { oncePerDay: true });
+    await alertOwnerOncePerDay(env, sql, "sicherung", { title: "Sicherung fehlgeschlagen", body: String((e as Error)?.message ?? e) });
+  });
 }

@@ -46,6 +46,16 @@ export async function handleApi(
 
   if (!env.DATABASE_URL) return json({ error: "DATABASE_URL fehlt" }, 500);
 
+  // Für einen Uptime-Monitor: antwortet nur, wenn Worker und Datenbank laufen (ohne Anmeldung, ohne Daten)
+  if ((request.method === "GET" || request.method === "HEAD") && path === "/api/health") {
+    try {
+      await neon(env.DATABASE_URL)`SELECT 1`;
+      return json({ ok: true });
+    } catch {
+      return json({ ok: false }, 503);
+    }
+  }
+
   // Ändernde Anfragen nur von der eigenen Seite (Schutz zusätzlich zu SameSite-Cookies)
   const origin = request.headers.get("Origin");
   if (request.method !== "GET" && origin && !sameHost(origin, request.url)) {

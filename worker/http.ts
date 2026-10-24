@@ -8,6 +8,8 @@ export interface Env extends AiEnv, ShopEnv {
   DATABASE_URL: string;
   APP_PASSWORD?: string;
   CREDENTIALS_KEY?: string;
+  /** R2-Bucket für die wöchentliche Sicherung (optional; ohne Binding wird nicht gesichert) */
+  BACKUPS?: R2Bucket;
 }
 
 /** Alles, was eine Route über die Anfrage wissen muss */

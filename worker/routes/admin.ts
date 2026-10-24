@@ -1,4 +1,5 @@
 // Administration (nur Betreiber): Familien anlegen, einladen, umbenennen, sperren, löschen
+import { DB_LIMIT_BYTES, databaseSize } from "../storage";
 import type { Ctx } from "../http";
 import { json } from "../http";
 import { INVITE_DAYS, createInvite, type SessionUser } from "../auth";
@@ -49,6 +50,7 @@ async function familyStats(sql: Ctx["sql"], ownProfileId: string) {
   const empty = { today: 0, week: 0, month: 0, recipes: 0, images: 0, recipeCalls: 0, imageCalls: 0 };
   const quality = await planQualityByFamily(sql);
   return {
+    storage: { bytes: await databaseSize(sql), limitBytes: DB_LIMIT_BYTES },
     dailyLimit: DAILY_FREE_NEURONS,
     since: (since[0]?.since as string | null) ?? null,
     daily,

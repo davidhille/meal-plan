@@ -34,6 +34,13 @@ export async function logError(
   }
 }
 
+/** Einmal am Tag: abgelaufene Sitzungen und Einladungen sowie sehr alte KI-Zähler löschen (die Tabellen wüchsen sonst endlos) */
+export async function cleanupOldRows(sql: Sql): Promise<void> {
+  await sql`DELETE FROM sessions WHERE expires_at < now() - interval '7 days'`;
+  await sql`DELETE FROM invites WHERE expires_at < now() - interval '30 days'`;
+  await sql`DELETE FROM ai_usage WHERE created_at < now() - interval '400 days'`;
+}
+
 /** Verbrauch heute (alle Familien zusammen) */
 export async function neuronsToday(sql: Sql, profileId?: string): Promise<number> {
   const rows = profileId
@@ -117,28 +124,48 @@ export interface FamilyBackup {
   tables: Record<string, Row[]>;
 }
 
-/** Alle Daten einer Familie als JSON (ohne Zugänge und Push-Geräte) */
-export async function exportFamily(sql: Sql, profileId: string): Promise<FamilyBackup | null> {
+/**
+ * Alle Daten einer Familie als JSON (ohne Zugänge und Push-Geräte).
+ * Alle Abfragen laufen als ein Batch (eine Unteranfrage, ein gemeinsamer Stand). `withImages: false` lässt die Bilddaten
+ * (`meal_images.image_data`) weg – für die automatische Sicherung, damit die Antwort klein bleibt.
+ */
+export async function exportFamily(sql: Sql, profileId: string, opts: { withImages?: boolean } = {}): Promise<FamilyBackup | null> {
+  const withImages = opts.withImages ?? true;
   const profiles = await sql`SELECT row_to_json(p) AS r FROM profiles p WHERE id = ${profileId}`;
   if (!profiles[0]) return null;
-  const tables: Record<string, Row[]> = {};
+  const names: string[] = [];
+  const queries: Query[] = [];
   for (const t of await familyTables(sql)) {
-    const rows = await sql.query(`SELECT row_to_json(x) AS r FROM ${t} x WHERE profile_id = $1`, [profileId]);
-    tables[t] = rows.map((r) => r.r as Row);
+    const col = !withImages && t === "meal_images" ? `to_jsonb(x) - 'image_data'` : `row_to_json(x)`;
+    names.push(t);
+    queries.push({ text: `SELECT ${col} AS r FROM ${t} x WHERE profile_id = $1`, params: [profileId] });
   }
   for (const t of PLAN_CHILDREN) {
-    const rows = await sql.query(
-      `SELECT row_to_json(x) AS r FROM ${t} x WHERE plan_id IN (SELECT id FROM meal_plans WHERE profile_id = $1)`,
-      [profileId]
-    );
-    tables[t] = rows.map((r) => r.r as Row);
+    names.push(t);
+    queries.push({
+      text: `SELECT row_to_json(x) AS r FROM ${t} x WHERE plan_id IN (SELECT id FROM meal_plans WHERE profile_id = $1)`,
+      params: [profileId],
+    });
   }
+  const results = await runBatch(sql, queries);
+  const tables: Record<string, Row[]> = {};
+  names.forEach((t, i) => {
+    tables[t] = results[i].map((r) => r.r as Row);
+  });
   const profile = profiles[0].r as Row;
   return { version: 1, exportedAt: new Date().toISOString(), family: (profile.name as string) ?? null, profile, tables };
 }
 
 /** Eine Abfrage als Teil einer Transaktion (Neon) bzw. nacheinander (lokale Tests) */
 type Query = { text: string; params: unknown[] };
+/** Alle Abfragen in einer Anfrage an die Datenbank; liefert die Ergebnisse in der Reihenfolge der Abfragen */
+async function runBatch(sql: Sql, queries: Query[]): Promise<Row[][]> {
+  const s = sql as unknown as { transaction?: (q: unknown[]) => Promise<unknown> };
+  if (typeof s.transaction === "function") return (await s.transaction(queries.map((q) => sql.query(q.text, q.params)))) as Row[][];
+  const out: Row[][] = [];
+  for (const q of queries) out.push((await sql.query(q.text, q.params)) as Row[]);
+  return out;
+}
 async function runAll(sql: Sql, queries: Query[]) {
   const s = sql as unknown as { transaction?: (q: unknown[]) => Promise<unknown> };
   if (typeof s.transaction === "function") await s.transaction(queries.map((q) => sql.query(q.text, q.params)));

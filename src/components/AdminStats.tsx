@@ -6,6 +6,12 @@ import { getAdminStats, type AdminStats as Stats, type AiUsage, type PlanQuality
 
 const num = (n: number) => Math.round(n).toLocaleString('de-DE');
 
+/** „312 MB“ bzw. „1,2 GB“ */
+const bytesLabel = (bytes: number) => {
+  const mb = bytes / 1_048_576;
+  return mb >= 1024 ? `${(mb / 1024).toLocaleString('de-DE', { maximumFractionDigits: 1 })} GB` : `${num(mb)} MB`;
+};
+
 const parseTs = (v: string) => new Date(v.replace(' ', 'T').replace(/([+-]\d{2})$/, '$1:00'));
 const formatDate = (v: string | null) =>
   v ? parseTs(v).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' }) : null;
@@ -113,6 +119,8 @@ export default function AdminStats() {
   const month = stats.daily.reduce((s, d) => s + d.neurons, 0);
   const overDays = stats.daily.filter((d) => d.neurons > stats.dailyLimit).length;
   const since = formatDate(stats.since);
+  const dbShare = stats.storage.limitBytes ? Math.min(100, (stats.storage.bytes / stats.storage.limitBytes) * 100) : 0;
+  const dbHigh = dbShare >= 80;
 
   return (
     <CollapsibleCard
@@ -145,6 +153,26 @@ export default function AdminStats() {
             <p role="alert" className="text-xs font-medium text-coral-700">
               Schon über 80 % – ab der Grenze kommen Bilder aus Fotodatenbanken und neue KI-Rezepte erst morgen. Dazu gibt es
               einmal am Tag eine Push-Nachricht, wenn die Erinnerung auf deinem Gerät eingeschaltet ist.
+            </p>
+          )}
+        </section>
+
+        {/* Datenbank gegen die Grenze des Tarifs */}
+        <section className="space-y-1.5">
+          <div className="flex items-baseline justify-between text-xs">
+            <span className="font-semibold text-gray-700">Datenbank (Speicher)</span>
+            <span className="tabular-nums text-gray-600">
+              {bytesLabel(stats.storage.bytes)} / {bytesLabel(stats.storage.limitBytes)} · {Math.round(dbShare)} %
+            </span>
+          </div>
+          <div className="h-2.5 rounded-full bg-gray-100 overflow-hidden" role="progressbar" aria-label="Belegter Datenbank-Speicher"
+            aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(dbShare)}>
+            <div className={`h-full rounded-full ${dbHigh ? 'bg-coral-700' : 'bg-brand-600'}`} style={{ width: `${dbShare}%` }} />
+          </div>
+          {dbHigh && (
+            <p role="alert" className="text-xs font-medium text-coral-700">
+              Fast voll – ist die Grenze erreicht, scheitern alle Speicherversuche. Alte Bilder aufräumen oder den Tarif wechseln.
+              Ab 80 % kommt einmal am Tag eine Push-Nachricht.
             </p>
           )}
         </section>
