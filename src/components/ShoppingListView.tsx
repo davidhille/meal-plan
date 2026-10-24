@@ -104,12 +104,31 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
 
   const planId = plan?.id;
 
-  const load = useCallback(async () => {
+  // Vorrat-Menü: Escape und Tippen daneben schließen es
+  useEffect(() => {
+    if (!basicPickerTarget) return;
+    const close = (e: MouseEvent | KeyboardEvent) => {
+      if (e instanceof KeyboardEvent) {
+        if (e.key === 'Escape') setBasicPickerTarget(null);
+      } else if (!(e.target as Element).closest('[role="menu"], [aria-haspopup="menu"]')) {
+        setBasicPickerTarget(null);
+      }
+    };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', close);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('keydown', close);
+    };
+  }, [basicPickerTarget]);
+
+  /** silent = Nachladen nach einer Aktion: die Liste bleibt stehen, kein Spinner (Scrollposition und Fokus bleiben) */
+  const load = useCallback(async (silent = false) => {
     if (!planId) {
       setLoading(false);
       return;
     }
-    setLoading(true);
+    if (!silent) setLoading(true);
     const data = await getShopping(planId, scope);
     if (data) {
       setItems(data.items);
@@ -245,7 +264,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
   const moveToPantry = async (item: ShoppingItem) => {
     setItems((prev) => prev.filter((i) => i.id !== item.id));
     if (await addToPantry(item.baseName)) {
-      await load();
+      await load(true);
     } else {
       setItems((prev) => (prev.some((i) => i.id === item.id) ? prev : [...prev, item]));
       failed(`„${item.baseName}“ ließ sich nicht in den Vorrat legen.`);
@@ -257,7 +276,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
     const entry = pantry.find((e) => e.name === name);
     setPantry((prev) => prev.filter((e) => e.name !== name));
     if (await removeFromPantry(name)) {
-      await load();
+      await load(true);
     } else {
       if (entry) setPantry((prev) => (prev.some((e) => e.name === name) ? prev : [...prev, entry]));
       failed(`„${name}“ ließ sich nicht aus dem Vorrat nehmen.`);
@@ -427,7 +446,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
         // Preise bleiben dann wie sie sind
       }
     }
-    await Promise.all([load(), ...productShops.map(({ provider }) => refreshCart(provider))]);
+    await Promise.all([load(true), ...productShops.map(({ provider }) => refreshCart(provider))]);
     return missing.size
       ? `${updated} Preise aktualisiert, ${missing.size} Produkte nicht mehr gefunden.`
       : `Warenkörbe und ${updated} Preise aktualisiert.`;
@@ -644,7 +663,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
         <p className="px-1 text-xs text-gray-500">Eigene Listen (z. B. Aldi, DM) legst du in den Einstellungen an.</p>
 
         {/* Vorrat */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
           <button
             onClick={() => setShowBasics(!showBasics)}
             aria-expanded={showBasics}
@@ -765,7 +784,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
                   // Text erst nach Erfolg leeren – bei einem Fehler bleibt er stehen
                   if (await addToPantry(name)) {
                     setNewPantryName('');
-                    await load();
+                    await load(true);
                   } else {
                     failed(`„${name}“ ließ sich nicht zum Vorrat hinzufügen.`);
                   }
