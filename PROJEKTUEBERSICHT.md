@@ -30,6 +30,10 @@ Zugänge, zuletzt aktiv, Pläne, geplante Gerichte (30 Tage), Bewertungen, Favor
 (heute/7/30 Tage, aufgeteilt in Rezepte und Bilder). „Automatisch“ = Bilder, die der Cron nachzieht. Cloudflare meldet
 Neurons nur fürs ganze Konto – die App schreibt deshalb jeden KI-Aufruf selbst mit (Tabelle `ai_usage`) und schätzt die
 Neurons nach der Preisliste (Tokens bzw. Bildgröße und Schritte). Gezählt wird ab Version mit Migration 0018.
+Pro Familie außerdem **„Passt der Plan auf Anhieb?“** (letzte 30 Tage, je Kennzahl mit Ziel): Gerichte im Plan, die laut
+Familien-Nein/Mehrheit nicht hineingehören (Ziel 0), ausgeblendete Gerichte in 7 Tagen (≤ 1), Eingriffe (Tauschen +
+Ausblenden) je Plan (≤ 1), Anteil unveränderter Gerichte (≥ 80 %) und Anteil bewerteter gekochter Gerichte (≥ 50 %). Das
+Ergebnis steht auch als Text da („erreicht“/„verfehlt“), nicht nur als Farbe.
 
 **Weitere Werkzeuge für den Betreiber:**
 - **KI-Budget pro Familie** (Statistik, je Familie „KI-Budget/Tag“: unbegrenzt oder 500–5.000 Neurons). Ist es erreicht,
