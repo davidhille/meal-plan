@@ -55,7 +55,13 @@ async function saveCustomDessert(sql: Sql, profileId: string, d: NonNullable<Ret
  * Das Bild (meal_images) bleibt – es gehört zum Namen, z. B. wenn das Gericht zum Nachtisch wird.
  */
 async function deleteMainDish(sql: Sql, profileId: string, name: string) {
-  const removed = await sql`DELETE FROM recipes WHERE profile_id = ${profileId} AND name = ${name} RETURNING replaces`;
+  const removed = await sql`DELETE FROM recipes WHERE profile_id = ${profileId} AND name = ${name} RETURNING replaces, source_url`;
+  // Gelöschtes Chefkoch-Rezept: Link merken, damit die Chefkoch-Automatik es nicht wieder übernimmt
+  for (const r of removed) {
+    if (r.source_url && /chefkoch\.de\/rezepte\//.test(r.source_url as string)) {
+      await sql`INSERT INTO chefkoch_auto_skipped (profile_id, url) VALUES (${profileId}, ${r.source_url}) ON CONFLICT DO NOTHING`;
+    }
+  }
   // Bearbeitetes Gericht der Sammlung: auch das Original nicht wieder auftauchen lassen
   const names = [name, ...removed.map((r) => r.replaces as string | null).filter((n): n is string => !!n)];
   for (const n of names) {

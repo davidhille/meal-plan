@@ -7,7 +7,7 @@ import { listRecipeUrls, loadChefkochRecipe, newestTopMainUrl } from "./chefkoch
 import { excludedByDislikes } from "./dislikes";
 import { logError } from "./adminTools";
 import { storeSourcePhotoChecked } from "./images";
-import { dislikeMatches, duplicateOf, violatesHealthConditions } from "./meals";
+import { dislikeMatches, violatesHealthConditions } from "./meals";
 import { loadContext, loadPool, sourceKey } from "./repo";
 
 export const AUTO_PER_DAY = 10;
@@ -27,12 +27,14 @@ export async function importChefkochBatch(sql: Sql, profileId: string, today: st
   if (done >= AUTO_PER_DAY) return [];
 
   const ctx = await loadContext(sql, profileId);
-  // Schon bekannt (Dubletten-Prüfung): Link, und der Name – auch als ähnliche Variante – unter allen Gerichten der Familie
-  // (Grundsammlung, eigene und KI-Rezepte, Favoriten) sowie unter ausgeblendeten und gelöschten
+  // Dubletten-Prüfung über die Quelle (Chefkoch-Rezeptnummer, `sourceKey`): eigene Rezepte inkl. ausgeblendeter;
+  // gelöschte stehen über `deleteMainDish` in `chefkoch_auto_skipped`
   const known = await sql`SELECT source_url FROM recipes WHERE profile_id = ${profileId} AND source_url IS NOT NULL`;
-  const { pool } = await loadPool(sql, profileId);
-  const existing = [...pool.map((m) => m.name), ...ctx.rejectedMeals];
   const knownUrls = new Set(known.map((r) => r.source_url as string).map(sourceKey));
+  // Kein Dubletten-Kriterium, sondern technisch nötig: Namen sind in der Sammlung eindeutig (ein gleichnamiges Rezept würde
+  // ein vorhandenes Gericht ersetzen)
+  const { pool } = await loadPool(sql, profileId);
+  const takenNames = new Set(pool.map((m) => m.name.toLowerCase()));
   const skipped = await sql`SELECT url FROM chefkoch_auto_skipped WHERE profile_id = ${profileId}`;
   const skippedUrls = new Set(skipped.map((r) => r.url as string));
 
@@ -57,7 +59,7 @@ export async function importChefkochBatch(sql: Sql, profileId: string, today: st
       const fits =
         (d.rating ?? 0) >= MIN_RATING &&
         (d.ratingCount ?? 0) >= MIN_RATING_COUNT &&
-        !duplicateOf(r.name, existing) &&
+        !takenNames.has(r.name.toLowerCase()) &&
         !violatesHealthConditions(r, ctx.healthConditions) &&
         !excludedByDislikes(r, ctx.familyDislikes, ctx.familyMembers, (t) => dislikeMatches(r, t));
       if (!fits) {
@@ -67,8 +69,12 @@ export async function importChefkochBatch(sql: Sql, profileId: string, today: st
       const inserted = await sql`INSERT INTO recipes (profile_id, name, type, ingredients, instructions, duration_min, source, source_url, auto_review)
         VALUES (${profileId}, ${r.name}, ${r.type}, ${r.ingredients}, ${r.instructions}, ${r.durationMin ?? null}, 'import', ${url}, true)
         ON CONFLICT (profile_id, name) DO NOTHING RETURNING name`;
-      if (!inserted.length) continue;
-      existing.push(r.name);
+      if (!inserted.length) {
+        await skip();
+        continue;
+      }
+      takenNames.add(r.name.toLowerCase());
+      knownUrls.add(sourceKey(url));
       // Ohne Foto bleibt das Rezept trotzdem; `healChefkochPhotos` holt es später nach (Grund steht in den Fehlern)
       if (d.imageUrl) {
         await storeSourcePhotoChecked(sql, r.name, d.imageUrl, "Chefkoch", url, profileId).catch((e) =>

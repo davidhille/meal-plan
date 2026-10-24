@@ -19,8 +19,6 @@ export interface CatalogRecipe {
   unsuitable?: boolean;
   /** Von der Chefkoch-Automatik übernommen, noch nicht geprüft („Neu“) */
   review?: boolean;
-  /** Neues Rezept, zu dem es schon etwas Gleiches oder Ähnliches gibt (mögliche Dublette) */
-  similarTo?: string | null;
 }
 
 /** Änderbare Angaben eines Gerichts (Mengen für 4 Portionen) */

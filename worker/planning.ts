@@ -2,7 +2,7 @@
 import { excludedByDislikes } from "./dislikes";
 import type { Sql } from "./db";
 import type { Env } from "./http";
-import { pickMeal, pickReplacement, preferredTypeFor, scoreMeal, violatesHealthConditions, dislikeMatches, duplicateOf, MEAL_DATABASE, type Recipe, type ScoringContext } from "./meals";
+import { pickMeal, pickReplacement, preferredTypeFor, scoreMeal, violatesHealthConditions, dislikeMatches, MEAL_DATABASE, type Recipe, type ScoringContext } from "./meals";
 import { effectiveImageUrl, generateImage } from "./images";
 import { generateRecipes } from "./aiRecipes";
 import { PLAN_COLS, PLAN_MEAL_COLS, favoriteToRecipe, loadContext, loadPool } from "./repo";
@@ -410,11 +410,8 @@ export async function recipeCatalog(sql: Sql, profileId: string) {
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, "de"));
-  // Neue Rezepte der Chefkoch-Automatik: gibt es schon etwas Gleiches oder Ähnliches? (Hinweis auf mögliche Dublette)
-  const settledNames = recipes.filter((r) => !r.review).map((r) => r.name);
-  const withSimilar = recipes.map((r) => (r.review ? { ...r, similarTo: duplicateOf(r.name, settledNames) } : r));
   return {
-    recipes: withSimilar,
+    recipes,
     hidden: [...hidden].filter((n) => !deleted.has(n)).sort((a, b) => a.localeCompare(b, "de")),
     healthConditions: ctx.healthConditions,
   };
