@@ -5,6 +5,7 @@ import { INVITE_DAYS, createInvite, type SessionUser } from "../auth";
 import { DEFAULT_LABELS } from "../shoppingList";
 import { DAILY_FREE_NEURONS } from "../aiUsage";
 import { exportFamily, importFamily } from "../adminTools";
+import { computePlanQuality, type PlanQuality, type QualityMeal } from "../planQuality";
 
 /** Beginn des heutigen KI-Tages: das Gratis-Kontingent läuft um 00:00 UTC neu an */
 const UTC_TODAY = `date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'`;
@@ -46,13 +47,56 @@ async function familyStats(sql: Ctx["sql"], ownProfileId: string) {
   );
   const since = await sql`SELECT min(created_at)::text AS since FROM ai_usage`;
   const empty = { today: 0, week: 0, month: 0, recipes: 0, images: 0, recipeCalls: 0, imageCalls: 0 };
+  const quality = await planQualityByFamily(sql);
   return {
     dailyLimit: DAILY_FREE_NEURONS,
     since: (since[0]?.since as string | null) ?? null,
     daily,
     automatic: auto[0]?.ai ?? empty,
-    families: families.map((f) => ({ ...f, ai: f.ai ?? empty, own: f.id === ownProfileId })),
+    families: families.map((f) => ({
+      ...f,
+      ai: f.ai ?? empty,
+      quality: quality.get(f.id as string) ?? computePlanQuality({ meals: [], familyDislikes: [], members: [], hidden7: 0, hidden30: 0 }),
+      own: f.id === ownProfileId,
+    })),
   };
+}
+
+/** „Passt der Plan auf Anhieb?“ je Familie (letzte 30 Tage, siehe planQuality.ts) */
+async function planQualityByFamily(sql: Ctx["sql"]) {
+  const [meals, hidden, profiles, members] = await Promise.all([
+    sql.query(
+      `SELECT mp.profile_id AS "profileId", pm.plan_id AS "planId", pm.meal_name AS name, pm.ingredients,
+        cardinality(pm.skipped_names)::int AS interventions, (pm.meal_date <= current_date) AS past,
+        EXISTS (SELECT 1 FROM meal_ratings r WHERE r.profile_id = mp.profile_id AND r.meal_name = pm.meal_name) AS rated
+      FROM plan_meals pm JOIN meal_plans mp ON mp.id = pm.plan_id
+      WHERE NOT pm.rejected AND NOT pm.brotzeit AND pm.meal_date >= current_date - 30`
+    ),
+    sql.query(
+      `SELECT profile_id AS "profileId",
+        count(*) FILTER (WHERE created_at >= now() - interval '7 days')::int AS hidden7, count(*)::int AS hidden30
+      FROM rejected_meals WHERE created_at >= now() - interval '30 days' AND reason IS DISTINCT FROM 'geloescht'
+      GROUP BY profile_id`
+    ),
+    sql.query(`SELECT id, family_dislikes AS "familyDislikes" FROM profiles`),
+    sql.query(`SELECT profile_id AS "profileId", disliked_foods FROM family_members`),
+  ]);
+  const result = new Map<string, PlanQuality>();
+  for (const p of profiles) {
+    const id = p.id as string;
+    const h = hidden.find((r) => r.profileId === id);
+    result.set(
+      id,
+      computePlanQuality({
+        meals: meals.filter((m) => m.profileId === id).map((m) => m as unknown as QualityMeal),
+        familyDislikes: (p.familyDislikes as string[] | null) ?? [],
+        members: members.filter((m) => m.profileId === id).map((m) => ({ disliked_foods: m.disliked_foods as string[] | null })),
+        hidden7: (h?.hidden7 as number | undefined) ?? 0,
+        hidden30: (h?.hidden30 as number | undefined) ?? 0,
+      })
+    );
+  }
+  return result;
 }
 
 async function listFamilies(sql: Ctx["sql"], ownProfileId: string) {

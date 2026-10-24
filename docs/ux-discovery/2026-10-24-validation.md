@@ -19,7 +19,7 @@ Der größte Schmerz (Abneigung wirkt nur als Abzug, das „Nein“ muss 46× ei
 | Journey: Lernen (Muster-Vorschlag nach 3. Ausblenden) | ❌ | Nicht umgesetzt (kein Hinweis „Sollen wir Lamm ganz weglassen?“ im Code). |
 | Journey: Abschließen (Bewertungsquote) | ⚠️ | Erinnerung und Bewerten in der Heute-Karte bestehen schon; nichts Neues seit dem Doc, Quote nicht messbar (s. Telemetrie). |
 | Design-Prinzipien | ⚠️ | „Ein Nein reicht“ und „Abneigung heißt nie“ erfüllt (Familie: Familien-Nein; Einzelne: Mehrheit, Entscheidung von David). „Erklären statt rätseln“ fehlt: keine Anzeige, warum ein Gericht kommt oder fehlt. |
-| Telemetrie | ❌ | In Admin → Statistik gibt es nur Pläne, Gerichte (30 T.), Bewertungen (Anzahl), Favoriten, KI-Rezepte, Importe. Keine der fünf Kennzahlen aus Abschnitt 5 des Docs (Abneigungs-Treffer im Plan, Ausblendungen/Woche, Eingriffe nach dem Planen, Bewertungsquote, „Plan passt auf Anhieb“). |
+| Telemetrie | ✅ (Nachtrag 24.10.) | **Nachgezogen:** Die fünf Kennzahlen stehen jetzt pro Familie in Admin → Statistik („Passt der Plan auf Anhieb?“, `worker/planQuality.ts`). Stand bei der Prüfung: ❌, in Admin → Statistik gab es nur Pläne, Gerichte (30 T.), Bewertungen (Anzahl), Favoriten, KI-Rezepte, Importe. Keine der fünf Kennzahlen aus Abschnitt 5 des Docs (Abneigungs-Treffer im Plan, Ausblendungen/Woche, Eingriffe nach dem Planen, Bewertungsquote, „Plan passt auf Anhieb“). |
 | Annahmen | ⚠️ | Offene Wer-zählt-Frage ist entschieden (Familien-Nein: immer; einzelne Mitglieder: Mehrheit). Folge: Die Abneigungen der beiden Erwachsenen mit Eintrag (2 von 4) schließen allein nichts aus; der Schutz hängt am Familien-Nein. Die Annahme „Fisch trifft Garnelen“ aus dem Doc gilt für das Familien-Nein nicht, und das ist richtig so. |
 
 ## Beobachtungen aus den Live-Daten
@@ -29,7 +29,7 @@ Der größte Schmerz (Abneigung wirkt nur als Abzug, das „Nein“ muss 46× ei
 
 ## Empfehlungen
 
-1. **Kennzahlen (Schritt 4 des Docs)** in Admin → Statistik, damit die Wirkung messbar wird. Zuerst: Gerichte mit Abneigung im Plan, Ausblendungen pro Woche.
+1. ~~**Kennzahlen (Schritt 4 des Docs)** in Admin → Statistik~~ – erledigt am 24.10. (alle fünf Kennzahlen aus Abschnitt 5 des Docs).
 2. **Muster-Vorschlag (Schritt 3):** Nach dem 3. Ausblenden derselben Hauptzutat Hinweis anbieten. Braucht `rejected_meals.created_at` bzw. Zähler pro Hauptzutat.
 3. **Neuen Plan erstellen und prüfen** (Fisch und Lamm = 0), bevor Schritt 5 („Warum dieser Vorschlag?“) angegangen wird.
 

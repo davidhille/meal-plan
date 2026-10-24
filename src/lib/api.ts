@@ -121,6 +121,20 @@ export interface AiUsage {
   imageCalls: number;
 }
 
+/** „Passt der Plan auf Anhieb?“ der letzten 30 Tage (Berechnung: worker/planQuality.ts) */
+export interface PlanQuality {
+  meals: number;
+  /** Gerichte im Plan, die laut Familien-Nein/Mehrheit nicht hineingehören */
+  dislikeHits: number;
+  hidden7: number;
+  hidden30: number;
+  /** null = noch kein Plan bzw. noch nichts gekocht */
+  interventionsPerPlan: number | null;
+  unchangedShare: number | null;
+  ratedShare: number | null;
+  cooked: number;
+}
+
 export interface FamilyStats {
   id: string;
   name: string | null;
@@ -135,6 +149,7 @@ export interface FamilyStats {
   favoriteCount: number;
   aiRecipeCount: number;
   importCount: number;
+  quality: PlanQuality;
   ai: AiUsage;
   own: boolean;
 }

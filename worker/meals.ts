@@ -270,7 +270,7 @@ function expandTerm(term: string): string[] {
 }
 
 /** Trifft eine Abneigung (inkl. Oberbegriffe wie „Fisch“) dieses Gericht? */
-export function dislikeMatches(meal: Recipe, term: string): boolean {
+export function dislikeMatches(meal: Pick<Recipe, "name" | "ingredients">, term: string): boolean {
   const text = [meal.name, ...meal.ingredients].join(" | ").toLowerCase();
   return expandTerm(term).some((t) => text.includes(t));
 }

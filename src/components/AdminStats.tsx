@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { BarChart3, RefreshCw } from 'lucide-react';
 import CollapsibleCard from './CollapsibleCard';
 import FamilyTools from './FamilyTools';
-import { getAdminStats, type AdminStats as Stats, type AiUsage } from '../lib/api';
+import { getAdminStats, type AdminStats as Stats, type AiUsage, type PlanQuality } from '../lib/api';
 
 const num = (n: number) => Math.round(n).toLocaleString('de-DE');
 
@@ -20,6 +20,43 @@ function Figure({ value, label }: { value: number | string; label: string }) {
     <div className="rounded-lg bg-white border border-gray-100 px-2 py-1.5 text-center">
       <p className="text-sm font-semibold text-gray-800 tabular-nums">{value}</p>
       <p className="text-xs leading-tight text-gray-500">{label}</p>
+    </div>
+  );
+}
+
+/** Eine Kennzahl mit Ziel; Ergebnis steht auch als Text da, nicht nur als Farbe */
+function GoalFigure({ value, label, goal, ok }: { value: string; label: string; goal: string; ok: boolean | null }) {
+  return (
+    <div className="rounded-lg bg-white border border-gray-100 px-2 py-1.5 text-center">
+      <p className={`text-sm font-semibold tabular-nums ${ok === false ? 'text-coral-700' : 'text-gray-800'}`}>{value}</p>
+      <p className="text-xs leading-tight text-gray-500">{label}</p>
+      <p className="text-xs leading-tight text-gray-600">
+        Ziel {goal}
+        {ok !== null && <span className="sr-only">{ok ? ', erreicht' : ', verfehlt'}</span>}
+      </p>
+    </div>
+  );
+}
+
+/** „Passt der Plan auf Anhieb?“ – Ziele aus dem UX-Discovery-Doc (docs/ux-discovery), Werte der letzten 30 Tage */
+function PlanQualityBlock({ q }: { q: PlanQuality }) {
+  if (!q.meals) return <p className="text-xs text-gray-500">Plan-Qualität: noch keine Gerichte in den letzten 30 Tagen</p>;
+  const pct = (v: number | null) => (v === null ? '–' : `${v} %`);
+  return (
+    <div className="space-y-1.5">
+      <p className="text-xs font-semibold text-brand-800">Passt der Plan auf Anhieb? (30 Tage)</p>
+      <div className="grid grid-cols-3 gap-1.5">
+        <GoalFigure value={String(q.dislikeHits)} label="Abneigung im Plan" goal="0" ok={q.dislikeHits === 0} />
+        <GoalFigure value={String(q.hidden7)} label={`Ausgeblendet (7 T.), ${q.hidden30} in 30 T.`} goal="≤ 1" ok={q.hidden7 <= 1} />
+        <GoalFigure
+          value={q.interventionsPerPlan === null ? '–' : q.interventionsPerPlan.toLocaleString('de-DE')}
+          label="Eingriffe je Plan"
+          goal="≤ 1"
+          ok={q.interventionsPerPlan === null ? null : q.interventionsPerPlan <= 1}
+        />
+        <GoalFigure value={pct(q.unchangedShare)} label="Gerichte unverändert" goal="≥ 80 %" ok={q.unchangedShare === null ? null : q.unchangedShare >= 80} />
+        <GoalFigure value={pct(q.ratedShare)} label={`Bewertet (von ${q.cooked} gekocht)`} goal="≥ 50 %" ok={q.ratedShare === null ? null : q.ratedShare >= 50} />
+      </div>
     </div>
   );
 }
@@ -169,6 +206,7 @@ export default function AdminStats() {
                     <Figure value={f.aiRecipeCount} label="KI-Rezepte" />
                     <Figure value={f.importCount} label="Importe" />
                   </div>
+                  <PlanQualityBlock q={f.quality} />
                   <AiLine ai={f.ai} />
                   {f.aiDailyLimit != null && (
                     <p className={`text-xs ${f.ai.today >= f.aiDailyLimit ? 'text-coral-700 font-semibold' : 'text-gray-500'}`}>
