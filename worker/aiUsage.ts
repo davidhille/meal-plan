@@ -3,7 +3,7 @@
 // developers.cloudflare.com/workers-ai/platform/pricing). Das ist eine Schätzung, nicht die Abrechnung.
 import type { Sql } from "./db";
 import type { AiEnv } from "./images";
-import type { Env } from "./http";
+import { UserError, type Env } from "./http";
 import { checkAiWarning, logError, neuronsToday } from "./adminTools";
 
 /** Gratis-Kontingent pro Tag (Free und Paid), Rückstellung um 00:00 UTC */
@@ -92,9 +92,9 @@ export function meteredEnv<E extends AiEnv>(env: E, sql: Sql, profileId: string 
 }
 
 /** Tages-Budget der Familie erreicht (gilt wie ein leeres Kontingent, sperrt die KI aber nicht für alle) */
-export class FamilyBudgetError extends Error {
+export class FamilyBudgetError extends UserError {
   readonly familyBudget = true;
   constructor() {
-    super("Euer KI-Budget für heute ist aufgebraucht.");
+    super("Euer KI-Budget für heute ist aufgebraucht.", 429);
   }
 }

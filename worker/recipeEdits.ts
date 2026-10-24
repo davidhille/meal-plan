@@ -2,13 +2,14 @@
 // Gespeichert in `recipes`; ein Gericht der Grundsammlung bekommt dort eine Zeile mit `replaces` = Originalname.
 // Beim Umbenennen ziehen Bewertung, Ausblenden, Favorit, Filter-Zuordnung, Bild und kommende Plan-Tage mit.
 import type { Sql } from "./db";
+import { UserError } from "./http";
 import { MEAL_DATABASE, type Recipe } from "./meals";
 import { imageUrl } from "./images";
 import { loadPool } from "./repo";
 
-export class RecipeEditError extends Error {
-  constructor(message: string, public status = 400) {
-    super(message);
+export class RecipeEditError extends UserError {
+  constructor(message: string, status = 400) {
+    super(message, status);
   }
 }
 

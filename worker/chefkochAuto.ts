@@ -82,7 +82,7 @@ export async function importChefkochBatch(sql: Sql, profileId: string, today: st
       // Ohne Foto bleibt das Rezept trotzdem; `healChefkochPhotos` holt es später nach (Grund steht in den Fehlern)
       if (d.imageUrl && withPhotos) {
         await storeSourcePhotoChecked(sql, r.name, d.imageUrl, "Chefkoch", url, profileId).catch((e) =>
-          logError(sql, `Chefkoch-Automatik: Foto für „${r.name}“`, e, profileId)
+          logError(sql, "Chefkoch-Fotos nicht übernommen", `„${r.name}“: ${(e as Error).message}`, profileId, { oncePerDay: true })
         );
       }
       added.push(r.name);
@@ -116,7 +116,7 @@ export async function healChefkochPhotos(sql: Sql, profileId: string, limit = 2)
       healed++;
     } catch (e) {
       // Nur beim letzten Versuch melden, damit die Fehlerliste nicht überläuft
-      if (Number(row.photo_attempts) + 1 >= PHOTO_ATTEMPTS) await logError(sql, `Chefkoch-Foto für „${name}“ nicht übernommen`, e, profileId);
+      if (Number(row.photo_attempts) + 1 >= PHOTO_ATTEMPTS) await logError(sql, "Chefkoch-Fotos nicht übernommen", `„${name}“: ${(e as Error).message}`, profileId, { oncePerDay: true });
     }
   }
   return healed;

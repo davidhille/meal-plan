@@ -9,6 +9,22 @@
 
 Ein Worker (`/api/*` + statische App), Neon Postgres über HTTP, Workers AI, Cron alle 15 Minuten. Jeder Push auf `main` deployt; die Migrationen laufen beim ersten Aufruf. Es gibt keine Testumgebung: Produktion ist die einzige Umgebung.
 
+## Stand der Behebung (nachgetragen)
+
+| # | Befund | Stand |
+|---|---|---|
+| 1 | Offener Zugriff bei leerer Datenbank | behoben: kein `X-App-Password`-Übergang mehr, ohne Sitzung immer 401; Ersteinrichtung nur mit gesetztem `APP_PASSWORD` (`checkSetupPassword`) |
+| 2 | Sicherung | offen, Entscheidung David |
+| 3 | Routine ohne Wiederholung | behoben: bis zu 3 Versuche am Tag (Migration 0029), danach Push. Rest-Risiko: Bricht die Datenbank mitten im Einfügen ab, könnte ein Wiederholungsversuch einen zweiten Plan anlegen (die KI-Schritte laufen vor dem ersten `INSERT`, daher selten) |
+| 4 | Free-Limits | offen, im Cloudflare-Dashboard zu bestätigen |
+| 5 | Login-Drosselung | offen, Cloudflare-Regel (Dashboard) |
+| 6 | Interne Fehlertexte | behoben: `UserError`; alles andere zeigt nur den allgemeinen Text |
+| 7 | Fehlerliste und Alarm | behoben: Foto-Fehler höchstens einmal am Tag je Familie; Push bei 500-Fehlern und gescheiterten Routinen (einmal am Tag je Anlass) |
+| 8 | Speicher-Monitoring | offen |
+| 9 | Einladung geht verloren | behoben: Link wird bei Fehler freigegeben |
+| 10 | `Origin: null` | behoben: `sameHost` → 403 |
+| 11–14 | Kleinigkeiten | offen |
+
 ## Verdict: MIT ÄNDERUNGEN FREIGEGEBEN
 
 Für ein paar weitere Familien tragfähig. Vor einer größeren Einladungsrunde sollten die zwei „Vorher beheben“-Punkte und die Sicherung geklärt sein.

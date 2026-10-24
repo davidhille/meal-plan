@@ -3,10 +3,10 @@
 // Secrets (Cloudflare → Worker → Settings → Variables and Secrets): siehe CLAUDE.md
 
 import { meteredEnv } from "./aiUsage";
-import { logError } from "./adminTools";
+import { alertOwnerOncePerDay, logError } from "./adminTools";
 import { neon } from "@neondatabase/serverless";
 import type { Row } from "./db";
-import { json, type Env, type RouteHandler } from "./http";
+import { json, publicError, sameHost, UserError, type Env, type RouteHandler } from "./http";
 import { ensureSchema } from "./migrate";
 import { serveImage } from "./images";
 import { ShopError } from "./shops";
@@ -19,7 +19,7 @@ import { pushRoutes } from "./routes/push";
 import { accountRoutes, publicAuthRoutes } from "./routes/auth";
 import { adminRoutes } from "./routes/admin";
 import { publicShareRoutes, shareRoutes } from "./routes/share";
-import { getSessionUser, usersExist } from "./auth";
+import { getSessionUser } from "./auth";
 
 export type { Env } from "./http";
 export { runRoutines } from "./routines";
@@ -48,7 +48,7 @@ export async function handleApi(
 
   // Ändernde Anfragen nur von der eigenen Seite (Schutz zusätzlich zu SameSite-Cookies)
   const origin = request.headers.get("Origin");
-  if (request.method !== "GET" && origin && new URL(origin).host !== new URL(request.url).host) {
+  if (request.method !== "GET" && origin && !sameHost(origin, request.url)) {
     return json({ error: "Nicht erlaubt" }, 403);
   }
 
@@ -65,16 +65,11 @@ export async function handleApi(
     const publicRes = (await publicAuthRoutes(ctx, user)) ?? (await publicShareRoutes(ctx));
     if (publicRes) return publicRes;
 
-    // Angemeldet – oder Übergang: noch keine Zugänge angelegt, dann gilt das alte Familien-Passwort
-    if (!user) {
-      const legacy = !(await usersExist(sql)) && (!env.APP_PASSWORD || request.headers.get("X-App-Password") === env.APP_PASSWORD);
-      if (!legacy) return json({ error: "unauthorized" }, 401);
-    }
+    // Alles Weitere nur mit Anmeldung (immer – auch auf einer leeren Datenbank)
+    if (!user) return json({ error: "unauthorized" }, 401);
 
-    if (user) {
-      const res = (await accountRoutes(ctx, user)) ?? (await adminRoutes(ctx, user));
-      if (res) return res;
-    }
+    const accountRes = (await accountRoutes(ctx, user)) ?? (await adminRoutes(ctx, user));
+    if (accountRes) return accountRes;
     for (const handle of ROUTES) {
       const res = await handle(ctx);
       if (res) return res;
@@ -85,8 +80,13 @@ export async function handleApi(
       if (err.code !== "not_connected") await logError(sql, `Shop ${route}`, err, user?.profileId ?? null);
       return json({ error: err.message, code: err.code }, err.code === "not_connected" ? 409 : 502);
     }
-    console.error(route, err);
-    await logError(sql, route, err, user?.profileId ?? null);
-    return json({ error: (err as Error).message }, 500);
+    const { status, message } = publicError(err);
+    // Gewollte Meldungen (UserError) sind kein Ausfall; alles andere protokollieren und den Betreiber warnen
+    if (!(err instanceof UserError)) {
+      console.error(route, err);
+      await logError(sql, route, err, user?.profileId ?? null);
+      waitUntil(alertOwnerOncePerDay(env, sql, "server-error", { title: "Fehler in miyummy", body: `${route}: ${(err as Error)?.message ?? err}` }));
+    }
+    return json({ error: message }, status);
   }
 }

@@ -20,7 +20,7 @@ werden beim Deploy angelegt – vorher dürfen für diese Namen keine eigenen A/
 ## 3. Secrets (nach dem ersten Deploy)
 Worker `meal-plan` → **Settings → Variables and Secrets** → *Add* → Typ **Secret**:
 - `DATABASE_URL` = Neon Connection String (Connect → Branch `production`)
-- `APP_PASSWORD` = Familien-Passwort (nur, um den ersten Zugang anzulegen; danach meldet sich jede Person mit E-Mail und Passwort an)
+- `APP_PASSWORD` = Familien-Passwort (nur, um den ersten Zugang anzulegen; danach meldet sich jede Person mit E-Mail und Passwort an). **Pflicht für die Ersteinrichtung:** ohne dieses Secret ist die Einrichtung gesperrt (auch auf einer neuen, leeren Datenbank)
 - `CREDENTIALS_KEY` = beliebige lange Zufallszeichenfolge (verschlüsselt Knuspr-/Picnic-Zugangsdaten; ohne diesen Schlüssel wird ersatzweise der Datenbank-Zugang verwendet)
 
 - Ersatzfotos, wenn das Tageskontingent der Bild-KI aufgebraucht ist (alle optional – ohne Schlüssel wird Openverse genutzt):

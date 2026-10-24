@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { hashPassword, normEmail, validEmail, verifyPassword } from "./auth";
+import { checkSetupPassword, hashPassword, normEmail, validEmail, verifyPassword } from "./auth";
 
 describe("Passwörter", () => {
   test("Hash ist gesalzen und lässt sich prüfen", async () => {
@@ -18,5 +18,18 @@ describe("E-Mail", () => {
     expect(normEmail("  David@Example.COM ")).toBe("david@example.com");
     expect(validEmail("david@example.com")).toBe(true);
     expect(validEmail("david@")).toBe(false);
+  });
+});
+
+describe("Ersteinrichtung", () => {
+  test("ohne gesetztes APP_PASSWORD gesperrt (nie offen)", () => {
+    expect(checkSetupPassword(undefined, "")).toBe("unavailable");
+    expect(checkSetupPassword("", "irgendwas")).toBe("unavailable");
+  });
+  test("nur mit dem richtigen Passwort", () => {
+    expect(checkSetupPassword("familie123", "familie123")).toBe("ok");
+    expect(checkSetupPassword("familie123", "familie124")).toBe("wrong");
+    expect(checkSetupPassword("familie123", "")).toBe("wrong");
+    expect(checkSetupPassword("familie123", "familie1234")).toBe("wrong");
   });
 });
