@@ -62,7 +62,7 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
 
 ## 1. Speiseplan
 
-- **Leerer Speiseplan:** Frage „Was esst ihr nicht?“ mit Chips (Fisch, Meeresfrüchte, Lamm, Schwein, Rind, Geflügel), speichert sofort das Familien-Nein; überspringbar, „Plan erstellen“ geht immer. Solange keine Familienmitglieder eingetragen sind, führt „Familie eintragen“ direkt in die Einstellungen. Neue Familien sehen zusätzlich „Willkommen bei miyummy“ und nach dem ersten Plan einmalig einen Hinweis auf Tauschen/Ausblenden („Verstanden“ blendet ihn dauerhaft aus).
+- **Leerer Speiseplan:** Frage „Was esst ihr nicht?“ mit Chips (Fisch, Meeresfrüchte, Lamm, Schwein, Rind, Geflügel), speichert sofort das Familien-Nein; überspringbar, „Plan erstellen“ geht immer. Solange keine Familienmitglieder eingetragen sind, führt „Familie eintragen“ direkt in die Einstellungen. Neue Familien sehen zusätzlich „Willkommen bei miyummy“ und nach dem ersten Plan einmalig einen Hinweis auf Neu/Ausblenden („Verstanden“ blendet ihn dauerhaft aus).
 - **Heute-Karte** oben: heutiges Gericht groß mit Bild, „Rezept“ und „Kochmodus“, darunter das Gericht von morgen. Ist heute
   nichts geplant, steht dort direkt „Gericht planen“.
   Gestern (bzw. heute ab der Erinnerungszeit, spätestens ab 18 Uhr) noch nicht bewertet? Direkt dort mit Sternen bewerten. Der heutige Tag ist im Plan markiert.
@@ -83,7 +83,7 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
   (`lib/dishType.ts`, `DishTypeLabel`; auch im Plan-Download). Beim Auswählen (Filter „Art“, Bearbeiten, KI-Wunsch) bleibt „Fleisch & Fisch“. Farbbalken nur aus der Palette: Vegetarisch Pflaume,
   Fleisch Koralle, Fisch helle Koralle, Wochenende dunkle Aubergine, Brotzeit neutral grau. Aktionen als beschriftete
   Leiste unten in der Karte (`CardActionBar`):
-  - **Merken** (Favorit) · **Nachtisch** (dazu/ändern) · **Tauschen** (nur austauschen) · **Ausblenden** (mit Rückfrage wie in den Rezepten; kommt nicht mehr in den Plan, gleiche Liste wie „Ausgeblendete Gerichte“ unter Rezepte; 8 Sek. lang „Rückgängig“, `POST /plan-meals/:id/unreject`)
+  - **Merken** (Favorit) · **Nachtisch** (dazu/ändern) · **Neu** (anderes Gericht für diesen Tag vorschlagen, ohne das alte auszublenden; nicht zu verwechseln mit dem Tagestausch beim Verlegen) · **Ausblenden** (mit Rückfrage wie in den Rezepten; kommt nicht mehr in den Plan, gleiche Liste wie „Ausgeblendete Gerichte“ unter Rezepte; 8 Sek. lang „Rückgängig“, `POST /plan-meals/:id/unreject`)
   - Wurde schon das 3. (und später das 6.) Gericht mit derselben Hauptzutat ausgeblendet (im Plan und in der Rezept-Übersicht) (Fisch, Lamm, Schwein …), fragt ein Hinweis unten: „Lamm ganz weglassen?“ – „Lamm weglassen“ gilt für die ganze Familie (zurücknehmen unter Einstellungen → Gesundheit & Ernährung), „Nein, danke“ lässt alles, wie es ist.
   - **Verlegen** (oder Tag leeren): Gericht auf einen anderen Tag legen – steht dort schon eins, tauschen beide;
     auch bis 2 Wochen nach Planende (der Plan wird verlängert). Oder „Tag leeren – nicht kochen“: Gericht kommt aus dem
@@ -123,7 +123,7 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
   Ernährungs-Schwerpunkte, Favoriten-Bonus, Abzug für Gerichte der letzten 3 Wochen.
 - **Gesundheitsbedingungen** schließen hart aus: vegetarisch, vegan, glutenfrei, laktosefrei, Nussallergie, ohne Alkohol;
   Diabetes gibt einen Abzug bei Zucker. *Heuristik auf Zutatentext, keine Allergie-Garantie.*
-- **Abwechslung:** ähnliche Gerichte (z. B. mehrere „Quinoa-Pfannen“) werden im Plan verteilt statt gehäuft.
+- **Abwechslung:** ähnliche Gerichte (z. B. mehrere „Quinoa-Pfannen“) werden im Plan verteilt statt gehäuft. Pro Kalenderwoche gibt es außerdem höchstens **1× Garnelen/Meeresfrüchte** (Garnelen, Gambas, Shrimps …) und **2× Nudelgerichte** (Nudeln, Pasta, Penne, Lasagne, Tortelloni …); gilt beim Planen und bei „Neu“. Bleibt kein anderes Gericht übrig, gilt die Grenze nicht.
 - **Favoriten mit Turnus** werden fest eingeplant, sobald sie wieder dran sind.
 - **KI-Rezepte** (Workers AI, Llama 3.3 70B): pro Plan einige neue Rezepte für Abwechslung bzw. wenn passende Kandidaten
   fehlen (z. B. bei vegan). Jedes wird von unseren Filtern nachgeprüft und landet im Pool. Die neuesten Kommentare
