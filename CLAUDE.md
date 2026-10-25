@@ -111,6 +111,7 @@ Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHu
 - Preisvergleich/Grundpreis: `lib/unitPrice.ts`. Portionen: `lib/portions.ts`.
 - Eigene Rezept-Filter: `lib/recipeFilters.ts` – Regeln (Suchbegriffe/Zeit) plus Hand-Zuordnung (`includeNames`/`excludeNames`).
 - Filter der Rezept-Übersicht: `RecipeFilterSheet` (ein Fenster), Gruppen-Logik `lib/recipeFacets.ts` (in der Gruppe oder, zwischen Gruppen und). Speiseart/Hauptzutat: `lib/recipeCategories.ts` (Heuristik) plus Korrekturen pro Gericht (`recipe_category_overrides`, `GET/POST /category-overrides`).
+- Plan-Fenster: `PlanCreationModal` bietet bei laufendem Plan die Wahl „Zum bestehenden Plan hinzufügen“ (`extendMealPlan`, Standard) oder „Alles neu planen“ (`createMealPlan`); die frühere Rückfrage danach gibt es nur noch bei „Alle tauschen“ (`ReplacePlanDialog`).
 - Administration: `AdminSettings` (Familien) und `AdminStats` (Statistik), nur für `isOwner`.
 - Anmeldung: `LoginScreen` (Anmelden bzw. ersten Zugang anlegen), `AccountSettings` (Einstellungen → Zugänge). Ohne Sitzung zeigt `App` die Anmeldung.
 - `localStorage` nur für Komfort (auf-/zugeklappt, gewählte Einkaufswochen; altes Familien-Passwort nur bis zum ersten Zugang), immer in `try/catch`.
