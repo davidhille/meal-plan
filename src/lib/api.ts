@@ -537,8 +537,8 @@ export async function createMealPlan(
 }
 
 /** Laufenden Plan auf einen Zeitraum verlängern: geplante und bewusst leere Tage bleiben, nur freie Tage werden befüllt */
-export async function extendMealPlan(planId: string, startDate: string, endDate: string): Promise<MealPlan> {
-  return request<MealPlan>('POST', `/plans/${planId}/extend`, { startDate, endDate });
+export async function extendMealPlan(planId: string, startDate: string, endDate: string, includeCleared = false): Promise<MealPlan> {
+  return request<MealPlan>('POST', `/plans/${planId}/extend`, { startDate, endDate, includeCleared });
 }
 
 export async function getLatestPlan(): Promise<MealPlan | null> {
@@ -617,8 +617,9 @@ export async function setPlanMealGuests(planMealId: string, guests: number): Pro
   return (await request<{ guests: number }>('PUT', `/plan-meals/${enc(planMealId)}/guests`, { guests })).guests;
 }
 
-export async function removePlanMeal(planMealId: string): Promise<void> {
-  await request('DELETE', `/plan-meals/${enc(planMealId)}`);
+/** Gericht aus dem Plan nehmen. keepEmpty = „Nicht kochen“ (Tag bleibt bei „Hinzufügen“ leer), sonst ist der Tag nur frei. */
+export async function removePlanMeal(planMealId: string, keepEmpty = false): Promise<void> {
+  await request('DELETE', `/plan-meals/${enc(planMealId)}${keepEmpty ? '?keepEmpty=1' : ''}`);
 }
 
 /** Nachtisch an ein Gericht hängen (null = entfernen); wirft bei Fehlern */

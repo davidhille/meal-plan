@@ -286,9 +286,9 @@ export default function App() {
   };
 
   /** Laufenden Plan verlängern statt ersetzen (gleiche Plan-ID → Gerichte neu laden) */
-  const handleExtendPlan = async (startDate: string, endDate: string) => {
+  const handleExtendPlan = async (startDate: string, endDate: string, includeCleared = false) => {
     if (!currentPlan) return;
-    const plan = await extendMealPlan(currentPlan.id, startDate, endDate);
+    const plan = await extendMealPlan(currentPlan.id, startDate, endDate, includeCleared);
     setCurrentPlan(plan);
     setPlanMeals(await getPlanMeals(plan.id));
     setFavorites(await getFavorites());
@@ -302,8 +302,8 @@ export default function App() {
   };
 
   /** Aus dem Plan-Fenster: neuen Plan erstellen oder den laufenden um den Zeitraum ergänzen (Wahl steht dort) */
-  const requestCreatePlan = async (startDate: string, endDate: string, mode: PlanMode) => {
-    if (mode === 'extend') await handleExtendPlan(startDate, endDate);
+  const requestCreatePlan = async (startDate: string, endDate: string, mode: PlanMode, includeCleared = false) => {
+    if (mode === 'extend') await handleExtendPlan(startDate, endDate, includeCleared);
     else await handleCreatePlan(startDate, endDate);
     setShowPlanModal(false);
   };
@@ -402,9 +402,13 @@ export default function App() {
     setPlanMeals((prev) => prev.map((m) => (m.id === pm.id ? { ...m, guests: saved } : m)));
   };
 
-  const handleRemoveMeal = async (pm: PlanMeal) => {
-    await removePlanMeal(pm.id);
+  const handleRemoveMeal = async (pm: PlanMeal, keepEmpty: boolean) => {
+    await removePlanMeal(pm.id, keepEmpty);
     setPlanMeals((prev) => prev.filter((m) => m.id !== pm.id));
+    // „Nicht kochen“ merkt sich der Server am Plan; hier mitführen, damit die Zeile sofort stimmt
+    if (keepEmpty) {
+      setCurrentPlan((p) => (p && p.id === pm.plan_id ? { ...p, cleared_dates: [...new Set([...(p.cleared_dates ?? []), pm.meal_date])] } : p));
+    }
   };
 
   const handleSetDessert = async (pm: PlanMeal, dessert: Dessert | null) => {

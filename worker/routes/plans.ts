@@ -138,9 +138,8 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
     const other = await sql`SELECT id FROM plan_meals WHERE plan_id = ${pm.plan_id} AND meal_date = ${date}::date AND NOT rejected`;
     if (other[0]) await sql`UPDATE plan_meals SET meal_date = ${pm.meal_date}::date WHERE id = ${other[0].id}`;
     await sql`UPDATE plan_meals SET meal_date = ${date}::date WHERE id = ${id}`;
-    // Der Zieltag ist jetzt belegt; der alte Tag bleibt bewusst leer, wenn nicht getauscht wurde
+    // Der Zieltag ist jetzt belegt; der alte Tag ist frei (wird bei „Hinzufügen“ wieder gefüllt)
     await sql`UPDATE meal_plans SET cleared_dates = array_remove(cleared_dates, ${date}::date) WHERE id = ${pm.plan_id}`;
-    if (!other[0]) await markCleared(sql, pm.plan_id, pm.meal_date);
     // Abgelehnte Einträge am Zieltag stören nicht (bleiben unsichtbar)
     const plans = await sql.query(
       `UPDATE meal_plans SET start_date = LEAST(start_date, $2::date), end_date = GREATEST(end_date, $2::date)
@@ -157,8 +156,8 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
       WHERE pm.id = ${id} AND mp.id = pm.plan_id AND mp.profile_id = ${p.id}
       RETURNING pm.plan_id, pm.meal_date::text AS meal_date`;
     if (!removed[0]) return json({ error: "Gericht nicht gefunden" }, 404);
-    // Bewusst leer: „Plan verlängern“ befüllt den Tag nicht wieder
-    await markCleared(sql, removed[0].plan_id, removed[0].meal_date);
+    // ?keepEmpty=1 („Nicht kochen“): „Hinzufügen“ befüllt den Tag nicht wieder. Sonst ist der Tag nur frei.
+    if (new URL(request.url).searchParams.get("keepEmpty") === "1") await markCleared(sql, removed[0].plan_id, removed[0].meal_date);
     return json({ ok: true });
   }
 
@@ -194,7 +193,7 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
     if (!rows[0]) return json({ error: "Plan nicht gefunden" }, 404);
     // „Heute“ nach Berliner Zeit: ab da werden leere Tage gefüllt, Vergangenes bleibt leer
     const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(new Date());
-    const plan = await createPlan(env, sql, p.id, startDate, endDate, id, { today });
+    const plan = await createPlan(env, sql, p.id, startDate, endDate, id, { today, includeCleared: body.includeCleared === true });
     waitUntil(fillMissingImages(env, sql, 7, plan.id));
     return json(plan);
   }
