@@ -196,7 +196,7 @@ optional `PIXABAY_API_KEY`, `PEXELS_API_KEY`. Nie ins Repo, nie in `wrangler.jso
 - **Amazon** wurde bewusst entfernt (keine Suche/Warenkorb aus Apps möglich) – nicht wieder einbauen.
 - **Gesundheitsfilter** (`violatesHealthConditions`) sind Heuristiken auf Zutatentext, keine Allergie-Garantie. KI-Rezepte
   werden immer nachgeprüft, die KI hält sich nicht zuverlässig an Vorgaben.
-- **Abwechslung:** `isSimilarDish` verhindert Varianten desselben Gerichts im Plan; Gerichte der letzten 3 Wochen bekommen Abzug.
+- **Abwechslung:** `isSimilarDish` verhindert Varianten desselben Gerichts im Plan; Gerichte der letzten 3 Wochen bekommen Abzug. Namen wie „Gambas“/„Garnelen“ oder „Penne“/„Lasagne“ teilen keine Wörter; deshalb gelten Wochen-Grenzen je Hauptkomponente in `worker/weekVariety.ts` (`VARIETY_GROUPS`: Meeresfrüchte 1×, Nudeln 2× je Kalenderwoche, nach Gerichtname), angewendet in `pickDays` und `replaceMeal` (Knopf „Neu“, früher „Tauschen“). Neue Gruppe = Eintrag in `VARIETY_GROUPS`. `replaceMeal` setzt das neue Gericht an den *aktuellen* Tag der Zeile (Auswahl dauert, Verlegen dazwischen führte sonst zu zwei Gerichten an einem Tag).
 - `/api/images/*` ist absichtlich ohne Anmeldung (Bilder sind nicht privat); `?f=<profile_id>` liefert die Fassung einer Familie.
 - Service Worker (`public/sw.js`): `/api` wird nie gecacht. Bei Änderungen an gecachten Dateien `CACHE`-Version hochzählen.
   Er empfängt auch die Push-Nachrichten (`push`, `notificationclick`).

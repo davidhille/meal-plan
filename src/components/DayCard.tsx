@@ -30,7 +30,7 @@ interface DayCardProps {
   guests?: number;
 }
 
-/** Gerichtkarte: Farbbalken, Bild, Typ; unten die Aktionsleiste (Merken, Nachtisch, Verlegen, Tauschen, Ausblenden) */
+/** Gerichtkarte: Farbbalken, Bild, Typ; unten die Aktionsleiste (Merken, Nachtisch, Verlegen, Neu, Ausblenden) */
 export default function DayCard({
   meal,
   rating,
@@ -85,11 +85,11 @@ export default function DayCard({
   if (onRegenerate)
     actions.push({
       key: 'swap',
-      label: 'Tauschen',
+      label: 'Neu',
       icon: busy ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />,
       onClick: onRegenerate,
-      title: 'Tauschen – anderes Gericht für diesen Tag',
-      ariaLabel: `${meal.meal}: austauschen`,
+      title: 'Neu – anderes Gericht für diesen Tag vorschlagen',
+      ariaLabel: `${meal.meal}: anderes Gericht vorschlagen`,
     });
   if (onReject)
     actions.push({

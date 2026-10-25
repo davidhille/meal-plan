@@ -266,7 +266,7 @@ export default function MealPlanView({
         {plan && showFirstHint && displayItems.length > 0 && (
           <div role="status" className="flex items-start gap-3 px-3 py-3 rounded-xl bg-brand-50 border border-brand-100 text-sm text-gray-800">
             <p className="flex-1">
-              <strong>Euer erster Plan steht.</strong> Passt ein Gericht nicht? Unter jedem Gericht kannst du es tauschen oder ausblenden – der Plan lernt daraus.
+              <strong>Euer erster Plan steht.</strong> Passt ein Gericht nicht? Unter jedem Gericht kannst du ein neues vorschlagen lassen oder es ausblenden – der Plan lernt daraus.
             </p>
             <button
               onClick={dismissFirstHint}
