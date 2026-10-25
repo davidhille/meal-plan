@@ -20,7 +20,7 @@ interface DayCardProps {
   onOpenDessert?: () => void;
   /** Heutiger Tag – hervorgehoben */
   isToday?: boolean;
-  /** Verschieben oder Tag leeren */
+  /** Verschieben oder rausnehmen */
   onMove?: () => void;
   /** Nachtisch vom Tag entfernen */
   onRemoveDessert?: () => void;
@@ -79,8 +79,8 @@ export default function DayCard({
       label: 'Verlegen',
       icon: <CalendarDays size={16} />,
       onClick: onMove,
-      title: 'Verschieben oder Tag leeren',
-      ariaLabel: `${meal.meal}: auf anderen Tag verschieben oder Tag leeren`,
+      title: 'Verschieben oder rausnehmen',
+      ariaLabel: `${meal.meal}: auf anderen Tag verschieben oder rausnehmen`,
     });
   if (onRegenerate)
     actions.push({

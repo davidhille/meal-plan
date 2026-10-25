@@ -85,9 +85,11 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
   Leiste unten in der Karte (`CardActionBar`):
   - **Merken** (Favorit) · **Nachtisch** (dazu/ändern) · **Neu** (anderes Gericht für diesen Tag vorschlagen, ohne das alte auszublenden; nicht zu verwechseln mit dem Tagestausch beim Verlegen) · **Ausblenden** (mit Rückfrage wie in den Rezepten; kommt nicht mehr in den Plan, gleiche Liste wie „Ausgeblendete Gerichte“ unter Rezepte; 8 Sek. lang „Rückgängig“, `POST /plan-meals/:id/unreject`)
   - Wurde schon das 3. (und später das 6.) Gericht mit derselben Hauptzutat ausgeblendet (im Plan und in der Rezept-Übersicht) (Fisch, Lamm, Schwein …), fragt ein Hinweis unten: „Lamm ganz weglassen?“ – „Lamm weglassen“ gilt für die ganze Familie (zurücknehmen unter Einstellungen → Gesundheit & Ernährung), „Nein, danke“ lässt alles, wie es ist.
-  - **Verlegen** (oder Tag leeren): Gericht auf einen anderen Tag legen – steht dort schon eins, tauschen beide;
-    auch bis 2 Wochen nach Planende (der Plan wird verlängert). Oder „Tag leeren – nicht kochen“: Gericht kommt aus dem
-    Plan (nicht ausgeblendet), die Zutaten verschwinden von der Einkaufsliste.
+  - **Verlegen** (oder rausnehmen): Gericht auf einen anderen Tag legen – steht dort schon eins, tauschen beide;
+    auch bis 2 Wochen nach Planende (der Plan wird verlängert); der alte Tag ist danach frei. Oder zwei Wege, das Gericht
+    aus dem Plan zu nehmen (nicht ausgeblendet, die Zutaten verschwinden von der Einkaufsliste): **„Gericht rausnehmen“**
+    macht den Tag frei – „Hinzufügen“ und „Gericht planen“ füllen ihn wieder; **„Nicht kochen – Tag bleibt leer“**
+    (`DELETE /plan-meals/:id?keepEmpty=1`, Tag in `meal_plans.cleared_dates`) wird von „Hinzufügen“ nicht gefüllt.
 - Unter dem Plan: **Neuen Zeitraum planen** (Hauptknopf), daneben zurückhaltend **Alle tauschen** (gleicher Zeitraum) und **Plan löschen**, beide mit Bestätigung.
 - **Plan herunterladen:** „Herunterladen“ neben dem Zeitraum öffnet den ganzen Plan als Druckseite (Übersicht, alle Rezepte
   mit auf die Familie umgerechneten Zutaten und Zubereitung, Nachtische) → „Als PDF speichern“. Ohne Pop-up als HTML-Datei.
@@ -97,16 +99,16 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
   Gerichten, steht dort die Wahl **„Zum bestehenden Plan hinzufügen“** (Standard, Knopf „Hinzufügen“) oder **„Alles neu planen“**
   (Knopf „Plan ersetzen“, rot, mit „Vorher herunterladen“); eine Rückfrage danach gibt es nicht mehr. Liegt der Zeitraum teils im
   laufenden Plan, steht ein Hinweis, dass nur freie Tage gefüllt werden. Hinzufügen heißt: Der laufende Plan wird auf den neuen
-  Zeitraum erweitert. Geplante Tage bleiben – auch Gerichte, die man in die Zukunft verschoben hat –, ebenso bewusst
-  leere Tage („Tag leeren“ oder Gericht weg verschoben); die füllt man einzeln mit „Gericht planen“. Vergangene Tage
-  bleiben immer leer. Nur freie Tage bekommen ein Gericht; Abwechslung, Fleisch-Grenze
+  Zeitraum erweitert. Geplante Tage bleiben – auch Gerichte, die man in die Zukunft verschoben hat –, ebenso Tage
+  mit „Nicht kochen“. Will man sie doch füllen, erscheint im Fenster das Häkchen „Auch die n Tage mit ‚Nicht kochen‘
+  planen“ (nur Tage ab heute im Zeitraum), oder man tippt am Tag auf „Gericht planen“. Vergangene Tage bleiben immer leer. Nur freie Tage bekommen ein Gericht; Abwechslung, Fleisch-Grenze
   und Turnus-Favoriten berücksichtigen die schon geplanten Gerichte. „Alles neu planen“ ersetzt wie bisher alles.
-- **Leere Tage bleiben sichtbar:** Tage ohne Gericht (geleert, verschoben oder nicht geplant) stehen im Plan als schmale Zeile
-  „leer, nichts geplant“ mit „Gericht planen“ (füllt nur diesen Tag, ohne automatische Brotzeit); freie Wochentage als
+- **Leere Tage bleiben sichtbar:** Tage ohne Gericht stehen im Plan als schmale Zeile
+  „Nichts geplant“ (frei) bzw. „Nicht kochen“ mit „Gericht planen“ (füllt nur diesen Tag, ohne automatische Brotzeit); freie Wochentage als
   „frei (Wochentag)“.
 - **Nur leere Tage füllen** (in der Rückfrage bei „Alle tauschen“): gleicher Zeitraum, aber nur Tage
-  ohne Gericht werden geplant – z. B. die Lücke, die ein in die Zukunft verschobenes Gericht hinterlässt. Mit „Tag leeren“
-  freigemachte Tage bleiben frei.
+  ohne Gericht werden geplant – z. B. die Lücke, die ein in die Zukunft verschobenes Gericht hinterlässt. Tage mit
+  „Nicht kochen“ bleiben leer.
 - **Gäste pro Tag:** In der Rezept-Ansicht eines Plan-Gerichts „Gäste an diesem Tag“ (+/−). Die Portionen dieses Gerichts,
   die Einkaufsliste und der Export rechnen die Gäste mit ein; die Karte im Plan zeigt „+2“. Bleibt beim Austauschen am Tag.
 - **Rezept-Ansicht:** Bild mit Quellenangabe, Zutaten mit **Portionen-Umrechnung** (Familie: Erwachsene 1, Kinder je nach Alter

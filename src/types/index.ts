@@ -231,6 +231,8 @@ export interface MealPlan {
   created_at: string;
   /** Per Nur-Lese-Link geteilt */
   shared?: boolean;
+  /** Tage mit „Nicht kochen“: „Hinzufügen“ füllt sie nicht (ISO-Daten) */
+  cleared_dates?: string[];
 }
 
 export interface PlanMeal {

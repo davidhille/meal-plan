@@ -49,8 +49,8 @@ interface MealPlanViewProps {
   visibleRange?: { from: string; to: string };
   /** Gericht auf einen anderen Tag verschieben */
   onMove?: (pm: PlanMeal, date: string) => Promise<void>;
-  /** Gericht aus dem Plan nehmen (Tag leeren) */
-  onRemove?: (pm: PlanMeal) => Promise<void>;
+  /** Gericht aus dem Plan nehmen: keepEmpty = „Nicht kochen“, sonst nur frei (wird bei „Hinzufügen“ wieder gefüllt) */
+  onRemove?: (pm: PlanMeal, keepEmpty: boolean) => Promise<void>;
   /** Brotzeit statt Kochen (zurück über onRegenerate = doch kochen) */
   onBrotzeit?: (pm: PlanMeal) => Promise<void>;
   /** Gerichte des Plans werden noch geladen: Platzhalter statt leerer Tage */
@@ -340,7 +340,7 @@ export default function MealPlanView({
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{dayLabel(date)}</p>
-                  <p className="text-sm text-gray-500">{ruleForDate(date, dayRules).off ? 'Frei (Wochentag)' : 'Nichts geplant'}</p>
+                  <p className="text-sm text-gray-500">{ruleForDate(date, dayRules).off ? 'Frei (Wochentag)' : plan?.cleared_dates?.includes(date) ? 'Nicht kochen' : 'Nichts geplant'}</p>
                 </div>
                 {onFillDay && !ruleForDate(date, dayRules).off && (
                   <button
@@ -475,7 +475,7 @@ export default function MealPlanView({
           planMeals={allPlanMeals ?? planMeals ?? []}
           dayRules={dayRules}
           onMove={(date) => onMove(moving, date)}
-          onRemove={() => onRemove(moving)}
+          onRemove={(keepEmpty) => onRemove(moving, keepEmpty)}
           onBrotzeit={onBrotzeit && !moving.brotzeit ? () => onBrotzeit(moving) : undefined}
           onClose={() => setMoving(null)}
         />
@@ -597,7 +597,7 @@ export default function MealPlanView({
           extendHint={
             <>
               <strong>Nur leere Tage füllen</strong> behält alle geplanten Gerichte (auch verschobene) und plant nur Tage ohne Gericht.
-              Tage, die du mit „Tag leeren“ freigemacht hast, bleiben frei.
+              Tage mit „Nicht kochen“ bleiben leer.
             </>
           }
           onClose={() => setConfirmRegenerate(false)}

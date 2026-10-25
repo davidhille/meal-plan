@@ -9,7 +9,7 @@ import { exportPlan } from '../lib/planExport';
 export type PlanMode = 'extend' | 'replace';
 
 interface PlanCreationModalProps {
-  onCreate: (startDate: string, endDate: string, mode: PlanMode) => Promise<void>;
+  onCreate: (startDate: string, endDate: string, mode: PlanMode, includeCleared?: boolean) => Promise<void>;
   /** Läuft noch ein Plan mit Gerichten? Dann steht die Wahl „hinzufügen oder alles neu“ im Fenster */
   running?: { plan: MealPlan; meals: PlanMeal[]; portions: number };
   onClose: () => void;
@@ -23,6 +23,7 @@ type DurationOption = {
 
 export default function PlanCreationModal({ onCreate, running, onClose }: PlanCreationModalProps) {
   const [mode, setMode] = useState<PlanMode>('extend');
+  const [includeCleared, setIncludeCleared] = useState(false);
   const [durationType, setDurationType] = useState<PlanDurationType>('next_week');
   const [customStart, setCustomStart] = useState<string>('');
   const [customEnd, setCustomEnd] = useState<string>('');
@@ -93,7 +94,7 @@ export default function PlanCreationModal({ onCreate, running, onClose }: PlanCr
       }
       setError(null);
 
-      await onCreate(startDate, endDate, running ? mode : 'replace');
+      await onCreate(startDate, endDate, running ? mode : 'replace', includeCleared && clearedInRange > 0);
     } catch (e) {
       setError((e as Error).message || 'Der Plan konnte nicht erstellt werden. Bitte noch einmal versuchen.');
     } finally {
@@ -109,6 +110,10 @@ export default function PlanCreationModal({ onCreate, running, onClose }: PlanCr
   const replacing = !!running && mode === 'replace';
   // Liegt der gewählte Zeitraum (teilweise) im laufenden Plan? Dann füllt „hinzufügen“ nur die freien Tage.
   const [rangeStart, rangeEnd] = isCustom ? [customStart, customEnd] : selectedOption?.getDates() ?? ['', ''];
+  // Tage mit „Nicht kochen“ ab heute im Zeitraum: optional mitplanen
+  const clearedInRange = running
+    ? (running.plan.cleared_dates ?? []).filter((d) => d >= toIso(today) && d >= rangeStart && d <= rangeEnd).length
+    : 0;
   const overlaps = !!running && !!rangeStart && !!rangeEnd && rangeStart <= running.plan.end_date && rangeEnd >= running.plan.start_date;
 
   return (
@@ -225,7 +230,7 @@ export default function PlanCreationModal({ onCreate, running, onClose }: PlanCr
                 >
                   <p>Zum bestehenden Plan hinzufügen</p>
                   <p className={`text-xs mt-1 ${mode === 'extend' ? 'text-brand-700' : 'text-gray-500'} font-normal`}>
-                    Geplante Tage bleiben, auch verschobene Gerichte und leere Tage. Nur freie Tage bekommen ein Gericht.
+                    Geplante Tage bleiben, auch verschobene Gerichte und Tage mit „Nicht kochen“. Freie Tage bekommen ein Gericht.
                   </p>
                 </button>
                 <button
@@ -246,6 +251,19 @@ export default function PlanCreationModal({ onCreate, running, onClose }: PlanCr
                   Ein Teil des Zeitraums ist schon geplant. Dort werden nur freie Tage gefüllt. Für neue Gerichte wähle Tage nach Planende (
                   {formatShortDate(running.plan.end_date)}).
                 </p>
+              )}
+              {mode === 'extend' && clearedInRange > 0 && (
+                <label className="mt-2 flex items-start gap-2 min-h-11 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={includeCleared}
+                    onChange={(e) => setIncludeCleared(e.target.checked)}
+                    className="mt-0.5 w-5 h-5 accent-brand-700"
+                  />
+                  <span>
+                    Auch {clearedInRange === 1 ? 'den Tag' : `die ${clearedInRange} Tage`} mit „Nicht kochen“ planen
+                  </span>
+                </label>
               )}
               {replacing && (
                 <button

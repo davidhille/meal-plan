@@ -6,7 +6,7 @@ interface BrotzeitCardProps {
   day: string;
   isToday?: boolean;
   busy?: boolean;
-  /** Verschieben oder Tag leeren */
+  /** Verschieben oder rausnehmen */
   onMove?: () => void;
   /** Doch kochen: ein Gericht für den Tag planen */
   onCook?: () => void;
@@ -21,8 +21,8 @@ export default function BrotzeitCard({ day, isToday, busy, onMove, onCook }: Bro
       label: 'Verlegen',
       icon: <CalendarDays size={16} />,
       onClick: onMove,
-      title: 'Verschieben oder Tag leeren',
-      ariaLabel: `Brotzeit am ${day}: auf anderen Tag verschieben oder Tag leeren`,
+      title: 'Verschieben oder rausnehmen',
+      ariaLabel: `Brotzeit am ${day}: auf anderen Tag verschieben oder rausnehmen`,
     });
   if (onCook)
     actions.push({
