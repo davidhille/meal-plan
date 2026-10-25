@@ -128,7 +128,7 @@ export async function createPlan(
   endDate: string,
   extendPlanId?: string,
   /** Einzelnen Tag gezielt mit einem Gericht füllen: keine automatische Brotzeit */
-  opts: { cookOnly?: boolean } = {}
+  opts: { cookOnly?: boolean; today?: string } = {}
 ) {
   const ctx = await loadContext(sql, profileId);
   const { pool, favorites } = await loadPool(sql, profileId);
@@ -161,10 +161,14 @@ export async function createPlan(
       } as Recipe);
     }
     cleared = new Set(parseDateArray(planRows[0]?.cleared_dates));
+    // Zeitraum bewusst gewählt (opts.today): leere Tage ab heute werden gefüllt, auch bewusst geleerte
+    if (opts.today) cleared = new Set([...cleared].filter((d) => d < opts.today!));
   }
 
   // Freie Wochentage (Einstellungen → Wochentage) werden gar nicht geplant
-  const fillable = datesToFill(startDate, endDate, ctx.dayRules, new Set([...existing.keys(), ...existingBrotzeit]), cleared);
+  let fillable = datesToFill(startDate, endDate, ctx.dayRules, new Set([...existing.keys(), ...existingBrotzeit]), cleared);
+  // Vergangene Tage bekommen nie ein Gericht
+  if (opts.today) fillable = fillable.filter((d) => d >= opts.today!);
   if (extendPlanId && fillable.length === 0) return extendPlanRange(sql, extendPlanId, startDate, endDate);
 
   // Brotzeit-Tage (feste Wochentage und „x-mal pro Woche“) werden nicht gekocht
@@ -213,6 +217,14 @@ export async function createPlan(
           [profileId, startDate, endDate]
         )
       )[0];
+  // Gefüllte Tage sind nicht mehr „bewusst leer“
+  if (extendPlanId && opts.today) {
+    await sql.query(
+      `UPDATE meal_plans SET cleared_dates = ARRAY(SELECT d FROM unnest(cleared_dates) d WHERE d < $2::date OR d > $3::date)
+       WHERE id = $1`,
+      [extendPlanId, opts.today, endDate]
+    );
+  }
   if (meals.length) {
     await sql.query(
       `INSERT INTO plan_meals (plan_id, meal_date, meal_name, meal_type, ingredients, instructions, duration_min)

@@ -192,7 +192,9 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
     const p = await getProfile(sql, user);
     const rows = await sql`SELECT id FROM meal_plans WHERE id = ${id} AND profile_id = ${p.id}`;
     if (!rows[0]) return json({ error: "Plan nicht gefunden" }, 404);
-    const plan = await createPlan(env, sql, p.id, startDate, endDate, id);
+    // „Heute“ nach Berliner Zeit: ab da werden leere Tage gefüllt, Vergangenes bleibt leer
+    const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(new Date());
+    const plan = await createPlan(env, sql, p.id, startDate, endDate, id, { today });
     waitUntil(fillMissingImages(env, sql, 7, plan.id));
     return json(plan);
   }
