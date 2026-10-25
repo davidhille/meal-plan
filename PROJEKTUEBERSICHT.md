@@ -91,12 +91,15 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
 - Unter dem Plan: **Neuen Zeitraum planen** (Hauptknopf), daneben zurückhaltend **Alle tauschen** (gleicher Zeitraum) und **Plan löschen**, beide mit Bestätigung.
 - **Plan herunterladen:** „Herunterladen“ neben dem Zeitraum öffnet den ganzen Plan als Druckseite (Übersicht, alle Rezepte
   mit auf die Familie umgerechneten Zutaten und Zubereitung, Nachtische) → „Als PDF speichern“. Ohne Pop-up als HTML-Datei.
-- **Rückfrage vor dem Ersetzen:** Läuft der Plan noch, fragen „Alle tauschen“ und „Neuen Zeitraum planen“ nach –
-  mit „Vorher herunterladen“, damit die Rezepte zum schon erledigten Einkauf nicht verloren gehen.
-- **Plan verlängern statt ersetzen** (in der Rückfrage bei „Neuen Zeitraum planen“): Der laufende Plan wird auf den neuen
+- **Rückfrage vor dem Ersetzen:** Läuft der Plan noch, fragt „Alle tauschen“ nach – mit „Vorher herunterladen“, damit die
+  Rezepte zum schon erledigten Einkauf nicht verloren gehen.
+- **Zeitraum planen (hinzufügen statt ersetzen):** „Neuen Zeitraum planen“ öffnet das Plan-Fenster. Läuft noch ein Plan mit
+  Gerichten, steht dort die Wahl **„Zum bestehenden Plan hinzufügen“** (Standard, Knopf „Hinzufügen“) oder **„Alles neu planen“**
+  (Knopf „Plan ersetzen“, rot, mit „Vorher herunterladen“); eine Rückfrage danach gibt es nicht mehr. Liegt der Zeitraum teils im
+  laufenden Plan, steht ein Hinweis, dass nur freie Tage gefüllt werden. Hinzufügen heißt: Der laufende Plan wird auf den neuen
   Zeitraum erweitert. Geplante Tage bleiben – auch Gerichte, die man in die Zukunft verschoben hat –, ebenso bewusst
   leere Tage („Tag leeren“ oder Gericht weg verschoben). Nur freie Tage bekommen ein Gericht; Abwechslung, Fleisch-Grenze
-  und Turnus-Favoriten berücksichtigen die schon geplanten Gerichte. „Neuen Plan erstellen“ ersetzt wie bisher alles.
+  und Turnus-Favoriten berücksichtigen die schon geplanten Gerichte. „Alles neu planen“ ersetzt wie bisher alles.
 - **Leere Tage bleiben sichtbar:** Tage ohne Gericht (geleert, verschoben oder nicht geplant) stehen im Plan als schmale Zeile
   „leer, nichts geplant“ mit „Gericht planen“ (füllt nur diesen Tag, ohne automatische Brotzeit); freie Wochentage als
   „frei (Wochentag)“.

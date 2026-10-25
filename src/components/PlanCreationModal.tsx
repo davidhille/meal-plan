@@ -1,11 +1,17 @@
 import { useState } from 'react';
-import { X, Calendar, AlertCircle } from 'lucide-react';
-import { PlanDurationType } from '../types';
+import { X, Calendar, AlertCircle, Download } from 'lucide-react';
+import { MealPlan, PlanDurationType, PlanMeal } from '../types';
 import { toIso, formatShortDate } from '../lib/dateUtils';
 import { useDialog } from '../lib/useDialog';
+import { exportPlan } from '../lib/planExport';
+
+/** Was mit einem noch laufenden Plan geschieht: Tage hinzufügen (Standard) oder alles neu planen */
+export type PlanMode = 'extend' | 'replace';
 
 interface PlanCreationModalProps {
-  onCreate: (startDate: string, endDate: string) => Promise<void>;
+  onCreate: (startDate: string, endDate: string, mode: PlanMode) => Promise<void>;
+  /** Läuft noch ein Plan mit Gerichten? Dann steht die Wahl „hinzufügen oder alles neu“ im Fenster */
+  running?: { plan: MealPlan; meals: PlanMeal[]; portions: number };
   onClose: () => void;
 }
 
@@ -15,7 +21,8 @@ type DurationOption = {
   getDates: () => [string, string];
 };
 
-export default function PlanCreationModal({ onCreate, onClose }: PlanCreationModalProps) {
+export default function PlanCreationModal({ onCreate, running, onClose }: PlanCreationModalProps) {
+  const [mode, setMode] = useState<PlanMode>('extend');
   const [durationType, setDurationType] = useState<PlanDurationType>('next_week');
   const [customStart, setCustomStart] = useState<string>('');
   const [customEnd, setCustomEnd] = useState<string>('');
@@ -86,7 +93,9 @@ export default function PlanCreationModal({ onCreate, onClose }: PlanCreationMod
       }
       setError(null);
 
-      await onCreate(startDate, endDate);
+      await onCreate(startDate, endDate, running ? mode : 'replace');
+    } catch (e) {
+      setError((e as Error).message || 'Der Plan konnte nicht erstellt werden. Bitte noch einmal versuchen.');
     } finally {
       setLoading(false);
     }
@@ -96,6 +105,11 @@ export default function PlanCreationModal({ onCreate, onClose }: PlanCreationMod
   const selectedOption = durationOptions.find((o) => o.id === durationType);
   const [previewStart] = selectedOption?.getDates() || ['', ''];
   const tomorrowIso = toIso(new Date(today.getTime() + 86400000));
+  const runningCount = running ? running.meals.filter((m) => !m.rejected).length : 0;
+  const replacing = !!running && mode === 'replace';
+  // Liegt der gewählte Zeitraum (teilweise) im laufenden Plan? Dann füllt „hinzufügen“ nur die freien Tage.
+  const [rangeStart, rangeEnd] = isCustom ? [customStart, customEnd] : selectedOption?.getDates() ?? ['', ''];
+  const overlaps = !!running && !!rangeStart && !!rangeEnd && rangeStart <= running.plan.end_date && rangeEnd >= running.plan.start_date;
 
   return (
     <div className="fixed inset-0 z-50 bg-gray-900/40 flex items-end sm:items-center justify-center">
@@ -108,7 +122,7 @@ export default function PlanCreationModal({ onCreate, onClose }: PlanCreationMod
         className="outline-none bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
-          <h2 id="plan-dialog-title" className="text-base font-semibold text-gray-900">Neuen Plan erstellen</h2>
+          <h2 id="plan-dialog-title" className="text-base font-semibold text-gray-900">{running ? 'Zeitraum planen' : 'Neuen Plan erstellen'}</h2>
           <button
             onClick={onClose}
             disabled={loading}
@@ -196,6 +210,56 @@ export default function PlanCreationModal({ onCreate, onClose }: PlanCreationMod
             </div>
           )}
 
+          {running && (
+            <div>
+              <p id="plan-mode-label" className="block text-sm font-medium text-gray-700 mb-2">
+                Dein Plan vom {formatShortDate(running.plan.start_date)} bis {formatShortDate(running.plan.end_date)} läuft noch
+              </p>
+              <div className="space-y-2" role="group" aria-labelledby="plan-mode-label">
+                <button
+                  aria-pressed={mode === 'extend'}
+                  onClick={() => setMode('extend')}
+                  className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all border ${
+                    mode === 'extend' ? 'bg-brand-50 border-brand-300 text-brand-700 font-medium' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <p>Zum bestehenden Plan hinzufügen</p>
+                  <p className={`text-xs mt-1 ${mode === 'extend' ? 'text-brand-700' : 'text-gray-500'} font-normal`}>
+                    Geplante Tage bleiben, auch verschobene Gerichte und leere Tage. Nur freie Tage bekommen ein Gericht.
+                  </p>
+                </button>
+                <button
+                  aria-pressed={mode === 'replace'}
+                  onClick={() => setMode('replace')}
+                  className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all border ${
+                    mode === 'replace' ? 'bg-brand-50 border-brand-300 text-brand-700 font-medium' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <p>Alles neu planen</p>
+                  <p className={`text-xs mt-1 ${mode === 'replace' ? 'text-brand-700' : 'text-gray-500'} font-normal`}>
+                    Ersetzt den bisherigen Plan mit {runningCount} {runningCount === 1 ? 'Gericht' : 'Gerichten'}.
+                  </p>
+                </button>
+              </div>
+              {mode === 'extend' && overlaps && (
+                <p className="mt-2 text-xs text-gray-600">
+                  Ein Teil des Zeitraums ist schon geplant. Dort werden nur freie Tage gefüllt. Für mehr Gerichte wähle Tage nach dem{' '}
+                  {formatShortDate(running.plan.end_date)}.
+                </p>
+              )}
+              {replacing && (
+                <button
+                  type="button"
+                  onClick={() => exportPlan(running.plan, running.meals, running.portions)}
+                  className="mt-2 inline-flex items-center gap-1.5 h-11 px-3 rounded-lg text-sm font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100"
+                >
+                  <Download size={14} aria-hidden="true" />
+                  Vorher herunterladen
+                </button>
+              )}
+            </div>
+          )}
+
           {error && (
             <p role="alert" className="text-sm text-red-600">
               {error}
@@ -220,17 +284,17 @@ export default function PlanCreationModal({ onCreate, onClose }: PlanCreationMod
           <button
             onClick={handleCreate}
             disabled={loading || (!isCustom && !previewStart) || (isCustom && (!customStart || !customEnd))}
-            className="flex-1 h-11 px-4 rounded-xl text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className={`flex-1 h-11 px-4 rounded-xl text-sm font-semibold text-white ${replacing ? 'bg-red-700 hover:bg-red-800' : 'bg-brand-700 hover:bg-brand-800'} disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
           >
             {loading ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Plan wird erstellt …
+                {running && !replacing ? 'Plan wird ergänzt …' : 'Plan wird erstellt …'}
               </>
             ) : (
               <>
                 <Calendar size={14} />
-                Plan erstellen
+                {!running ? 'Plan erstellen' : replacing ? 'Plan ersetzen' : 'Hinzufügen'}
               </>
             )}
           </button>

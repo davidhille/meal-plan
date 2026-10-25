@@ -44,7 +44,7 @@ import {
 import LoginScreen, { inviteToken } from './components/LoginScreen';
 import { familyPortions } from './lib/portions';
 import { toPlanDessert } from './lib/desserts';
-import PlanCreationModal from './components/PlanCreationModal';
+import PlanCreationModal, { type PlanMode } from './components/PlanCreationModal';
 import Header from './components/Header';
 import TabSwitcher from './components/TabSwitcher';
 import RecipesView from './components/RecipesView';
@@ -57,7 +57,6 @@ import SettingsView from './components/SettingsView';
 import MealRatingModal from './components/MealRatingModal';
 import { RatingsContext } from './lib/ratings';
 import { RatingNote } from './types';
-import ReplacePlanDialog from './components/ReplacePlanDialog';
 
 const VIEW_TABS: ViewTab[] = ['speiseplan', 'einkaufsliste', 'rezepte', 'favoriten', 'einstellungen'];
 
@@ -75,7 +74,6 @@ function takeRateRequest(): string | null {
 export default function App() {
   const [showPlanModal, setShowPlanModal] = useState(false);
   /** Neuer Zeitraum, der erst nach Rückfrage den laufenden Plan ersetzt */
-  const [pendingPlan, setPendingPlan] = useState<{ start: string; end: string } | null>(null);
   const [imagePolls, setImagePolls] = useState(0);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [selectedWeekKey, setSelectedWeekKey] = useState<string | null>(null);
@@ -303,13 +301,10 @@ export default function App() {
     return !!currentPlan && currentPlan.end_date >= today && planMeals.some((m) => !m.rejected);
   };
 
-  const requestCreatePlan = async (startDate: string, endDate: string) => {
-    if (planStillRunning()) {
-      setShowPlanModal(false);
-      setPendingPlan({ start: startDate, end: endDate });
-      return;
-    }
-    await handleCreatePlan(startDate, endDate);
+  /** Aus dem Plan-Fenster: neuen Plan erstellen oder den laufenden um den Zeitraum ergänzen (Wahl steht dort) */
+  const requestCreatePlan = async (startDate: string, endDate: string, mode: PlanMode) => {
+    if (mode === 'extend') await handleExtendPlan(startDate, endDate);
+    else await handleCreatePlan(startDate, endDate);
     setShowPlanModal(false);
   };
 
@@ -670,20 +665,13 @@ export default function App() {
       )}
 
       {showPlanModal && (
-        <PlanCreationModal onCreate={requestCreatePlan} onClose={() => setShowPlanModal(false)} />
-      )}
-
-      {pendingPlan && currentPlan && (
-        <ReplacePlanDialog
-          plan={currentPlan}
-          meals={planMeals}
-          portions={familyPortions(familyMembers)}
-          confirmLabel="Neuen Plan erstellen"
-          onConfirm={() => handleCreatePlan(pendingPlan.start, pendingPlan.end)}
-          onExtend={() => handleExtendPlan(pendingPlan.start, pendingPlan.end)}
-          onClose={() => setPendingPlan(null)}
+        <PlanCreationModal
+          onCreate={requestCreatePlan}
+          running={planStillRunning() && currentPlan ? { plan: currentPlan, meals: planMeals, portions: familyPortions(familyMembers) } : undefined}
+          onClose={() => setShowPlanModal(false)}
         />
       )}
+
     </div>
     </RatingsContext.Provider>
   );
