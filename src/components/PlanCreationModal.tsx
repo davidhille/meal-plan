@@ -243,8 +243,8 @@ export default function PlanCreationModal({ onCreate, running, onClose }: PlanCr
               </div>
               {mode === 'extend' && overlaps && (
                 <p className="mt-2 text-xs text-gray-600">
-                  Ein Teil des Zeitraums ist schon geplant. Dort werden nur freie Tage gefüllt. Für mehr Gerichte wähle Tage nach dem{' '}
-                  {formatShortDate(running.plan.end_date)}.
+                  Ein Teil des Zeitraums ist schon geplant. Dort werden nur freie Tage gefüllt. Für neue Gerichte wähle Tage nach Planende (
+                  {formatShortDate(running.plan.end_date)}).
                 </p>
               )}
               {replacing && (
