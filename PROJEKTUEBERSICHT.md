@@ -97,8 +97,9 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
   Gerichten, steht dort die Wahl **„Zum bestehenden Plan hinzufügen“** (Standard, Knopf „Hinzufügen“) oder **„Alles neu planen“**
   (Knopf „Plan ersetzen“, rot, mit „Vorher herunterladen“); eine Rückfrage danach gibt es nicht mehr. Liegt der Zeitraum teils im
   laufenden Plan, steht ein Hinweis, dass nur freie Tage gefüllt werden. Hinzufügen heißt: Der laufende Plan wird auf den neuen
-  Zeitraum erweitert. Geplante Tage bleiben – auch Gerichte, die man in die Zukunft verschoben hat –, ebenso bewusst
-  leere Tage („Tag leeren“ oder Gericht weg verschoben). Nur freie Tage bekommen ein Gericht; Abwechslung, Fleisch-Grenze
+  Zeitraum erweitert. Geplante Tage bleiben – auch Gerichte, die man in die Zukunft verschoben hat. Alle
+  leeren Tage ab heute im Zeitraum werden gefüllt, auch bewusst geleerte („Tag leeren“ oder Gericht weg verschoben) –
+  der Zeitraum ist ja ausdrücklich gewählt; vergangene Tage bleiben immer leer. Nur freie Tage bekommen ein Gericht; Abwechslung, Fleisch-Grenze
   und Turnus-Favoriten berücksichtigen die schon geplanten Gerichte. „Alles neu planen“ ersetzt wie bisher alles.
 - **Leere Tage bleiben sichtbar:** Tage ohne Gericht (geleert, verschoben oder nicht geplant) stehen im Plan als schmale Zeile
   „leer, nichts geplant“ mit „Gericht planen“ (füllt nur diesen Tag, ohne automatische Brotzeit); freie Wochentage als
