@@ -110,6 +110,8 @@ export interface ShoppingItem {
   checked: boolean;
   label: string;
   isBasic?: boolean;
+  /** Gerichte und Nachtische, für die die Zutat gebraucht wird (Plan-Zutaten; eigene Artikel haben keine) */
+  usedIn?: string[];
   /** Verknüpftes Produkt im Shop der Liste (Knuspr/Picnic) */
   productId?: string;
   productName?: string;

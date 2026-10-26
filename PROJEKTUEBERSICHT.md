@@ -163,6 +163,10 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
 - **„Einkauf für“:** eigene Wochenauswahl („Diese Woche“, „Nächste Woche“ …), mehrere Wochen kombinierbar; Häkchen je Woche.
   Gerichte vergangener Tage zählen standardmäßig nicht mit (Hinweis unter der Zusammenfassung mit „einrechnen“;
   `?since=` an `GET /plans/:id/shopping`, die Häkchen bleiben dabei erhalten).
+- **Wofür die Zutat gebraucht wird:** unter jedem Artikel aus dem Plan steht eine Zeile „für Chili con Carne +2“ (das nächste
+  Gericht, dazu die Zahl weiterer). So lässt sich beim Einkaufen entscheiden, ob etwas Vorhandenes reicht (z. B. normale Tomaten
+  statt Cherrytomaten). Alle Gerichte stehen oben im „⋯“-Menü unter „Gebraucht für“; Nachtische zählen mit. Abgehakte Artikel,
+  Vorrat und eigene Artikel haben keine solche Zeile.
 - **„⋯“ an jedem Eintrag:** Produkt auswählen, „Haben wir immer da“ (Vorrat), in andere Liste, Entfernen (eigene Artikel).
 - **Rückmeldung:** scheitert eine Aktion (abhaken, hinzufügen, entfernen, Vorrat), steht oben in der Liste eine rote Fehlerzeile
   und die Änderung wird zurückgenommen; Eingaben in „Artikel hinzufügen“ und „Zum Vorrat“ bleiben dann stehen. Wird eine
