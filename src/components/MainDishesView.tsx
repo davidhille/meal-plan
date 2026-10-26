@@ -369,7 +369,8 @@ export default function MainDishesView({
         <div className="flex items-center justify-between gap-2 px-1">
           <p className="text-xs text-gray-500" aria-live="polite">
             {visible.length === shownTotal ? `${shownTotal} Gerichte` : `${visible.length} von ${shownTotal} Gerichten`}
-            {unsuitableCount > 0 && !showHint && (
+            {/* Nur, solange unpassende Gerichte eingeblendet sind (zum Wiederausblenden) – nach „Fertig“ bleibt die Zeile ruhig */}
+            {revealedCount > 0 && !showHint && (
               <>
                 {' · '}
                 <button
@@ -377,7 +378,7 @@ export default function MainDishesView({
                   onClick={() => setShowUnsuitableList(true)}
                   className="font-semibold text-brand-700 hover:underline"
                 >
-                  {unsuitableCount} unpassende verwalten
+                  {revealedCount} unpassende eingeblendet – verwalten
                 </button>
               </>
             )}
