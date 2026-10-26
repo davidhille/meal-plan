@@ -62,9 +62,10 @@ export async function profileRoutes({ request, sql, body, parts, route, id, user
     const p = await getProfile(sql, user);
     const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date());
     try {
-      const added = await importChefkochBatch(sql, p.id, today);
+      const report: string[] = [];
+      const added = await importChefkochBatch(sql, p.id, today, report);
       const rows = await sql`SELECT * FROM profiles WHERE id = ${p.id}`;
-      return json({ added, profile: rows[0] });
+      return json({ added, report, profile: rows[0] });
     } catch (e) {
       await logError(sql, "Chefkoch-Automatik (manuell)", e, p.id);
       return json({ error: (e as Error).message || "Chefkoch konnte nicht abgerufen werden." }, 502);
