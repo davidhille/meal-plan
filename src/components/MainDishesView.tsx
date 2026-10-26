@@ -689,6 +689,10 @@ export default function MainDishesView({
             onRecipesChanged?.();
             flash(`„${name}“ ist jetzt in der Sammlung.`);
           }}
+          onDessertSaved={(name) => {
+            setShowImport(false);
+            flash(`„${name}“ ist jetzt bei den Nachtischen.`);
+          }}
           onClose={() => setShowImport(false)}
         />
       )}

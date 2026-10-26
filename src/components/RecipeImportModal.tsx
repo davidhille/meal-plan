@@ -1,13 +1,22 @@
 import { useState } from 'react';
 import { X, Link2, Loader2, Check, ExternalLink } from 'lucide-react';
-import { Favorite, MealType } from '../types';
-import { ImportedRecipe, previewRecipeImport, saveImportedRecipe } from '../lib/api';
+import { DessertCategory, Favorite, MealType } from '../types';
+import { ChefkochDetails, ImportedRecipe, previewChefkoch, previewRecipeImport, saveCustomDessert, saveImportedRecipe } from '../lib/api';
+import { DESSERT_CATEGORIES, guessDessertCategory } from '../lib/desserts';
 import { useDialog } from '../lib/useDialog';
+
+type Kind = 'main' | 'dessert';
 
 interface RecipeImportModalProps {
   onSaved: (favorites: Favorite[], name: string) => void;
+  /** Mit dieser Funktion lässt sich das Rezept auch als Nachtisch speichern (Auswahl „Nachtisch“); ohne sie nur Hauptgericht */
+  onDessertSaved?: (name: string) => void;
+  /** Vorauswahl beim Laden (Standard: Hauptgericht) */
+  initialKind?: Kind;
   onClose: () => void;
 }
+
+const isChefkochLink = (url: string) => /^https?:\/\/([a-z0-9-]+\.)*chefkoch\.de\//i.test(url);
 
 const TYPES: { id: MealType; label: string }[] = [
   { id: 'vegetarisch', label: 'Vegetarisch' },
@@ -19,7 +28,7 @@ const inputClass =
   'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none';
 
 /** Rezept per Link (Chefkoch & Co.) holen, prüfen und in den Rezept-Pool übernehmen */
-export default function RecipeImportModal({ onSaved, onClose }: RecipeImportModalProps) {
+export default function RecipeImportModal({ onSaved, onDessertSaved, initialKind = 'main', onClose }: RecipeImportModalProps) {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -28,6 +37,13 @@ export default function RecipeImportModal({ onSaved, onClose }: RecipeImportModa
   const [ingredientsText, setIngredientsText] = useState('');
   const [stepsText, setStepsText] = useState('');
   const [favorite, setFavorite] = useState(false);
+  const [kind, setKind] = useState<Kind>(initialKind);
+  const [category, setCategory] = useState<DessertCategory>('creme');
+  const [yieldText, setYieldText] = useState('');
+  /** Chefkoch-Angaben (Originalmengen, Menge, Foto) – nur bei Chefkoch-Links */
+  const [details, setDetails] = useState<ChefkochDetails | null>(null);
+  const canDessert = !!onDessertSaved;
+  const dessert = canDessert && kind === 'dessert';
   const dialogRef = useDialog(() => !saving && onClose());
 
   const load = async () => {
@@ -35,16 +51,32 @@ export default function RecipeImportModal({ onSaved, onClose }: RecipeImportModa
     setLoading(true);
     setError(null);
     try {
-      const r = await previewRecipeImport(url.trim());
+      const link = url.trim();
+      const r = await previewRecipeImport(link);
+      // Nachtische werden nicht auf 4 Portionen umgerechnet: bei Chefkoch die Originalmengen und die Menge dazuholen
+      const d = canDessert && isChefkochLink(link) ? await previewChefkoch(link).catch(() => null) : null;
+      setDetails(d);
       setRecipe(r);
-      setIngredientsText(r.ingredients.join('\n'));
       setStepsText(r.instructions);
+      setCategory(guessDessertCategory(`${r.name} ${(d?.tags ?? []).join(' ')}`));
+      setYieldText(d?.yieldText ?? '');
+      setIngredientsText(ingredientsFor(initialKind, r, d));
     } catch (e) {
       setRecipe(null);
       setError((e as Error).message || 'Das Rezept konnte nicht geladen werden.');
     } finally {
       setLoading(false);
     }
+  };
+
+  /** Zutaten je Art: Hauptgericht = auf 4 Portionen umgerechnet, Nachtisch = Originalmenge (wenn bekannt) */
+  const ingredientsFor = (k: Kind, r: ImportedRecipe, d: ChefkochDetails | null) =>
+    (k === 'dessert' && canDessert && d?.originalIngredients.length ? d.originalIngredients : r.ingredients).join('\n');
+
+  const pickKind = (k: Kind) => {
+    if (!recipe || k === kind) return;
+    setKind(k);
+    setIngredientsText(ingredientsFor(k, recipe, details));
   };
 
   const save = async () => {
@@ -57,6 +89,20 @@ export default function RecipeImportModal({ onSaved, onClose }: RecipeImportModa
     setSaving(true);
     setError(null);
     try {
+      if (dessert) {
+        await saveCustomDessert({
+          name: recipe.name.trim(),
+          category,
+          yield: yieldText.trim() || (details?.originalIngredients.length ? 'wie im Rezept' : '4 Portionen'),
+          durationMin: recipe.durationMin ?? null,
+          ingredients,
+          instructions: stepsText.trim(),
+          sourceUrl: recipe.sourceUrl,
+          imageUrl: details?.imageUrl ?? null,
+        });
+        onDessertSaved?.(recipe.name.trim());
+        return;
+      }
       const favorites = await saveImportedRecipe(
         {
           name: recipe.name.trim(),
@@ -163,17 +209,69 @@ export default function RecipeImportModal({ onSaved, onClose }: RecipeImportModa
                     <button
                       key={t.id}
                       type="button"
-                      aria-pressed={recipe.type === t.id}
-                      onClick={() => setRecipe({ ...recipe, type: t.id })}
+                      aria-pressed={!dessert && recipe.type === t.id}
+                      onClick={() => {
+                        pickKind('main');
+                        setRecipe({ ...recipe, type: t.id });
+                      }}
                       className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                        recipe.type === t.id ? 'bg-brand-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        !dessert && recipe.type === t.id ? 'bg-brand-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
                       {t.label}
                     </button>
                   ))}
+                  {canDessert && (
+                    <button
+                      type="button"
+                      aria-pressed={dessert}
+                      onClick={() => pickKind('dessert')}
+                      className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                        dessert ? 'bg-brand-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Nachtisch
+                    </button>
+                  )}
                 </div>
               </div>
+
+              {dessert && (
+                <>
+                  <div>
+                    <p id="import-category" className="text-sm font-medium text-gray-700 mb-2">
+                      Kategorie
+                    </p>
+                    <div className="grid grid-cols-2 gap-1.5" role="group" aria-labelledby="import-category">
+                      {DESSERT_CATEGORIES.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          aria-pressed={category === c.id}
+                          onClick={() => setCategory(c.id)}
+                          className={`h-9 rounded-lg text-xs font-semibold border ${
+                            category === c.id ? 'bg-brand-700 border-brand-700 text-white' : 'bg-white border-gray-200 text-gray-700'
+                          }`}
+                        >
+                          {c.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="import-yield" className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Ergibt
+                    </label>
+                    <input
+                      id="import-yield"
+                      value={yieldText}
+                      onChange={(e) => setYieldText(e.target.value)}
+                      placeholder="z. B. 1 Kuchen (12 Stücke)"
+                      className={inputClass}
+                    />
+                  </div>
+                </>
+              )}
 
               <div>
                 <label htmlFor="import-duration" className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -192,7 +290,7 @@ export default function RecipeImportModal({ onSaved, onClose }: RecipeImportModa
 
               <div>
                 <label htmlFor="import-ingredients" className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Zutaten für 4 Portionen
+                  {dessert ? 'Zutaten' : 'Zutaten für 4 Portionen'}
                 </label>
                 <textarea
                   id="import-ingredients"
@@ -204,9 +302,13 @@ export default function RecipeImportModal({ onSaved, onClose }: RecipeImportModa
                 />
                 <p id="import-ingredients-hint" className="mt-1 text-xs text-gray-500">
                   Eine Zutat pro Zeile, Menge vorne.
-                  {recipe.sourcePortions && recipe.sourcePortions !== 4
-                    ? ` Umgerechnet vom Original für ${recipe.sourcePortions} Portionen.`
-                    : ''}
+                  {dessert
+                    ? details?.originalIngredients.length
+                      ? ' Mengen wie im Original, nicht umgerechnet.'
+                      : ' Auf 4 Portionen umgerechnet.'
+                    : recipe.sourcePortions && recipe.sourcePortions !== 4
+                      ? ` Umgerechnet vom Original für ${recipe.sourcePortions} Portionen.`
+                      : ''}
                 </p>
               </div>
 
@@ -227,6 +329,7 @@ export default function RecipeImportModal({ onSaved, onClose }: RecipeImportModa
                 </p>
               </div>
 
+              {!dessert && (
               <label className="flex items-start gap-3">
                 <input
                   type="checkbox"
@@ -241,6 +344,7 @@ export default function RecipeImportModal({ onSaved, onClose }: RecipeImportModa
                   </span>
                 </span>
               </label>
+              )}
 
               <a
                 href={recipe.sourceUrl}
