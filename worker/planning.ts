@@ -2,7 +2,7 @@
 import { excludedByDislikes } from "./dislikes";
 import type { Sql } from "./db";
 import type { Env } from "./http";
-import { pickMeal, pickReplacement, preferredTypeFor, scoreMeal, violatesHealthConditions, dislikeMatches, MEAL_DATABASE, type Recipe, type ScoringContext } from "./meals";
+import { RECENT_DAYS, pickMeal, pickReplacement, preferredTypeFor, scoreMeal, violatesHealthConditions, dislikeMatches, MEAL_DATABASE, type Recipe, type ScoringContext } from "./meals";
 import { effectiveImageUrl, generateImage } from "./images";
 import { generateRecipes } from "./aiRecipes";
 import { PLAN_COLS, PLAN_MEAL_COLS, favoriteToRecipe, loadContext, loadPool } from "./repo";
@@ -10,11 +10,11 @@ import { isMeatDish, isoWeekKey } from "./nutrition";
 import { addToWeekCounts, exceedsWeekCap, weekCountsOf } from "./weekVariety";
 import { BROTZEIT, fitsTime, isOffDay, pickBrotzeitDates, ruleFor, withinTime } from "./dayRules";
 
-/** Gerichte, die in den 3 Wochen vor `startDate` schon geplant waren */
+/** Gerichte, die in den `RECENT_DAYS` (5 Wochen) vor `startDate` schon geplant waren */
 async function recentMealNames(sql: Sql, profileId: string, startDate: string): Promise<string[]> {
   const rows = await sql`SELECT DISTINCT pm.meal_name FROM plan_meals pm JOIN meal_plans mp ON mp.id = pm.plan_id
     WHERE mp.profile_id = ${profileId} AND NOT pm.rejected
-      AND pm.meal_date >= ${startDate}::date - 21 AND pm.meal_date < ${startDate}::date`;
+      AND pm.meal_date >= ${startDate}::date - ${RECENT_DAYS}::int AND pm.meal_date < ${startDate}::date`;
   return rows.map((r) => r.meal_name as string);
 }
 
