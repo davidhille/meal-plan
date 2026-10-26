@@ -2,6 +2,9 @@ export type MealType = 'vegetarisch' | 'fleisch' | 'wochenende';
 
 export type ViewTab = 'speiseplan' | 'einkaufsliste' | 'rezepte' | 'favoriten' | 'einstellungen';
 
+/** Warum ein Gericht nie geplant wird: Gesundheitseinstellung oder Abneigung (Familien-Nein, „Mag nicht“ der Mehrheit) */
+export type UnsuitableBy = 'health' | 'dislike';
+
 /** Gericht aus der Rezept-Übersicht (alles, was geplant werden kann) */
 export interface CatalogRecipe {
   name: string;
@@ -15,8 +18,10 @@ export interface CatalogRecipe {
   origin: 'basis' | 'ki' | 'import' | 'favorit';
   /** Gericht der Grundsammlung, das bearbeitet wurde (lässt sich auf das Original zurücksetzen) */
   edited?: boolean;
-  /** Passt nicht zu den Gesundheitseinstellungen – wird nie automatisch geplant */
+  /** Passt nicht zu den Gesundheitseinstellungen oder Abneigungen – wird nie automatisch geplant */
   unsuitable?: boolean;
+  /** Warum unpassend: Gesundheitseinstellung und/oder Abneigung (Familien-Nein, „Mag nicht“ der Mehrheit) */
+  unsuitableBy?: UnsuitableBy[];
   /** Von der Chefkoch-Automatik übernommen, noch nicht geprüft („Neu“) */
   review?: boolean;
 }
