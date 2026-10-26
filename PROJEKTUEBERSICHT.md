@@ -218,7 +218,7 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
 - **Sortierung** (Auswahl rechts über der Liste, auf dem Gerät gemerkt): Empfohlen (Favoriten, gut bewertete und
   saisonale Gerichte zuerst, schlecht bewertete hinten; `lib/recipeSort.ts`), Beste Bewertung, Schnellste zuerst, A–Z.
 - **Rezept hinzufügen** (Knopf oben in der Übersicht) bündelt drei Wege: Bei Chefkoch suchen, Mit KI erstellen,
-  Von einem Link importieren (`AddRecipeSheet`).
+  Von einem Link importieren (`AddRecipeSheet`). Im Link-Import-Dialog lässt sich die Art „Nachtisch“ wählen (Kategorie, „Ergibt“, Originalmengen bei Chefkoch); in der Nachtisch-Ansicht heißt der Knopf „Nachtisch hinzufügen“ (Chefkoch-Suche oder Link).
 - **Rezept mit KI erstellen** (über „Rezept hinzufügen“): Wunsch eingeben („etwas mit Kürbis, schnell“), Art wählen
   oder „Egal“ → Vorschau. „Anderer Vorschlag“, über den Stift anpassen, dann „In die Sammlung“ (optional als Favorit).
   Gesundheitseinstellungen und Abneigungen werden beachtet und geprüft; das Bild entsteht im Hintergrund.

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CakeSlice, ChefHat, Clock, EyeOff, Loader2, Search, X } from 'lucide-react';
+import { CakeSlice, Clock, EyeOff, Loader2, Plus, Search, X } from 'lucide-react';
 import { Dessert, DessertCategory, Meal, PlanMeal, RecipeFilter } from '../types';
 import { matchesRecipeFilter } from '../lib/recipeFilters';
 import CustomFilterChips from './CustomFilterChips';
@@ -10,6 +10,8 @@ import DayAssignSheet from './DayAssignSheet';
 import ConfirmDialog from './ConfirmDialog';
 import { generateMealImage, getCustomDesserts, getOrCreateProfile, setDessertVisibility } from '../lib/api';
 import ChefkochSearchModal from './ChefkochSearchModal';
+import AddRecipeSheet from './AddRecipeSheet';
+import RecipeImportModal from './RecipeImportModal';
 import HiddenItemsList from './HiddenItemsList';
 
 interface DessertsViewProps {
@@ -66,6 +68,8 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
   // Eigene Nachtische (Datenbank) – kommen zur festen Sammlung dazu
   const [customDesserts, setCustomDesserts] = useState<Dessert[]>([]);
   const [showChefkoch, setShowChefkoch] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [category, setCategory] = useState<DessertCategory | 'alle'>('alle');
   const [customId, setCustomId] = useState<string | null>(null);
   const custom = customFilters.find((f) => f.id === customId) ?? null;
@@ -184,11 +188,11 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
 
         {!onPick && (
           <button
-            onClick={() => setShowChefkoch(true)}
+            onClick={() => setShowAdd(true)}
             className="w-full h-11 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-brand-300 bg-brand-50/50 text-sm font-semibold text-brand-800 hover:bg-brand-50"
           >
-            <ChefHat size={16} />
-            Nachtisch bei Chefkoch suchen
+            <Plus size={16} />
+            Nachtisch hinzufügen
           </button>
         )}
 
@@ -278,6 +282,34 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
           />
         )}
       </div>
+
+      {showAdd && (
+        <AddRecipeSheet
+          title="Nachtisch hinzufügen"
+          ways={['chefkoch', 'link']}
+          onPick={(way) => {
+            setShowAdd(false);
+            if (way === 'chefkoch') setShowChefkoch(true);
+            else setShowImport(true);
+          }}
+          onClose={() => setShowAdd(false)}
+        />
+      )}
+
+      {showImport && (
+        <RecipeImportModal
+          initialKind="dessert"
+          onSaved={() => setShowImport(false)}
+          onDessertSaved={(name) => {
+            setShowImport(false);
+            getCustomDesserts()
+              .then(setCustomDesserts)
+              .catch(() => undefined);
+            flash(`„${name}“ ist jetzt bei den Nachtischen.`);
+          }}
+          onClose={() => setShowImport(false)}
+        />
+      )}
 
       {showChefkoch && (
         <ChefkochSearchModal

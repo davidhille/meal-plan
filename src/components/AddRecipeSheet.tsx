@@ -5,6 +5,9 @@ export type AddRecipeWay = 'chefkoch' | 'ai' | 'link';
 
 interface AddRecipeSheetProps {
   onPick: (way: AddRecipeWay) => void;
+  /** Welche Wege angeboten werden (Standard: alle); für Nachtische ohne KI */
+  ways?: AddRecipeWay[];
+  title?: string;
   onClose: () => void;
 }
 
@@ -15,7 +18,7 @@ const WAYS: { id: AddRecipeWay; title: string; text: string; Icon: typeof ChefHa
 ];
 
 /** „Rezept hinzufügen“: die drei Wege an einer Stelle */
-export default function AddRecipeSheet({ onPick, onClose }: AddRecipeSheetProps) {
+export default function AddRecipeSheet({ onPick, ways, title = 'Rezept hinzufügen', onClose }: AddRecipeSheetProps) {
   const dialogRef = useDialog(onClose);
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center" onClick={onClose}>
@@ -31,7 +34,7 @@ export default function AddRecipeSheet({ onPick, onClose }: AddRecipeSheetProps)
         <div className="flex items-center gap-2 px-4 py-4 border-b border-gray-100">
           <Plus size={18} className="text-brand-700" aria-hidden="true" />
           <h2 id="add-recipe-title" className="flex-1 text-base font-semibold text-gray-900">
-            Rezept hinzufügen
+            {title}
           </h2>
           <button
             onClick={onClose}
@@ -42,7 +45,7 @@ export default function AddRecipeSheet({ onPick, onClose }: AddRecipeSheetProps)
           </button>
         </div>
         <ul className="p-3 space-y-2">
-          {WAYS.map(({ id, title, text, Icon }) => (
+          {WAYS.filter((w) => !ways || ways.includes(w.id)).map(({ id, title: wayTitle, text, Icon }) => (
             <li key={id}>
               <button
                 onClick={() => onPick(id)}
@@ -52,7 +55,7 @@ export default function AddRecipeSheet({ onPick, onClose }: AddRecipeSheetProps)
                   <Icon size={18} aria-hidden="true" />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-gray-900">{title}</span>
+                  <span className="block text-sm font-semibold text-gray-900">{wayTitle}</span>
                   <span className="block text-xs text-gray-600">{text}</span>
                 </span>
               </button>
