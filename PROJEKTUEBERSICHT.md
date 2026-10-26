@@ -202,7 +202,8 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
   Hauptzutaten, die eure Familie nicht will (z. B. Fisch). Ein gelber Hinweis nennt den Grund („… zu euren Abneigungen (Fisch)“
   bzw. „… zu euren Einstellungen (Diabetes)“);
   mit **„Fertig“** ist er für die **ganze Familie auf allen Geräten** erledigt (bleibt weg, bis neue unpassende Gerichte
-  dazukommen) und steht dann als „2 unpassende verwalten“ unter der Suche.
+  dazukommen). Danach bleibt unter der Suche nichts stehen; nur solange unpassende Gerichte eingeblendet sind, steht dort
+  „2 unpassende eingeblendet – verwalten“ (zum Wiederausblenden, Entscheidung von David 26.10.2026).
 - **Filter-Fenster** (Knopf „Filter“ neben der Suche, Zahl = aktive Filter): alle Filter an einer Stelle, in Gruppen –
   **Art** (Vegetarisch, Fleisch & Fisch, Wochenende), **Speiseart** (Auflauf, Eintopf, Suppe, Pasta, Pizza, Salat, Curry,
   Pfanne & Wok, Burger & Wraps, Braten & Schnitzel, Eierspeise, Mehlspeisen), **Hauptzutat** (Nudeln, Reis, Kartoffeln,
