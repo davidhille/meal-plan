@@ -1083,6 +1083,8 @@ export async function saveImportedRecipe(
   favorite: boolean
 ): Promise<Favorite[]> {
   const result = await request<{ favorites: Favorite[] }>('POST', '/recipes', { ...recipe, favorite });
+  // Das Chefkoch-CDN weist den Server ab (403): das Foto holt der Browser gleich nach dem Speichern (nicht erst beim nächsten App-Start)
+  if (/chefkoch\.de\//i.test(recipe.sourceUrl ?? '')) await fillChefkochPhotos();
   return result.favorites;
 }
 
