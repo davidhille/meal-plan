@@ -16,7 +16,14 @@ const MIN_RATING_COUNT = 2;
  * nur begrenzt viele Anfragen (Chefkoch, Fotos, Datenbank) stellen darf – sonst bleiben Fotos auf der Strecke.
  */
 const DETAILS_PER_RUN = 3;
-const PAGES_PER_RUN = 2;
+/**
+ * Ergebnisseiten, die ein Lauf höchstens durchsucht. Die ersten Seiten sind schnell „leer“ (alles bekannt oder übersprungen);
+ * die Suche muss dann weiter hinten weitermachen, sonst findet die Automatik nie wieder etwas (26.10.2026: 0 Rezepte, obwohl
+ * Chefkoch passende zeigte). Seiten kosten je eine Unteranfrage (Limit 50 je Cron-Lauf), aus dem Cache keine.
+ */
+const PAGES_PER_RUN = 6;
+/** Rezepte mit zu wenigen Bewertungen werden nach so vielen Tagen noch einmal geprüft (neue Rezepte sammeln erst Bewertungen) */
+const RETRY_DAYS = 3;
 
 type Details = Awaited<ReturnType<typeof loadChefkochRecipe>>;
 
@@ -46,18 +53,24 @@ export async function importChefkochBatch(sql: Sql, profileId: string, today: st
   // ein vorhandenes Gericht ersetzen)
   const { pool } = await loadPool(sql, profileId);
   const takenNames = new Set(pool.map((m) => m.name.toLowerCase()));
-  const skipped = await sql`SELECT url FROM chefkoch_auto_skipped WHERE profile_id = ${profileId}`;
+  const skipped = await sql`SELECT url FROM chefkoch_auto_skipped
+    WHERE profile_id = ${profileId} AND (retry_after IS NULL OR retry_after > now())`;
   const skippedUrls = new Set(skipped.map((r) => r.url as string));
 
   const added: string[] = [];
   let loaded = 0;
   for (let page = 0; page < PAGES_PER_RUN && loaded < DETAILS_PER_RUN && done + added.length < AUTO_PER_DAY; page++) {
-    const urls = (await listRecipeUrls(newestTopMainUrl(page))).filter((u) => !knownUrls.has(sourceKey(u)) && !skippedUrls.has(u));
+    const all = await listRecipeUrls(newestTopMainUrl(page));
+    if (all.length === 0) break; // keine weiteren Ergebnisseiten
+    const urls = all.filter((u) => !knownUrls.has(sourceKey(u)) && !skippedUrls.has(u));
     for (const url of urls) {
       if (loaded >= DETAILS_PER_RUN || done + added.length >= AUTO_PER_DAY) break;
       loaded++;
-      const skip = async () => {
-        await sql`INSERT INTO chefkoch_auto_skipped (profile_id, url) VALUES (${profileId}, ${url}) ON CONFLICT DO NOTHING`;
+      // `retryLater`: nur zu wenige Bewertungen – nach RETRY_DAYS erneut prüfen, sonst dauerhaft überspringen
+      const skip = async (retryLater = false) => {
+        await sql`INSERT INTO chefkoch_auto_skipped (profile_id, url, retry_after)
+          VALUES (${profileId}, ${url}, ${retryLater ? new Date(Date.now() + RETRY_DAYS * 86400_000).toISOString() : null})
+          ON CONFLICT (profile_id, url) DO UPDATE SET retry_after = EXCLUDED.retry_after`;
       };
       let d;
       try {
@@ -76,7 +89,7 @@ export async function importChefkochBatch(sql: Sql, profileId: string, today: st
         !excludedByDislikes(r, ctx.familyDislikes, ctx.familyMembers, (t) => dislikeMatches(r, t));
       if (!fits) {
         report?.push(`${r.name}: ${rejectReason(d, takenNames, ctx)}`);
-        await skip();
+        await skip((d.rating ?? 0) >= MIN_RATING && (d.ratingCount ?? 0) < MIN_RATING_COUNT);
         continue;
       }
       const inserted = await sql`INSERT INTO recipes (profile_id, name, type, ingredients, instructions, duration_min, source, source_url, auto_review)
