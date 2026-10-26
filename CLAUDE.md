@@ -114,7 +114,7 @@ Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHu
 - Plan-Fenster: `PlanCreationModal` bietet bei laufendem Plan die Wahl „Zum bestehenden Plan hinzufügen“ (`extendMealPlan`, Standard) oder „Alles neu planen“ (`createMealPlan`); die frühere Rückfrage danach gibt es nur noch bei „Alle tauschen“ (`ReplacePlanDialog`).
 - Administration: `AdminSettings` (Familien) und `AdminStats` (Statistik), nur für `isOwner`.
 - Anmeldung: `LoginScreen` (Anmelden bzw. ersten Zugang anlegen), `AccountSettings` (Einstellungen → Zugänge). Ohne Sitzung zeigt `App` die Anmeldung.
-- `localStorage` nur für Komfort (auf-/zugeklappt, gewählte Einkaufswochen; altes Familien-Passwort nur bis zum ersten Zugang), immer in `try/catch`.
+- `localStorage` nur für Komfort (auf-/zugeklappt, gewählte Einkaufswochen; altes Familien-Passwort nur bis zum ersten Zugang), immer in `try/catch`. **Entscheidungen der Familie gehören in die Datenbank, nicht in den `localStorage`:** Der Merker „Fertig“ im Hinweis zu unpassenden Gerichten lag dort und kam auf einem anderen Gerät/Browser immer wieder (26.10.2026, David; war pro Browser gespeichert). Jetzt `profiles.seen_unsuitable` (0031), kommt als `seenUnsuitable` mit `recipeCatalog`, Speichern über `POST /recipes/unsuitable-seen` (`saveSeenUnsuitable`). Welche unpassenden Gerichte in der Liste sichtbar sind (`mp_revealed_unsuitable`), bleibt bewusst pro Browser.
 
 ### Design „Aubergine“
 

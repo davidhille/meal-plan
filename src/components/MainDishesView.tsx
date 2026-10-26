@@ -30,6 +30,7 @@ import {
   generateMealImage,
   removeMealImage,
   getRecipeCatalog,
+  saveSeenUnsuitable,
   resetRecipeEdit,
   reviewRecipes,
   saveRecipeEdit,
@@ -151,22 +152,13 @@ export default function MainDishesView({
   const [showUnsuitableList, setShowUnsuitableList] = useState(false);
   /** Nur die neuen Rezepte der Chefkoch-Automatik zeigen (zum Prüfen) */
   const [onlyNew, setOnlyNew] = useState(false);
-  /** Unpassende Gerichte, über die schon entschieden wurde („Fertig“); der Hinweis kommt erst bei neuen wieder */
-  const [seenUnsuitable, setSeenUnsuitableState] = useState<string[]>(() => {
-    try {
-      const raw = JSON.parse(localStorage.getItem('mp_seen_unsuitable') ?? '[]');
-      return Array.isArray(raw) ? raw.filter((x): x is string => typeof x === 'string') : [];
-    } catch {
-      return [];
-    }
-  });
-  const setSeenUnsuitable = (names: string[]) => {
-    setSeenUnsuitableState(names);
-    try {
-      localStorage.setItem('mp_seen_unsuitable', JSON.stringify(names));
-    } catch {
-      /* ohne Speicher geht es auch – dann gilt „Fertig“ nur für diese Sitzung */
-    }
+  /**
+   * „Fertig“ im Hinweis zu unpassenden Gerichten: gilt für die ganze Familie (Datenbank, kommt mit der Übersicht),
+   * nicht nur für diesen Browser. Sofort in der Übersicht übernehmen, dann speichern.
+   */
+  const markUnsuitableSeen = (names: string[]) => {
+    setCatalog((c) => (c ? { ...c, seenUnsuitable: names } : c));
+    saveSeenUnsuitable(names).catch(() => flash('„Fertig“ konnte nicht gespeichert werden – der Hinweis kommt später wieder.'));
   };
   const [showAi, setShowAi] = useState(false);
   const [showChefkoch, setShowChefkoch] = useState(false);
@@ -264,6 +256,7 @@ export default function MainDishesView({
   };
 
   // Hinweis nur, solange es unpassende Gerichte gibt, über die noch nicht entschieden wurde (oder die Liste offen ist)
+  const seenUnsuitable = catalog.seenUnsuitable ?? [];
   const hasUndecided = unsuitableRecipes.some((r) => !seenUnsuitable.includes(r.name));
   const showHint = unsuitableCount > 0 && (hasUndecided || showUnsuitableList);
   const conditions = (catalog.healthConditions ?? []).map((c) => CONDITION_LABELS[c] ?? c).join(', ');
@@ -455,7 +448,7 @@ export default function MainDishesView({
                   <button
                     type="button"
                     onClick={() => {
-                      setSeenUnsuitable(unsuitableRecipes.map((r) => r.name));
+                      markUnsuitableSeen(unsuitableRecipes.map((r) => r.name));
                       setShowUnsuitableList(false);
                     }}
                     className="h-8 ml-auto font-semibold underline underline-offset-2"

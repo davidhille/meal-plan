@@ -30,6 +30,7 @@ import fotoVersucheZuruecksetzen from "./0027_foto_versuche_zuruecksetzen";
 import fotoVersucheAnfrage from "./0028_foto_versuche_anfrage";
 import routineVersuche from "./0029_routine_versuche";
 import fotoVersucheBrowser from "./0030_foto_versuche_browser";
+import unpassendeGesehen from "./0031_unpassende_gesehen";
 
 export interface Migration {
   /** Eindeutig und aufsteigend, z. B. "0002_kochmodus" */
@@ -69,4 +70,5 @@ export const MIGRATIONS: Migration[] = [
   { id: "0028_foto_versuche_anfrage", statements: fotoVersucheAnfrage },
   { id: "0029_routine_versuche", statements: routineVersuche },
   { id: "0030_foto_versuche_browser", statements: fotoVersucheBrowser },
+  { id: "0031_unpassende_gesehen", statements: unpassendeGesehen },
 ];

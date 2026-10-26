@@ -675,6 +675,12 @@ export async function reviewRecipes(target: { names: string[] } | { all: true })
   return request<RecipeCatalog>('POST', '/recipes/review', target);
 }
 
+/** „Fertig“ im Hinweis zu unpassenden Gerichten: merkt die Familie, dass sie diese Gerichte gesehen hat; wirft bei Fehlern */
+export async function saveSeenUnsuitable(names: string[]): Promise<string[]> {
+  const r = await request<{ seenUnsuitable: string[] }>('POST', '/recipes/unsuitable-seen', { names });
+  return r.seenUnsuitable;
+}
+
 /** Gericht endgültig löschen (eigene/KI-Rezepte aus der Datenbank, Grundsammlung dauerhaft ausgeschlossen) */
 export async function deleteRecipe(name: string): Promise<RecipeCatalog> {
   return request<RecipeCatalog>('POST', '/recipes/delete', { name });

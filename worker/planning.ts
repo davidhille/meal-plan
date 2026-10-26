@@ -388,7 +388,7 @@ export async function setBrotzeit(sql: Sql, profileId: string, planMealId: strin
  * `unsuitable` markiert – sie werden nie automatisch geplant, lassen sich aber ansehen und bearbeiten.
  */
 export async function recipeCatalog(sql: Sql, profileId: string) {
-  const [{ pool, favorites }, ctx, images, dbRecipes] = await Promise.all([
+  const [{ pool, favorites }, ctx, images, dbRecipes, seenRows] = await Promise.all([
     loadPool(sql, profileId),
     loadContext(sql, profileId),
     sql`SELECT DISTINCT ON (meal_name) meal_name, image_url, source, credit_name, credit_url FROM meal_images
@@ -397,6 +397,7 @@ export async function recipeCatalog(sql: Sql, profileId: string) {
     sql`SELECT name, source, replaces, auto_review FROM recipes
       WHERE profile_id = ${profileId} OR (source = 'ai' AND replaces IS NULL)
       ORDER BY profile_id = ${profileId}, created_at`,
+    sql`SELECT seen_unsuitable FROM profiles WHERE id = ${profileId}`,
   ]);
   const imageBy = new Map(images.map((r) => [r.meal_name as string, r]));
   const hidden = new Set(ctx.rejectedMeals);
@@ -447,6 +448,8 @@ export async function recipeCatalog(sql: Sql, profileId: string) {
     recipes,
     hidden: [...hidden].filter((n) => !deleted.has(n)).sort((a, b) => a.localeCompare(b, "de")),
     healthConditions: ctx.healthConditions,
+    /** Unpassende Gerichte, über die die Familie schon entschieden hat („Fertig“); der Hinweis kommt nur bei neuen wieder */
+    seenUnsuitable: (seenRows[0]?.seen_unsuitable as string[] | undefined) ?? [],
   };
 }
 

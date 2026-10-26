@@ -54,6 +54,8 @@ export interface RecipeCatalog {
   hidden: string[];
   /** Gesundheitseinstellungen des Profils (z. B. gluten_free) – erklären, warum Gerichte unpassend sind */
   healthConditions?: string[];
+  /** Unpassende Gerichte, über die die Familie schon entschieden hat („Fertig“) – gilt auf allen Geräten */
+  seenUnsuitable?: string[];
 }
 
 export type DessertCategory = 'kuchen' | 'gebaeck' | 'creme' | 'pfanne' | 'obst' | 'eis';
