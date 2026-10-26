@@ -198,7 +198,9 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
 
 - **Hauptgerichte:** Kachel-Übersicht aller planbaren Gerichte mit Suche und Filter. Gericht einem Tag im Plan zuordnen;
   Gerichte ausblenden. Gerichte, die nicht zu den Gesundheitseinstellungen passen (z. B. Nudeln bei glutenfrei), sind
-  standardmäßig versteckt und lassen sich einblenden – sie werden nie automatisch geplant.
+  standardmäßig versteckt und lassen sich einblenden – sie werden nie automatisch geplant. Ein gelber Hinweis erklärt das;
+  mit **„Fertig“** ist er für die **ganze Familie auf allen Geräten** erledigt (bleibt weg, bis neue unpassende Gerichte
+  dazukommen) und steht dann als „2 unpassende verwalten“ unter der Suche.
 - **Filter-Fenster** (Knopf „Filter“ neben der Suche, Zahl = aktive Filter): alle Filter an einer Stelle, in Gruppen –
   **Art** (Vegetarisch, Fleisch & Fisch, Wochenende), **Speiseart** (Auflauf, Eintopf, Suppe, Pasta, Pizza, Salat, Curry,
   Pfanne & Wok, Burger & Wraps, Braten & Schnitzel, Eierspeise, Mehlspeisen), **Hauptzutat** (Nudeln, Reis, Kartoffeln,

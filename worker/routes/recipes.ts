@@ -106,6 +106,13 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
     const p = await getProfile(sql, user);
     return json(await recipeCatalog(sql, p.id));
   }
+  // „Fertig“ im Hinweis zu unpassenden Gerichten: { names } = alle, über die die Familie entschieden hat (ersetzt die Liste)
+  if (route === "POST /recipes/unsuitable-seen") {
+    const p = await getProfile(sql, user);
+    const names = [...new Set((Array.isArray(body.names) ? body.names : []).map((n: unknown) => String(n).trim().slice(0, 200)).filter(Boolean))].slice(0, 2000);
+    await sql`UPDATE profiles SET seen_unsuitable = ${names}, updated_at = now() WHERE id = ${p.id}`;
+    return json({ seenUnsuitable: names });
+  }
   // KI-Rezept nach Wunsch: erst Vorschau (nicht gespeichert) …
   if (route === "POST /recipes/ai-preview") {
     const wish = cleanWish(body.wish);
