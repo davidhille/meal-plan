@@ -421,6 +421,9 @@ export async function recipeCatalog(sql: Sql, profileId: string) {
     .filter((r) => !hidden.has(r.name))
     .map((r) => {
       const img = imageBy.get(r.name);
+      // Grund getrennt, damit die App ihn nennen kann (Gesundheit vs. „Kommt nie in den Plan“/Abneigung)
+      const byHealth = violatesHealthConditions(r, ctx.healthConditions);
+      const byDislike = excludedByDislikes(r, ctx.familyDislikes, ctx.familyMembers, (d) => dislikeMatches(r, d));
       return {
         name: r.name,
         type: r.type,
@@ -438,9 +441,8 @@ export async function recipeCatalog(sql: Sql, profileId: string) {
         /** Gericht der Grundsammlung, das bearbeitet wurde (lässt sich zurücksetzen) */
         edited: builtIn.has(String(rowBy.get(r.name)?.replaces ?? "")),
         // Nie geplant: Gesundheitseinstellungen, „Kommt nie in den Plan“ oder Abneigung der Mehrheit
-        unsuitable:
-          violatesHealthConditions(r, ctx.healthConditions) ||
-          excludedByDislikes(r, ctx.familyDislikes, ctx.familyMembers, (d) => dislikeMatches(r, d)),
+        unsuitable: byHealth || byDislike,
+        unsuitableBy: [...(byHealth ? ["health"] : []), ...(byDislike ? ["dislike"] : [])],
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, "de"));

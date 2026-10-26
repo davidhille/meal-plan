@@ -14,7 +14,8 @@ import {
 } from '../lib/recipeFacets';
 import RecipeFilterSheet from './RecipeFilterSheet';
 import RecipeCategoryAssign from './RecipeCategoryAssign';
-import { CONDITION_LABELS, swapExample } from '../lib/health';
+import { CONDITION_LABELS, allReasons, reasonsOf, swapExample, unsuitableDetail, unsuitableSubject } from '../lib/health';
+import { familyDislikeLabel } from '../lib/familyDislikes';
 import RecipeFilterAssign from './RecipeFilterAssign';
 import RecipeEditModal from './RecipeEditModal';
 import AiRecipeModal from './AiRecipeModal';
@@ -259,8 +260,11 @@ export default function MainDishesView({
   const seenUnsuitable = catalog.seenUnsuitable ?? [];
   const hasUndecided = unsuitableRecipes.some((r) => !seenUnsuitable.includes(r.name));
   const showHint = unsuitableCount > 0 && (hasUndecided || showUnsuitableList);
-  const conditions = (catalog.healthConditions ?? []).map((c) => CONDITION_LABELS[c] ?? c).join(', ');
-  const example = swapExample(catalog.healthConditions ?? []);
+  // Der Hinweis nennt den echten Grund: Gesundheitseinstellung und/oder Abneigung (z. B. Familien-Nein „Fisch“)
+  const healthLabels = (catalog.healthConditions ?? []).map((c) => CONDITION_LABELS[c] ?? c);
+  const dislikeLabels = (familyDislikes ?? []).map(familyDislikeLabel);
+  const hintReasons = allReasons(unsuitableRecipes);
+  const example = hintReasons.includes('health') ? swapExample(catalog.healthConditions ?? []) : null;
 
   /** Nach dem Bearbeiten: Übersicht übernehmen, Ansicht auf das (evtl. umbenannte) Gericht setzen */
   const applyEdit = (result: { name: string; catalog: RecipeCatalog }) => {
@@ -422,7 +426,7 @@ export default function MainDishesView({
             >
               <ShieldAlert size={14} className="flex-shrink-0 mt-px" aria-hidden="true" />
               <span className="flex-1">
-                {unsuitableCount} weitere Gerichte passen nicht zu euren Einstellungen{conditions ? ` (${conditions})` : ''} und werden
+                {unsuitableCount} weitere Gerichte passen nicht {unsuitableSubject(hintReasons)}{unsuitableDetail(hintReasons, healthLabels, dislikeLabels)} und werden
                 nie geplant{revealedCount > 0 ? `, ${revealedCount} davon sind in der Liste` : ''}.{' '}
                 <strong className="underline underline-offset-2">{showUnsuitableList ? 'Schließen' : 'Ansehen und auswählen'}</strong>
                 {!showUnsuitableList && example ? ` – z. B. um Zutaten auszutauschen (${example})` : ''}
@@ -548,7 +552,7 @@ export default function MainDishesView({
                     {r.unsuitable && (
                       <p className="flex items-center gap-1 mt-1 text-xs font-medium text-amber-800">
                         <ShieldAlert size={11} aria-hidden="true" />
-                        Passt nicht{conditions ? ` (${conditions})` : ''}
+                        Passt nicht{unsuitableDetail(reasonsOf(r), healthLabels, dislikeLabels)}
                       </p>
                     )}
                   </div>
@@ -636,7 +640,7 @@ export default function MainDishesView({
               {selected.unsuitable && (
                 <p className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
                   <ShieldAlert size={14} className="flex-shrink-0 mt-px" aria-hidden="true" />
-                  Passt nicht zu euren Einstellungen{conditions ? ` (${conditions})` : ''} und wird nicht automatisch geplant. Über den
+                  Passt nicht {unsuitableSubject(reasonsOf(selected))}{unsuitableDetail(reasonsOf(selected), healthLabels, dislikeLabels)} und wird nicht automatisch geplant. Über den
                   Stift lassen sich die Zutaten anpassen.
                 </p>
               )}

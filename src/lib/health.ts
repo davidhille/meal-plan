@@ -1,3 +1,5 @@
+import type { UnsuitableBy } from '../types';
+
 /** Anzeigenamen der Gesundheitseinstellungen (Profil → health_conditions) */
 export const CONDITION_LABELS: Record<string, string> = {
   diabetes: 'Diabetes',
@@ -37,4 +39,28 @@ const SWAP_EXAMPLES: Record<string, string> = {
 export function swapExample(conditions: string[]): string | null {
   for (const c of conditions) if (SWAP_EXAMPLES[c]) return SWAP_EXAMPLES[c];
   return null;
+}
+
+/** Gründe eines unpassenden Gerichts; ältere Antworten ohne Angabe gelten als Gesundheitseinstellung */
+export function reasonsOf(recipe: { unsuitableBy?: UnsuitableBy[] }): UnsuitableBy[] {
+  return recipe.unsuitableBy && recipe.unsuitableBy.length > 0 ? recipe.unsuitableBy : ['health'];
+}
+
+/** Alle Gründe mehrerer Gerichte zusammen (ohne Dubletten) */
+export function allReasons(recipes: { unsuitableBy?: UnsuitableBy[] }[]): UnsuitableBy[] {
+  return [...new Set(recipes.flatMap(reasonsOf))];
+}
+
+/** „zu euren Einstellungen“, „zu euren Abneigungen“ oder beides – damit der Hinweis den echten Grund nennt */
+export function unsuitableSubject(by: UnsuitableBy[]): string {
+  const health = by.includes('health');
+  const dislike = by.includes('dislike');
+  if (health && dislike) return 'zu euren Einstellungen oder Abneigungen';
+  return dislike ? 'zu euren Abneigungen' : 'zu euren Einstellungen';
+}
+
+/** Zusatz in Klammern mit den betroffenen Einstellungen bzw. Abneigungen (leer, wenn keine bekannt sind) */
+export function unsuitableDetail(by: UnsuitableBy[], healthLabels: string[], dislikeLabels: string[]): string {
+  const parts = [...(by.includes('health') ? healthLabels : []), ...(by.includes('dislike') ? dislikeLabels : [])];
+  return parts.length > 0 ? ` (${parts.join(', ')})` : '';
 }
