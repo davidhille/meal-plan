@@ -61,7 +61,8 @@ async function deleteMainDish(sql: Sql, profileId: string, name: string) {
   // Gelöschtes Chefkoch-Rezept: Link merken, damit die Chefkoch-Automatik es nicht wieder übernimmt
   for (const r of removed) {
     if (r.source_url && /chefkoch\.de\/rezepte\//.test(r.source_url as string)) {
-      await sql`INSERT INTO chefkoch_auto_skipped (profile_id, url) VALUES (${profileId}, ${r.source_url}) ON CONFLICT DO NOTHING`;
+      await sql`INSERT INTO chefkoch_auto_skipped (profile_id, url) VALUES (${profileId}, ${r.source_url})
+        ON CONFLICT (profile_id, url) DO UPDATE SET retry_after = NULL`;
     }
   }
   // Bearbeitetes Gericht der Sammlung: auch das Original nicht wieder auftauchen lassen
