@@ -10,6 +10,7 @@ import {
   looksMeaty,
   pickMeal,
   pickReplacement,
+  RECENT_DAYS,
   preferredTypeFor,
   scoreMeal,
   violatesHealthConditions,
@@ -161,5 +162,33 @@ describe("pickReplacement", () => {
     ];
     const r = pickReplacement("2026-10-13", ctx({ mealRatings: { Gulasch: 5 } }), pool, new Set(["Schnitzel"]));
     expect(r?.name).toBe("Gulasch");
+  });
+});
+
+describe("Wiederholungssperre", () => {
+  const pool = [
+    recipe("Lieblingsgericht", ["400 g Nudeln"]),
+    recipe("Anderes Gericht", ["200 g Reis"]),
+    recipe("Drittes Gericht", ["300 g Kartoffeln"]),
+  ];
+  // Gut bewertet und Favorit: ohne Sperre läge es immer vorn
+  const loved = { mealRatings: { Lieblingsgericht: 5 }, favoriteNames: ["Lieblingsgericht"] };
+
+  test("dauert fünf Wochen", () => expect(RECENT_DAYS).toBe(35));
+  test("kürzlich gekochtes, gut bewertetes Gericht kommt nicht wieder, solange es Alternativen gibt", () => {
+    for (let i = 0; i < 30; i++) {
+      const c = ctx({ ...loved, recentNames: ["Lieblingsgericht"] });
+      expect(pickMeal("2026-10-13", c, new Set(), pool)?.name).not.toBe("Lieblingsgericht");
+      expect(pickReplacement("2026-10-13", c, pool, new Set())?.name).not.toBe("Lieblingsgericht");
+    }
+  });
+  test("ohne Sperre liegt das Lieblingsgericht vorn", () => {
+    for (let i = 0; i < 10; i++) expect(pickMeal("2026-10-13", ctx(loved), new Set(), pool)?.name).toBe("Lieblingsgericht");
+  });
+  test("bleibt nichts anderes übrig, wird es trotzdem geplant (kein leerer Tag)", () => {
+    const only = [pool[0]];
+    const c = ctx({ ...loved, recentNames: ["Lieblingsgericht"] });
+    expect(pickMeal("2026-10-13", c, new Set(), only)?.name).toBe("Lieblingsgericht");
+    expect(pickReplacement("2026-10-13", c, only, new Set())?.name).toBe("Lieblingsgericht");
   });
 });

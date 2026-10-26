@@ -126,7 +126,7 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
 - **Rezept-Pool:** feste Grundsammlung (383 Gerichte, davon 231 übersetzte TheMealDB-Rezepte mit Originalfoto)
   + KI-Rezepte + importierte Rezepte + Favoriten.
 - **Bewertung je Gericht:** Sterne, Vorlieben und Abneigungen der Familie (mit Oberbegriffen: „Fisch“ trifft auch Lachs),
-  Ernährungs-Schwerpunkte, Favoriten-Bonus, Abzug für Gerichte der letzten 3 Wochen.
+  Ernährungs-Schwerpunkte, Favoriten-Bonus, Gerichte der letzten 5 Wochen kommen nicht wieder, auch gut bewertete nicht (nur wenn nichts anderes übrig ist; die KI liefert bei Bedarf neue Rezepte).
 - **Gesundheitsbedingungen** schließen hart aus: vegetarisch, vegan, glutenfrei, laktosefrei, Nussallergie, ohne Alkohol;
   Diabetes gibt einen Abzug bei Zucker. *Heuristik auf Zutatentext, keine Allergie-Garantie.*
 - **Abwechslung:** ähnliche Gerichte (z. B. mehrere „Quinoa-Pfannen“) werden im Plan verteilt statt gehäuft. Pro Kalenderwoche gibt es außerdem höchstens **1× Garnelen/Meeresfrüchte** (Garnelen, Gambas, Shrimps …) und **2× Nudelgerichte** (Nudeln, Pasta, Penne, Lasagne, Tortelloni …); gilt beim Planen und bei „Neu“. Bleibt kein anderes Gericht übrig, gilt die Grenze nicht.

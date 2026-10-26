@@ -234,7 +234,7 @@ export interface ScoringContext {
   existingPlanMeals?: string[];
   /** Favoriten ohne Turnus bekommen einen Bonus */
   favoriteNames?: string[];
-  /** In den letzten Wochen schon geplant → Abzug für mehr Abwechslung */
+  /** In den letzten `RECENT_DAYS` Tagen schon geplant → Abzug, und `pickMeal`/`pickReplacement` nehmen sie nur, wenn nichts anderes übrig ist */
   recentNames?: string[];
   /** Frisch erzeugte KI-Rezepte → Bonus, damit sie auch eingeplant werden */
   newNames?: string[];
@@ -320,6 +320,15 @@ export function violatesHealthConditions(meal: Recipe, conditions: string[]): bo
   if (has("nut_allergy") && violates(meal, NUT_RE)) return true;
   if (has("no_alcohol") && violates(meal, ALCOHOL_RE, /alkoholfrei/i)) return true;
   return false;
+}
+
+/** So lange (Tage) kommt ein Gericht nicht wieder in den Plan – auch nicht, wenn es gut bewertet ist (Entscheidung von David 26.10.2026: 4–5 Wochen) */
+export const RECENT_DAYS = 35;
+
+/** Ohne kürzlich gekochte Gerichte; bleibt dann nichts übrig, die ganze Liste (lieber eine Wiederholung als ein leerer Tag) */
+function withoutRecent<T extends { meal: Recipe }>(list: T[], ctx: ScoringContext): T[] {
+  const fresh = list.filter((s) => !ctx.recentNames?.includes(s.meal.name));
+  return fresh.length ? fresh : list;
 }
 
 export function scoreMeal(meal: Recipe, ctx: ScoringContext): number {
@@ -415,8 +424,13 @@ export function pickMeal(
   // Etwas Zufall, damit nicht jeder Plan dieselben Spitzenreiter bekommt; Gerichte, die den
   // letzten Tagen ähneln (z. B. die dritte Quinoa-Pfanne), rutschen nach hinten
   const recent = [...used].slice(-6);
-  const all = pool.map((meal) => ({ meal, score: scoreMeal(meal, ctx) }))
-    .filter((s) => s.score >= 0)
+  // Die Wiederholungssperre gilt vor Bewertung und Vorlieben: Lieblingsgerichte (Bewertung, Favorit) sind sonst ständig vorn
+  const all = withoutRecent(
+    pool
+      .map((meal) => ({ meal, score: scoreMeal(meal, ctx) }))
+      .filter((s) => s.score >= 0),
+    ctx
+  )
     .map((s) => ({ ...s, rank: s.score + Math.random() * 15 - 15 * overlapWithRecent(s.meal.name, recent) }))
     .sort((a, b) => b.rank - a.rank);
   const fresh = all.filter((s) => !used.has(s.meal.name));
@@ -448,10 +462,13 @@ export function pickReplacement(
 ): Recipe | null {
   const preferred = preferredTypeFor(dateStr);
   // Etwas Zufall wie bei pickMeal, sonst kommt beim Austauschen immer derselbe Spitzenreiter
-  const scored = pool
-    .filter((m) => !exclude.has(m.name))
-    .map((meal) => ({ meal, score: scoreMeal(meal, ctx) }))
-    .filter((s) => s.score >= 0)
+  const scored = withoutRecent(
+    pool
+      .filter((m) => !exclude.has(m.name))
+      .map((meal) => ({ meal, score: scoreMeal(meal, ctx) }))
+      .filter((s) => s.score >= 0),
+    ctx
+  )
     .map((s) => ({ ...s, rank: s.score + Math.random() * 15 }))
     .sort((a, b) => b.rank - a.rank);
   return (scored.find((s) => s.meal.type === preferred) ?? scored[0])?.meal ?? null;
