@@ -106,6 +106,7 @@ export default function ShoppingSection({
   }, [open]);
 
   const renderItem = (item: ShoppingItem) => {
+            const usedIn = item.usedIn ?? [];
             const nameClass = `text-sm leading-snug ${item.checked ? 'line-through text-gray-500' : 'text-gray-700'}`;
             const nameContent = (
               <>
@@ -117,6 +118,13 @@ export default function ShoppingSection({
                 {item.productId && !item.checked && isInCart?.(item) && (
                   <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded-md text-xs font-semibold bg-brand-50 text-brand-800">
                     <ShoppingCart size={10} aria-hidden="true" /> im Warenkorb
+                  </span>
+                )}
+                {/* Wofür die Zutat gebraucht wird: erstes Gericht, der Rest als „+n“ (alle stehen im Menü „Mehr“) */}
+                {usedIn.length > 0 && !item.checked && (
+                  <span className="flex min-w-0 text-xs text-gray-600">
+                    <span className="truncate">für {usedIn[0]}</span>
+                    {usedIn.length > 1 && <span className="flex-shrink-0 ml-1">+{usedIn.length - 1}</span>}
                   </span>
                 )}
               </>
@@ -167,6 +175,12 @@ export default function ShoppingSection({
                     aria-label={`${item.baseName}: Aktionen`}
                     className="absolute right-4 top-full -mt-1 z-30 bg-white rounded-xl shadow-lg border border-gray-200 py-1 w-60"
                   >
+                    {usedIn.length > 0 && (
+                      <div className="menu-head px-3 pt-2 pb-2.5 border-b border-gray-100 mb-1">
+                        <p className="text-xs font-semibold text-gray-600">Gebraucht für</p>
+                        <p className="text-sm text-gray-700 leading-snug">{usedIn.join(', ')}</p>
+                      </div>
+                    )}
                     {!item.checked && isShopList && onFindProduct && (
                       <button
                         role="menuitem"
@@ -198,7 +212,7 @@ export default function ShoppingSection({
                     )}
                     {otherLabels.length > 0 && (
                       <>
-                        <p className="px-3 pt-2.5 pb-1 text-xs font-semibold text-gray-500 border-t border-gray-100 first:border-t-0">
+                        <p className="px-3 pt-2.5 pb-1 text-xs font-semibold text-gray-500 border-t border-gray-100 first:border-t-0 [.menu-head+&]:border-t-0">
                           In andere Liste
                         </p>
                         {otherLabels.map((l) => (

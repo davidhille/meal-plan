@@ -72,6 +72,29 @@ describe("buildPlanItems", () => {
     const r = buildPlanItems([["400 g Spaghetti"]], 2, new Set(), [["250 g Quark"]]);
     expect(r.items.map((i) => i.display)).toEqual(["250 g Quark", "200 g Spaghetti"]);
   });
+
+  test("usedIn: nennt die Gerichte je Zutat, in Planreihenfolge und ohne Dubletten", () => {
+    const r = buildPlanItems(
+      [["2 Zwiebeln", "400 g Spaghetti"], ["1 Zwiebel"], ["3 Zwiebeln"], ["Cherrytomaten"]],
+      4,
+      new Set(),
+      [],
+      new Set(),
+      [],
+      ["Bolognese", "Gulasch", "Bolognese", "Salat"]
+    );
+    const by = Object.fromEntries(r.items.map((i) => [i.baseName, i.usedIn]));
+    expect(by["Zwiebeln"]).toEqual(["Bolognese", "Gulasch"]);
+    expect(by["Spaghetti"]).toEqual(["Bolognese"]);
+    expect(by["Cherrytomaten"]).toEqual(["Salat"]);
+  });
+
+  test("usedIn: Nachtische zählen mit ihrem Namen, ohne Namen bleibt die Liste leer", () => {
+    const r = buildPlanItems([["400 g Spaghetti"]], 4, new Set(), [["250 g Quark"], ["100 g Quark", "2 Eier"]], new Set(), [], ["Bolognese"], ["Quarkspeise", "Kaiserschmarrn"]);
+    const by = Object.fromEntries(r.items.map((i) => [i.baseName, i.usedIn]));
+    expect(by["Quark"]).toEqual(["Quarkspeise", "Kaiserschmarrn"]);
+    expect(buildPlanItems([["1 Zwiebel"]], 4).items[0].usedIn).toEqual([]);
+  });
 });
 
 describe("Vorrat", () => {

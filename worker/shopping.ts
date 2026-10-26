@@ -55,6 +55,8 @@ export interface PlanItem {
   baseName: string;
   display: string;
   defaultLabel: string;
+  /** Gerichte (und Nachtische), für die die Zutat gebraucht wird – in der Reihenfolge des Plans, ohne Dubletten */
+  usedIn: string[];
 }
 
 interface Parsed {
@@ -245,16 +247,23 @@ export function buildPlanItems(
   /** Aus dem Standard-Vorrat genommene Wörter (kommen wieder auf die Liste) */
   excludedPantry: Set<string> = new Set(),
   /** Zusätzliche Portionen je Gericht (Gäste), gleiche Reihenfolge wie mealIngredients */
-  guests: number[] = []
+  guests: number[] = [],
+  /** Namen der Gerichte (gleiche Reihenfolge wie mealIngredients) und der Nachtische (wie unscaledIngredients) */
+  mealNames: string[] = [],
+  dessertNames: string[] = []
 ): BuildResult {
-  const agg = new Map<string, { name: string; unit: string; qty: number | null; count: number }>();
+  const agg = new Map<string, { name: string; unit: string; qty: number | null; count: number; usedIn: Set<string> }>();
   const pantry = new Set<string>();
 
   const lists = [
-    ...mealIngredients.map((ingredients, i) => ({ ingredients, factor: (portions + (guests[i] ?? 0)) / RECIPE_BASE_PORTIONS })),
-    ...unscaledIngredients.map((ingredients) => ({ ingredients, factor: 1 })),
+    ...mealIngredients.map((ingredients, i) => ({
+      ingredients,
+      factor: (portions + (guests[i] ?? 0)) / RECIPE_BASE_PORTIONS,
+      from: mealNames[i],
+    })),
+    ...unscaledIngredients.map((ingredients, i) => ({ ingredients, factor: 1, from: dessertNames[i] })),
   ];
-  for (const { ingredients, factor } of lists) {
+  for (const { ingredients, factor, from } of lists) {
     for (const raw of ingredients) {
       for (const part of splitCombined(raw)) {
         const p = parse(part.replace(/^optional:\s*/i, ""));
@@ -269,8 +278,15 @@ export function buildPlanItems(
           if (prev.qty !== null && p.qty !== null) prev.qty += p.qty * factor;
           prev.count++;
           if (p.name.length > prev.name.length) prev.name = p.name; // Plural bevorzugen
+          if (from) prev.usedIn.add(from);
         } else {
-          agg.set(key, { name: p.name, unit: p.unit, qty: p.qty === null ? null : p.qty * factor, count: 1 });
+          agg.set(key, {
+            name: p.name,
+            unit: p.unit,
+            qty: p.qty === null ? null : p.qty * factor,
+            count: 1,
+            usedIn: new Set(from ? [from] : []),
+          });
         }
       }
     }
@@ -281,7 +297,7 @@ export function buildPlanItems(
     const name = cap(a.name);
     const display = a.qty === null ? (a.count > 1 ? `${name} (${a.count}×)` : name) : `${formatAmount(a.qty, a.unit)} ${name}`;
     const defaultLabel = MEAT_RE.test(a.name) && !NOT_MEAT_RE.test(a.name) ? "metzger" : "knuspr";
-    items.push({ key, baseName: name, display, defaultLabel });
+    items.push({ key, baseName: name, display, defaultLabel, usedIn: [...a.usedIn] });
   }
   items.sort((x, y) => x.baseName.localeCompare(y.baseName, "de"));
   return { items, pantryNeeded: [...pantry].sort((x, y) => x.localeCompare(y, "de")) };
