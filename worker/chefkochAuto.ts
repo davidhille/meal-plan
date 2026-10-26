@@ -18,9 +18,21 @@ const MIN_RATING_COUNT = 2;
 const DETAILS_PER_RUN = 3;
 const PAGES_PER_RUN = 2;
 
+type Details = Awaited<ReturnType<typeof loadChefkochRecipe>>;
+
+/** Warum ein Rezept nicht übernommen wurde (für die Diagnose beim Handstart) */
+function rejectReason(d: Details, takenNames: Set<string>, ctx: Awaited<ReturnType<typeof loadContext>>): string {
+  const r = d.recipe;
+  if ((d.rating ?? 0) < MIN_RATING) return `Bewertung ${d.rating ?? "?"} < ${MIN_RATING}`;
+  if ((d.ratingCount ?? 0) < MIN_RATING_COUNT) return `nur ${d.ratingCount ?? 0} Bewertung(en)`;
+  if (takenNames.has(r.name.toLowerCase())) return "Name schon vorhanden";
+  if (violatesHealthConditions(r, ctx.healthConditions)) return "passt nicht zu den Gesundheitseinstellungen";
+  return "Abneigung";
+}
+
 /** Nächste Portion für eine Familie; liefert die Namen der übernommenen Rezepte */
 /** Fotos lädt der Worker nie selbst (das Chefkoch-CDN weist ihn ab): die App holt sie aus dem Browser, siehe `chefkochPhotos.ts` */
-export async function importChefkochBatch(sql: Sql, profileId: string, today: string): Promise<string[]> {
+export async function importChefkochBatch(sql: Sql, profileId: string, today: string, report?: string[]): Promise<string[]> {
   const rows = await sql`SELECT chefkoch_auto_day, chefkoch_auto_count FROM profiles WHERE id = ${profileId}`;
   const done = rows[0]?.chefkoch_auto_day === today ? Number(rows[0]?.chefkoch_auto_count) || 0 : 0;
   if (done >= AUTO_PER_DAY) return [];
@@ -50,7 +62,8 @@ export async function importChefkochBatch(sql: Sql, profileId: string, today: st
       let d;
       try {
         d = await loadChefkochRecipe(url);
-      } catch {
+      } catch (e) {
+        report?.push(`${url}: nicht ladbar (${(e as Error).message})`);
         await skip();
         continue;
       }
@@ -62,6 +75,7 @@ export async function importChefkochBatch(sql: Sql, profileId: string, today: st
         !violatesHealthConditions(r, ctx.healthConditions) &&
         !excludedByDislikes(r, ctx.familyDislikes, ctx.familyMembers, (t) => dislikeMatches(r, t));
       if (!fits) {
+        report?.push(`${r.name}: ${rejectReason(d, takenNames, ctx)}`);
         await skip();
         continue;
       }
