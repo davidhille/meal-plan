@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { focusScore, isMeatDish, isoWeekKey, seasonalWords } from "./nutrition";
+import { SEASON_BONUS_MAX, focusScore, isMeatDish, isoWeekKey, seasonScore, seasonalWords } from "./nutrition";
 import { MEAL_DATABASE, type Recipe, type ScoringContext } from "./meals";
 import { pickDays } from "./planning";
 
@@ -29,10 +29,19 @@ describe("focusScore", () => {
   test("Kalorienbewusst: Sahne kostet Punkte", () => expect(focusScore(pasta, ["calorie_light"])).toBeLessThan(focusScore(bowl, ["calorie_light"])));
   test("Proteinreich", () => expect(focusScore(bowl, ["high_protein"])).toBeGreaterThan(focusScore(pasta, ["high_protein"])));
   test("Kinderfreundlich: scharf runter", () => expect(focusScore(chili, ["kid_friendly"])).toBeLessThan(0));
-  test("Saisonal: Kürbis im Oktober, nicht im Juli", () => {
-    expect(focusScore(kuerbis, ["seasonal"], 10)).toBeGreaterThan(0);
-    expect(focusScore(kuerbis, ["seasonal"], 7)).toBe(0);
+  test("Saisonal: der Schwerpunkt gibt beim Planen nichts extra (der Bonus steht in seasonScore)", () => {
+    expect(focusScore(kuerbis, ["seasonal"])).toBe(0);
     expect(seasonalWords(4)).toContain("spargel");
+  });
+  test("Saison-Bonus: eine Zutat +2, mehrere +3, nie mehr als +3", () => {
+    expect(SEASON_BONUS_MAX).toBe(3);
+    // Kürbis, Pilze und Champignons im Oktober → mehrere Treffer
+    expect(seasonScore(kuerbis, 10)).toBe(3);
+    expect(seasonScore(r("Kürbis-Risotto", ["1 Kürbis", "300 g Risottoreis"]), 10)).toBe(2);
+  });
+  test("Saison-Bonus: im Juli passt Kürbis nicht, ohne Monat gibt es nichts", () => {
+    expect(seasonScore(kuerbis, 7)).toBe(0);
+    expect(seasonScore(kuerbis, undefined)).toBe(0);
   });
   test("Günstig: Linsen ja, Lachs nein", () => {
     expect(focusScore(bowl, ["budget"])).toBeGreaterThan(0);

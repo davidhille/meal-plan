@@ -6,7 +6,7 @@ import { VEGETARISCH } from "./recipes/vegetarisch";
 import { FLEISCH } from "./recipes/fleisch";
 import { WOCHENENDE } from "./recipes/wochenende";
 import { MEALDB } from "./recipes/mealdb";
-import { focusScore } from "./nutrition";
+import { focusScore, seasonScore } from "./nutrition";
 
 export interface Recipe {
   name: string;
@@ -367,7 +367,9 @@ export function scoreMeal(meal: Recipe, ctx: ScoringContext): number {
   if (excludedByDislikes(meal, ctx.familyDislikes, ctx.familyMembers, (d) => dislikeMatches(meal, d))) return -1;
   if (ctx.healthConditions.includes("diabetes") && violates(meal, SUGAR_RE)) score -= 15;
 
-  score += focusScore(meal, ctx.healthFocus ?? [], ctx.month);
+  score += focusScore(meal, ctx.healthFocus ?? []);
+  // Saison nach dem Monat des Plan-Tags: höchstens +3, immer an (nicht nur mit dem Schwerpunkt „saisonal“)
+  score += seasonScore(meal, ctx.month);
   return Math.max(0, score);
 }
 
