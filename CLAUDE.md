@@ -92,7 +92,7 @@ Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHu
 | `dayRules.ts` | Regeln pro Wochentag (`profiles.day_rules`, Schlüssel 0–6 = getUTCDay): `off` → Tag wird nicht geplant, `brotzeit` → Brotzeit, `maxMinutes` → nur passende Gerichte (`withinTime`). `pickBrotzeitDates` = feste Brotzeit-Tage plus automatisch bis `profiles.brotzeit_per_week`. Brotzeit im Plan = `plan_meals.brotzeit` (Name „Brotzeit“, keine Zutaten; ohne Bild/Bewertung/Push), `POST /plan-meals/:id/brotzeit`, zurück über `regenerate` |
 | `weekVariety.ts` | Mengen-Regeln („höchstens 2× Nudeln pro Woche“, „mindestens 1× Fisch pro Woche“, „höchstens 2× Garnelen pro Monat“): `parseVarietyRules`, Zähler (`countsOf`/`addToCounts`, je Woche und Monat), `exceedsCap` (Höchstgrenze), `minimumSlots` (Mindest-Gerichte auf freie Tage verteilen). Kategorien und Standard-Regeln stehen in `src/lib/varietyCategories.ts` (geteilt mit den Einstellungen). Details unter „Stolperfallen → Abwechslung“ |
 | `repeatPause.ts` | Pause nach Bewertung: `repeatPauseDays` (unbewertet 35 Tage, 5 ★ 56, 4 ★ 63, 3 ★ 70, 1–2 ★ 365) und `pausedNames` (Gerichte mit Restpause aus dem Verlauf) |
-| `nutrition.ts` | Ernährungs-Schwerpunkte (`focusScore`, Pluspunkte, mehrere gleichzeitig), Saison-Liste, Fleisch-Erkennung ohne Fisch (`isMeatDish`) für die Wochen-Grenze `meat_max_per_week` |
+| `nutrition.ts` | Ernährungs-Schwerpunkte (`focusScore`, Pluspunkte, mehrere gleichzeitig), Saison-Bonus (`seasonScore`, höchstens +3) mit Liste, Fleisch-Erkennung ohne Fisch (`isMeatDish`) für die Wochen-Grenze `meat_max_per_week` |
 | `recipes/*.ts` | Feste Rezeptsammlung (vegetarisch, fleisch, wochenende, `mealdb` = 231 übersetzte TheMealDB-Rezepte mit Foto-URL) |
 | `aiRecipes.ts` | KI-Rezepte erzeugen, mit eigenen Filtern nachprüfen, in Tabelle `recipes` speichern; Bewertungs-Kommentare (`ctx.feedback` aus `loadContext`) fließen in den Prompt; `generateWishRecipe` = Rezept nach Wunsch (nur Vorschau, Speichern über `POST /recipes/ai-save`) |
 | `recipeImport.ts` | Rezept per Link (schema.org JSON-LD, z. B. Chefkoch) → auf 4 Portionen umrechnen. `stripAuthorSuffix`: „… von X“ (Chefkoch-Autor) weg; maßgeblich ist die Chefkoch-Adresse – steht „von X“ nicht im Link, ist X der Autor (Partner-Konten wie „Routinier“, „Kaufland“ sehen sonst wie normale Wörter aus) |
@@ -209,8 +209,11 @@ optional `PIXABAY_API_KEY`, `PEXELS_API_KEY`. Nie ins Repo, nie in `wrangler.jso
   **Fehlerursache 1.11.2026 („bewertete Rezepte kommen fast wöchentlich, ich muss viel neu laden“):** `scoreMeal` rechnete `Sterne × 10` –
   selbst 1 ★ bekam +10 (über unbewertet), 5 ★ +50, Favorit +20, bei nur ±15 Zufall; die Spitzengruppe war immer vorn und kehrte nach der Pause
   sofort zurück. Jetzt `(Sterne − 3) × 12` (1 ★ −24 … 5 ★ +24), Favorit +10, Zufall `RANDOM_SPREAD` = 25. Nicht wieder auf `Sterne × Faktor` umstellen.
-  **Saison** (`focusScore`, nur bei Schwerpunkt „saisonal“): +6 bei einer, +12 bei mehreren Saison-Zutaten; der Monat richtet sich nach dem
-  Plan-Tag (`pickMeal`/`pickReplacement` setzen `month` je Tag; früher galt der Startmonat für den ganzen Plan).
+  **Saison (Entscheidung von David 1.11.2026: höchstens +3, immer an):** `seasonScore` in `nutrition.ts`, aufgerufen von `scoreMeal`: eine Saison-Zutat
+  +2, zwei oder mehr +3 (`SEASON_BONUS_MAX`), unabhängig von den Schwerpunkten. Treffer = Wörter aus `src/lib/season.ts` (vier Monatsblöcke) als Teilstring in
+  Gerichtname oder Zutaten. Der Monat richtet sich nach dem Plan-Tag (`pickMeal`/`pickReplacement` setzen `month` je Tag; früher galt der Startmonat für den
+  ganzen Plan). Der Schwerpunkt „saisonal“ gibt beim Planen nichts mehr extra (vorher +6/+12, bei David war er aus, Saison wirkte also gar nicht); er steuert nur
+  noch die Vorgabe für neue KI-Rezepte (`FOCUS_LABELS`).
   **Mengen-Regeln (Entscheidung von David 1.11.2026: einstellbar, mit Minimum und Monat):** `profiles.variety_rules` (jsonb, Migration 0033;
   NULL = Standard `DEFAULT_VARIETY_RULES`: Meeresfrüchte höchstens 1× und Nudeln höchstens 2× pro Woche), `PUT /profile/variety-rules`
   (`null` = Standard, `[]` = bewusst keine Regeln). Eine Regel = Kategorie (`VARIETY_CATEGORIES`, Treffer über den **Gerichtnamen**, nicht die
