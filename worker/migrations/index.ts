@@ -32,6 +32,7 @@ import routineVersuche from "./0029_routine_versuche";
 import fotoVersucheBrowser from "./0030_foto_versuche_browser";
 import unpassendeGesehen from "./0031_unpassende_gesehen";
 import chefkochErneutPruefen from "./0032_chefkoch_erneut_pruefen";
+import mengenRegeln from "./0033_mengen_regeln";
 
 export interface Migration {
   /** Eindeutig und aufsteigend, z. B. "0002_kochmodus" */
@@ -73,4 +74,5 @@ export const MIGRATIONS: Migration[] = [
   { id: "0030_foto_versuche_browser", statements: fotoVersucheBrowser },
   { id: "0031_unpassende_gesehen", statements: unpassendeGesehen },
   { id: "0032_chefkoch_erneut_pruefen", statements: chefkochErneutPruefen },
+  { id: "0033_mengen_regeln", statements: mengenRegeln },
 ];

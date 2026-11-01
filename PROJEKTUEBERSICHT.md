@@ -125,11 +125,16 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
 
 - **Rezept-Pool:** feste Grundsammlung (383 Gerichte, davon 231 übersetzte TheMealDB-Rezepte mit Originalfoto)
   + KI-Rezepte + importierte Rezepte + Favoriten.
-- **Bewertung je Gericht:** Sterne, Vorlieben und Abneigungen der Familie (mit Oberbegriffen: „Fisch“ trifft auch Lachs),
-  Ernährungs-Schwerpunkte, Favoriten-Bonus, Gerichte der letzten 5 Wochen kommen nicht wieder, auch gut bewertete nicht (nur wenn nichts anderes übrig ist; die KI liefert bei Bedarf neue Rezepte).
+- **Bewertung je Gericht:** Sterne (3 ★ neutral, 4–5 ★ heben an, 1–2 ★ senken ab), Vorlieben und Abneigungen der Familie (mit Oberbegriffen: „Fisch“ trifft auch Lachs),
+  Ernährungs-Schwerpunkte (Saison nach dem Monat des jeweiligen Plan-Tags), ein kleiner Favoriten-Bonus und etwas Zufall – Lieblingsgerichte entscheiden nicht allein.
+- **Pause nach Bewertung:** Ein Gericht kommt erst nach einer Pause wieder in den Plan: unbewertet nach 5 Wochen, 5 ★ nach 8 Wochen, 4 ★ nach 9, 3 ★ nach 10, 1–2 ★ praktisch nie wieder
+  (nur wenn sonst nichts übrig ist; die KI liefert bei Bedarf neue Rezepte).
 - **Gesundheitsbedingungen** schließen hart aus: vegetarisch, vegan, glutenfrei, laktosefrei, Nussallergie, ohne Alkohol;
   Diabetes gibt einen Abzug bei Zucker. *Heuristik auf Zutatentext, keine Allergie-Garantie.*
-- **Abwechslung:** ähnliche Gerichte (z. B. mehrere „Quinoa-Pfannen“) werden im Plan verteilt statt gehäuft. Pro Kalenderwoche gibt es außerdem höchstens **1× Garnelen/Meeresfrüchte** (Garnelen, Gambas, Shrimps …) und **2× Nudelgerichte** (Nudeln, Pasta, Penne, Lasagne, Tortelloni …); gilt beim Planen und bei „Neu“. Bleibt kein anderes Gericht übrig, gilt die Grenze nicht.
+- **Abwechslung:** ähnliche Gerichte (z. B. mehrere „Quinoa-Pfannen“) werden im Plan verteilt statt gehäuft. Dazu gelten **Mengen-Regeln** pro Kalenderwoche oder
+  Kalendermonat. Ohne eigene Einstellung: höchstens **1× Garnelen/Meeresfrüchte** und **2× Nudelgerichte** pro Woche. Einstellbar unter Einstellungen → Planung →
+  „Wie oft darf es vorkommen?“ (siehe dort). „Höchstens“ gilt beim Planen und bei „Neu“; bleibt kein anderes Gericht übrig, gilt die Grenze nicht.
+  „Mindestens“ (z. B. 1× Fisch pro Woche) gilt beim Planen: Die Planung legt das Gericht auf einen passenden freien Tag, nimmt dafür ein frisches Gericht der Kategorie und lässt es sonst weg.
 - **Favoriten mit Turnus** werden fest eingeplant, sobald sie wieder dran sind.
 - **KI-Rezepte** (Workers AI, Llama 3.3 70B): pro Plan einige neue Rezepte für Abwechslung bzw. wenn passende Kandidaten
   fehlen (z. B. bei vegan). Jedes wird von unseren Filtern nachgeprüft und landet im Pool. Die neuesten Kommentare
@@ -263,7 +268,7 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
 ## 5. Einstellungen
 
 Die Karten sind in Gruppen mit kleiner Überschrift geordnet (`SettingsGroup`): **Familie & Ernährung**
-(Familienmitglieder, Gesundheit & Ernährung, Hinweise), **Planung** (Wochentage, Routinen, Rezept-Filter, Erinnerung),
+(Familienmitglieder, Gesundheit & Ernährung, Hinweise), **Planung** (Wochentage, Wie oft darf es vorkommen?, Routinen, Rezept-Filter, Erinnerung),
 **Einkaufen** (Shops, Einkaufslisten), **Konto** (Zugänge, Feedback) und – nur für den Betreiber – **Administration**
 (Familien, Statistik, Meldungen).
 
@@ -302,6 +307,11 @@ Auf- und zuklappbare Karten:
 - **Wochentage:** pro Wochentag „Normal“, „Frei – nicht planen“ (auswärts essen, Reste) oder „höchstens 15/20/30/45/60 Min“.
   Freie Tage bleiben im Plan leer (schmale Zeile „frei“, Heute-Karte „Heute ist frei“); an Tagen mit Zeitlimit kommen
   nur Gerichte, die reinpassen (bekannte Zeit zuerst). Gilt für neue Pläne, Routinen und „Alle tauschen“.
+- **Wie oft darf es vorkommen?** (Mengen-Regeln): pro Regel eine Kategorie (Nudeln & Pasta, Garnelen & Meeresfrüchte, Fisch, Geflügel, Rind, Schwein, Reis,
+  Kartoffeln, Hülsenfrüchte, Pizza, Auflauf, Eintopf, Suppe, Curry, Salat, Burger & Wraps, Mehlspeisen, Eierspeise), „mindestens“ und/oder „höchstens“ (auch „nie“)
+  und der Zeitraum **Woche oder Monat** – z. B. höchstens 2× Nudeln pro Woche, höchstens 2× Garnelen pro Monat, mindestens 1× Fisch pro Woche. Gezählt wird pro Kalenderwoche
+  bzw. Kalendermonat, schon geplante Tage zählen mit. Die Kategorie wird am Gerichtnamen erkannt. „Regel hinzufügen“, Löschen und „Standard wiederherstellen“; jede Änderung
+  wird sofort gespeichert. Gilt für neue Pläne, Routinen, „Alle tauschen“ und „Neu“ (dort nur „höchstens“).
 - **Brotzeit:** Tage ohne Kochen – reiner Platzhalter „Brotzeit“, nichts auf der Einkaufsliste, kein Bild, keine Bewertung.
   Drei Wege: Wochentag auf „Brotzeit“ stellen (immer), **„Brotzeit pro Woche“** (0–4×; feste Tage zählen mit, die Planung
   verteilt den Rest – bevorzugt Tage mit Zeitlimit, dann Mo–Fr, möglichst auseinander; bei angebrochenen Wochen anteilig)
