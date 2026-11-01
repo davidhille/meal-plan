@@ -7,6 +7,7 @@ import { json } from "../http";
 import { ROUTINE_COLS, getProfile } from "../repo";
 import { FOCUS_IDS } from "../nutrition";
 import { parseDayRules } from "../dayRules";
+import { parseVarietyRules } from "../weekVariety";
 
 /** Erlaubte Einschränkungen (harte Ausschlüsse, siehe violatesHealthConditions) */
 const CONDITION_IDS = ["diabetes", "gluten_free", "lactose_intolerant", "nut_allergy", "vegetarian", "vegan", "no_alcohol"];
@@ -98,6 +99,17 @@ export async function profileRoutes({ request, sql, body, parts, route, id, user
     const perWeek = body.brotzeit_per_week === undefined ? null : Math.max(0, Math.min(7, Math.round(Number(body.brotzeit_per_week)) || 0));
     const rows = await sql`UPDATE profiles SET day_rules = ${JSON.stringify(rules)}::jsonb,
         brotzeit_per_week = COALESCE(${perWeek}::int, brotzeit_per_week), updated_at = now()
+      WHERE id = ${p.id} RETURNING *`;
+    return json(rows[0]);
+  }
+
+  // Mengen-Regeln (wie oft eine Hauptkomponente pro Woche/Monat vorkommt):
+  // { variety_rules: [{ id: "nudeln", period: "week", max: 2 }, { id: "fisch", period: "week", min: 1 }] }; null = Standard
+  if (route === "PUT /profile/variety-rules") {
+    const p = await getProfile(sql, user);
+    const rules = body.variety_rules === null ? null : parseVarietyRules(body.variety_rules);
+    if (body.variety_rules !== null && rules === null) return json({ error: "Die Regeln konnten nicht gelesen werden." }, 400);
+    const rows = await sql`UPDATE profiles SET variety_rules = ${rules === null ? null : JSON.stringify(rules)}::jsonb, updated_at = now()
       WHERE id = ${p.id} RETURNING *`;
     return json(rows[0]);
   }

@@ -1,6 +1,7 @@
 // Rezeptdatenbank + Auswahl-Logik (übernommen aus den Supabase Edge Functions)
 import { excludedByDislikes } from "./dislikes";
 import type { DayRules } from "./dayRules";
+import type { VarietyRule } from "./weekVariety";
 import { VEGETARISCH } from "./recipes/vegetarisch";
 import { FLEISCH } from "./recipes/fleisch";
 import { WOCHENENDE } from "./recipes/wochenende";
@@ -240,6 +241,10 @@ export interface ScoringContext {
   newNames?: string[];
   /** „Kommt nie in den Plan“ – Hauptzutaten, die die ganze Familie nicht will (siehe dislikes.ts) */
   familyDislikes?: string[];
+  /** Mengen-Regeln der Familie (Einstellungen → Planung); ohne Angabe die Standard-Regeln, siehe weekVariety.ts */
+  varietyRules?: VarietyRule[];
+  /** Geplante Gerichte vor dem Planungsbeginn (Datum + Name): Zähler für Wochen-/Monats-Regeln */
+  planHistory?: { date: string; name: string }[];
 }
 
 const MEAT_RE =
@@ -331,12 +336,18 @@ function withoutRecent<T extends { meal: Recipe }>(list: T[], ctx: ScoringContex
   return fresh.length ? fresh : list;
 }
 
+/** Punkte pro Stern über/unter 3 */
+const RATING_STEP = 12;
+/** So viel Zufall (Punkte) kommt auf die Wertung: Bewertung und Favorit entscheiden nicht allein, was im Plan landet */
+export const RANDOM_SPREAD = 25;
+
 export function scoreMeal(meal: Recipe, ctx: ScoringContext): number {
   let score = 50;
   if (ctx.rejectedMeals.includes(meal.name)) return -1;
   if (ctx.existingPlanMeals?.includes(meal.name)) score -= 20;
-  if (ctx.mealRatings[meal.name]) score += ctx.mealRatings[meal.name] * 10;
-  if (ctx.favoriteNames?.includes(meal.name)) score += 20;
+  // Sterne um 3 zentriert (1 ★ = −24 … 5 ★ = +24): früher `Sterne × 10`, da bekam sogar 1 ★ einen Bonus (David 1.11.2026)
+  if (ctx.mealRatings[meal.name]) score += (ctx.mealRatings[meal.name] - 3) * RATING_STEP;
+  if (ctx.favoriteNames?.includes(meal.name)) score += 10;
   if (ctx.recentNames?.includes(meal.name)) score -= 25;
   if (ctx.newNames?.includes(meal.name)) score += 5;
 
@@ -424,14 +435,16 @@ export function pickMeal(
   // Etwas Zufall, damit nicht jeder Plan dieselben Spitzenreiter bekommt; Gerichte, die den
   // letzten Tagen ähneln (z. B. die dritte Quinoa-Pfanne), rutschen nach hinten
   const recent = [...used].slice(-6);
+  // Saison nach dem Monat dieses Tages (ein Plan über den Monatswechsel hinweg)
+  const dayCtx = { ...ctx, month: Number(dateStr.slice(5, 7)) };
   // Die Wiederholungssperre gilt vor Bewertung und Vorlieben: Lieblingsgerichte (Bewertung, Favorit) sind sonst ständig vorn
   const all = withoutRecent(
     pool
-      .map((meal) => ({ meal, score: scoreMeal(meal, ctx) }))
+      .map((meal) => ({ meal, score: scoreMeal(meal, dayCtx) }))
       .filter((s) => s.score >= 0),
     ctx
   )
-    .map((s) => ({ ...s, rank: s.score + Math.random() * 15 - 15 * overlapWithRecent(s.meal.name, recent) }))
+    .map((s) => ({ ...s, rank: s.score + Math.random() * RANDOM_SPREAD - 15 * overlapWithRecent(s.meal.name, recent) }))
     .sort((a, b) => b.rank - a.rank);
   const fresh = all.filter((s) => !used.has(s.meal.name));
   // Sind alle schon dran gewesen: das Gericht wiederholen, das am längsten zurückliegt
@@ -461,15 +474,16 @@ export function pickReplacement(
   exclude: Set<string>
 ): Recipe | null {
   const preferred = preferredTypeFor(dateStr);
+  const dayCtx = { ...ctx, month: Number(dateStr.slice(5, 7)) };
   // Etwas Zufall wie bei pickMeal, sonst kommt beim Austauschen immer derselbe Spitzenreiter
   const scored = withoutRecent(
     pool
       .filter((m) => !exclude.has(m.name))
-      .map((meal) => ({ meal, score: scoreMeal(meal, ctx) }))
+      .map((meal) => ({ meal, score: scoreMeal(meal, dayCtx) }))
       .filter((s) => s.score >= 0),
     ctx
   )
-    .map((s) => ({ ...s, rank: s.score + Math.random() * 15 }))
+    .map((s) => ({ ...s, rank: s.score + Math.random() * RANDOM_SPREAD }))
     .sort((a, b) => b.rank - a.rank);
   return (scored.find((s) => s.meal.type === preferred) ?? scored[0])?.meal ?? null;
 }

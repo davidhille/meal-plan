@@ -192,3 +192,41 @@ describe("Wiederholungssperre", () => {
     expect(pickReplacement("2026-10-13", c, only, new Set())?.name).toBe("Lieblingsgericht");
   });
 });
+
+describe("Bewertung wirkt um 3 Sterne zentriert", () => {
+  const meal = recipe("Testgericht", ["200 g Reis"]);
+  const base = scoreMeal(meal, ctx());
+  const rated = (n: number) => scoreMeal(meal, ctx({ mealRatings: { [meal.name]: n } }));
+
+  test("3 ★ ist neutral, 4–5 ★ heben an", () => {
+    expect(rated(3)).toBe(base);
+    expect(rated(4)).toBeGreaterThan(base);
+    expect(rated(5)).toBeGreaterThan(rated(4));
+  });
+  test("1–2 ★ liegen unter einem unbewerteten Gericht (früher: darüber)", () => {
+    expect(rated(2)).toBeLessThan(base);
+    expect(rated(1)).toBeLessThan(rated(2));
+  });
+  test("der Favoriten-Bonus ist kleiner als der von 5 ★", () => {
+    expect(scoreMeal(meal, ctx({ favoriteNames: [meal.name] }))).toBeLessThan(rated(5));
+  });
+});
+
+describe("Saison zählt nach dem Monat des Plan-Tags", () => {
+  const kuerbis = recipe("Kürbissuppe mit Apfel", ["500 g Kürbis", "1 Apfel"]);
+  const reis = recipe("Reispfanne", ["200 g Reis"]);
+  const share = (date: string, month: number) => {
+    let n = 0;
+    for (let i = 0; i < 400; i++) {
+      if (pickMeal(date, ctx({ healthFocus: ["seasonal"], month }), new Set(), [kuerbis, reis])?.name === kuerbis.name) n++;
+    }
+    return n;
+  };
+
+  test("Oktober-Tag bevorzugt Kürbis, auch wenn der Plan im Juli begann (ctx.month = 7)", () => {
+    expect(share("2026-10-13", 7)).toBeGreaterThan(280); // ≈ 86 % statt 50 %
+  });
+  test("Juli-Tag bevorzugt Kürbis nicht, auch wenn der Plan im Oktober begann", () => {
+    expect(share("2026-07-14", 10)).toBeLessThan(280);
+  });
+});

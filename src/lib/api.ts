@@ -3,6 +3,7 @@ import {
   ShopState, ShopProvider, ProductResult, CartItem, ShopRule, PlanDessert, Dessert, DessertCategory, RecipeCatalog, RecipeFilter, RecipeFilterInput, RecipeDraft, DayRules, RatingNote,
 } from '../types';
 import type { CategoryOverride } from './recipeCategories';
+import type { VarietyRule } from './varietyCategories';
 import { fetchErrorText, httpErrorText } from './errorText';
 import { photoCandidates } from './chefkochPhoto';
 
@@ -404,6 +405,11 @@ export function setDessertVisibility(
 /** Regeln pro Wochentag speichern; wirft bei Fehlern */
 export function saveDayRules(dayRules: DayRules, brotzeitPerWeek?: number): Promise<Profile> {
   return request<Profile>('PUT', '/profile/day-rules', { day_rules: dayRules, brotzeit_per_week: brotzeitPerWeek });
+}
+
+/** Mengen-Regeln speichern (null = Standard-Regeln); wirft bei Fehlern */
+export function saveVarietyRules(rules: VarietyRule[] | null): Promise<Profile> {
+  return request<Profile>('PUT', '/profile/variety-rules', { variety_rules: rules });
 }
 
 export async function getFamilyMembers(_profileId: string): Promise<FamilyMember[]> {

@@ -1,3 +1,5 @@
+import type { VarietyRule } from '../lib/varietyCategories';
+
 export type MealType = 'vegetarisch' | 'fleisch' | 'wochenende';
 
 export type ViewTab = 'speiseplan' | 'einkaufsliste' | 'rezepte' | 'favoriten' | 'einstellungen';
@@ -206,6 +208,8 @@ export interface Profile {
   chefkoch_auto_count?: number;
   /** So oft pro Woche Brotzeit (feste Brotzeit-Tage zählen mit) */
   brotzeit_per_week?: number;
+  /** Mengen-Regeln (z. B. höchstens 2× Nudeln pro Woche); null = Standard-Regeln */
+  variety_rules?: VarietyRule[] | null;
 }
 
 export interface DayRule {
