@@ -1,6 +1,6 @@
 // Einstiegspunkt des Cloudflare Workers:
 // /api/* → API (Neon), alles andere → statische App aus dist/ (www.* → Umleitung ohne www)
-// Zeitgesteuert (alle 15 Min) → Routinen ausführen, fehlende Rezeptbilder erzeugen
+// Zeitgesteuert (stündlich) → Routinen ausführen, fehlende Rezeptbilder erzeugen
 import { handleApi, runRoutines, type Env } from "./api";
 
 interface WorkerEnv extends Env {

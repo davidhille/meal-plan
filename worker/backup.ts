@@ -31,7 +31,7 @@ async function setting(sql: Sql, key: string, value: string) {
 
 /**
  * Eine fällige Familie sichern (letzte Sicherung älter als 7 Tage); gibt deren ID zurück, sonst null.
- * Ein Fehlversuch zählt für den Tag (`backup_try_…`), damit nicht alle 15 Minuten neu begonnen wird.
+ * Ein Fehlversuch zählt für den Tag (`backup_try_…`), damit nicht jede Stunde neu begonnen wird.
  */
 export async function runBackupStep(env: Env, sql: Sql, today: string): Promise<string | null> {
   const bucket = env.BACKUPS;

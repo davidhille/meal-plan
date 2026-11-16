@@ -44,17 +44,14 @@ export async function handleApi(
     return serveImage(sql, decodeURIComponent(path.slice("/api/images/".length)), family);
   }
 
-  if (!env.DATABASE_URL) return json({ error: "DATABASE_URL fehlt" }, 500);
-
-  // Für einen Uptime-Monitor: antwortet nur, wenn Worker und Datenbank laufen (ohne Anmeldung, ohne Daten)
+  // Für einen Uptime-Monitor: antwortet, wenn der Worker läuft und die Datenbank konfiguriert ist (ohne Anmeldung, ohne Daten).
+  // Bewusst ohne Datenbankabfrage: Neon Free suspendiert nach 5 Min. Ruhe; ein Ping alle 5 Min. hielt die Datenbank rund um die Uhr wach
+  // und verbrauchte die 100 CU-Stunden im Monat.
   if ((request.method === "GET" || request.method === "HEAD") && path === "/api/health") {
-    try {
-      await neon(env.DATABASE_URL)`SELECT 1`;
-      return json({ ok: true });
-    } catch {
-      return json({ ok: false }, 503);
-    }
+    return env.DATABASE_URL ? json({ ok: true }) : json({ ok: false }, 503);
   }
+
+  if (!env.DATABASE_URL) return json({ error: "DATABASE_URL fehlt" }, 500);
 
   // Ändernde Anfragen nur von der eigenen Seite (Schutz zusätzlich zu SameSite-Cookies)
   const origin = request.headers.get("Origin");

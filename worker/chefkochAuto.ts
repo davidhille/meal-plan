@@ -1,5 +1,5 @@
 // Chefkoch-Automatik: jeden Tag bis zu 10 neue Hauptspeisen ab 4,5 Sternen (mind. 2 Bewertungen) in die Sammlung
-// der Familie. Läuft im Cron (alle 15 Min.) in kleinen Portionen, damit ein Lauf kurz bleibt und Chefkoch nicht
+// der Familie. Läuft im Cron (stündlich) in kleinen Portionen, damit ein Lauf kurz bleibt und Chefkoch nicht
 // mit Anfragen überhäuft wird. Übernommen wird wie „In meine Rezepte übernehmen“: Rezept + Chefkoch-Foto + Link;
 // zusätzlich `auto_review`: In der Übersicht „Neu“, bis man es behält (oder ausblendet).
 import type { Sql } from "./db";

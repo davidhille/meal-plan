@@ -1,6 +1,6 @@
 // Regeln für Routinen (reine Rechnung, ohne Datenbank – testbar)
 
-/** Höchstens so oft am Tag wird eine gescheiterte Routine erneut versucht (alle 15 Min, ein Versuch je Cron-Lauf) */
+/** Höchstens so oft am Tag wird eine gescheiterte Routine erneut versucht (stündlich, ein Versuch je Cron-Lauf) */
 export const MAX_ROUTINE_ATTEMPTS = 3;
 
 /** Nach einem Fehlschlag noch einmal versuchen? (`attempts` = Versuche heute, den gescheiterten eingerechnet) */
@@ -18,12 +18,12 @@ export function routineDue(
 /**
  * Chefkoch-Automatik: welche Familie ist in diesem Cron-Lauf dran? Je Lauf nur eine – eine Familie braucht ca. 20 Unteranfragen
  * (Datenbank + Chefkoch), das Free-Limit liegt bei 50 je Lauf. Reihum unter den fälligen Familien, die das Tageslimit noch nicht
- * erreicht haben (`tick` = laufende Nummer des 15-Minuten-Takts); so kommt jede dran, auch wenn eine gerade nichts Passendes findet.
+ * erreicht haben (`tick` = laufende Nummer des Stunden-Takts); so kommt jede dran, auch wenn eine gerade nichts Passendes findet.
  */
 export function pickAutoFamily<T extends { id: string; due: boolean; open: boolean }>(families: T[], tick: number): T | undefined {
   const candidates = families.filter((f) => f.due && f.open).sort((a, b) => a.id.localeCompare(b.id));
   return candidates.length ? candidates[tick % candidates.length] : undefined;
 }
 
-/** Laufende Nummer des 15-Minuten-Takts (für `pickAutoFamily`) */
-export const cronTick = (nowMs: number) => Math.floor(nowMs / (15 * 60 * 1000));
+/** Laufende Nummer des Stunden-Takts (für `pickAutoFamily`); der Cron läuft stündlich */
+export const cronTick = (nowMs: number) => Math.floor(nowMs / (60 * 60 * 1000));
