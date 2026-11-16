@@ -1,4 +1,4 @@
-// Routinen automatisch ausführen (Cloudflare Cron, alle 15 Min)
+// Routinen automatisch ausführen (Cloudflare Cron, stündlich)
 import { meteredEnv } from "./aiUsage";
 import { alertOwnerOncePerDay, cleanupOldRows, logError } from "./adminTools";
 import { runBackupStep } from "./backup";
@@ -60,7 +60,7 @@ export async function runRoutines(env: Env) {
       console.error(`Routine "${r.name}" fehlgeschlagen:`, e);
       await logError(sql, `Routine „${r.name}“`, e, r.profile_id);
       if (shouldRetryRoutine(attempts)) {
-        // Markierung zurücknehmen: der nächste Cron-Lauf (in 15 Min) versucht es noch einmal
+        // Markierung zurücknehmen: der nächste Cron-Lauf (in 1 Std.) versucht es noch einmal
         await sql`UPDATE routines SET last_run_at = ${r.prev_run ?? null}::timestamptz WHERE id = ${r.id}`.catch(() => {});
       } else {
         await alertOwnerOncePerDay(env, sql, "routine", {

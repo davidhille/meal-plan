@@ -43,7 +43,7 @@ Ergebnis steht auch als Text da („erreicht“/„verfehlt“), nicht nur als F
   seinem Gerät an ist), dazu ein Hinweis in der Statistik.
 - **Speicher** (in der Statistik): belegte Datenbankgröße gegen die Grenze von 1 GB; ab 80 % Hinweis und eine Push-Nachricht.
 - **Sicherung:** Einmal pro Woche legt die App je Familie eine Sicherung in einem R2-Speicher ab (sobald dieser eingerichtet ist; die letzten 8 bleiben,
-  ohne Bilder und Zugänge). Zurückspielen über Administration → Familie → Wiederherstellen. Zusätzlich `/api/health` für einen Uptime-Monitor.
+  ohne Bilder und Zugänge). Zurückspielen über Administration → Familie → Wiederherstellen. Zusätzlich `/api/health` für einen Uptime-Monitor (prüft nur den Worker, bewusst ohne Datenbankabfrage, siehe „Neon-Rechenzeit“ unten).
 - **Meldungen** (Karte unter der Statistik): Feedback der Familien (erledigt/wieder offen, löschen) und Fehler der App
   (Server-Fehler, Shop-Fehler, KI-Fehler, Routinen, Bilder nachziehen; Tabelle `app_errors`, 60 Tage). Sich wiederholende Fehler (z. B. Chefkoch-Fotos) stehen höchstens einmal am Tag drin. Bei einem Server-Fehler (500) oder einer gescheiterten Routine bekommt der Betreiber eine Push-Nachricht (einmal am Tag je Anlass).
 - **Feedback & Wünsche** (Einstellungen, für alle): Nachricht an den Betreiber (höchstens 20 pro Tag und Familie).
@@ -276,7 +276,7 @@ Auf- und zuklappbare Karten:
 - **Neue Rezepte von Chefkoch** (Einstellungen → Planung, Schalter pro Familie): täglich bis zu 10 neue Hauptspeisen aus
   „Neueste ab 4,5 ★“ (`chefkoch.de/rs/s0t21r4.5o6/…`), nur mit mind. 4,5 Sternen und 2 Bewertungen, passend zu Gesundheit und
   „Kommt nie in den Plan“, nicht schon vorhanden/ausgeblendet (Dubletten-Prüfung über den Link bzw. die Chefkoch-Rezeptnummer, `sourceKey`; gelöschte Chefkoch-Rezepte merkt sich `chefkoch_auto_skipped`, damit sie nicht wiederkommen). Übernahme wie „In meine Rezepte übernehmen“ (Link; das Foto holt die App danach aus dem Browser, siehe unten). Läuft im
-  Cron ab der eingestellten Uhrzeit (`profiles.chefkoch_auto_time`, Standard 6:00, Berliner Zeit, nur 15-Minuten-Schritte) in Portionen (je Lauf nur eine Familie, reihum, und höchstens 3 geladene Rezeptseiten; die Ergebnisseiten werden bis zu 6 Seiten tief durchsucht, bis das Budget voll ist); Geprüftes, aber Unpassendes merkt sich `chefkoch_auto_skipped`. Rezepte mit zu wenigen Bewertungen werden nur 3 Tage übersprungen und danach erneut geprüft (neue Rezepte sammeln erst Bewertungen).
+  Cron ab der eingestellten Uhrzeit (`profiles.chefkoch_auto_time`, Standard 6:00, Berliner Zeit, nur volle Stunden, der Cron läuft stündlich) in Portionen (je Lauf nur eine Familie, reihum, und höchstens 3 geladene Rezeptseiten; die Ergebnisseiten werden bis zu 6 Seiten tief durchsucht, bis das Budget voll ist); Geprüftes, aber Unpassendes merkt sich `chefkoch_auto_skipped`. Rezepte mit zu wenigen Bewertungen werden nur 3 Tage übersprungen und danach erneut geprüft (neue Rezepte sammeln erst Bewertungen).
   **Chefkoch-Fotos kommen aus dem Browser:** Das Chefkoch-CDN weist den Server mit 403 ab, den Browser nicht. Beim App-Start und nach „Jetzt Rezepte holen“ fragt die App den Server nach Rezepten ohne Foto (`POST /recipes/photo-todo`), lädt die Bilder selbst und schickt sie zurück (`POST /recipes/photo`, Format- und Größenprüfung auf dem Server). Höchstens 5 Versuche je Rezept; ein bewusst entferntes Foto bleibt weg.
   Übernommene Rezepte sind unter Rezepte → Gerichte mit „Neu“ markiert (`recipes.auto_review`): Banner mit „Nur neue zeigen“ und
   „Alle behalten“; im geöffneten Rezept „Behalten“ oder „Ausblenden“ (Blättern in der „Nur neue“-Liste). Bis zur Prüfung werden sie
@@ -297,7 +297,7 @@ Auf- und zuklappbare Karten:
   - **Fleisch pro Woche:** keine Grenze, kein Fleisch oder höchstens 1–5× pro Kalenderwoche (Fisch zählt nicht mit);
     gilt beim Planen und beim „Alle tauschen“.
 - **Familienmitglieder:** Name, Erwachsener/Kind mit Alter, mag/mag nicht – anlegen, bearbeiten, löschen (mit Bestätigung).
-- **Routinen:** wöchentlich oder monatlich automatisch einen neuen Plan erstellen (Cron alle 15 Minuten, deutsche Zeit). Scheitert das Erstellen, versucht es der nächste Lauf erneut (höchstens 3 Versuche am Tag); danach bekommt der Betreiber eine Push-Nachricht.
+- **Routinen:** wöchentlich oder monatlich automatisch einen neuen Plan erstellen (Cron stündlich, deutsche Zeit). Scheitert das Erstellen, versucht es der nächste Lauf erneut (höchstens 3 Versuche am Tag); danach bekommt der Betreiber eine Push-Nachricht.
 - **Einkaufslisten verwalten:** eigene Listen anlegen, umbenennen, umfärben, löschen.
 - **Eigene Rezept-Filter:** Name, Suchbegriffe und/oder maximale Zubereitungszeit, für Gerichte, Nachtische oder beide;
   bearbeiten und löschen. Einzelne Gerichte werden im Rezept zugeordnet oder ausgenommen (auch ganz ohne Suchbegriffe).
@@ -340,6 +340,10 @@ Auf- und zuklappbare Karten:
 | Nachtische | `src/data/desserts.ts` |
 | Datenbank-Schema | `worker/migrations/` (der Worker migriert selbst, siehe `CLAUDE.md`) |
 | App installierbar | `public/manifest.webmanifest`, `public/sw.js` |
+
+### Neon-Rechenzeit
+
+Neon Free enthält 100 CU-Stunden im Monat und suspendiert die Datenbank nach 5 Minuten Ruhe (nicht einstellbar). Ist das Kontingent aufgebraucht, ist die Datenbank (und damit die App) bis zum nächsten Monat gesperrt. Darum: `/api/health` fragt die Datenbank nicht ab (der UptimeRobot-Ping alle 5 Minuten hatte sie rund um die Uhr wachgehalten), der Cron läuft stündlich statt alle 15 Minuten, und die Uhrzeit der Chefkoch-Automatik gilt in vollen Stunden. Folge: Routinen, Chefkoch-Import und Bewertungs-Erinnerungen starten bis zu einer Stunde nach der eingestellten Zeit. Verbrauch prüfen: Neon Console → Billing → Usage.
 
 ## 7. Bekannte Grenzen
 

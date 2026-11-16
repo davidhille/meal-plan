@@ -46,9 +46,9 @@ describe("Chefkoch-Automatik: eine Familie je Lauf", () => {
     expect(pickAutoFamily([f("a", false)], 5)).toBeUndefined();
     expect(pickAutoFamily([], 0)).toBeUndefined();
   });
-  test("Takt-Nummer zählt alle 15 Minuten weiter", () => {
-    const t = Date.UTC(2026, 9, 24, 6, 15, 0);
-    expect(cronTick(t + 14 * 60_000)).toBe(cronTick(t));
-    expect(cronTick(t + 15 * 60_000)).toBe(cronTick(t) + 1);
+  test("Takt-Nummer zählt jede Stunde weiter", () => {
+    const t = Date.UTC(2026, 9, 24, 6, 0, 0);
+    expect(cronTick(t + 59 * 60_000)).toBe(cronTick(t));
+    expect(cronTick(t + 60 * 60_000)).toBe(cronTick(t) + 1);
   });
 });

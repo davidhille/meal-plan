@@ -18,7 +18,7 @@
   ],
   "workers_dev": true,
   "ai": { "binding": "AI" },
-  "triggers": { "crons": ["*/15 * * * *"] },
+  "triggers": { "crons": ["0 * * * *"] },
   "observability": { "enabled": true },
   // Wöchentliche Sicherung (worker/backup.ts). Der Bucket muss im Cloudflare-Dashboard (R2) existieren, sonst schlägt der Deploy fehl.
   "r2_buckets": [{ "binding": "BACKUPS", "bucket_name": "miyummy-backups" }]
