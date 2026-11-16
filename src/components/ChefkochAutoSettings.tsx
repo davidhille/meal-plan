@@ -93,14 +93,16 @@ export default function ChefkochAutoSettings({ profile, onSaved }: { profile: Pr
             <span className="text-sm font-medium text-gray-800">Ab wann täglich holen</span>
             <span className="flex items-center gap-2">
               {savingTime && <Loader2 size={14} className="animate-spin text-gray-400" aria-hidden="true" />}
-              <input
-                type="time"
-                step={3600}
-                value={profile.chefkoch_auto_time ?? '06:00'}
+              <select
+                value={`${(profile.chefkoch_auto_time ?? '06:00').slice(0, 2)}:00`}
                 onChange={(e) => changeTime(e.target.value)}
                 aria-label="Uhrzeit, ab der die Automatik täglich neue Rezepte holt"
                 className="h-11 px-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-500"
-              />
+              >
+                {Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, '0')}:00`).map((t) => (
+                  <option key={t} value={t}>{t} Uhr</option>
+                ))}
+              </select>
             </span>
           </label>
         )}
