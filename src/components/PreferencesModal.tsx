@@ -140,6 +140,11 @@ export default function PreferencesModal({ healthFocus, healthConditions, meatMa
             {conditions.has('diabetes') && (
               <p className="mt-1.5 text-xs text-gray-500">Diabetes schließt nichts aus, Gerichte mit viel Zucker kommen seltener.</p>
             )}
+            {conditions.has('cholesterol') && (
+              <p className="mt-1.5 text-xs text-gray-500">
+                Cholesterin schließt nichts aus, Gerichte mit viel Butter, Sahne, Speck oder Wurst kommen seltener.
+              </p>
+            )}
           </div>
 
           {/* Kommt nie in den Plan */}

@@ -85,10 +85,21 @@ describe("violatesHealthConditions", () => {
     expect(violatesHealthConditions(recipe("Salat", ["2 EL Weinessig"]), ["no_alcohol"])).toBe(false);
     expect(violatesHealthConditions(recipe("Gulasch", ["1 Flasche alkoholfreies Bier"]), ["no_alcohol"])).toBe(false);
   });
+  test("Cholesterin schließt nichts aus", () => {
+    expect(violatesHealthConditions(recipe("Carbonara", ["150 g Speck", "200 ml Sahne"]), ["cholesterol"])).toBe(false);
+  });
   test("ohne Bedingungen ist alles erlaubt", () => expect(violatesHealthConditions(curry, [])).toBe(false));
 });
 
 describe("scoreMeal", () => {
+  test("Cholesterin gibt einen Abzug bei Butter, Sahne, Speck, nicht bei Erdnussbutter oder Buttermilch", () => {
+    const carbonara = recipe("Carbonara", ["400 g Spaghetti", "150 g Speck", "200 ml Sahne"]);
+    const withChol = ctx({ healthConditions: ["cholesterol"] });
+    expect(scoreMeal(carbonara, withChol)).toBeLessThan(scoreMeal(carbonara, ctx()));
+    expect(scoreMeal(meal, withChol)).toBe(scoreMeal(meal, ctx()));
+    const pancakes = recipe("Pfannkuchen", ["250 ml Buttermilch", "2 EL Erdnussbutter"]);
+    expect(scoreMeal(pancakes, withChol)).toBe(scoreMeal(pancakes, ctx()));
+  });
   const meal = recipe("Spaghetti mit Tomatensoße", ["400 g Spaghetti", "1 Dose Tomaten"]);
   test("abgelehnte Gerichte sind ausgeschlossen", () =>
     expect(scoreMeal(meal, ctx({ rejectedMeals: [meal.name] }))).toBe(-1));

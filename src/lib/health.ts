@@ -3,6 +3,7 @@ import type { UnsuitableBy } from '../types';
 /** Anzeigenamen der Gesundheitseinstellungen (Profil → health_conditions) */
 export const CONDITION_LABELS: Record<string, string> = {
   diabetes: 'Diabetes',
+  cholesterol: 'Cholesterin',
   gluten_free: 'Glutenfrei',
   lactose_intolerant: 'Laktosefrei',
   nut_allergy: 'Nussallergie',

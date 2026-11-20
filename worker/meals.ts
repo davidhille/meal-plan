@@ -297,6 +297,9 @@ const ANIMAL_RE = new RegExp(
 );
 const ALCOHOL_RE = /wein(?!essig|blatt|traube)|bier|\brum\b|likör|sekt|alkohol|cognac|brandy/i;
 const SUGAR_RE = /zucker|honig|sirup|weißbrot|marmelade|nutella/i;
+/** Viel gesättigtes Fett bzw. Cholesterin: Butter (nicht Erdnussbutter/Buttermilch), Sahne, Speck, Wurst, Innereien, Eigelb */
+const CHOLESTEROL_RE =
+  /(?<!erdnuss|nuss)butter(?!milch)|sahne|schmand|crème fraîche|creme fraiche|speck|bacon|salami|wurst|würstchen|chorizo|schmalz|leber|innereien|niere|eigelb/i;
 
 /**
  * Trifft das Muster eine Zutat, die nicht ausdrücklich „…frei“ ist? Der Name zählt auch („Spaghetti Bolognese“),
@@ -314,7 +317,7 @@ export function looksMeaty(meal: Recipe): boolean {
   return MEAT_RE.test(meal.name) || meal.ingredients.some((i) => MEAT_RE.test(i));
 }
 
-/** Harte Ausschlüsse nach Profil-Einstellungen (Diabetes ist nur ein Abzug, siehe scoreMeal) */
+/** Harte Ausschlüsse nach Profil-Einstellungen (Diabetes und Cholesterin sind nur ein Abzug, siehe scoreMeal) */
 export function violatesHealthConditions(meal: Recipe, conditions: string[]): boolean {
   const has = (c: string) => conditions.includes(c);
   const meaty = meal.type === "fleisch" || meal.ingredients.some((i) => MEAT_RE.test(i));
@@ -366,6 +369,7 @@ export function scoreMeal(meal: Recipe, ctx: ScoringContext): number {
   // Familien-Nein oder Abneigung der Mehrheit: nie planen (einzelne Abneigungen geben oben nur Abzug)
   if (excludedByDislikes(meal, ctx.familyDislikes, ctx.familyMembers, (d) => dislikeMatches(meal, d))) return -1;
   if (ctx.healthConditions.includes("diabetes") && violates(meal, SUGAR_RE)) score -= 15;
+  if (ctx.healthConditions.includes("cholesterol") && violates(meal, CHOLESTEROL_RE)) score -= 15;
 
   score += focusScore(meal, ctx.healthFocus ?? []);
   // Saison nach dem Monat des Plan-Tags: höchstens +3, immer an (nicht nur mit dem Schwerpunkt „saisonal“)
