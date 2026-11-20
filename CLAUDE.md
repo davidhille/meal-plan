@@ -3,6 +3,7 @@
 Deutschsprachige Web-App für die Essensplanung einer Familie: Wochenplan, Rezepte, Einkaufsliste mit
 Anbindung an Knuspr und Picnic. Live unter https://miyummy.com/ (zusätzlich https://meal-plan.davidshille.workers.dev/; installierbar als PWA).
 Nutzerdoku/Funktionsübersicht: `PROJEKTUEBERSICHT.md`. Einrichtung: `SETUP_NEON_CLOUDFLARE.md`.
+Aktueller Stand (zuletzt erledigt, offene Punkte, Grenzen): `status.md`.
 
 ## Stack
 
@@ -31,6 +32,8 @@ Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHu
 - UI-Texte, Kommentare, Commit- und PR-Texte auf **Deutsch**. Code-Bezeichner und DB-Spalten Englisch, DB in snake_case.
 - PR-Beschreibung: „## Was“ mit Stichpunkten, bei Fehlerbehebungen zuerst „## Problem“.
 - Nach Änderungen an Funktionen `PROJEKTUEBERSICHT.md` mitpflegen; bei neuen Secrets `SETUP_NEON_CLOUDFLARE.md`.
+- **`status.md` am Ende jeder Aufgabe mitpflegen** (Stand-Datum, „Zuletzt erledigt“ kurz halten und Älteres streichen, „Offen“ und
+  „Entscheidungen“ nachziehen). Sie ist der Kurzüberblick, keine zweite Fassung von `CLAUDE.md`.
 - **Doku immer selbst nachziehen, ohne Aufforderung, im selben PR:** Was eine spätere Session wissen muss, gehört hierher
   (CLAUDE.md), nicht nur in den Chat. Gemeint sind gefundene Fehlerursachen, Stolperfallen, Zugänge/Werkzeuge und Entscheidungen
   von David (z. B. „Dubletten nur über die URL“). Erledigte Einzelheiten und Verlauf gehören nicht hierher.
