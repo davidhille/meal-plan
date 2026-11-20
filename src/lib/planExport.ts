@@ -48,7 +48,7 @@ export function buildPlanHtml(plan: MealPlan, meals: PlanMeal[], portions: numbe
   const range = `${shortDate(plan.start_date)} – ${shortDate(plan.end_date)}`;
 
   const overview = list
-    .map((m) => `<tr><td>${esc(longDate(m.meal_date))}</td><td>${esc(m.meal_name)}${m.dessert ? ` <span class="dessert">+ ${esc(m.dessert.name)}</span>` : ''}</td></tr>`)
+    .map((m) => `<tr><td>${esc(longDate(m.meal_date))}</td><td>${esc(m.meal_name)}${m.sides?.length ? ` <span class="dessert">+ ${esc(m.sides.map((s) => s.name).join(', '))}</span>` : ''}${m.dessert ? ` <span class="dessert">+ ${esc(m.dessert.name)}</span>` : ''}</td></tr>`)
     .join('');
 
   const recipes = list
@@ -67,10 +67,22 @@ export function buildPlanHtml(plan: MealPlan, meals: PlanMeal[], portions: numbe
             [m.dessert.durationMin ? `${m.dessert.durationMin} Min` : '', m.dessert.yield ? `ergibt ${m.dessert.yield}` : ''].filter(Boolean)
           )}</div>`
         : '';
+      const sideBlocks = (m.sides ?? [])
+        .map(
+          (s) =>
+            `<div class="dessert-box">${recipeBlock(
+              `${s.kind === 'salat' ? 'Salat' : 'Beilage'}: ${s.name}`,
+              s.ingredients.map((i) => scaleIngredient(i, (portions + (m.guests ?? 0)) / RECIPE_BASE_PORTIONS)),
+              s.instructions,
+              [s.durationMin ? `${s.durationMin} Min` : '']
+            )}</div>`
+        )
+        .join('');
       return `
       <section class="recipe">
         <p class="day">${esc(longDate(m.meal_date))}</p>
         ${recipeBlock(m.meal_name, m.ingredients.map((i) => scaleIngredient(i, (portions + (m.guests ?? 0)) / RECIPE_BASE_PORTIONS)), m.instructions, meta)}
+        ${sideBlocks}
         ${dessert}
       </section>`;
     })

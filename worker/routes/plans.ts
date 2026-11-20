@@ -24,6 +24,27 @@ function parseDessert(raw: unknown) {
   return { name, ingredients, instructions, durationMin, imageUrl, yield: yieldText };
 }
 
+/** Beilagen/Salate aus dem Request: höchstens eine Beilage und ein Salat, nur erlaubte Felder */
+export function parseSides(raw: unknown) {
+  if (!Array.isArray(raw)) return null;
+  const out: { name: string; kind: "beilage" | "salat"; ingredients: string[]; instructions: string; durationMin: number | null }[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") return null;
+    const d = entry as Record<string, unknown>;
+    const kind = d.kind === "salat" ? "salat" : d.kind === "beilage" ? "beilage" : null;
+    const name = String(d.name ?? "").trim().slice(0, 200);
+    const ingredients = (Array.isArray(d.ingredients) ? d.ingredients : [])
+      .map((i) => String(i).trim().slice(0, 200))
+      .filter(Boolean)
+      .slice(0, 40);
+    if (!kind || !name || !ingredients.length) return null;
+    if (out.some((o) => o.kind === kind)) return null; // je Art nur eine
+    const durationMin = Number(d.durationMin) > 0 ? Math.round(Number(d.durationMin)) : null;
+    out.push({ name, kind, ingredients, instructions: String(d.instructions ?? "").trim().slice(0, 5000), durationMin });
+  }
+  return out;
+}
+
 export async function planRoutes({ request, env, sql, body, parts, route, id, waitUntil, user }: Ctx): Promise<Response | null> {
   // ---------- Pläne ----------
   if (route === "POST /plans") {
@@ -53,7 +74,7 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
     return json(
       await sql.query(
         `SELECT pm.id, pm.plan_id, pm.meal_date::text AS meal_date, pm.meal_name, pm.meal_type, pm.ingredients,
-                pm.instructions, pm.rejected, ${IMAGE_URL_SQL} AS image_url, ${IMAGE_CREDIT_SQL}, pm.duration_min, pm.dessert, pm.brotzeit, pm.guests, pm.created_at
+                pm.instructions, pm.rejected, ${IMAGE_URL_SQL} AS image_url, ${IMAGE_CREDIT_SQL}, pm.duration_min, pm.dessert, pm.sides, pm.brotzeit, pm.guests, pm.created_at
          FROM plan_meals pm
          LEFT JOIN LATERAL (SELECT * FROM meal_images x WHERE x.meal_name = pm.meal_name
            AND (x.profile_id IS NULL OR x.profile_id = $2) ORDER BY x.profile_id IS NULL LIMIT 1) mi ON true
@@ -92,7 +113,7 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
     await sql`DELETE FROM rejected_meals WHERE profile_id = ${p.id} AND meal_name = ${orig.meal_name}`;
     const restored = await sql.query(
       `SELECT pm.id, pm.plan_id, pm.meal_date::text AS meal_date, pm.meal_name, pm.meal_type, pm.ingredients,
-              pm.instructions, pm.rejected, ${IMAGE_URL_SQL} AS image_url, ${IMAGE_CREDIT_SQL}, pm.duration_min, pm.dessert, pm.brotzeit, pm.guests, pm.created_at
+              pm.instructions, pm.rejected, ${IMAGE_URL_SQL} AS image_url, ${IMAGE_CREDIT_SQL}, pm.duration_min, pm.dessert, pm.sides, pm.brotzeit, pm.guests, pm.created_at
        FROM plan_meals pm
        LEFT JOIN LATERAL (SELECT * FROM meal_images x WHERE x.meal_name = pm.meal_name
          AND (x.profile_id IS NULL OR x.profile_id = $2) ORDER BY x.profile_id IS NULL LIMIT 1) mi ON true
@@ -181,6 +202,18 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
     if (body.dessert && !dessert) return json({ error: "Ungültiger Nachtisch" }, 400);
     await sql`UPDATE plan_meals SET dessert = ${dessert ? JSON.stringify(dessert) : null}::jsonb WHERE id = ${id}`;
     return json({ dessert });
+  }
+
+  // Beilage und/oder Salat an ein Gericht hängen (leere Liste = alles entfernen)
+  if (parts[0] === "plan-meals" && id && parts[2] === "sides" && request.method === "PUT") {
+    const p = await getProfile(sql, user);
+    const owner = await sql`SELECT pm.id FROM plan_meals pm JOIN meal_plans mp ON mp.id = pm.plan_id
+      WHERE pm.id = ${id} AND mp.profile_id = ${p.id}`;
+    if (!owner[0]) return json({ error: "Gericht nicht gefunden" }, 404);
+    const sides = parseSides(body.sides);
+    if (!sides) return json({ error: "Ungültige Beilage" }, 400);
+    await sql`UPDATE plan_meals SET sides = ${sides.length ? JSON.stringify(sides) : null}::jsonb WHERE id = ${id}`;
+    return json({ sides: sides.length ? sides : null });
   }
 
   // Kompletten Plan neu generieren (gleicher Zeitraum, alter Plan wird ersetzt)

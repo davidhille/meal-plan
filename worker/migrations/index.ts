@@ -34,6 +34,7 @@ import unpassendeGesehen from "./0031_unpassende_gesehen";
 import chefkochErneutPruefen from "./0032_chefkoch_erneut_pruefen";
 import mengenRegeln from "./0033_mengen_regeln";
 import doppeltesNReparieren from "./0034_doppeltes_n_reparieren";
+import beilagen from "./0035_beilagen";
 
 export interface Migration {
   /** Eindeutig und aufsteigend, z. B. "0002_kochmodus" */
@@ -77,4 +78,5 @@ export const MIGRATIONS: Migration[] = [
   { id: "0032_chefkoch_erneut_pruefen", statements: chefkochErneutPruefen },
   { id: "0033_mengen_regeln", statements: mengenRegeln },
   { id: "0034_doppeltes_n_reparieren", statements: doppeltesNReparieren },
+  { id: "0035_beilagen", statements: beilagen },
 ];

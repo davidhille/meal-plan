@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Trash2, CalendarPlus, RefreshCw, Loader2, Download, Share2 } from 'lucide-react';
-import { DayRules, Dessert, ImageCredit, Meal, MealPlan, MealType, PlanDessert, PlanMeal } from '../types';
+import { DayRules, Dessert, ImageCredit, Meal, MealPlan, MealType, PlanDessert, PlanMeal, PlanSide } from '../types';
 import { generateMealImage, removeMealImage } from '../lib/api';
 import { planDessertToMeal } from '../lib/desserts';
 import DessertPickerModal from './DessertPickerModal';
+import SidePickerModal from './SidePickerModal';
 import { formatShortDate, toIso } from '../lib/dateUtils';
 import { ruleForDate } from '../lib/dayRules';
 import { seasonHighlights } from '../lib/season';
@@ -39,6 +40,7 @@ interface MealPlanViewProps {
   defaultPortions?: number;
   /** Nachtisch an ein Gericht hängen (null = entfernen) */
   onSetDessert?: (pm: PlanMeal, dessert: Dessert | null) => Promise<void>;
+  onSetSides?: (pm: PlanMeal, sides: PlanSide[]) => Promise<void>;
   /** Alle Gerichte des Plans (unabhängig von der KW-Auswahl) – für die Heute-Karte */
   allPlanMeals?: PlanMeal[];
   /** Uhrzeit der Erinnerung zum Bewerten („HH:MM“) */
@@ -122,6 +124,7 @@ export default function MealPlanView({
   onDeletePlan,
   defaultPortions,
   onSetDessert,
+  onSetSides,
   allPlanMeals,
   reminderTime,
   dayRules,
@@ -146,6 +149,7 @@ export default function MealPlanView({
   const [cookOnOpen, setCookOnOpen] = useState(false);
   const [moving, setMoving] = useState<PlanMeal | null>(null);
   const [pickDessertFor, setPickDessertFor] = useState<PlanMeal | null>(null);
+  const [pickSidesFor, setPickSidesFor] = useState<PlanMeal | null>(null);
   const [openDessert, setOpenDessert] = useState<{ pm: PlanMeal; dessert: PlanDessert } | null>(null);
   const [removeDessertFor, setRemoveDessertFor] = useState<PlanMeal | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -394,6 +398,8 @@ export default function MealPlanView({
               onToggleFavorite={onToggleFavorite ? withBusy(pm.id, () => onToggleFavorite(pm)) : undefined}
               isFavorite={favoriteNames?.has(pm.meal_name)}
               dessert={pm.dessert}
+              sides={pm.sides}
+              onPickSides={onSetSides ? () => setPickSidesFor(pm) : undefined}
               guests={pm.guests ?? 0}
               season={seasonHighlights(pm.meal_name, pm.ingredients ?? [], Number(pm.meal_date.slice(5, 7)))}
               onPickDessert={onSetDessert ? () => setPickDessertFor(pm) : undefined}
@@ -488,6 +494,16 @@ export default function MealPlanView({
           current={pickDessertFor.dessert}
           onSave={(dessert) => onSetDessert(pickDessertFor, dessert)}
           onClose={() => setPickDessertFor(null)}
+        />
+      )}
+
+      {pickSidesFor && onSetSides && (
+        <SidePickerModal
+          dayLabel={planMealToMeal(pickSidesFor).day}
+          mealName={pickSidesFor.meal_name}
+          current={pickSidesFor.sides}
+          onSave={(sides) => onSetSides(pickSidesFor, sides)}
+          onClose={() => setPickSidesFor(null)}
         />
       )}
 

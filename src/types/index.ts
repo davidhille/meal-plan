@@ -65,6 +65,34 @@ export interface RecipeCatalog {
   seenUnsuitable?: string[];
 }
 
+/** Beilage (Sättigungsbeilage oder Gemüse) oder Salat */
+export type SideKind = 'beilage' | 'salat';
+
+/** Sättigende Grundlage einer Beilage (für den späteren Abgleich „hat das Gericht schon eine?“) */
+export type SideCarb = 'kartoffel' | 'reis' | 'nudeln' | 'knoedel' | 'brot' | 'getreide';
+
+/** Beilage oder Salat aus der festen Sammlung (src/data/sides.ts); Mengen gelten für 4 Portionen wie bei Hauptgerichten */
+export interface Side {
+  name: string;
+  kind: SideKind;
+  /** Sättigend (Kartoffeln, Reis, Nudeln …); fehlt bei Gemüse und Salat */
+  carb?: SideCarb;
+  ingredients: string[];
+  instructions: string;
+  durationMin: number;
+  /** Eigene Beilage (Datenbank) – folgt in einem späteren Schritt */
+  custom?: boolean;
+}
+
+/** Am Gericht gespeicherte Beilage/Salat – die Zutaten werden mit den Portionen umgerechnet und landen auf der Einkaufsliste */
+export interface PlanSide {
+  name: string;
+  kind: SideKind;
+  ingredients: string[];
+  instructions: string;
+  durationMin: number | null;
+}
+
 export type DessertCategory = 'kuchen' | 'gebaeck' | 'creme' | 'pfanne' | 'obst' | 'eis';
 
 /** Nachtisch aus der festen Sammlung (src/data/desserts.ts) */
@@ -265,6 +293,8 @@ export interface PlanMeal {
   duration_min?: number | null;
   /** Nachtisch zu diesem Gericht (aus der Nachtisch-Sammlung) */
   dessert?: PlanDessert | null;
+  /** Beilage und/oder Salat zu diesem Gericht (höchstens je eins) */
+  sides?: PlanSide[] | null;
   /** Brotzeit statt Kochen (Platzhalter ohne Zutaten) */
   brotzeit?: boolean;
   /** Gäste an diesem Tag (zusätzliche Portionen) */

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CakeSlice, CalendarPlus, ChefHat, ChevronRight, Clock, Loader2, Star } from 'lucide-react';
+import { CakeSlice, CalendarPlus, ChefHat, ChevronRight, Clock, Loader2, Salad, Star } from 'lucide-react';
 import { PlanMeal } from '../types';
 
 interface TodayCardProps {
@@ -72,6 +72,12 @@ export default function TodayCard({ todayIso, today, tomorrow, toRate, onOpen, o
                     {today.duration_min} Min
                   </span>
                 ) : null}
+                {today.sides && today.sides.length > 0 && (
+                  <span className="flex items-center gap-1 text-brand-700">
+                    <Salad size={12} aria-hidden="true" />
+                    {today.sides.map((s) => s.name).join(' · ')}
+                  </span>
+                )}
                 {today.dessert && (
                   <span className="flex items-center gap-1 text-amber-700">
                     <CakeSlice size={12} aria-hidden="true" />
