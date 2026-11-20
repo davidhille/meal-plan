@@ -408,7 +408,7 @@ export async function replaceMeal(env: Env, sql: Sql, profileId: string, planMea
 export async function setBrotzeit(sql: Sql, profileId: string, planMealId: string) {
   const rows = await sql.query(
     `UPDATE plan_meals pm SET meal_name = $3, meal_type = 'vegetarisch', ingredients = '{}', instructions = '',
-       duration_min = NULL, dessert = NULL, image_url = NULL, brotzeit = true
+       duration_min = NULL, dessert = NULL, sides = NULL, image_url = NULL, brotzeit = true
      FROM meal_plans mp WHERE pm.id = $1 AND mp.id = pm.plan_id AND mp.profile_id = $2 AND NOT pm.rejected
      RETURNING ${PLAN_MEAL_COLS.split(", ").map((c) => `pm.${c}`).join(", ")}`,
     [planMealId, profileId, BROTZEIT]

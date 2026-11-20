@@ -41,7 +41,7 @@ export async function getShopping(sql: Sql, profileId: string, planId: string, r
   const [labels, meals, members, states, extras, prefs, links, settingsRows, pantry] = await Promise.all([
     getLabels(sql, profileId),
     // Nach Datum sortiert: die Gerichtszeile an den Artikeln nennt so zuerst das Gericht, das als Nächstes gekocht wird
-    sql`SELECT meal_name, ingredients, dessert, guests FROM plan_meals WHERE plan_id = ${planId} AND NOT rejected
+    sql`SELECT meal_name, ingredients, dessert, sides, guests FROM plan_meals WHERE plan_id = ${planId} AND NOT rejected
       AND meal_date BETWEEN ${from}::date AND ${to}::date ORDER BY meal_date, created_at`,
     sql`SELECT type, age FROM family_members WHERE profile_id = ${profileId}`,
     sql`SELECT item_key, checked, label FROM shopping_item_state WHERE plan_id = ${planId}`,
@@ -58,17 +58,25 @@ export async function getShopping(sql: Sql, profileId: string, planId: string, r
   const custom = pantry.filter((r) => !r.excluded);
   const excluded = new Set(pantry.filter((r) => r.excluded).flatMap((r) => String(r.name).toLowerCase().split(/\s+/)));
   const withDessert = meals.filter((m) => m.dessert?.ingredients);
+  // Beilagen und Salate werden wie das Gericht auf die Portionen umgerechnet (inkl. Gäste) und zählen als eigene Gerichtszeile
+  const sideRows = meals.flatMap((m) =>
+    ((m.sides as { name: string; ingredients: string[] }[] | null) ?? []).map((s) => ({
+      ingredients: s.ingredients,
+      guests: Number(m.guests) || 0,
+      label: `${s.name} (zu ${m.meal_name})`,
+    }))
+  );
   const built = buildPlanItems(
-    meals.map((m) => m.ingredients as string[]),
+    [...meals.map((m) => m.ingredients as string[]), ...sideRows.map((s) => s.ingredients)],
     portions,
     new Set(custom.map((r) => r.name_key as string)),
     // Nachtische haben eine feste Menge (z. B. ein ganzer Kuchen) und werden nicht umgerechnet
     withDessert.map((m) => m.dessert.ingredients as string[]),
     excluded,
     // Gäste an diesem Tag: zusätzliche Portionen nur für dieses Gericht
-    meals.map((m) => Number(m.guests) || 0),
+    [...meals.map((m) => Number(m.guests) || 0), ...sideRows.map((s) => s.guests)],
     // Wofür die Zutat gebraucht wird (Gerichtszeile unter dem Artikel)
-    meals.map((m) => String(m.meal_name)),
+    [...meals.map((m) => String(m.meal_name)), ...sideRows.map((s) => s.label)],
     withDessert.map((m) => String(m.dessert.name ?? "Nachtisch"))
   );
   const stateBy = new Map(states.map((r) => [r.item_key, r]));

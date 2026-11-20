@@ -1,6 +1,6 @@
 # Status – miyummy
 
-Stand: 20.11.2026 (letzter Merge: #197, 20.11.2026). Diese Datei ist der Kurzüberblick „Wo stehen wir?“.
+Stand: 20.11.2026 (letzter Merge: #198, 20.11.2026; Beilagen Teil 1 in Arbeit). Diese Datei ist der Kurzüberblick „Wo stehen wir?“.
 Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einrichtung: `SETUP_NEON_CLOUDFLARE.md`.
 
 ## Betrieb
@@ -11,6 +11,7 @@ Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einr
 
 ## Zuletzt erledigt
 
+- **Beilagen & Salate, Teil 1 (20.11.):** am Gericht „Beilage“ antippen → Beilage und/oder Salat aus fester Sammlung (35 Einträge, `src/data/sides.ts`); Zutaten kommen mit den Portionen (inkl. Gäste) auf die Einkaufsliste, „Gebraucht für“ nennt „Beilage (zu Gericht)“; auch in Heute, Teilen und Download. Migration 0035 (`plan_meals.sides`).
 - **Fehler „Prisenn/Scheibenn“ (20.11.):** Import machte aus „Prise(n)“ ein doppeltes „n“, die Zutat blieb deshalb auf der Einkaufsliste statt im Vorrat; Ursache behoben, 27 gespeicherte Rezepte per Migration 0034 repariert; „Salz und Pfeffer“ zählt jetzt als Vorrat, Prisen stehen in der Mehrzahl.
 - **Einkaufsliste „Einkauf für“ (20.11.):** frühere Wochen sind ausgeblendet, Link „Frühere Wochen anzeigen“ holt sie zurück.
 - **Einkaufsliste → Vorrat (20.11.):** „Haben wir immer da“ öffnet ein Fenster mit änderbarem Namen (vorbelegt ohne Füllwörter).
@@ -27,7 +28,7 @@ Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einr
 | Free-Limits des Workers | im Cloudflare-Dashboard zu bestätigen (`SETUP_NEON_CLOUDFLARE.md` 3b) |
 | Chefkoch-Foto bei Nachtischen | Server scheitert (403), Browser-Weg kennt nur Rezepte; Cron erzeugt KI-Bild |
 | Routinen | nur anlegen/löschen, nicht bearbeiten |
-| Beilagen & Salate | Idee besprochen (Mechanik wie Nachtisch, feste Sammlung + Chefkoch + KI auf Knopfdruck); Entscheidung steht aus |
+| Beilagen & Salate, Teil 2 und 3 | Teil 2: Einstellung aus / nur vorschlagen / automatisch (fehlende Sättigungsbeilage erkennen). Teil 3: Chefkoch (Art „Beilage“/„Salat“) und KI-Beilage auf Knopfdruck, eigene Beilagen. Entscheidung von David 20.11.: so umsetzen |
 | Tests | nur Kernlogik, keine Oberfläche/Datenbank/Shop-Anbindung |
 
 ## Bekannte Grenzen

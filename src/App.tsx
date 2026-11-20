@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import AppIcon from './components/AppIcon';
 import Logo from './components/Logo';
-import { ViewTab, Profile, FamilyMember, Routine, MealPlan, PlanMeal, Favorite, Dessert, CatalogRecipe } from './types';
+import { ViewTab, Profile, FamilyMember, Routine, MealPlan, PlanMeal, PlanSide, Favorite, Dessert, CatalogRecipe } from './types';
 import {
   getOrCreateProfile,
   updateProfile,
@@ -37,6 +37,7 @@ import {
   UnauthorizedError,
   getAuthStatus,
   setMealDessert,
+  setMealSides,
   replacePlanMeal,
   type DislikeHint,
   fillChefkochPhotos,
@@ -416,6 +417,11 @@ export default function App() {
     setPlanMeals((prev) => prev.map((m) => (m.id === pm.id ? { ...m, dessert: saved } : m)));
   };
 
+  const handleSetSides = async (pm: PlanMeal, sides: PlanSide[]) => {
+    const saved = await setMealSides(pm.id, sides);
+    setPlanMeals((prev) => prev.map((m) => (m.id === pm.id ? { ...m, sides: saved } : m)));
+  };
+
   const handleReplaceWithRecipe = async (pm: PlanMeal, recipe: CatalogRecipe) => {
     const replacement = await replacePlanMeal(pm.id, recipe.name);
     swapMeal(pm.id, replacement);
@@ -521,6 +527,7 @@ export default function App() {
             onDeletePlan={currentPlan ? handleDeletePlan : undefined}
             defaultPortions={familyPortions(familyMembers)}
             onSetDessert={currentPlan ? handleSetDessert : undefined}
+            onSetSides={currentPlan ? handleSetSides : undefined}
             allPlanMeals={currentPlan ? planMeals : undefined}
             reminderTime={profile?.reminder_time}
             dayRules={profile?.day_rules}

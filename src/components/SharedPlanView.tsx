@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CakeSlice, ChevronDown, Clock, Wheat } from 'lucide-react';
+import { CakeSlice, ChevronDown, Clock, Salad, Wheat } from 'lucide-react';
 import AppIcon from './AppIcon';
 import Logo from './Logo';
 import { getSharedPlan, type SharedPlan } from '../lib/api';
@@ -104,6 +104,12 @@ export default function SharedPlanView({ token }: { token: string }) {
                                   {m.durationMin} Min
                                 </span>
                               ) : null}
+                              {m.sides && (
+                                <span className="flex items-center gap-1 text-brand-700">
+                                  <Salad size={11} aria-hidden="true" />
+                                  {m.sides}
+                                </span>
+                              )}
                               {m.dessert && (
                                 <span className="flex items-center gap-1 text-amber-700">
                                   <CakeSlice size={11} aria-hidden="true" />

@@ -34,7 +34,7 @@ export async function publicShareRoutes({ sql, parts, route }: Ctx): Promise<Res
   if (!plan) return json({ error: "Dieser Link ist nicht mehr gültig." }, 404);
   const meals = await sql.query(
     `SELECT pm.meal_date::text AS date, pm.meal_name AS name, pm.meal_type AS type, pm.duration_min AS "durationMin",
-       pm.ingredients, pm.instructions, pm.brotzeit, pm.dessert->>'name' AS dessert, ${IMAGE_URL_SQL} AS "imageUrl"
+       pm.ingredients, pm.instructions, pm.brotzeit, pm.dessert->>'name' AS dessert, (SELECT string_agg(s->>'name', ', ') FROM jsonb_array_elements(COALESCE(pm.sides, '[]'::jsonb)) s) AS sides, ${IMAGE_URL_SQL} AS "imageUrl"
      FROM plan_meals pm
      LEFT JOIN LATERAL (SELECT * FROM meal_images x WHERE x.meal_name = pm.meal_name
        AND (x.profile_id IS NULL OR x.profile_id = $2) ORDER BY x.profile_id IS NULL LIMIT 1) mi ON true

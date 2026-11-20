@@ -1,6 +1,6 @@
 import {
   Profile, FamilyMember, MealRating, MealPlan, PlanMeal, Routine, ShoppingItem, ShoppingLabel, Favorite, MealType, ImageCredit,
-  ShopState, ShopProvider, ProductResult, CartItem, ShopRule, PlanDessert, Dessert, DessertCategory, RecipeCatalog, RecipeFilter, RecipeFilterInput, RecipeDraft, DayRules, RatingNote,
+  ShopState, ShopProvider, ProductResult, CartItem, ShopRule, PlanDessert, PlanSide, Dessert, DessertCategory, RecipeCatalog, RecipeFilter, RecipeFilterInput, RecipeDraft, DayRules, RatingNote,
 } from '../types';
 import type { CategoryOverride } from './recipeCategories';
 import type { VarietyRule } from './varietyCategories';
@@ -629,6 +629,12 @@ export async function removePlanMeal(planMealId: string, keepEmpty = false): Pro
 }
 
 /** Nachtisch an ein Gericht hängen (null = entfernen); wirft bei Fehlern */
+/** Beilage und/oder Salat an ein Gericht hängen (leere Liste = entfernen) */
+export async function setMealSides(planMealId: string, sides: PlanSide[]): Promise<PlanSide[] | null> {
+  const result = await request<{ sides: PlanSide[] | null }>('PUT', `/plan-meals/${planMealId}/sides`, { sides });
+  return result.sides;
+}
+
 export async function setMealDessert(planMealId: string, dessert: PlanDessert | null): Promise<PlanDessert | null> {
   const result = await request<{ dessert: PlanDessert | null }>('PUT', `/plan-meals/${planMealId}/dessert`, { dessert });
   return result.dessert;
@@ -1247,6 +1253,7 @@ export interface SharedPlan {
     instructions: string;
     brotzeit: boolean;
     dessert: string | null;
+    sides?: string | null;
     imageUrl: string | null;
   }[];
 }

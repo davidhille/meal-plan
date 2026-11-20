@@ -1,5 +1,5 @@
-import { Meal, PlanDessert } from '../types';
-import { ChevronRight, Star, X, Heart, RefreshCw, Clock, Loader2, CakeSlice, CalendarDays, Sprout, UserPlus } from 'lucide-react';
+import { Meal, PlanDessert, PlanSide } from '../types';
+import { ChevronRight, Star, X, Heart, RefreshCw, Clock, Loader2, CakeSlice, CalendarDays, Sprout, UserPlus, Salad } from 'lucide-react';
 import { dessertPreview } from '../lib/desserts';
 import CardActionBar, { CardAction } from './CardActionBar';
 import { dishKind } from '../lib/dishType';
@@ -18,6 +18,9 @@ interface DayCardProps {
   dessert?: PlanDessert | null;
   onPickDessert?: () => void;
   onOpenDessert?: () => void;
+  /** Beilage/Salat zum Gericht */
+  sides?: PlanSide[] | null;
+  onPickSides?: () => void;
   /** Heutiger Tag – hervorgehoben */
   isToday?: boolean;
   /** Verschieben oder rausnehmen */
@@ -43,6 +46,8 @@ export default function DayCard({
   dessert,
   onPickDessert,
   onOpenDessert,
+  sides,
+  onPickSides,
   isToday,
   onMove,
   onRemoveDessert,
@@ -72,6 +77,16 @@ export default function DayCard({
       tone: dessert ? 'active' : 'default',
       title: dessert ? 'Nachtisch ändern' : 'Nachtisch dazu',
       ariaLabel: `${meal.meal}: ${dessert ? `Nachtisch ändern (${dessert.name})` : 'Nachtisch hinzufügen'}`,
+    });
+  if (onPickSides)
+    actions.push({
+      key: 'sides',
+      label: 'Beilage',
+      icon: <Salad size={16} />,
+      onClick: onPickSides,
+      tone: sides?.length ? 'active' : 'default',
+      title: sides?.length ? 'Beilage oder Salat ändern' : 'Beilage oder Salat dazu',
+      ariaLabel: `${meal.meal}: ${sides?.length ? `Beilage ändern (${sides.map((s) => s.name).join(', ')})` : 'Beilage oder Salat hinzufügen'}`,
     });
   if (onMove)
     actions.push({
@@ -159,6 +174,19 @@ export default function DayCard({
           <ChevronRight size={16} className="text-gray-300 flex-shrink-0" aria-hidden="true" />
         </div>
       </button>
+      {sides && sides.length > 0 && (
+        <button
+          onClick={onPickSides}
+          disabled={!onPickSides}
+          className="w-full flex items-center gap-2 pl-5 pr-3 py-2 text-left border-t border-gray-100 hover:bg-gray-50/60"
+        >
+          <Salad size={14} className="flex-shrink-0 text-brand-700" aria-hidden="true" />
+          <span className="flex-1 min-w-0 text-xs text-gray-800 truncate">
+            <span className="font-semibold text-brand-700 uppercase tracking-wider">Dazu </span>
+            {sides.map((s) => s.name).join(' · ')}
+          </span>
+        </button>
+      )}
       {dessert && (
         <div className="flex items-stretch border-t border-gray-100">
           <button
