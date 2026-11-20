@@ -172,7 +172,7 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
   Gericht, dazu die Zahl weiterer). So lässt sich beim Einkaufen entscheiden, ob etwas Vorhandenes reicht (z. B. normale Tomaten
   statt Cherrytomaten). Alle Gerichte stehen oben im „⋯“-Menü unter „Gebraucht für“; Nachtische zählen mit. Abgehakte Artikel,
   Vorrat und eigene Artikel haben keine solche Zeile.
-- **„⋯“ an jedem Eintrag:** Produkt auswählen, „Haben wir immer da“ (Vorrat), in andere Liste, Entfernen (eigene Artikel).
+- **„⋯“ an jedem Eintrag:** Produkt auswählen, „Haben wir immer da“ (Vorrat: ein Fenster mit vorbelegtem, änderbarem Namen – „Etwas Butter zum Braten“ → „Butter“), in andere Liste, Entfernen (eigene Artikel).
 - **Rückmeldung:** scheitert eine Aktion (abhaken, hinzufügen, entfernen, Vorrat), steht oben in der Liste eine rote Fehlerzeile
   und die Änderung wird zurückgenommen; Eingaben in „Artikel hinzufügen“ und „Zum Vorrat“ bleiben dann stehen. Wird eine
   Basis-Zutat abgehakt, erscheint 6 Sekunden lang „… liegt wieder im Vorrat“ mit **Rückgängig**; ebenso beim Hinein- und
@@ -185,7 +185,7 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
   nur offene Einträge, mit Kästchen zum Abhaken, Umlaute und € passen.
 - **Vorrat** (ein Bereich unter den Listen): alles, was ihr immer im Haus habt – kommt nicht automatisch auf die Liste.
   Vorbelegt mit Salz, Pfeffer, Öl, Mehl, Brühe, Tomatenmark und gängigen Gewürzen; eigene Einträge per Eingabefeld
-  „Zum Vorrat“ oder „⋯“ an einer Zutat → „Haben wir immer da“. Gelb = braucht der Plan, kurz nachschauen. **Antippen = ist alle** →
+  „Zum Vorrat“ oder „⋯“ an einer Zutat → „Haben wir immer da“ (Füllwörter wie „Etwas … zum Braten“ zählen beim Vorrat nicht). Gelb = braucht der Plan, kurz nachschauen. **Antippen = ist alle** →
   auf eine Liste setzen (abgehakt wandert es zurück in den Vorrat). **Bearbeiten** → Eintrag antippen nimmt ihn aus dem
   Vorrat (auch Standard-Einträge); er kommt dann wieder auf die Liste, wenn ein Rezept ihn braucht. Wieder eintippen holt
   ihn zurück. Eigene Artikel per Eingabefeld in den Listen.

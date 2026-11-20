@@ -2,6 +2,8 @@
 // Zutaten zerlegen, auf Familienportionen umrechnen, gleiche Zutaten zusammenfassen,
 // Vorrats-Zutaten (Salz, Gewürze, Öl …) aussortieren.
 
+import { cleanIngredientName } from "../src/lib/ingredientName";
+
 export const RECIPE_BASE_PORTIONS = 4;
 
 export function familyPortions(members: { type: string; age: number | null }[]): number {
@@ -268,8 +270,10 @@ export function buildPlanItems(
       for (const part of splitCombined(raw)) {
         const p = parse(part.replace(/^optional:\s*/i, ""));
         if (!p.name) continue;
-        if (isPantry(p.name, excludedPantry) || extraPantry.has(mergeKey(p.name))) {
-          pantry.add(cap(p.name.replace(/\(.*?\)/g, "").trim()));
+        // Füllwörter wie „Etwas … zum Braten“ zählen beim Vorrat nicht („Etwas Butter zum Braten“ = Butter)
+        const base = cleanIngredientName(p.name);
+        if (isPantry(base, excludedPantry) || extraPantry.has(mergeKey(base))) {
+          pantry.add(cap(base.replace(/\(.*?\)/g, "").trim()));
           continue;
         }
         const key = `${mergeKey(p.name)}|${p.qty === null ? "-" : p.unit}`;
