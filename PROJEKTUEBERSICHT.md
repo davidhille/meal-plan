@@ -165,7 +165,7 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
 - Entsteht automatisch aus dem Plan: Zutaten auf die Familienportionen umgerechnet und zusammengefasst
   („6 Zwiebeln“, „2 Dosen Kokosmilch“), Stückware aufgerundet. Unterschiedliche Schreibweisen landen auf einer Zeile
   („Knoblauch (2 Zehen)“ + „2 Knoblauchzehen“, „Paprika (1 rote)“ + „3 Paprikaschoten“; Menge in Klammern zählt).
-- **„Einkauf für“:** eigene Wochenauswahl („Diese Woche“, „Nächste Woche“ …), mehrere Wochen kombinierbar; Häkchen je Woche.
+- **„Einkauf für“:** eigene Wochenauswahl („Diese Woche“, „Nächste Woche“ …), mehrere Wochen kombinierbar; Häkchen je Woche. Wochen vor der aktuellen sind ausgeblendet, „Frühere Wochen anzeigen“ holt sie zurück.
   Gerichte vergangener Tage zählen standardmäßig nicht mit (Hinweis unter der Zusammenfassung mit „einrechnen“;
   `?since=` an `GET /plans/:id/shopping`, die Häkchen bleiben dabei erhalten).
 - **Wofür die Zutat gebraucht wird:** unter jedem Artikel aus dem Plan steht eine Zeile „für Chili con Carne +2“ (das nächste

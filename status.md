@@ -1,6 +1,6 @@
 # Status – miyummy
 
-Stand: 20.11.2026 (letzter Merge: #194, 20.11.2026). Diese Datei ist der Kurzüberblick „Wo stehen wir?“.
+Stand: 20.11.2026 (letzter Merge: #195, 20.11.2026). Diese Datei ist der Kurzüberblick „Wo stehen wir?“.
 Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einrichtung: `SETUP_NEON_CLOUDFLARE.md`.
 
 ## Betrieb
@@ -11,9 +11,10 @@ Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einr
 
 ## Zuletzt erledigt
 
+- **Einkaufsliste „Einkauf für“ (20.11.):** frühere Wochen sind ausgeblendet, Link „Frühere Wochen anzeigen“ holt sie zurück.
 - **Einkaufsliste → Vorrat (20.11.):** „Haben wir immer da“ öffnet ein Fenster mit änderbarem Namen (vorbelegt ohne Füllwörter); „Etwas Butter zum Braten“ zählt als Butter, wenn Butter im Vorrat liegt.
 - **Einschränkung „Cholesterin“ (20.11.):** wählbar unter Krankheiten & Einschränkungen; schließt nichts aus, gibt −15 bei viel Butter, Sahne, Speck, Wurst, Innereien, Eigelb (wie Diabetes bei Zucker); KI-Rezepte bekommen die Vorgabe „wenig gesättigte Fette“.
-- **Planung (Nov.):** Bewertung zentriert, Pause nach Sternen, einstellbare Mengen-Regeln, Saison höchstens +3, Gerichte der letzten 5 Wochen kommen nicht wieder (#188–#190).
+- **Planung (Nov.):** Bewertung zentriert, Pause nach Sternen, einstellbare Mengen-Regeln, Saison höchstens +3 (#188–#190).
 - **Chefkoch-Automatik (26.10.):** tiefer suchen, wenig bewertete Rezepte nach 3 Tagen erneut prüfen, Handstart nennt Ablehnungsgründe (#184, #185).
 - **Einkaufsliste/Nachtische (26.10.):** Gerichtszeile unter jedem Artikel, Link-Import auch als Nachtisch (#180, #187).
 
