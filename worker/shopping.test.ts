@@ -56,6 +56,16 @@ describe("buildPlanItems", () => {
     expect(r.pantryNeeded).toEqual(["Zwiebeln"]);
   });
 
+  test("Füllwörter zählen beim Vorrat nicht: „Etwas Butter zum Braten“ ist Butter", () => {
+    // Öl ist Standard-Vorrat, Butter ein eigener Eintrag der Familie
+    const r = buildPlanItems([["Etwas Butter zum Braten", "Etwas Öl zum Braten", "4 Scheiben Speck"]], 4, new Set([mergeKey("Butter")]));
+    expect(r.items.map((i) => i.display)).toEqual(["4 Scheiben Speck"]);
+    expect(r.pantryNeeded).toEqual(["Butter", "Öl"]);
+    // auch mit anderem Eintrag („Kokosöl“ ist kein Standard)
+    const own = buildPlanItems([["Etwas Kokosöl zum Anbraten"]], 4, new Set([mergeKey("Kokosöl")]));
+    expect(own.items).toEqual([]);
+    expect(own.pantryNeeded).toEqual(["Kokosöl"]);
+  });
   test("Brühe ist kein Fleisch, frische Kräuter sind kein Vorrat", () => {
     const r = buildPlanItems([["500 ml Hühnerbrühe", "1 Bund frischer Thymian"]], 4);
     const labels = Object.fromEntries(r.items.map((i) => [i.baseName, i.defaultLabel]));

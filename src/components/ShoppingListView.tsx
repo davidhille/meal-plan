@@ -26,6 +26,8 @@ import {
 import ShoppingSection from './ShoppingSection';
 import { buildShoppingPdf, downloadPdf, pdfFileName, type PdfList } from '../lib/shoppingPdf';
 import ProductSearchModal from './ProductSearchModal';
+import ConfirmDialog from './ConfirmDialog';
+import { cleanIngredientName } from '../lib/ingredientName';
 import CartPreviewSheet from './CartPreviewSheet';
 import CartBar from './CartBar';
 
@@ -93,6 +95,9 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
   const [basicPickerTarget, setBasicPickerTarget] = useState<string | null>(null);
   const [newItemName, setNewItemName] = useState('');
   const [productItem, setProductItem] = useState<ShoppingItem | null>(null);
+  /** Plan-Zutat, die gerade in den Vorrat gelegt wird (Fenster mit bearbeitbarem Namen) */
+  const [pantryItem, setPantryItem] = useState<ShoppingItem | null>(null);
+  const [pantryName, setPantryName] = useState('');
   /** Für welchen Shop der Produkt-Dialog geöffnet wurde (nach der Auswahl dort bestellen) */
   const [productTarget, setProductTarget] = useState<ShopProvider | null>(null);
   // Warenkörbe: fehlt = lädt noch, null = nicht lesbar
@@ -261,18 +266,24 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
 
   // --- Vorrat ---
 
-  const moveToPantry = async (item: ShoppingItem) => {
+  /** Öffnet das Fenster: der Name ist vorbelegt („Etwas Butter zum Braten“ → „Butter“) und lässt sich ändern */
+  const askMoveToPantry = (item: ShoppingItem) => {
+    setPantryName(cleanIngredientName(item.baseName));
+    setPantryItem(item);
+  };
+
+  const moveToPantry = async (item: ShoppingItem, name: string) => {
     setItems((prev) => prev.filter((i) => i.id !== item.id));
-    if (await addToPantry(item.baseName)) {
+    if (await addToPantry(name)) {
       await load(true);
-      showNotice(`„${item.baseName}“ liegt jetzt im Vorrat.`, 'info', async () => {
+      showNotice(`„${name}“ liegt jetzt im Vorrat.`, 'info', async () => {
         setNotice(null);
-        if (await removeFromPantry(item.baseName)) await load(true);
-        else failed(`„${item.baseName}“ ließ sich nicht aus dem Vorrat nehmen.`);
+        if (await removeFromPantry(name)) await load(true);
+        else failed(`„${name}“ ließ sich nicht aus dem Vorrat nehmen.`);
       });
     } else {
       setItems((prev) => (prev.some((i) => i.id === item.id) ? prev : [...prev, item]));
-      failed(`„${item.baseName}“ ließ sich nicht in den Vorrat legen.`);
+      failed(`„${name}“ ließ sich nicht in den Vorrat legen.`);
     }
   };
 
@@ -652,7 +663,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
                 onFindProduct={findProduct}
                 isInCart={isInCart}
                 onRemove={removeItem}
-                onMoveToPantry={moveToPantry}
+                onMoveToPantry={askMoveToPantry}
               />
             )
           ) : (
@@ -664,7 +675,7 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
               onToggle={toggleItem}
               onLabelChange={changeLabel}
               onRemove={removeItem}
-              onMoveToPantry={moveToPantry}
+              onMoveToPantry={askMoveToPantry}
               onDownloadPdf={() => savePdf([pdfListFor(label)], label.name)}
             />
           )
@@ -821,6 +832,37 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
           )}
         </div>
       </div>
+
+      {pantryItem && (
+        <ConfirmDialog
+          title="In den Vorrat legen"
+          message={
+            <div className="space-y-2">
+              <p>
+                „{pantryItem.baseName}“ kommt nicht mehr auf die Liste. Der Name im Vorrat lässt sich ändern, z. B. nur „Butter“.
+              </p>
+              <label htmlFor="pantry-name" className="block text-xs font-medium text-gray-700">
+                Name im Vorrat
+              </label>
+              <input
+                id="pantry-name"
+                value={pantryName}
+                onChange={(e) => setPantryName(e.target.value)}
+                maxLength={80}
+                autoFocus
+                className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+            </div>
+          }
+          confirmLabel="In den Vorrat"
+          onConfirm={async () => {
+            const name = pantryName.replace(/\(.*?\)/g, '').trim();
+            if (!name) throw new Error('Bitte einen Namen eingeben.');
+            await moveToPantry(pantryItem, name);
+          }}
+          onClose={() => setPantryItem(null)}
+        />
+      )}
 
       {productItem && productShops.length > 0 && (
         <ProductSearchModal
