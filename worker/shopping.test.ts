@@ -66,6 +66,11 @@ describe("buildPlanItems", () => {
     expect(own.items).toEqual([]);
     expect(own.pantryNeeded).toEqual(["Kokosöl"]);
   });
+  test("„Salz und Pfeffer“ ist Vorrat, Prisen stehen in der Mehrzahl", () => {
+    const r = buildPlanItems([["4 Prisen Salz und Pfeffer", "4 Prisen Zimtzucker", "1 Prise Chili"]], 4);
+    expect(r.items.map((i) => i.display)).toEqual(["1 Prise Chili", "4 Prisen Zimtzucker"]);
+    expect(r.pantryNeeded).toContain("Salz und Pfeffer");
+  });
   test("Brühe ist kein Fleisch, frische Kräuter sind kein Vorrat", () => {
     const r = buildPlanItems([["500 ml Hühnerbrühe", "1 Bund frischer Thymian"]], 4);
     const labels = Object.fromEntries(r.items.map((i) => [i.baseName, i.defaultLabel]));

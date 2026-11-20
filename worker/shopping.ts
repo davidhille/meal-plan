@@ -28,7 +28,7 @@ const PANTRY_WORDS = new Set([
   "backpulver", "natron", "speisestärke", "balsamico", "zitronensaft", "honig", "ahornsirup",
   // Füllwörter in Gewürz-Angaben
   "schwarzer", "schwarz", "gemahlen", "gemahlener", "getrocknet", "getrockneter", "getrocknete", "getrocknetes", "edelsüß",
-  "rosenscharf", "prise", "etwas", "nach", "geschmack", "frisch", "gemahlenes",
+  "rosenscharf", "prise", "etwas", "nach", "geschmack", "frisch", "gemahlenes", "und",
 ]);
 /**
  * Standard-Vorrat, wie er unter „Vorrat“ angezeigt wird (jeder Eintrag ist ein Wort aus PANTRY_WORDS).
@@ -229,7 +229,7 @@ function formatAmount(qty: number, unit: string): string {
     };
     return unit ? `${n} ${labels[unit][n === 1 ? 0 : 1]}` : String(n);
   }
-  const unitLabel: Record<string, string> = { el: "EL", tl: "TL", prise: "Prise", tasse: "Tasse(n)" };
+  const unitLabel: Record<string, string> = { el: "EL", tl: "TL", prise: qty > 1 ? "Prisen" : "Prise", tasse: "Tasse(n)" };
   return `${half(qty)} ${unitLabel[unit] ?? unit}`;
 }
 
