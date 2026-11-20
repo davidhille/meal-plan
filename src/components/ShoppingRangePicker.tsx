@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { CalendarRange } from 'lucide-react';
 import { PlanWeek, formatShortDate } from '../lib/dateUtils';
 
@@ -25,8 +25,13 @@ function weekName(index: number, currentIndex: number, kw: number) {
 /**
  * Für welche Wochen eingekauft wird. Mehrere aufeinanderfolgende Wochen lassen sich kombinieren:
  * Antippen einer Woche außerhalb erweitert den Bereich, Antippen eines Randes nimmt ihn wieder heraus.
+ * Wochen vor der aktuellen sind ausgeblendet („Frühere Wochen anzeigen“), solange keine davon gewählt ist.
  */
 export default function ShoppingRangePicker({ weeks, currentIndex, start, end, onChange, summary, summaryExtra }: ShoppingRangePickerProps) {
+  const [showEarlier, setShowEarlier] = useState(false);
+  const earlierCount = Math.max(0, currentIndex);
+  // Eine gewählte frühere Woche bleibt sichtbar, sonst ließe sie sich nicht mehr abwählen
+  const firstShown = showEarlier || start < currentIndex ? 0 : earlierCount;
   const toggle = (i: number) => {
     if (i < start) onChange(i, end);
     else if (i > end) onChange(start, i);
@@ -44,6 +49,7 @@ export default function ShoppingRangePicker({ weeks, currentIndex, start, end, o
       </h2>
       <div className="flex gap-2 overflow-x-auto no-scrollbar mt-2 pb-0.5" role="group" aria-label="Wochen für die Einkaufsliste">
         {weeks.map((w, i) => {
+          if (i < firstShown) return null;
           const active = i >= start && i <= end;
           return (
             <button
@@ -65,6 +71,15 @@ export default function ShoppingRangePicker({ weeks, currentIndex, start, end, o
       <p className="px-1 mt-2 text-xs text-gray-600" aria-live="polite">
         {summary}
       </p>
+      {earlierCount > 0 && start >= currentIndex && (
+        <button
+          onClick={() => setShowEarlier(!showEarlier)}
+          aria-expanded={showEarlier}
+          className="px-1 mt-0.5 text-xs font-medium text-brand-700 underline underline-offset-2 hover:text-brand-800"
+        >
+          {showEarlier ? 'Frühere Wochen ausblenden' : 'Frühere Wochen anzeigen'}
+        </button>
+      )}
       {summaryExtra}
       {start === end && end < weeks.length - 1 && (
         <p className="px-1 mt-0.5 text-xs text-gray-500">Tipp: Weitere Woche antippen, um gleich mit einzukaufen.</p>
