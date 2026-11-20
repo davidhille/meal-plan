@@ -130,7 +130,7 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
 - **Pause nach Bewertung:** Ein Gericht kommt erst nach einer Pause wieder in den Plan: unbewertet nach 5 Wochen, 5 ★ nach 8 Wochen, 4 ★ nach 9, 3 ★ nach 10, 1–2 ★ praktisch nie wieder
   (nur wenn sonst nichts übrig ist; die KI liefert bei Bedarf neue Rezepte).
 - **Gesundheitsbedingungen** schließen hart aus: vegetarisch, vegan, glutenfrei, laktosefrei, Nussallergie, ohne Alkohol;
-  Diabetes gibt einen Abzug bei Zucker. *Heuristik auf Zutatentext, keine Allergie-Garantie.*
+  Diabetes gibt einen Abzug bei Zucker, Cholesterin bei viel Butter, Sahne, Speck, Wurst und Innereien. *Heuristik auf Zutatentext, keine Allergie-Garantie.*
 - **Abwechslung:** ähnliche Gerichte (z. B. mehrere „Quinoa-Pfannen“) werden im Plan verteilt statt gehäuft. Dazu gelten **Mengen-Regeln** pro Kalenderwoche oder
   Kalendermonat. Ohne eigene Einstellung: höchstens **1× Garnelen/Meeresfrüchte** und **2× Nudelgerichte** pro Woche. Einstellbar unter Einstellungen → Planung →
   „Wie oft darf es vorkommen?“ (siehe dort). „Höchstens“ gilt beim Planen und bei „Neu“; bleibt kein anderes Gericht übrig, gilt die Grenze nicht.
@@ -292,7 +292,7 @@ Auf- und zuklappbare Karten:
 - **Gesundheit & Ernährung:**
   - **Schwerpunkte** (mehrere): Kalorienbewusst, Proteinreich, Low Carb, Viel Gemüse, Vollkorn & Ballaststoffe,
     Kinderfreundlich, Saisonal, Günstig – passende Gerichte bekommen Pluspunkte, nichts wird ausgeschlossen. „Saisonal“ wirkt dabei nur noch auf neue KI-Rezepte; der Saison-Bonus beim Planen gilt immer.
-  - **Einschränkungen** (mehrere): Diabetes (nur Abzug bei Zucker), glutenfrei, laktosefrei, Nussallergie, vegetarisch,
+  - **Einschränkungen** (mehrere): Diabetes (nur Abzug bei Zucker), Cholesterin (nur Abzug bei viel Butter, Sahne, Speck, Wurst, Innereien), glutenfrei, laktosefrei, Nussallergie, vegetarisch,
     vegan, ohne Alkohol – schließen hart aus.
   - **Fleisch pro Woche:** keine Grenze, kein Fleisch oder höchstens 1–5× pro Kalenderwoche (Fisch zählt nicht mit);
     gilt beim Planen und beim „Alle tauschen“.

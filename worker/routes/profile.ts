@@ -10,7 +10,7 @@ import { parseDayRules } from "../dayRules";
 import { parseVarietyRules } from "../weekVariety";
 
 /** Erlaubte Einschränkungen (harte Ausschlüsse, siehe violatesHealthConditions) */
-const CONDITION_IDS = ["diabetes", "gluten_free", "lactose_intolerant", "nut_allergy", "vegetarian", "vegan", "no_alcohol"];
+const CONDITION_IDS = ["diabetes", "cholesterol", "gluten_free", "lactose_intolerant", "nut_allergy", "vegetarian", "vegan", "no_alcohol"];
 
 const onlyKnown = (raw: unknown, allowed: readonly string[]) =>
   [...new Set((Array.isArray(raw) ? raw : []).map(String))].filter((x) => allowed.includes(x));

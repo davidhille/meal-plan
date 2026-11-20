@@ -32,6 +32,7 @@ const TYPE_LABEL: Record<Recipe["type"], string> = {
 
 const CONDITION_LABEL: Record<string, string> = {
   diabetes: "Diabetes (wenig Zucker und schnell wirkende Kohlenhydrate)",
+  cholesterol: "erhöhter Cholesterinspiegel (wenig gesättigte Fette: kaum Butter, Sahne, Speck, Wurst, Innereien, fettes Fleisch; lieber Gemüse, Hülsenfrüchte, Fisch, Olivenöl)",
   gluten_free: "glutenfrei (kein Weizen, Roggen, Gerste, Dinkel – also keine normalen Nudeln, kein Brot, kein Mehl, keine Sojasoße)",
   lactose_intolerant: "laktosefrei (keine Milch, Sahne, Käse, Butter, Joghurt – nur ausdrücklich laktosefreie Varianten)",
   nut_allergy: "Nussallergie (keinerlei Nüsse, Mandeln, Erdnüsse, Pinienkerne)",

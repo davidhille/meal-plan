@@ -1,6 +1,6 @@
 # Status – miyummy
 
-Stand: 20.11.2026 (letzter Merge: #192, 16.11.2026). Diese Datei ist der Kurzüberblick „Wo stehen wir?“.
+Stand: 20.11.2026 (letzter Merge: #193, 20.11.2026). Diese Datei ist der Kurzüberblick „Wo stehen wir?“.
 Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einrichtung: `SETUP_NEON_CLOUDFLARE.md`.
 
 ## Betrieb
@@ -11,11 +11,11 @@ Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einr
 
 ## Zuletzt erledigt
 
+- **Einschränkung „Cholesterin“ (20.11.):** wählbar unter Krankheiten & Einschränkungen; schließt nichts aus, gibt −15 bei viel Butter, Sahne, Speck, Wurst, Innereien, Eigelb (wie Diabetes bei Zucker); KI-Rezepte bekommen die Vorgabe „wenig gesättigte Fette“.
 - **Planung (Nov.):** Bewertung zentriert, Pause nach Sternen, einstellbare Mengen-Regeln, Saison höchstens +3, Gerichte der letzten 5 Wochen kommen nicht wieder (#188–#190).
 - **Betrieb (16.11.):** Neon-Rechenzeit gespart (Health ohne DB-Abfrage, Cron stündlich), Chefkoch-Uhrzeit nur volle Stunden (#191, #192).
 - **Chefkoch-Automatik (26.10.):** tiefer suchen, wenig bewertete Rezepte nach 3 Tagen erneut prüfen, Handstart nennt Ablehnungsgründe (#184, #185).
 - **Einkaufsliste/Nachtische (26.10.):** Gerichtszeile unter jedem Artikel, Link-Import auch als Nachtisch (#180, #187).
-- **UX-Discovery:** Familien-Nein, Ausblenden mit Muster-Vorschlag, Kennzahlen in Admin → Statistik umgesetzt; „Warum dieses Gericht?“ bewusst wieder entfernt.
 
 ## Offen
 
@@ -36,6 +36,7 @@ Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einr
 
 ## Entscheidungen (Auszug)
 
+- Cholesterin ist wie Diabetes nur ein Abzug, kein harter Ausschluss (Heuristik auf Zutatentext; Käse und Eier zählen bewusst nicht mit).
 - Familien-Nein schließt immer aus, „Mag nicht“ einzelner Mitglieder nur bei Mehrheit.
 - Meeresfrüchte bleiben im Plan (nein sind nur Fisch und Lamm).
 - Keine Vorrats-basierte Planung.
