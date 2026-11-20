@@ -32,6 +32,18 @@ describe("parseRecipeHtml", () => {
   });
   test("rechnet auf 4 Portionen um und löst Chefkoch-Schreibweisen auf", () =>
     expect(r?.ingredients).toEqual(["½ kg Rindfleisch", "1 Zwiebel", "1 Dose Tomaten"]));
+  test("Prise(n), Scheibe(n), Zehe(n): kein doppeltes „n“ nach dem Umrechnen", () => {
+    const one = parseRecipeHtml(
+      page({ "@type": "Recipe", name: "Test", recipeYield: "1 Portion", recipeIngredient: ["1 Prise(n) Salz", "2 Scheibe(n) Käse", "1 Zehe/n Knoblauch"] }),
+      "https://www.chefkoch.de/rezepte/2/test.html"
+    );
+    expect(one?.ingredients).toEqual(["4 Prisen Salz", "8 Scheiben Käse", "4 Zehen Knoblauch"]);
+    const four = parseRecipeHtml(
+      page({ "@type": "Recipe", name: "Test", recipeYield: "4 Portionen", recipeIngredient: ["1 Prise(n) Salz", "1 Scheibe(n) Käse"] }),
+      "https://www.chefkoch.de/rezepte/3/test.html"
+    );
+    expect(four?.ingredients).toEqual(["1 Prise Salz", "1 Scheibe Käse"]);
+  });
   test("Zubereitungsschritte ohne HTML-Entities", () =>
     expect(r?.instructions).toBe("Fleisch anbraten.\nSchmoren & servieren."));
   test("lange Gerichte gehören aufs Wochenende", () => expect(r?.type).toBe("wochenende"));

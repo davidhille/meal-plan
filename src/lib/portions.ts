@@ -62,7 +62,8 @@ function fixUnitNumber(qtyText: string, rest: string): string {
   for (const [one, more] of UNIT_FORMS) {
     const from = many ? one : more;
     const to = many ? more : one;
-    const re = new RegExp(`^${from}\\b`, 'i');
+    // „Prise(n)“ / „Dose/n“ bleiben stehen: die Schreibweise löst der Import (fixPlural) auf, sonst entsteht „Prisenn“
+    const re = new RegExp(`^${from}\\b(?![(/])`, 'i');
     if (re.test(rest) && !new RegExp(`^${to}\\b`, 'i').test(rest)) {
       const word = rest.match(re)![0];
       const replacement = word[0] === word[0].toLowerCase() ? to.toLowerCase() : to;
