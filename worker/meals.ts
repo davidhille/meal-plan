@@ -1,4 +1,5 @@
 // Rezeptdatenbank + Auswahl-Logik (übernommen aus den Supabase Edge Functions)
+import type { SidesMode } from "../src/lib/sidesSuggest";
 import { excludedByDislikes } from "./dislikes";
 import type { DayRules } from "./dayRules";
 import type { VarietyRule } from "./weekVariety";
@@ -243,6 +244,8 @@ export interface ScoringContext {
   familyDislikes?: string[];
   /** Mengen-Regeln der Familie (Einstellungen → Planung); ohne Angabe die Standard-Regeln, siehe weekVariety.ts */
   varietyRules?: VarietyRule[];
+  /** Beilagen beim Planen: off | suggest | auto (nur auto ergänzt hier; suggest zeigt die App) */
+  sidesMode?: SidesMode;
   /** Geplante Gerichte vor dem Planungsbeginn (Datum + Name): Zähler für Wochen-/Monats-Regeln */
   planHistory?: { date: string; name: string }[];
 }

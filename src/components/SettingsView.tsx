@@ -11,6 +11,7 @@ import ChefkochAutoSettings from './ChefkochAutoSettings';
 import ReminderSettings from './ReminderSettings';
 import DayRulesSettings from './DayRulesSettings';
 import VarietyRulesSettings from './VarietyRulesSettings';
+import SidesSettings from './SidesSettings';
 import { CONDITION_LABELS, FOCUS_LABELS } from '../lib/health';
 import { familyDislikeLabel } from '../lib/familyDislikes';
 import CollapsibleCard from './CollapsibleCard';
@@ -252,6 +253,8 @@ export default function SettingsView({
           {profile && onProfileChange && <DayRulesSettings profile={profile} onSaved={onProfileChange} />}
           {/* Mengen-Regeln: wie oft Nudeln, Garnelen, Fisch … pro Woche/Monat */}
           {profile && onProfileChange && <VarietyRulesSettings profile={profile} onSaved={onProfileChange} />}
+          {/* Beilagen und Salate: aus / vorschlagen / automatisch */}
+          {profile && onProfileChange && <SidesSettings profile={profile} onSaved={onProfileChange} />}
           {/* Routines Section */}
           <CollapsibleCard
             storageKey="routinen"

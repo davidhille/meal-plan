@@ -45,6 +45,7 @@ import {
 import LoginScreen, { inviteToken } from './components/LoginScreen';
 import { familyPortions } from './lib/portions';
 import { toPlanDessert } from './lib/desserts';
+import { parseSidesMode } from './lib/sidesSuggest';
 import PlanCreationModal, { type PlanMode } from './components/PlanCreationModal';
 import Header from './components/Header';
 import TabSwitcher from './components/TabSwitcher';
@@ -528,6 +529,7 @@ export default function App() {
             defaultPortions={familyPortions(familyMembers)}
             onSetDessert={currentPlan ? handleSetDessert : undefined}
             onSetSides={currentPlan ? handleSetSides : undefined}
+            sidesMode={parseSidesMode(profile?.sides_mode)}
             allPlanMeals={currentPlan ? planMeals : undefined}
             reminderTime={profile?.reminder_time}
             dayRules={profile?.day_rules}

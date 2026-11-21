@@ -1,3 +1,4 @@
+import type { SidesMode } from './sidesSuggest';
 import {
   Profile, FamilyMember, MealRating, MealPlan, PlanMeal, Routine, ShoppingItem, ShoppingLabel, Favorite, MealType, ImageCredit,
   ShopState, ShopProvider, ProductResult, CartItem, ShopRule, PlanDessert, PlanSide, Dessert, DessertCategory, RecipeCatalog, RecipeFilter, RecipeFilterInput, RecipeDraft, DayRules, RatingNote,
@@ -408,6 +409,10 @@ export function saveDayRules(dayRules: DayRules, brotzeitPerWeek?: number): Prom
 }
 
 /** Mengen-Regeln speichern (null = Standard-Regeln); wirft bei Fehlern */
+export function saveSidesMode(mode: SidesMode): Promise<Profile> {
+  return request<Profile>('PUT', '/profile/sides-mode', { sides_mode: mode });
+}
+
 export function saveVarietyRules(rules: VarietyRule[] | null): Promise<Profile> {
   return request<Profile>('PUT', '/profile/variety-rules', { variety_rules: rules });
 }
