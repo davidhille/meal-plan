@@ -11,6 +11,7 @@ Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einr
 
 ## Zuletzt erledigt
 
+- **Mengen-Regeln erweitert (21.11.):** Standard zusätzlich Pizza, Burger & Wraps und Curry je höchstens 1× pro Woche; neue Kategorien „Mexikanische Gerichte“ und „Bowls & Pfannengerichte“ (ohne Standardregel, in den Einstellungen wählbar). Noch nicht live getestet.
 - **Asiatisch begrenzt (21.11.):** neue Mengen-Regel-Kategorie „Asiatische Gerichte“ (am Gerichtnamen erkannt), Standard höchstens 2× pro Woche und 5× pro Monat; änderbar in Einstellungen → Planung → „Wie oft darf es vorkommen?“. Noch nicht live getestet.
 - **Saison entfernt (21.11.):** kein Saison-Bonus beim Planen, keine „Saison: …“-Zeile an den Karten, keine Saison in der Sortierung „Empfohlen“, Schwerpunkt „Saisonal“ weg (Migration 0039). Grund: zu oft Lauch. Noch nicht live getestet.
 - **„Ab heute weiterplanen“ (21.11.):** Plan-Fenster bei laufendem Plan: dritte Wahl neben „Hinzufügen“ und „Alles neu planen“. Heute und kommende Tage bleiben, Vergangenes wird aus dem Plan genommen (wandert in einen archivierten Plan, damit Pause nach Bewertung und Mengen-Regeln den Verlauf behalten), freie Tage bekommen ein Gericht. Noch nicht live getestet.

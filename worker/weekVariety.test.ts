@@ -181,3 +181,21 @@ describe("Asiatische Gerichte", () => {
     expect(exceedsCap("Wok-Gemüse mit Reis", "2026-12-01", counts, DEFAULT_VARIETY_RULES)).toBe(false);
   });
 });
+
+describe("Weitere Kategorien und Standardregeln", () => {
+  const ids = (n: string) => categoriesOf(n).map((c) => c.id);
+  test("Mexikanisch und Bowl/Pfanne werden am Namen erkannt", () => {
+    expect(ids("Kichererbsen-Fajitas")).toContain("mexikanisch");
+    expect(ids("Chili sin Carne")).toContain("mexikanisch");
+    expect(ids("Vegetarisches Kartoffel-Gemüse-Pfannengericht")).toContain("bowlpfanne");
+    expect(ids("Quinoa-Bowl mit Gemüse")).toContain("bowlpfanne");
+    expect(ids("Rinderrouladen mit Rotkohl")).not.toContain("bowlpfanne");
+  });
+  test("Standard: Pizza, Burger/Wraps und Curry höchstens 1× pro Woche", () => {
+    for (const n of ["Pizza Margherita", "Big Mac Wrap", "Rotes Linsencurry"]) {
+      const counts = countsOf([{ date: "2026-11-24", name: n }]);
+      expect(exceedsCap(n, "2026-11-26", counts, DEFAULT_VARIETY_RULES)).toBe(true);
+      expect(exceedsCap(n, "2026-12-01", counts, DEFAULT_VARIETY_RULES)).toBe(false);
+    }
+  });
+});
