@@ -127,9 +127,22 @@ export default function VarietyRulesSettings({ profile, onSaved }: VarietyRulesS
       </p>
       <ul className="border-t border-gray-100 divide-y divide-gray-100">
         <li className="px-4 py-3 space-y-2">
-          <p className="text-sm font-semibold text-gray-800">Fleisch</p>
+          <div className="flex items-center gap-2">
+            <select aria-label="Kategorie" value="fleisch" onChange={() => undefined} className={`${selectClass} flex-1 min-w-0 font-semibold`}>
+              <option value="fleisch">Fleisch</option>
+            </select>
+            <button
+              type="button"
+              disabled={saving || meatMax == null}
+              onClick={() => persistMeat(null)}
+              aria-label="Fleisch-Grenze entfernen (keine Grenze)"
+              className="tap p-2 text-gray-500 hover:text-red-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-300 disabled:opacity-40"
+            >
+              <Trash2 size={16} aria-hidden="true" />
+            </button>
+          </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-700">
-            <span className="w-16 font-semibold text-gray-600">pro Woche</span>
+            <span className="w-[4.5rem] shrink-0 whitespace-nowrap font-semibold text-gray-600">pro Woche</span>
             <label className="flex items-center gap-2">
               höchstens
               <select
@@ -184,7 +197,7 @@ export default function VarietyRulesSettings({ profile, onSaved }: VarietyRulesS
                 const periodLabel = r.period === 'week' ? 'Woche' : 'Monat';
                 return (
                   <div key={r.period} className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-700">
-                    <span className="w-16 font-semibold text-gray-600">pro {periodLabel}</span>
+                    <span className="w-[4.5rem] shrink-0 whitespace-nowrap font-semibold text-gray-600">pro {periodLabel}</span>
                     <label className="flex items-center gap-2">
                       mindestens
                       <select
