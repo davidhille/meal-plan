@@ -222,3 +222,16 @@ describe("Bewertung wirkt um 3 Sterne zentriert", () => {
     expect(scoreMeal(meal, ctx({ favoriteNames: [meal.name] }))).toBeLessThan(rated(5));
   });
 });
+
+describe("Fleisch-Erkennung", () => {
+  const r = (name: string, ingredients: string[]): Recipe => ({ name, type: "vegetarisch", ingredients, instructions: "", durationMin: 30 });
+  test("Ente, Gans, Wild und Hack zählen als Fleisch (Fehlerursache: „525 g Enten“ galt als vegetarisch)", () => {
+    expect(looksMeaty(r("Schnelle Knusperente auf Grillgemüse", ["525 g Enten (ohne Knochen, gewürzt und vorgegart)", "6 Kartoffeln"]))).toBe(true);
+    expect(looksMeaty(r("Gänsebraten", ["1 Gans"]))).toBe(true);
+    expect(looksMeaty(r("Pfanne", ["400 g gemischtes Hack"]))).toBe(true);
+  });
+  test("Vegetarisches bleibt vegetarisch (Hirschhornsalz, Wildreis, Wildkräuter)", () => {
+    expect(looksMeaty(r("Lebkuchen", ["1 TL Hirschhornsalz", "200 g Mehl"]))).toBe(false);
+    expect(looksMeaty(r("Wildreis-Pfanne", ["200 g Wildreis", "Wildkräuter", "Gemüse"]))).toBe(false);
+  });
+});
