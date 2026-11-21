@@ -225,6 +225,7 @@ optional `PIXABAY_API_KEY`, `PEXELS_API_KEY`. Nie ins Repo, nie in `wrangler.jso
   (beim Verlängern nicht doppelt). `exceedsCap` gilt in `pickDays` und `replaceMeal` (Knopf „Neu“); ist sonst nichts übrig, gilt die Grenze
   nicht. `minimumSlots` verteilt fehlende Mindest-Gerichte gleichmäßig auf freie Tage (bei Teilplänen nur den Anteil des Zeitraums); `pickDays`
   nimmt dort ein frisches Gericht der Kategorie (nicht pausiert, nicht schon im Plan), gibt es keins, bleibt es bei der normalen Auswahl.
+  **Zuordnung von Hand (Entscheidung von David 21.11.2026):** `recipe_variety_overrides` (0040, je Familie und Gerichtname, `included` true = zählt dazu, false = zählt nicht; geht vor der Namenserkennung), `GET/POST /variety-overrides` (`include`/`exclude`/`auto`), `ctx.varietyOverrides` aus `loadContext` bis in `categoriesOf`/`exceedsCap`/`matchesCategory`; Frontend `RecipeVarietyAssign` in der Rezept-Ansicht („Zählt für Mengen-Regeln“, getrennt von den Filter-Kategorien in `recipe_category_overrides`). Umbenennen zieht sie mit (`renameReferences`), Löschen entfernt sie. Neue Funktionen, die Kategorien zählen, immer `overrides` durchreichen.
   „Mindestens“ gilt nur beim Planen, nicht bei „Neu“. Favoriten mit Turnus (`turnus_weeks`) laufen davon getrennt. `replaceMeal` setzt das neue
   Gericht an den *aktuellen* Tag der Zeile (Auswahl dauert, Verlegen dazwischen führte sonst zu zwei Gerichten an einem Tag).
 - `/api/images/*` ist absichtlich ohne Anmeldung (Bilder sind nicht privat); `?f=<profile_id>` liefert die Fassung einer Familie.

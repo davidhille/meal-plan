@@ -14,6 +14,8 @@ import {
 } from '../lib/recipeFacets';
 import RecipeFilterSheet from './RecipeFilterSheet';
 import RecipeCategoryAssign from './RecipeCategoryAssign';
+import RecipeVarietyAssign from './RecipeVarietyAssign';
+import { VarietyOverride, toVarietyOverrideMap } from '../lib/varietyCategories';
 import { CONDITION_LABELS, allReasons, reasonsOf, swapExample, unsuitableDetail, unsuitableSubject } from '../lib/health';
 import { familyDislikeLabel } from '../lib/familyDislikes';
 import RecipeFilterAssign from './RecipeFilterAssign';
@@ -27,6 +29,7 @@ import HiddenItemsList from './HiddenItemsList';
 import {
   deleteRecipe,
   getCategoryOverrides,
+  getVarietyOverrides,
   moveRecipeToDessert,
   generateMealImage,
   removeMealImage,
@@ -118,6 +121,8 @@ export default function MainDishesView({
   const [showFilters, setShowFilters] = useState(false);
   const [overrideList, setOverrideList] = useState<CategoryOverride[]>([]);
   const overrides = useMemo(() => toOverrideMap(overrideList), [overrideList]);
+  const [varietyList, setVarietyList] = useState<VarietyOverride[]>([]);
+  const varietyOverrides = useMemo(() => toVarietyOverrideMap(varietyList), [varietyList]);
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<RecipeSort>(readSort);
   const changeSort = (value: RecipeSort) => {
@@ -176,6 +181,9 @@ export default function MainDishesView({
     // Ohne Korrekturen geht es auch – dann gilt nur die automatische Erkennung
     getCategoryOverrides()
       .then(setOverrideList)
+      .catch(() => {});
+    getVarietyOverrides()
+      .then(setVarietyList)
       .catch(() => {});
   }, []);
 
@@ -646,6 +654,7 @@ export default function MainDishesView({
                 </p>
               )}
               <RecipeCategoryAssign recipe={selected} overrides={overrides} onChange={setOverrideList} />
+              <RecipeVarietyAssign recipeName={selected.name} overrides={varietyOverrides} onChange={setVarietyList} />
               {onFiltersChange && <RecipeFilterAssign filters={customFilters} recipe={selected} onChange={onFiltersChange} />}
             </div>
           }

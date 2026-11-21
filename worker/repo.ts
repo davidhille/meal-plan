@@ -96,14 +96,17 @@ export async function getProfile(sql: Sql, user?: { profileId: string } | null) 
 }
 
 export async function loadContext(sql: Sql, profileId: string): Promise<ScoringContext> {
-  const [profiles, members, ratings, rejected] = await Promise.all([
+  const [profiles, members, ratings, rejected, varietyOv] = await Promise.all([
     sql`SELECT health_focus, health_conditions, meat_max_per_week, day_rules, brotzeit_per_week, family_dislikes, variety_rules, sides_mode, hidden_sides FROM profiles WHERE id = ${profileId}`,
     sql`SELECT type, age, favorite_foods, disliked_foods FROM family_members WHERE profile_id = ${profileId}`,
     sql`SELECT meal_name, rating, notes FROM meal_ratings WHERE profile_id = ${profileId}
       ORDER BY COALESCE(updated_at, created_at) DESC`,
     sql`SELECT meal_name FROM rejected_meals WHERE profile_id = ${profileId}`,
+    sql`SELECT recipe_name, category_id, included FROM recipe_variety_overrides WHERE profile_id = ${profileId}`,
   ]);
   const p = profiles[0] ?? {};
+  const varietyOverrides: Record<string, Record<string, boolean>> = {};
+  for (const o of varietyOv) (varietyOverrides[o.recipe_name as string] ??= {})[o.category_id as string] = o.included as boolean;
   return {
     profileId,
     healthFocus: p.health_focus || [],
@@ -115,6 +118,7 @@ export async function loadContext(sql: Sql, profileId: string): Promise<ScoringC
     familyDislikes: p.family_dislikes || [],
     // NULL = nichts eingestellt: Standard-Regeln (siehe weekVariety.ts)
     varietyRules: parseVarietyRules(p.variety_rules) ?? undefined,
+    varietyOverrides,
     sidesMode: parseSidesMode(p.sides_mode),
     hiddenSides: p.hidden_sides || [],
     mealRatings: Object.fromEntries(ratings.map((r) => [r.meal_name, r.rating])),

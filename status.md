@@ -11,6 +11,7 @@ Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einr
 
 ## Zuletzt erledigt
 
+- **Mengen-Regeln pro Rezept zuordnen (21.11.):** In der Rezept-Ansicht „Zählt für Mengen-Regeln“ → „Anpassen“: Kategorien von Hand zuordnen oder abwählen (Tabelle `recipe_variety_overrides`, Migration 0040). Noch nicht live getestet.
 - **Mengen-Regeln erweitert (21.11.):** Standard zusätzlich Pizza, Burger & Wraps und Curry je höchstens 1× pro Woche; neue Kategorien „Mexikanische Gerichte“ und „Bowls & Pfannengerichte“ (ohne Standardregel, in den Einstellungen wählbar). Noch nicht live getestet.
 - **Asiatisch begrenzt (21.11.):** neue Mengen-Regel-Kategorie „Asiatische Gerichte“ (am Gerichtnamen erkannt), Standard höchstens 2× pro Woche und 5× pro Monat; änderbar in Einstellungen → Planung → „Wie oft darf es vorkommen?“. Noch nicht live getestet.
 - **Saison entfernt (21.11.):** kein Saison-Bonus beim Planen, keine „Saison: …“-Zeile an den Karten, keine Saison in der Sortierung „Empfohlen“, Schwerpunkt „Saisonal“ weg (Migration 0039). Grund: zu oft Lauch. Noch nicht live getestet.

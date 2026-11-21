@@ -74,10 +74,13 @@ export function pickDays(
   // Mengen-Regeln (Einstellungen → Planung): Zähler aus dem Verlauf vor dem Plan und den festen Tagen. Verlauf-Einträge, die
   // beim Verlängern schon als feste Tage dabei sind, zählen nicht doppelt.
   const rules = ctx.varietyRules ?? DEFAULT_VARIETY_RULES;
-  const varietyCounts = countsOf([
-    ...(ctx.planHistory ?? []).filter((h) => assigned.get(h.date)?.name !== h.name),
-    ...[...assigned].map(([date, r]) => ({ date, name: r.name })),
-  ]);
+  const varietyCounts = countsOf(
+    [
+      ...(ctx.planHistory ?? []).filter((h) => assigned.get(h.date)?.name !== h.name),
+      ...[...assigned].map(([date, r]) => ({ date, name: r.name })),
+    ],
+    ctx.varietyOverrides
+  );
   // Mindest-Regeln: an welchen freien Tagen soll welche Kategorie auf den Teller
   const slots = minimumSlots(
     dates.filter((d) => !assigned.has(d)),
@@ -96,20 +99,20 @@ export function pickDays(
     const quick = withinTime(base, date, ctx.dayRules);
     const timed = quick.length ? quick : base;
     // Höchstgrenzen für Hauptkomponenten; ist nichts anderes übrig, lieber ein Gericht als ein leerer Tag
-    const varied = timed.filter((r) => !exceedsCap(r.name, date, varietyCounts, rules));
+    const varied = timed.filter((r) => !exceedsCap(r.name, date, varietyCounts, rules, ctx.varietyOverrides));
     let candidates = varied.length ? varied : timed;
     // Mindest-Regel: an diesem Tag ein frisches Gericht der Kategorie (nicht kürzlich gekocht, nicht schon im Plan);
     // gibt es keins, bleibt es bei der normalen Auswahl
     const wanted = fixed ? undefined : slots.get(date);
     if (wanted) {
-      const forced = candidates.filter((r) => matchesCategory(wanted, r.name) && !used.has(r.name) && !recentSet.has(r.name));
+      const forced = candidates.filter((r) => matchesCategory(wanted, r.name, ctx.varietyOverrides) && !used.has(r.name) && !recentSet.has(r.name));
       if (forced.length) candidates = forced;
     }
     const recipe = fixed ?? pickMeal(date, ctx, used, candidates);
     if (!recipe) continue;
     if (!fixed) {
       addMeat(date, recipe);
-      addToCounts(varietyCounts, date, recipe.name);
+      addToCounts(varietyCounts, date, recipe.name, ctx.varietyOverrides);
     }
     meals.push({ date, recipe });
   }
@@ -361,11 +364,14 @@ export async function replaceMeal(env: Env, sql: Sql, profileId: string, planMea
     WHERE plan_id = ${old.plan_id} AND id <> ${planMealId} AND NOT rejected AND NOT brotzeit`;
   // Mengen-Regeln: Verlauf vor diesem Tag plus die übrigen Gerichte des Plans ab diesem Tag (davor stehen sie schon im Verlauf)
   const rules = ctx.varietyRules ?? DEFAULT_VARIETY_RULES;
-  const varietyCounts = countsOf([
-    ...planHistory,
-    ...others.filter((o) => (o.d as string) >= old.meal_date).map((o) => ({ date: o.d as string, name: o.meal_name as string })),
-  ]);
-  const overVarietyCap = (name: string) => exceedsCap(name, old.meal_date, varietyCounts, rules);
+  const varietyCounts = countsOf(
+    [
+      ...planHistory,
+      ...others.filter((o) => (o.d as string) >= old.meal_date).map((o) => ({ date: o.d as string, name: o.meal_name as string })),
+    ],
+    ctx.varietyOverrides
+  );
+  const overVarietyCap = (name: string) => exceedsCap(name, old.meal_date, varietyCounts, rules, ctx.varietyOverrides);
 
   // Fleisch-Grenze: zählt die anderen Gerichte derselben Kalenderwoche im Plan
   let candidates = pool;

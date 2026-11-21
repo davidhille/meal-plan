@@ -39,6 +39,7 @@ import beilagenModus from "./0036_beilagen_modus";
 import eigeneBeilagen from "./0037_eigene_beilagen";
 import beilagenAusblenden from "./0038_beilagen_ausblenden";
 import saisonEntfernt from "./0039_saison_entfernt";
+import mengenregelnZuordnung from "./0040_mengenregeln_zuordnung";
 
 export interface Migration {
   /** Eindeutig und aufsteigend, z. B. "0002_kochmodus" */
@@ -87,4 +88,5 @@ export const MIGRATIONS: Migration[] = [
   { id: "0037_eigene_beilagen", statements: eigeneBeilagen },
   { id: "0038_beilagen_ausblenden", statements: beilagenAusblenden },
   { id: "0039_saison_entfernt", statements: saisonEntfernt },
+  { id: "0040_mengenregeln_zuordnung", statements: mengenregelnZuordnung },
 ];

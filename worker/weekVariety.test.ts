@@ -199,3 +199,25 @@ describe("Weitere Kategorien und Standardregeln", () => {
     }
   });
 });
+
+describe("Zuordnung von Hand", () => {
+  const ids = (n: string, o?: Record<string, Record<string, boolean>>) => categoriesOf(n, o).map((c) => c.id);
+  test("zuordnen: ein Gericht ohne Wort im Namen zählt trotzdem", () => {
+    const name = "Zitronen-Hähnchen mit Reis und Ingwer";
+    expect(ids(name)).not.toContain("asiatisch");
+    expect(ids(name, { [name]: { asiatisch: true } })).toContain("asiatisch");
+    const counts = countsOf([{ date: "2026-11-24", name }, { date: "2026-11-25", name }], { [name]: { asiatisch: true } });
+    expect(exceedsCap("Chicken Pad Thai", "2026-11-26", counts, DEFAULT_VARIETY_RULES)).toBe(true);
+  });
+  test("ausnehmen: falsch erkanntes zählt nicht, andere Kategorien bleiben", () => {
+    const name = "Wok-Gemüse mit Nudeln";
+    expect(ids(name)).toContain("asiatisch");
+    const o = { [name]: { asiatisch: false } };
+    expect(ids(name, o)).not.toContain("asiatisch");
+    expect(ids(name, o)).toContain("nudeln");
+  });
+  test("Zuordnung gilt auch für „an diesem Tag soll X auf den Teller“", () => {
+    expect(matchesCategory("fisch", "Zitronen-Teller", { "Zitronen-Teller": { fisch: true } })).toBe(true);
+    expect(matchesCategory("fisch", "Zitronen-Teller")).toBe(false);
+  });
+});

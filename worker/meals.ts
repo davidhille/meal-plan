@@ -2,7 +2,7 @@
 import type { SidesMode } from "../src/lib/sidesSuggest";
 import { excludedByDislikes } from "./dislikes";
 import type { DayRules } from "./dayRules";
-import type { VarietyRule } from "./weekVariety";
+import type { VarietyOverrides, VarietyRule } from "./weekVariety";
 import { VEGETARISCH } from "./recipes/vegetarisch";
 import { FLEISCH } from "./recipes/fleisch";
 import { WOCHENENDE } from "./recipes/wochenende";
@@ -242,6 +242,8 @@ export interface ScoringContext {
   familyDislikes?: string[];
   /** Mengen-Regeln der Familie (Einstellungen → Planung); ohne Angabe die Standard-Regeln, siehe weekVariety.ts */
   varietyRules?: VarietyRule[];
+  /** Von Hand zugeordnete Kategorien für die Mengen-Regeln (Gerichtname → Kategorie → ja/nein) */
+  varietyOverrides?: VarietyOverrides;
   /** Beilagen beim Planen: off | suggest | auto (nur auto ergänzt hier; suggest zeigt die App) */
   sidesMode?: SidesMode;
   /** Ausgeblendete Beilagen/Salate der festen Sammlung (kommen nicht als Vorschlag) */
