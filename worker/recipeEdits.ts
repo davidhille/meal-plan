@@ -41,6 +41,8 @@ async function renameReferences(sql: Sql, profileId: string, from: string, to: s
     exclude_names = array_replace(exclude_names, ${from}, ${to}) WHERE profile_id = ${profileId}`;
   await sql`UPDATE recipe_category_overrides o SET recipe_name = ${to} WHERE profile_id = ${profileId} AND recipe_name = ${from}
     AND NOT EXISTS (SELECT 1 FROM recipe_category_overrides x WHERE x.profile_id = o.profile_id AND x.recipe_name = ${to} AND x.category_id = o.category_id)`;
+  await sql`UPDATE recipe_variety_overrides o SET recipe_name = ${to} WHERE profile_id = ${profileId} AND recipe_name = ${from}
+    AND NOT EXISTS (SELECT 1 FROM recipe_variety_overrides x WHERE x.profile_id = o.profile_id AND x.recipe_name = ${to} AND x.category_id = o.category_id)`;
   // Bild für den neuen Namen kopieren (als eigene Fassung dieser Familie) – andere Familien behalten ihr Bild
   const has = await sql`SELECT 1 FROM meal_images WHERE meal_name = ${to} AND (profile_id IS NULL OR profile_id = ${profileId})`;
   if (!has[0]) {

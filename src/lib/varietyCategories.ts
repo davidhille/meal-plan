@@ -64,6 +64,32 @@ export const VARIETY_CATEGORIES: VarietyCategory[] = [
   fromCategories('eier'),
 ];
 
+/** Korrekturen von Hand: Gerichtname → Kategorie → zählt dazu (true) bzw. zählt nicht (false); geht vor der Namenserkennung */
+export type VarietyOverrides = Record<string, Record<string, boolean>>;
+
+export interface VarietyOverride {
+  name: string;
+  categoryId: string;
+  included: boolean;
+}
+
+export const toVarietyOverrideMap = (list: VarietyOverride[]): VarietyOverrides => {
+  const map: VarietyOverrides = {};
+  for (const o of list) (map[o.name] ??= {})[o.categoryId] = o.included;
+  return map;
+};
+
+/** Zählt das Gericht für diese Kategorie? Korrektur von Hand vor der Erkennung am Namen. */
+export const inVarietyCategory = (c: VarietyCategory, name: string, overrides?: VarietyOverrides): boolean =>
+  overrides?.[name]?.[c.id] ?? c.re.test(name.toLowerCase());
+
+/** Antippen in der Rezept-Ansicht: was gespeichert wird (auto = Korrektur entfernen) */
+export function toggleVarietyCategory(c: VarietyCategory, name: string, overrides?: VarietyOverrides): 'include' | 'exclude' | 'auto' {
+  const auto = c.re.test(name.toLowerCase());
+  if (inVarietyCategory(c, name, overrides)) return auto ? 'exclude' : 'auto';
+  return auto ? 'auto' : 'include';
+}
+
 /** Solange eine Familie nichts eingestellt hat (`profiles.variety_rules` ist NULL) */
 export const DEFAULT_VARIETY_RULES: VarietyRule[] = [
   { id: 'meeresfruechte', period: 'week', max: 1 },

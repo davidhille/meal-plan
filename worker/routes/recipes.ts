@@ -1,4 +1,5 @@
 // Rezept-Übersicht, Import, eigene Rezepte, Favoriten, Rezept-Filter, Bilder
+import { VARIETY_CATEGORIES } from "../../src/lib/varietyCategories";
 import type { Ctx } from "../http";
 import { json } from "../http";
 import { effectiveImageUrl, generateImage, removeImage, storeSourcePhoto } from "../images";
@@ -75,10 +76,16 @@ async function deleteMainDish(sql: Sql, profileId: string, name: string) {
   }
   await sql`DELETE FROM favorites WHERE profile_id = ${profileId} AND meal_name = ${name}`;
   await sql`DELETE FROM recipe_category_overrides WHERE profile_id = ${profileId} AND recipe_name = ${name}`;
+  await sql`DELETE FROM recipe_variety_overrides WHERE profile_id = ${profileId} AND recipe_name = ${name}`;
 }
 
 function listCategoryOverrides(sql: Sql, profileId: string) {
   return sql`SELECT recipe_name AS name, category_id AS "categoryId", included FROM recipe_category_overrides
+    WHERE profile_id = ${profileId}`;
+}
+
+function listVarietyOverrides(sql: Sql, profileId: string) {
+  return sql`SELECT recipe_name AS name, category_id AS "categoryId", included FROM recipe_variety_overrides
     WHERE profile_id = ${profileId}`;
 }
 
@@ -415,6 +422,30 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
         ON CONFLICT (profile_id, recipe_name, category_id) DO UPDATE SET included = EXCLUDED.included`;
     }
     return json(await listCategoryOverrides(sql, p.id));
+  }
+
+  // ---------- Kategorie für die Mengen-Regeln von Hand zuordnen ----------
+  if (route === "GET /variety-overrides") {
+    const p = await getProfile(sql, user);
+    return json(await listVarietyOverrides(sql, p.id));
+  }
+  // include = zählt dazu, exclude = zählt nicht, auto = wieder der Erkennung am Namen überlassen
+  if (route === "POST /variety-overrides") {
+    const p = await getProfile(sql, user);
+    const name = String(body.name ?? "").trim().slice(0, 200);
+    const categoryId = String(body.categoryId ?? "");
+    const state = body.state as string;
+    if (!name || !VARIETY_CATEGORIES.some((c) => c.id === categoryId) || !["include", "exclude", "auto"].includes(state)) {
+      return json({ error: "Angaben fehlen" }, 400);
+    }
+    if (state === "auto") {
+      await sql`DELETE FROM recipe_variety_overrides WHERE profile_id = ${p.id} AND recipe_name = ${name} AND category_id = ${categoryId}`;
+    } else {
+      await sql`INSERT INTO recipe_variety_overrides (profile_id, recipe_name, category_id, included)
+        VALUES (${p.id}, ${name}, ${categoryId}, ${state === "include"})
+        ON CONFLICT (profile_id, recipe_name, category_id) DO UPDATE SET included = EXCLUDED.included`;
+    }
+    return json(await listVarietyOverrides(sql, p.id));
   }
 
   // ---------- Bilder ----------

@@ -4,7 +4,7 @@ import {
   ShopState, ShopProvider, ProductResult, CartItem, ShopRule, PlanDessert, PlanSide, Side, SideKind, Dessert, DessertCategory, RecipeCatalog, RecipeFilter, RecipeFilterInput, RecipeDraft, DayRules, RatingNote,
 } from '../types';
 import type { CategoryOverride } from './recipeCategories';
-import type { VarietyRule } from './varietyCategories';
+import type { VarietyOverride, VarietyRule } from './varietyCategories';
 import { fetchErrorText, httpErrorText } from './errorText';
 import { photoCandidates } from './chefkochPhoto';
 
@@ -957,6 +957,17 @@ export async function getCategoryOverrides(): Promise<CategoryOverride[]> {
 /** Gericht einer Kategorie zuordnen (include), ausnehmen (exclude) oder wieder der Erkennung überlassen (auto) */
 export async function setCategoryOverride(name: string, categoryId: string, state: 'include' | 'exclude' | 'auto'): Promise<CategoryOverride[]> {
   return request<CategoryOverride[]>('POST', '/category-overrides', { name, categoryId, state });
+}
+
+// ---------- Kategorie für die Mengen-Regeln zuordnen (werfen bei Fehlern) ----------
+
+export async function getVarietyOverrides(): Promise<VarietyOverride[]> {
+  return request<VarietyOverride[]>('GET', '/variety-overrides');
+}
+
+/** Gericht einer Regel-Kategorie zuordnen (include), ausnehmen (exclude) oder wieder der Erkennung am Namen überlassen (auto) */
+export async function setVarietyOverride(name: string, categoryId: string, state: 'include' | 'exclude' | 'auto'): Promise<VarietyOverride[]> {
+  return request<VarietyOverride[]>('POST', '/variety-overrides', { name, categoryId, state });
 }
 
 export async function createLabel(name: string, color: string): Promise<ShoppingLabel[] | null> {

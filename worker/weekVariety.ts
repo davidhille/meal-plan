@@ -8,13 +8,15 @@ import {
   DEFAULT_VARIETY_RULES,
   VARIETY_CATEGORIES,
   VARIETY_LIMIT,
+  inVarietyCategory,
   type VarietyCategory,
+  type VarietyOverrides,
   type VarietyPeriod,
   type VarietyRule,
 } from "../src/lib/varietyCategories";
 
 export { DEFAULT_VARIETY_RULES, VARIETY_CATEGORIES };
-export type { VarietyCategory, VarietyPeriod, VarietyRule };
+export type { VarietyCategory, VarietyOverrides, VarietyPeriod, VarietyRule };
 
 const MAX_RULES = 20;
 
@@ -61,22 +63,23 @@ export function parseVarietyRules(raw: unknown): VarietyRule[] | null {
 }
 
 /** Zu welchen Kategorien gehört das Gericht? */
-export function categoriesOf(name: string): VarietyCategory[] {
-  const n = name.toLowerCase();
-  return VARIETY_CATEGORIES.filter((c) => c.re.test(n));
+export function categoriesOf(name: string, overrides?: VarietyOverrides): VarietyCategory[] {
+  return VARIETY_CATEGORIES.filter((c) => inVarietyCategory(c, name, overrides));
 }
 
 /** Gehört das Gericht zur Kategorie? (für „an diesem Tag soll Fisch auf den Teller“) */
-export const matchesCategory = (id: string, name: string) =>
-  !!VARIETY_CATEGORIES.find((c) => c.id === id)?.re.test(name.toLowerCase());
+export const matchesCategory = (id: string, name: string, overrides?: VarietyOverrides) => {
+  const c = VARIETY_CATEGORIES.find((x) => x.id === id);
+  return !!c && inVarietyCategory(c, name, overrides);
+};
 
 /** Zähler je Zeitraum (Woche/Monat) und Kategorie */
 export type VarietyCounts = Map<string, Map<string, number>>;
 
 const periodKey = (date: string, period: VarietyPeriod) => (period === "week" ? `w${isoWeekKey(date)}` : `m${date.slice(0, 7)}`);
 
-export function addToCounts(counts: VarietyCounts, date: string, name: string): void {
-  for (const c of categoriesOf(name)) {
+export function addToCounts(counts: VarietyCounts, date: string, name: string, overrides?: VarietyOverrides): void {
+  for (const c of categoriesOf(name, overrides)) {
     for (const period of ["week", "month"] as const) {
       const key = periodKey(date, period);
       const byCategory = counts.get(key) ?? new Map<string, number>();
@@ -86,9 +89,9 @@ export function addToCounts(counts: VarietyCounts, date: string, name: string): 
   }
 }
 
-export function countsOf(meals: { date: string; name: string }[]): VarietyCounts {
+export function countsOf(meals: { date: string; name: string }[], overrides?: VarietyOverrides): VarietyCounts {
   const counts: VarietyCounts = new Map();
-  for (const m of meals) addToCounts(counts, m.date, m.name);
+  for (const m of meals) addToCounts(counts, m.date, m.name, overrides);
   return counts;
 }
 
@@ -96,8 +99,8 @@ const countFor = (counts: VarietyCounts, rule: VarietyRule, date: string) =>
   counts.get(periodKey(date, rule.period))?.get(rule.id) ?? 0;
 
 /** Würde das Gericht an diesem Tag eine Höchstgrenze (max) überschreiten? */
-export function exceedsCap(name: string, date: string, counts: VarietyCounts, rules: VarietyRule[]): boolean {
-  const ids = new Set(categoriesOf(name).map((c) => c.id));
+export function exceedsCap(name: string, date: string, counts: VarietyCounts, rules: VarietyRule[], overrides?: VarietyOverrides): boolean {
+  const ids = new Set(categoriesOf(name, overrides).map((c) => c.id));
   return rules.some((r) => r.max !== undefined && ids.has(r.id) && countFor(counts, r, date) >= r.max);
 }
 
