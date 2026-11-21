@@ -4,6 +4,7 @@ import { DessertCategory, MealType, RecipeDraft } from '../types';
 import { useDialog } from '../lib/useDialog';
 import { DESSERT_CATEGORIES, guessDessertCategory } from '../lib/desserts';
 import type { DessertInput } from '../lib/api';
+import type { SideKind } from '../types';
 import ConfirmDialog from './ConfirmDialog';
 
 interface RecipeEditModalProps {
@@ -16,6 +17,8 @@ interface RecipeEditModalProps {
   note?: string;
   /** Ist es eigentlich ein Nachtisch? → zu den Nachtischen verschieben (ohne: keine Auswahl „Nachtisch“) */
   onMoveToDessert?: (dessert: DessertInput) => Promise<void>;
+  /** Ist es eigentlich eine Beilage oder ein Salat? → zu den Beilagen verschieben (ohne: keine Auswahl) */
+  onMoveToSide?: (side: { name: string; kind: SideKind; durationMin: number | null; ingredients: string[]; instructions: string }) => Promise<void>;
   onClose: () => void;
 }
 
@@ -35,17 +38,19 @@ export default function RecipeEditModal({
   onSave,
   onReset,
   onMoveToDessert,
+  onMoveToSide,
   note = 'Änderungen gelten auch für dieses Gericht in den kommenden Tagen des Speiseplans und für den Favoriten.',
   onClose,
 }: RecipeEditModalProps) {
   const dialogRef = useDialog(onClose);
   const [name, setName] = useState(recipe.name);
-  const [type, setType] = useState<MealType | 'nachtisch'>(recipe.type);
+  const [type, setType] = useState<MealType | 'nachtisch' | 'beilage' | 'salat'>(recipe.type);
   const [category, setCategory] = useState<DessertCategory>(() =>
     guessDessertCategory(`${recipe.name} ${recipe.ingredients.join(' ')}`)
   );
   const [yieldText, setYieldText] = useState('4 Portionen');
   const asDessert = type === 'nachtisch';
+  const asSide = type === 'beilage' || type === 'salat';
   const [duration, setDuration] = useState(recipe.durationMin ? String(recipe.durationMin) : '');
   const [ingredients, setIngredients] = useState(recipe.ingredients.join('\n'));
   const [instructions, setInstructions] = useState(
@@ -76,6 +81,16 @@ export default function RecipeEditModal({
           name: name.trim(),
           category,
           yield: yieldText.trim() || '4 Portionen',
+          durationMin: Number(duration) > 0 ? Math.round(Number(duration)) : null,
+          ingredients: lines(ingredients),
+          instructions: lines(instructions).join('\n'),
+        });
+        return;
+      }
+      if (type === 'beilage' || type === 'salat') {
+        await onMoveToSide?.({
+          name: name.trim(),
+          kind: type,
           durationMin: Number(duration) > 0 ? Math.round(Number(duration)) : null,
           ingredients: lines(ingredients),
           instructions: lines(instructions).join('\n'),
@@ -127,8 +142,17 @@ export default function RecipeEditModal({
 
             <div>
               <span className="text-xs font-semibold text-gray-500">Art (bestimmt den Tag im Wochenrhythmus)</span>
-              <div className={`mt-1 grid ${onMoveToDessert ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'} gap-1.5`} role="radiogroup" aria-label="Art">
-                {[...TYPES, ...(onMoveToDessert ? [{ id: 'nachtisch' as const, label: 'Nachtisch' }] : [])].map((t) => (
+              <div className={`mt-1 grid ${onMoveToDessert || onMoveToSide ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-3'} gap-1.5`} role="radiogroup" aria-label="Art">
+                {[
+                  ...TYPES,
+                  ...(onMoveToDessert ? [{ id: 'nachtisch' as const, label: 'Nachtisch' }] : []),
+                  ...(onMoveToSide
+                    ? [
+                        { id: 'beilage' as const, label: 'Beilage' },
+                        { id: 'salat' as const, label: 'Salat' },
+                      ]
+                    : []),
+                ].map((t) => (
                   <button
                     key={t.id}
                     role="radio"
@@ -175,6 +199,13 @@ export default function RecipeEditModal({
               </div>
             )}
 
+            {asSide && (
+              <p className="p-3 rounded-xl bg-brand-50 text-xs text-brand-900">
+                Wird zu den <strong>Beilagen &amp; Salaten</strong> verschoben und bei den Hauptgerichten gelöscht. Bild und
+                Rezept kommen mit; schon geplante Tage behalten das Gericht.
+              </p>
+            )}
+
             <label className="block">
               <span className="text-xs font-semibold text-gray-500">Zubereitungszeit in Minuten</span>
               <input
@@ -211,7 +242,7 @@ export default function RecipeEditModal({
               />
             </label>
 
-            {!asDessert && <p className="text-xs text-gray-500">{note}</p>}
+            {!asDessert && !asSide && <p className="text-xs text-gray-500">{note}</p>}
 
             {canReset && onReset && (
               <button
@@ -236,7 +267,7 @@ export default function RecipeEditModal({
               className="w-full h-10 rounded-lg text-sm font-semibold bg-brand-700 text-white hover:bg-brand-800 disabled:bg-gray-200 disabled:text-gray-500 flex items-center justify-center gap-2"
             >
               {saving && <Loader2 size={14} className="animate-spin" />}
-              {asDessert ? 'Zu den Nachtischen verschieben' : 'Speichern'}
+              {asDessert ? 'Zu den Nachtischen verschieben' : asSide ? 'Zu den Beilagen verschieben' : 'Speichern'}
             </button>
           </div>
         </div>

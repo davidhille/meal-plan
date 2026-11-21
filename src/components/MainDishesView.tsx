@@ -36,6 +36,7 @@ import {
   getRecipeCatalog,
   saveSeenUnsuitable,
   resetRecipeEdit,
+  moveRecipeToSide,
   reviewRecipes,
   saveRecipeEdit,
   setRecipeHidden,
@@ -750,6 +751,14 @@ export default function MainDishesView({
             setSelected(null);
             onRecipesChanged?.();
             flash(`„${d.name}“ ist jetzt bei den Nachtischen.`);
+          }}
+          onMoveToSide={async (side) => {
+            const r = await moveRecipeToSide(editing.name, side);
+            setCatalog(r.catalog);
+            setEditing(null);
+            setSelected(null);
+            onRecipesChanged?.();
+            flash(`„${side.name}“ ist jetzt bei den Beilagen & Salaten.`);
           }}
           onClose={() => setEditing(null)}
         />
