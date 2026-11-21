@@ -167,6 +167,11 @@ describe("Asiatische Gerichte", () => {
       expect(asia(n)).toBe(false);
     }
   });
+  test("Standard: höchstens 5 pro Monat", () => {
+    const counts = countsOf(["2026-11-02", "2026-11-04", "2026-11-09", "2026-11-11", "2026-11-17"].map((date) => ({ date, name: "Chicken Pad Thai" })));
+    expect(exceedsCap("Wok-Gemüse mit Reis", "2026-11-24", counts, DEFAULT_VARIETY_RULES)).toBe(true);
+    expect(exceedsCap("Wok-Gemüse mit Reis", "2026-12-01", counts, DEFAULT_VARIETY_RULES)).toBe(false);
+  });
   test("Standard: höchstens 2 pro Woche", () => {
     const counts = countsOf([
       { date: "2026-11-24", name: "Chicken Pad Thai" },

@@ -63,6 +63,7 @@ export const DEFAULT_VARIETY_RULES: VarietyRule[] = [
   { id: 'meeresfruechte', period: 'week', max: 1 },
   { id: 'nudeln', period: 'week', max: 2 },
   { id: 'asiatisch', period: 'week', max: 2 },
+  { id: 'asiatisch', period: 'month', max: 5 },
 ];
 
 /** Größte wählbare Zahl je Zeitraum (Server und Einstellungen) */
