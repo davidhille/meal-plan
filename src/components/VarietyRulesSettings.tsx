@@ -75,6 +75,14 @@ export default function VarietyRulesSettings({ profile, onSaved }: VarietyRulesS
     if (free) persist([...rules, { id: free.id, period: 'week', max: 2 }]);
   };
 
+  // Zweite Grenze für dieselbe Kategorie im anderen Zeitraum (z. B. zu „höchstens 2× pro Woche“ noch „höchstens 6× pro Monat“)
+  const addOtherPeriod = (index: number) => {
+    const r = rules[index];
+    const period: VarietyPeriod = r.period === 'week' ? 'month' : 'week';
+    const max = r.max !== undefined ? Math.min(VARIETY_LIMIT[period], period === 'month' ? r.max * 3 : Math.max(1, Math.ceil(r.max / 3))) : 1;
+    persist([...rules.slice(0, index + 1), { id: r.id, period, max }, ...rules.slice(index + 1)]);
+  };
+
   const parse = (value: string) => (value === '' ? undefined : Number(value));
 
   return (
@@ -163,6 +171,17 @@ export default function VarietyRulesSettings({ profile, onSaved }: VarietyRulesS
                 </select>
               </label>
             </div>
+            {!rules.some((o, j) => j !== i && o.id === r.id && o.period !== r.period) && (
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => addOtherPeriod(i)}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:underline"
+              >
+                <Plus size={12} aria-hidden="true" />
+                {r.period === 'week' ? 'Grenze pro Monat dazu' : 'Grenze pro Woche dazu'}
+              </button>
+            )}
           </li>
         ))}
         {rules.length === 0 && <li className="px-4 py-3 text-sm text-gray-500">Keine Regeln: Der Plan achtet nur auf Abwechslung im Namen.</li>}
