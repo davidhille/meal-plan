@@ -11,6 +11,7 @@ Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einr
 
 ## Zuletzt erledigt
 
+- **Planung überarbeitet (21.11.):** Aufwand nach Zeit statt Art pro Wochentag, Vegetarisch-Mindestzahl pro Woche (Einstellung), weggetauschte/verworfene Gerichte merken (`meal_skips`, 90 Tage Pause), Sorten-Abzug, Pausen länger (unbewertet 70 Tage). Noch nicht live geprüft; ob es sich besser anfühlt, zeigt der nächste Plan.
 - **Rezept im Speiseplan bearbeiten (21.11.):** Stift im Rezept-Fenster des Plans öffnet `RecipeEditModal` (`MealPlanView`, `onRecipeEdited` in `App.tsx`). Art „Beilage“/„Salat“ im Bearbeiten-Fenster verschiebt das Gericht zu den eigenen Beilagen (`POST /recipes/to-side`). Noch nicht live geprüft.
 - **Ente galt als vegetarisch (21.11.):** Fleisch-Erkennung kannte „Enten“ nicht; jetzt auch Gans, Wild, Kaninchen, Hack, Kotelett u. a.; gespeicherte Rezepte per Migration 0041 korrigiert. Live geprüft: Knusperente steht jetzt als Fleisch.
 - **Mengen-Regeln: Grenze pro Monat dazu (21.11.):** Unter jeder Regel ein Link „Grenze pro Monat dazu“ (bzw. pro Woche), der eine zweite Regel für dieselbe Kategorie anlegt. Noch nicht live getestet.

@@ -56,6 +56,7 @@ describe("Fleisch-Grenze", () => {
     healthConditions: [],
     healthFocus: [],
     meatMaxPerWeek,
+    vegMinPerWeek: 0,
   });
   const twoWeeks = Array.from({ length: 14 }, (_, i) => `2026-10-${String(12 + i).padStart(2, "0")}`);
   const meatByWeek = (meals: { date: string; recipe: Recipe }[]) => {
@@ -85,14 +86,14 @@ describe("Fleisch-Grenze", () => {
     ];
     const tue = "2026-10-13";
     const thu = "2026-10-15";
-    // ohne Grenze: an beiden Fleisch-Tagen Fleisch
-    const free = pickDays([tue, thu], ctx(null), new Set(), pool);
-    expect(free.every((m) => isMeatDish(m.recipe))).toBe(true);
-    // Grenze 1: Dienstag Fleisch, Donnerstag nicht mehr
-    const limited = pickDays([tue, thu], ctx(1), new Set(), pool);
-    expect(limited.map((m) => isMeatDish(m.recipe))).toEqual([true, false]);
-    // neue Woche: wieder Fleisch erlaubt
-    const nextWeek = pickDays([tue, thu, "2026-10-20"], ctx(1), new Set(), pool);
-    expect(nextWeek.map((m) => isMeatDish(m.recipe))).toEqual([true, false, true]);
+    // Mo–Fr werden nach Aufwand gewählt, nicht mehr nach Art: die Grenze gilt trotzdem je Kalenderwoche
+    const meat = (days: string[], max: number | null) => pickDays(days, ctx(max), new Set(), pool).filter((m) => isMeatDish(m.recipe)).length;
+    for (let i = 0; i < 20; i++) {
+      expect(meat([tue, thu], 1)).toBeLessThanOrEqual(1);
+      expect(meat([tue, thu, "2026-10-20", "2026-10-22"], 1)).toBeLessThanOrEqual(2); // zwei Wochen, je höchstens 1
+      expect(meat([tue, thu], 0)).toBe(0);
+    }
+    // Grenze greift nur bei vorhandener Alternative: ohne Grenze sind auch zwei Fleischgerichte möglich
+    expect(Math.max(...Array.from({ length: 40 }, () => meat([tue, thu], null)))).toBe(2);
   });
 });

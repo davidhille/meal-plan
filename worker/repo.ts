@@ -96,13 +96,14 @@ export async function getProfile(sql: Sql, user?: { profileId: string } | null) 
 }
 
 export async function loadContext(sql: Sql, profileId: string): Promise<ScoringContext> {
-  const [profiles, members, ratings, rejected, varietyOv] = await Promise.all([
-    sql`SELECT health_focus, health_conditions, meat_max_per_week, day_rules, brotzeit_per_week, family_dislikes, variety_rules, sides_mode, hidden_sides FROM profiles WHERE id = ${profileId}`,
+  const [profiles, members, ratings, rejected, varietyOv, skipRows] = await Promise.all([
+    sql`SELECT health_focus, health_conditions, meat_max_per_week, veg_min_per_week, day_rules, brotzeit_per_week, family_dislikes, variety_rules, sides_mode, hidden_sides FROM profiles WHERE id = ${profileId}`,
     sql`SELECT type, age, favorite_foods, disliked_foods FROM family_members WHERE profile_id = ${profileId}`,
     sql`SELECT meal_name, rating, notes FROM meal_ratings WHERE profile_id = ${profileId}
       ORDER BY COALESCE(updated_at, created_at) DESC`,
     sql`SELECT meal_name FROM rejected_meals WHERE profile_id = ${profileId}`,
     sql`SELECT recipe_name, category_id, included FROM recipe_variety_overrides WHERE profile_id = ${profileId}`,
+    sql`SELECT meal_name, times, last_skipped::text AS last FROM meal_skips WHERE profile_id = ${profileId}`,
   ]);
   const p = profiles[0] ?? {};
   const varietyOverrides: Record<string, Record<string, boolean>> = {};
@@ -112,6 +113,8 @@ export async function loadContext(sql: Sql, profileId: string): Promise<ScoringC
     healthFocus: p.health_focus || [],
     healthConditions: p.health_conditions || [],
     meatMaxPerWeek: p.meat_max_per_week ?? null,
+    vegMinPerWeek: p.veg_min_per_week ?? null,
+    skips: Object.fromEntries(skipRows.map((x) => [x.meal_name as string, { times: Number(x.times), last: x.last as string }])),
     dayRules: parseDayRules(p.day_rules),
     brotzeitPerWeek: Number(p.brotzeit_per_week) || 0,
     familyMembers: members as ScoringContext["familyMembers"],

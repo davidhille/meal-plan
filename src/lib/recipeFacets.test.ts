@@ -7,7 +7,8 @@ const recipes = [
   r('Spaghetti Bolognese', 'fleisch', ['400 g Spaghetti', '500 g Rinderhackfleisch']),
   r('Schweinegulasch', 'fleisch', ['800 g Schweinefleisch', '1 kg Kartoffeln']),
   r('Kartoffelsuppe', 'vegetarisch', ['1 kg Kartoffeln']),
-  r('Lasagne', 'wochenende', ['12 Lasagneplatten', '500 g Rinderhack']),
+  { ...r('Lasagne', 'wochenende', ['12 Lasagneplatten', '500 g Rinderhack']), durationMin: 90 },
+  { ...r('Kurzes Wochenendgericht', 'wochenende', ['1 Ei']), durationMin: 20 },
 ];
 const ctx: FacetContext = { customFilters: [], overrides: {} };
 
@@ -27,7 +28,7 @@ describe('Filter-Gruppen', () => {
   test('Zahl am Knopf: andere Gruppen zählen, die eigene nicht', () => {
     const sel = { ...EMPTY_SELECTION, types: ['fleisch'], ingredients: ['nudeln'] };
     expect(optionCount(recipes, 'ingredients', 'kartoffeln', sel, ctx)).toBe(1);
-    expect(optionCount(recipes, 'types', 'wochenende', sel, ctx)).toBe(1);
+    expect(optionCount(recipes, 'types', 'wochenende', sel, ctx)).toBe(1); // „Aufwendig“ nach Zeit: Lasagne (90 Min.), nicht das 20-Minuten-Gericht
   });
   test('eigene Filter mit Hand-Zuordnung', () => {
     const own: FacetContext = {

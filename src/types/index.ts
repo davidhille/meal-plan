@@ -240,6 +240,8 @@ export interface Profile {
   variety_rules?: VarietyRule[] | null;
   /** Beilagen und Salate: off (Standard) | suggest | auto */
   sides_mode?: 'off' | 'suggest' | 'auto' | null;
+  /** Vegetarisch mindestens so oft pro Woche (null = Standard 3) */
+  veg_min_per_week?: number | null;
   /** Ausgeblendete Beilagen/Salate der festen Sammlung */
   hidden_sides?: string[];
 }

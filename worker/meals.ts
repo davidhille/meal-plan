@@ -1,4 +1,6 @@
 // Rezeptdatenbank + Auswahl-Logik (übernommen aus den Supabase Edge Functions)
+import { effortOf, preferredEffortFor } from "./slotRules";
+import type { SkipInfo } from "./repeatPause";
 import type { SidesMode } from "../src/lib/sidesSuggest";
 import { excludedByDislikes } from "./dislikes";
 import type { DayRules } from "./dayRules";
@@ -250,6 +252,12 @@ export interface ScoringContext {
   hiddenSides?: string[];
   /** Geplante Gerichte vor dem Planungsbeginn (Datum + Name): Zähler für Wochen-/Monats-Regeln */
   planHistory?: { date: string; name: string }[];
+  /** Vegetarisch mindestens so oft pro Kalenderwoche (null/fehlt = Standard, siehe slotRules.ts) */
+  vegMinPerWeek?: number | null;
+  /** Weggetauschte bzw. mit einem verworfenen Plan aussortierte Gerichte (Tabelle meal_skips) */
+  skips?: Record<string, SkipInfo>;
+  /** Namen aus den letzten Wochen und weggetauschte: gleiche *Sorte* (Kohlrouladen, Rotkohl …) bekommt einen Abzug */
+  recentKinds?: string[];
 }
 
 const MEAT_RE =
@@ -317,6 +325,13 @@ function violates(meal: Recipe, pattern: RegExp, freeMarker?: RegExp): boolean {
   return meal.ingredients.some((i) => pattern.test(i) && !isFree(i));
 }
 
+/** Vegetarisch im Sinne der Wochen-Mindestzahl: Art „vegetarisch“, bei den anderen Arten entscheiden die Zutaten */
+export function isVegetarianDish(meal: Recipe): boolean {
+  if (meal.type === "vegetarisch") return true;
+  if (meal.type === "fleisch") return false;
+  return !looksMeaty(meal);
+}
+
 /** Enthält das Rezept Fleisch oder Fisch? */
 export function looksMeaty(meal: Recipe): boolean {
   return MEAT_RE.test(meal.name) || meal.ingredients.some((i) => MEAT_RE.test(i));
@@ -336,7 +351,7 @@ export function violatesHealthConditions(meal: Recipe, conditions: string[]): bo
 }
 
 /** So lange (Tage) kommt ein Gericht nicht wieder in den Plan – auch nicht, wenn es gut bewertet ist (Entscheidung von David 26.10.2026: 4–5 Wochen) */
-export const RECENT_DAYS = 35;
+export const RECENT_DAYS = 70;
 
 /** Ohne kürzlich gekochte Gerichte; bleibt dann nichts übrig, die ganze Liste (lieber eine Wiederholung als ein leerer Tag) */
 function withoutRecent<T extends { meal: Recipe }>(list: T[], ctx: ScoringContext): T[] {
@@ -427,7 +442,7 @@ function overlapWithRecent(name: string, recent: string[]): number {
 /** Wörter, die sich ruhig öfter wiederholen dürfen */
 const GENERIC_DISH_WORDS = new Set(["gemüs", "kartoffel", "reis", "soß", "sauc", "salat", "ofen", "brot", "kräuter", "tomat", "zwiebel"]);
 
-/** Sa/So → wochenende, gerade Wochentage → fleisch, ungerade → vegetarisch */
+/** Nur noch als Hinweis für KI-Rezepte (welcher Typ soll erzeugt werden): Sa/So → wochenende, gerade Wochentage → fleisch, ungerade → vegetarisch. Die Auswahl richtet sich nach Aufwand (`slotRules.ts`). */
 export function preferredTypeFor(dateStr: string): Recipe["type"] {
   const dow = new Date(dateStr + "T00:00:00Z").getUTCDay();
   if (dow === 0 || dow === 6) return "wochenende";
@@ -440,10 +455,10 @@ export function pickMeal(
   used: Set<string>,
   pool: Recipe[] = MEAL_DATABASE
 ): Recipe | null {
-  const preferred = preferredTypeFor(dateStr);
+  const preferred = preferredEffortFor(dateStr);
   // Etwas Zufall, damit nicht jeder Plan dieselben Spitzenreiter bekommt; Gerichte, die den
   // letzten Tagen ähneln (z. B. die dritte Quinoa-Pfanne), rutschen nach hinten
-  const recent = [...used].slice(-6);
+  const recent = [...(ctx.recentKinds ?? []), ...[...used].slice(-6)];
   // Die Wiederholungssperre gilt vor Bewertung und Vorlieben: Lieblingsgerichte (Bewertung, Favorit) sind sonst ständig vorn
   const all = withoutRecent(
     pool
@@ -463,9 +478,9 @@ export function pickMeal(
       undefined
     );
   const choice =
-    fresh.find((s) => s.meal.type === preferred) ??
+    fresh.find((s) => effortOf(s.meal) === preferred) ??
     fresh[0] ??
-    oldest(all.filter((s) => s.meal.type === preferred)) ??
+    oldest(all.filter((s) => effortOf(s.meal) === preferred)) ??
     oldest(all);
   if (!choice) return null;
   used.delete(choice.meal.name);
@@ -480,7 +495,7 @@ export function pickReplacement(
   pool: Recipe[],
   exclude: Set<string>
 ): Recipe | null {
-  const preferred = preferredTypeFor(dateStr);
+  const preferred = preferredEffortFor(dateStr);
   // Etwas Zufall wie bei pickMeal, sonst kommt beim Austauschen immer derselbe Spitzenreiter
   const scored = withoutRecent(
     pool
@@ -489,7 +504,7 @@ export function pickReplacement(
       .filter((s) => s.score >= 0),
     ctx
   )
-    .map((s) => ({ ...s, rank: s.score + Math.random() * RANDOM_SPREAD }))
+    .map((s) => ({ ...s, rank: s.score + Math.random() * RANDOM_SPREAD - 15 * overlapWithRecent(s.meal.name, ctx.recentKinds ?? []) }))
     .sort((a, b) => b.rank - a.rank);
-  return (scored.find((s) => s.meal.type === preferred) ?? scored[0])?.meal ?? null;
+  return (scored.find((s) => effortOf(s.meal) === preferred) ?? scored[0])?.meal ?? null;
 }

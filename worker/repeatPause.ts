@@ -5,13 +5,24 @@ import { RECENT_DAYS } from "./meals";
 /** Länger zurück als dieses Jahr schaut die Planung nicht (Obergrenze der Pause und der Verlauf-Abfrage) */
 export const MAX_PAUSE_DAYS = 365;
 
-/** Pause in Tagen nach Sternen; unbewertet = `RECENT_DAYS` (5 Wochen) */
+/** Pause in Tagen nach Sternen; unbewertet = `RECENT_DAYS` (10 Wochen), nie kürzer als bewertete */
 export function repeatPauseDays(rating: number | undefined): number {
   if (!rating) return RECENT_DAYS;
-  if (rating >= 5) return 56; // 8 Wochen
-  if (rating >= 4) return 63; // 9 Wochen
-  if (rating >= 3) return 70; // 10 Wochen
+  if (rating >= 5) return 77; // 11 Wochen
+  if (rating >= 4) return 84; // 12 Wochen
+  if (rating >= 3) return 91; // 13 Wochen
   return MAX_PAUSE_DAYS; // 1–2 ★: praktisch nie wieder (nur wenn sonst gar nichts übrig ist)
+}
+
+/** Gericht weggetauscht bzw. mit einem verworfenen Plan aussortiert: letztes Mal und wie oft */
+export interface SkipInfo {
+  times: number;
+  last: string;
+}
+
+/** Pause nach dem Wegtauschen: 90 Tage, bei jedem weiteren Mal 45 mehr (höchstens ein Jahr) */
+export function skipPauseDays(times: number): number {
+  return Math.min(MAX_PAUSE_DAYS, 90 + (Math.max(1, times) - 1) * 45);
 }
 
 /** Tage von `from` bis `to` (JJJJ-MM-TT) */
@@ -21,12 +32,13 @@ function daysBetween(from: string, to: string): number {
 
 /**
  * Gerichte, die ab `today` noch Pause haben: zuletzt geplant (`history`, jeweils das späteste Datum) vor weniger
- * Tagen, als die Pause nach ihrer Bewertung dauert.
+ * Tagen, als die Pause nach ihrer Bewertung dauert, oder weggetauscht (`skips`, siehe `skipPauseDays`).
  */
 export function pausedNames(
   history: { date: string; name: string }[],
   ratings: Record<string, number>,
-  today: string
+  today: string,
+  skips: Record<string, SkipInfo> = {}
 ): string[] {
   const last = new Map<string, string>();
   for (const h of history) {
@@ -36,6 +48,9 @@ export function pausedNames(
   const out: string[] = [];
   for (const [name, date] of last) {
     if (daysBetween(date, today) < repeatPauseDays(ratings[name])) out.push(name);
+  }
+  for (const [name, s] of Object.entries(skips)) {
+    if (!out.includes(name) && daysBetween(s.last, today) < skipPauseDays(s.times)) out.push(name);
   }
   return out;
 }

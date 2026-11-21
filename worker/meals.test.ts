@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { effortOf, preferredEffortFor } from "./slotRules";
 import {
   MEAL_DATABASE,
   type Recipe,
@@ -139,13 +140,13 @@ describe("preferredTypeFor", () => {
 });
 
 describe("pickMeal", () => {
-  test("eine Woche ohne Wiederholung und im richtigen Rhythmus", () => {
+  test("eine Woche ohne Wiederholung, Mo–Fr schnell, Sa/So aufwendig", () => {
     const used = new Set<string>();
     const days = ["2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15", "2026-10-16", "2026-10-17", "2026-10-18"];
     const picks = days.map((d) => pickMeal(d, ctx(), used));
     expect(picks.every(Boolean)).toBe(true);
     expect(new Set(picks.map((p) => p!.name)).size).toBe(days.length);
-    days.forEach((d, i) => expect(picks[i]!.type).toBe(preferredTypeFor(d)));
+    days.forEach((d, i) => expect(effortOf(picks[i]!)).toBe(preferredEffortFor(d)));
   });
   test("hält sich an Gesundheitsbedingungen", () => {
     const used = new Set<string>();
@@ -185,7 +186,7 @@ describe("Wiederholungssperre", () => {
   // Gut bewertet und Favorit: ohne Sperre läge es immer vorn
   const loved = { mealRatings: { Lieblingsgericht: 5 }, favoriteNames: ["Lieblingsgericht"] };
 
-  test("dauert fünf Wochen", () => expect(RECENT_DAYS).toBe(35));
+  test("dauert zehn Wochen", () => expect(RECENT_DAYS).toBe(70));
   test("kürzlich gekochtes, gut bewertetes Gericht kommt nicht wieder, solange es Alternativen gibt", () => {
     for (let i = 0; i < 30; i++) {
       const c = ctx({ ...loved, recentNames: ["Lieblingsgericht"] });

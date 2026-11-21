@@ -2,13 +2,14 @@
 import { excludedByDislikes } from "./dislikes";
 import type { Sql } from "./db";
 import type { Env } from "./http";
-import { pickMeal, pickReplacement, preferredTypeFor, scoreMeal, violatesHealthConditions, dislikeMatches, MEAL_DATABASE, type Recipe, type ScoringContext } from "./meals";
+import { isVegetarianDish, pickMeal, pickReplacement, preferredTypeFor, scoreMeal, violatesHealthConditions, dislikeMatches, MEAL_DATABASE, type Recipe, type ScoringContext } from "./meals";
 import { effectiveImageUrl, generateImage } from "./images";
 import { generateRecipes } from "./aiRecipes";
 import { PLAN_COLS, PLAN_MEAL_COLS, favoriteToRecipe, loadContext, loadPool } from "./repo";
 import { isMeatDish, isoWeekKey } from "./nutrition";
 import { DEFAULT_VARIETY_RULES, addToCounts, countsOf, exceedsCap, matchesCategory, minimumSlots } from "./weekVariety";
-import { MAX_PAUSE_DAYS, pausedNames } from "./repeatPause";
+import { MAX_PAUSE_DAYS, pausedNames, skipPauseDays } from "./repeatPause";
+import { DEFAULT_VEG_MIN, effortOf, preferredEffortFor, vegMissing } from "./slotRules";
 import { suggestSides } from "../src/lib/sidesSuggest";
 import { BROTZEIT, fitsTime, isOffDay, pickBrotzeitDates, ruleFor, withinTime } from "./dayRules";
 
@@ -21,6 +22,33 @@ async function loadPlanHistory(sql: Sql, profileId: string, beforeDate: string):
     WHERE mp.profile_id = ${profileId} AND NOT pm.rejected AND NOT COALESCE(pm.brotzeit, false)
       AND pm.meal_date >= ${beforeDate}::date - ${MAX_PAUSE_DAYS}::int AND pm.meal_date < ${beforeDate}::date`;
   return rows.map((r) => ({ date: r.meal_date as string, name: r.meal_name as string }));
+}
+
+/** Namen, deren *Sorte* (Kohlrouladen, Rotkohl …) in den letzten 3 Wochen schon dran war oder weggetauscht wurde */
+function recentKinds(history: { date: string; name: string }[], today: string, skips: ScoringContext["skips"]): string[] {
+  const from = addDaysIso(today, -21);
+  const names = new Set(history.filter((h) => h.date >= from).map((h) => h.name));
+  for (const [name, s] of Object.entries(skips ?? {})) if (s.last >= addDaysIso(today, -skipPauseDays(s.times))) names.add(name);
+  return [...names];
+}
+
+/** Gerichte als „weggetauscht“ merken (pro Tag höchstens einmal gezählt): kommen lange nicht wieder, auch nicht in neuen Plänen */
+export async function recordSkips(sql: Sql, profileId: string, names: string[]) {
+  const unique = [...new Set(names.filter(Boolean))];
+  if (!unique.length) return;
+  await sql`INSERT INTO meal_skips (profile_id, meal_name, times, last_skipped)
+    SELECT ${profileId}, n, 1, CURRENT_DATE FROM unnest(${unique}::text[]) AS n
+    ON CONFLICT (profile_id, meal_name) DO UPDATE SET
+      times = CASE WHEN meal_skips.last_skipped = CURRENT_DATE THEN meal_skips.times ELSE meal_skips.times + 1 END,
+      last_skipped = CURRENT_DATE`;
+}
+
+/** Plan wird verworfen (neu generiert, gelöscht, ersetzt): seine noch nicht gekochten Gerichte gelten als weggetauscht */
+export async function recordDiscardedMeals(sql: Sql, profileId: string, planId: string, from?: string, to?: string) {
+  const rows = await sql`SELECT DISTINCT meal_name FROM plan_meals
+    WHERE plan_id = ${planId} AND NOT rejected AND NOT COALESCE(brotzeit, false) AND meal_date >= CURRENT_DATE
+      AND (${from ?? null}::date IS NULL OR meal_date >= ${from ?? null}::date) AND (${to ?? null}::date IS NULL OR meal_date <= ${to ?? null}::date)`;
+  await recordSkips(sql, profileId, rows.map((r) => r.meal_name as string));
 }
 
 /** Wie viele frische KI-Rezepte braucht dieser Plan, und welche Typen? */
@@ -60,9 +88,22 @@ export function pickDays(
   ctx: ScoringContext,
   used: Set<string>,
   pool: Recipe[],
-  assigned: Map<string, Recipe> = new Map()
+  assigned: Map<string, Recipe> = new Map(),
+  rand: () => number = Math.random
 ): { date: string; recipe: Recipe }[] {
   const max = ctx.meatMaxPerWeek;
+  // Vegetarisch mindestens X-mal pro Kalenderwoche (Standard 3): Zähler der Woche aus festen Tagen und schon gewählten Gerichten
+  const vegMin = ctx.vegMinPerWeek ?? DEFAULT_VEG_MIN;
+  const slotsPerWeek = new Map<string, number>();
+  for (const d of dates) slotsPerWeek.set(isoWeekKey(d), (slotsPerWeek.get(isoWeekKey(d)) ?? 0) + 1);
+  const vegPerWeek = new Map<string, number>();
+  const addVeg = (date: string, r: Recipe) => {
+    if (!isVegetarianDish(r)) return;
+    const k = isoWeekKey(date);
+    vegPerWeek.set(k, (vegPerWeek.get(k) ?? 0) + 1);
+  };
+  for (const [date, r] of assigned) addVeg(date, r);
+  const freeLeft = (date: string) => dates.filter((d) => d >= date && !assigned.has(d) && isoWeekKey(d) === isoWeekKey(date)).length;
   const meatPerWeek = new Map<string, number>();
   const addMeat = (date: string, r: Recipe) => {
     if (max == null || !isMeatDish(r)) return;
@@ -94,7 +135,14 @@ export function pickDays(
   for (const date of dates) {
     const fixed = assigned.get(date);
     const limitReached = max != null && (meatPerWeek.get(isoWeekKey(date)) ?? 0) >= max;
-    const base = limitReached ? meatFree : pool;
+    let base = limitReached ? meatFree : pool;
+    // Fehlen der Woche noch vegetarische Gerichte, wird es mit der Zahl der noch freien Tage immer wahrscheinlicher (zuletzt sicher)
+    const weekKey = isoWeekKey(date);
+    const missing = fixed || slots.get(date) ? 0 : vegMissing(vegMin, slotsPerWeek.get(weekKey) ?? 0, vegPerWeek.get(weekKey) ?? 0);
+    if (missing > 0 && rand() < missing / Math.max(1, freeLeft(date))) {
+      const vegOnly = base.filter(isVegetarianDish);
+      if (vegOnly.length) base = vegOnly;
+    }
     // Tage mit Zeitlimit: nur Gerichte, die reinpassen – passt keins, lieber irgendwas als ein leerer Tag
     const quick = withinTime(base, date, ctx.dayRules);
     const timed = quick.length ? quick : base;
@@ -111,6 +159,7 @@ export function pickDays(
     const recipe = fixed ?? pickMeal(date, ctx, used, candidates);
     if (!recipe) continue;
     if (!fixed) {
+      addVeg(date, recipe);
       addMeat(date, recipe);
       addToCounts(varietyCounts, date, recipe.name, ctx.varietyOverrides);
     }
@@ -164,7 +213,8 @@ export async function createPlan(
   ctx.favoriteNames = favorites.filter((f) => !f.turnus_weeks).map((f) => f.meal_name);
   // Pause nach Bewertung (gestaffelt, siehe repeatPause.ts) und Zähler für die Mengen-Regeln
   ctx.planHistory = await loadPlanHistory(sql, profileId, startDate);
-  ctx.recentNames = pausedNames(ctx.planHistory, ctx.mealRatings, startDate);
+  ctx.recentNames = pausedNames(ctx.planHistory, ctx.mealRatings, startDate, ctx.skips);
+  ctx.recentKinds = recentKinds(ctx.planHistory, startDate, ctx.skips);
 
   // Beim Verlängern: vorhandene Gerichte (fest, zählen für Abwechslung und Fleisch-Grenze) und leere Tage
   const existing = new Map<string, Recipe>();
@@ -221,7 +271,7 @@ export async function createPlan(
     const earliest = f.last_planned ? addDaysIso(f.last_planned, f.turnus_weeks * 7) : startDate;
     // Nur Tage, an denen die Zeit reicht
     const candidates = free.filter((d) => d >= earliest && fitsTime(favoriteToRecipe(f), ruleFor(d, ctx.dayRules).maxMinutes));
-    const day = candidates.find((d) => preferredTypeFor(d) === f.meal_type) ?? candidates[0];
+    const day = candidates.find((d) => preferredEffortFor(d) === effortOf(favoriteToRecipe(f))) ?? candidates[0];
     if (!day) continue;
     assigned.set(day, favoriteToRecipe(f));
     used.add(f.meal_name);
@@ -345,6 +395,9 @@ export async function replaceMeal(env: Env, sql: Sql, profileId: string, planMea
   if (reject) {
     await sql`UPDATE plan_meals SET rejected = true WHERE id = ${planMealId}`;
     await sql`INSERT INTO rejected_meals (profile_id, meal_name) VALUES (${profileId}, ${old.meal_name})`;
+  } else if (!wasBrotzeit) {
+    // Weggetauscht: kommt lange nicht wieder, auch nicht in neuen Plänen (früher verschwand es spurlos aus dem Verlauf)
+    await recordSkips(sql, profileId, [old.meal_name]);
   }
 
   const ctx = await loadContext(sql, profileId);
@@ -357,10 +410,11 @@ export async function replaceMeal(env: Env, sql: Sql, profileId: string, planMea
   const exclude = new Set<string>([...existing.map((r) => r.meal_name as string), ...skipped]);
 
   const planHistory = await loadPlanHistory(sql, profileId, old.meal_date);
-  ctx.recentNames = pausedNames(planHistory, ctx.mealRatings, old.meal_date);
+  ctx.recentNames = pausedNames(planHistory, ctx.mealRatings, old.meal_date, ctx.skips);
+  ctx.recentKinds = recentKinds(planHistory, old.meal_date, ctx.skips);
 
   // Die anderen Gerichte des Plans: für die Fleisch-Grenze und die Abwechslung in der Woche
-  const others = await sql`SELECT meal_name, ingredients, meal_date::text AS d FROM plan_meals
+  const others = await sql`SELECT meal_name, meal_type, ingredients, meal_date::text AS d FROM plan_meals
     WHERE plan_id = ${old.plan_id} AND id <> ${planMealId} AND NOT rejected AND NOT brotzeit`;
   // Mengen-Regeln: Verlauf vor diesem Tag plus die übrigen Gerichte des Plans ab diesem Tag (davor stehen sie schon im Verlauf)
   const rules = ctx.varietyRules ?? DEFAULT_VARIETY_RULES;
@@ -384,6 +438,16 @@ export async function replaceMeal(env: Env, sql: Sql, profileId: string, planMea
     limitReached = meat >= ctx.meatMaxPerWeek;
     if (limitReached) candidates = pool.filter((r) => !isMeatDish(r));
   }
+  // Vegetarisch-Mindestzahl der Woche: würde sie ohne dieses Gericht unterschritten, kommt ein vegetarisches
+  const weekOthers = others.filter((o) => isoWeekKey(o.d as string) === isoWeekKey(old.meal_date));
+  const vegOthers = weekOthers.filter((o) =>
+    isVegetarianDish({ name: o.meal_name as string, ingredients: (o.ingredients as string[]) ?? [], type: o.meal_type as Recipe["type"], instructions: "" })
+  ).length;
+  const needVeg = vegMissing(ctx.vegMinPerWeek ?? DEFAULT_VEG_MIN, weekOthers.length + 1, vegOthers) > 0;
+  if (needVeg) {
+    const vegOnly = candidates.filter(isVegetarianDish);
+    if (vegOnly.length) candidates = vegOnly;
+  }
   // Höchstgrenzen für Hauptkomponenten (Mengen-Regeln); bleibt nichts übrig, gelten sie nicht
   const varied = candidates.filter((r) => !overVarietyCap(r.name));
   if (varied.length) candidates = varied;
@@ -392,7 +456,7 @@ export async function replaceMeal(env: Env, sql: Sql, profileId: string, planMea
   const quick = withinTime(candidates, old.meal_date, ctx.dayRules);
   if (quick.length) candidates = quick;
   // Ist die Grenze erreicht, soll auch die KI nichts mit Fleisch liefern
-  const dayType = limitReached && preferredTypeFor(old.meal_date) === "fleisch" ? "vegetarisch" : preferredTypeFor(old.meal_date);
+  const dayType = needVeg || (limitReached && preferredTypeFor(old.meal_date) === "fleisch") ? "vegetarisch" : preferredTypeFor(old.meal_date);
   const fromAi = async () =>
     (await generateRecipes(env, sql, [dayType], ctx, pool.map((m) => m.name))).find(
       (r) => (!limitReached || !isMeatDish(r)) && fitsTime(r, maxMinutes) && !overVarietyCap(r.name)

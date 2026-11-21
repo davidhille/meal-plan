@@ -5,7 +5,7 @@ import { json } from "../http";
 import { IMAGE_URL_SQL, IMAGE_CREDIT_SQL, fillMissingImages } from "../images";
 import { PLAN_COLS, getProfile, latestPlan, planOwned } from "../repo";
 import { loadDislikeHint } from "../dislikePattern";
-import { archivePastDays, createPlan, replaceMeal, replaceWithRecipe, setBrotzeit } from "../planning";
+import { archivePastDays, createPlan, recordDiscardedMeals, replaceMeal, replaceWithRecipe, setBrotzeit } from "../planning";
 
 /** Nachtisch aus dem Request prüfen und auf die erlaubten Felder beschränken */
 function parseDessert(raw: unknown) {
@@ -51,6 +51,10 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
     const { startDate, endDate } = body;
     if (!startDate || !endDate) return json({ error: "startDate und endDate fehlen" }, 400);
     const p = await getProfile(sql, user);
+    // „Alles neu planen“ ersetzt den laufenden Plan: dessen Gerichte im neuen Zeitraum gelten als weggetauscht
+    const overlapping = await sql`SELECT id FROM meal_plans WHERE profile_id = ${p.id} AND status = 'active'
+      AND start_date <= ${endDate}::date AND end_date >= ${startDate}::date`;
+    for (const o of overlapping) await recordDiscardedMeals(sql, p.id, o.id as string, startDate, endDate);
     const plan = await createPlan(env, sql, p.id, startDate, endDate);
     waitUntil(fillMissingImages(env, sql, 7, plan.id));
     return json(plan);
@@ -58,6 +62,7 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
 
   if (parts[0] === "plans" && id && id !== "latest" && !parts[2] && request.method === "DELETE") {
     const p = await getProfile(sql, user);
+    if (await planOwned(sql, p.id, id)) await recordDiscardedMeals(sql, p.id, id);
     await sql`DELETE FROM meal_plans WHERE id = ${id} AND profile_id = ${p.id}`;
     return json({ ok: true, latest: await latestPlan(sql, p.id) });
   }
@@ -258,6 +263,8 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
     await sql`UPDATE favorites SET last_planned = NULL WHERE profile_id = ${p.id}
       AND last_planned BETWEEN ${rows[0].start_date}::date AND ${rows[0].end_date}::date`;
     const shared = await sql`SELECT share_hash FROM meal_plans WHERE id = ${id}`;
+    // Alle noch nicht gekochten Gerichte gelten als weggetauscht: der neue Plan soll andere bringen
+    await recordDiscardedMeals(sql, p.id, id);
     await sql`DELETE FROM meal_plans WHERE id = ${id}`;
     const plan = await createPlan(env, sql, p.id, rows[0].start_date, rows[0].end_date);
     // Geteilter Link gilt auch für den neu generierten Plan

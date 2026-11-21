@@ -129,7 +129,8 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
   + KI-Rezepte + importierte Rezepte + Favoriten.
 - **Bewertung je Gericht:** Sterne (3 ★ neutral, 4–5 ★ heben an, 1–2 ★ senken ab), Vorlieben und Abneigungen der Familie (mit Oberbegriffen: „Fisch“ trifft auch Lachs),
   Ernährungs-Schwerpunkte, ein kleiner Favoriten-Bonus und etwas Zufall – Lieblingsgerichte entscheiden nicht allein.
-- **Pause nach Bewertung:** Ein Gericht kommt erst nach einer Pause wieder in den Plan: unbewertet nach 5 Wochen, 5 ★ nach 8 Wochen, 4 ★ nach 9, 3 ★ nach 10, 1–2 ★ praktisch nie wieder
+- **Planung (Stand 21.11.2026):** Montag bis Freitag bevorzugt schnelle Gerichte (bis 45 Minuten Zubereitungszeit), Samstag und Sonntag dürfen aufwendig sein; ob ein Gericht „Wochenende“ ist, richtet sich nach der Zeit (die Art muss man nur ohne Zeitangabe setzen). Vegetarisch/Fleisch über Wochenmengen: Fleisch höchstens X (Vorlieben) und **vegetarisch mindestens X** (Einstellungen → Planung, Standard 3). **Gerichte, die ihr tauscht oder mit einem verworfenen Plan aussortiert, kommen 90 Tage nicht wieder** (+45 Tage je weiteres Mal); die Sorte (z. B. Kohlrouladen, Rotkohl) bekommt für drei Wochen einen Abzug.
+- **Pause nach Bewertung:** Ein Gericht kommt erst nach einer Pause wieder in den Plan: unbewertet nach 10 Wochen, 5 ★ nach 11 Wochen, 4 ★ nach 12, 3 ★ nach 13, 1–2 ★ praktisch nie wieder
   (nur wenn sonst nichts übrig ist; die KI liefert bei Bedarf neue Rezepte).
 - **Gesundheitsbedingungen** schließen hart aus: vegetarisch, vegan, glutenfrei, laktosefrei, Nussallergie, ohne Alkohol;
   Diabetes gibt einen Abzug bei Zucker, Cholesterin bei viel Butter, Sahne, Speck, Wurst und Innereien. *Heuristik auf Zutatentext, keine Allergie-Garantie.*
