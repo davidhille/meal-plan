@@ -11,7 +11,7 @@ Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einr
 
 ## Zuletzt erledigt
 
-- **Ente galt als vegetarisch (21.11.):** Fleisch-Erkennung kannte „Enten“ nicht; jetzt auch Gans, Wild, Kaninchen, Hack, Kotelett u. a.; gespeicherte Rezepte per Migration 0041 korrigiert. Noch nicht live geprüft.
+- **Ente galt als vegetarisch (21.11.):** Fleisch-Erkennung kannte „Enten“ nicht; jetzt auch Gans, Wild, Kaninchen, Hack, Kotelett u. a.; gespeicherte Rezepte per Migration 0041 korrigiert. Live geprüft: Knusperente steht jetzt als Fleisch.
 - **Mengen-Regeln: Grenze pro Monat dazu (21.11.):** Unter jeder Regel ein Link „Grenze pro Monat dazu“ (bzw. pro Woche), der eine zweite Regel für dieselbe Kategorie anlegt. Noch nicht live getestet.
 - **Mengen-Regeln pro Rezept zuordnen (21.11.):** In der Rezept-Ansicht „Zählt für Mengen-Regeln“ → „Anpassen“: Kategorien von Hand zuordnen oder abwählen (Tabelle `recipe_variety_overrides`, Migration 0040). Noch nicht live getestet.
 - **Mengen-Regeln erweitert (21.11.):** Standard zusätzlich Pizza, Burger & Wraps und Curry je höchstens 1× pro Woche; neue Kategorien „Mexikanische Gerichte“ und „Bowls & Pfannengerichte“ (ohne Standardregel, in den Einstellungen wählbar). Noch nicht live getestet.
