@@ -172,7 +172,7 @@ export default function DessertsView({ planMeals = [], onAssign, onPick, customF
             enterKeyHint="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Suchen, z. B. Apfel oder Schokolade"
+            placeholder="Nachtisch oder Zutat suchen"
             className="w-full h-11 pl-9 pr-9 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
           {query && (
