@@ -310,14 +310,12 @@ export async function getOrCreateProfile(): Promise<Profile | null> {
 export async function updateProfile(
   _profileId: string,
   focus: string[],
-  conditions: string[],
-  meatMaxPerWeek: number | null
+  conditions: string[]
 ): Promise<Profile | null> {
   try {
     return await request<Profile>('PUT', '/profile', {
       health_focus: focus,
       health_conditions: conditions,
-      meat_max_per_week: meatMaxPerWeek,
     });
   } catch (error) {
     console.error('Error updating profile:', error);
@@ -415,6 +413,11 @@ export function setSideVisibility(name: string, hidden: boolean): Promise<Profil
 
 export function saveSidesMode(mode: SidesMode): Promise<Profile> {
   return request<Profile>('PUT', '/profile/sides-mode', { sides_mode: mode });
+}
+
+/** Fleisch höchstens n× pro Woche (null = keine Grenze). Wirft bei Fehlern. */
+export function saveMeatMax(n: number | null): Promise<Profile> {
+  return request<Profile>('PUT', '/profile/meat-max', { meat_max_per_week: n });
 }
 
 export function saveVegMin(n: number | null): Promise<Profile> {

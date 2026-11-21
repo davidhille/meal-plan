@@ -205,9 +205,9 @@ export default function App() {
     setProfile(await setFamilyDislikes({ id, on }));
   };
 
-  const handleUpdateProfile = async (focus: string[], conditions: string[], meatMaxPerWeek: number | null, never?: string[]) => {
+  const handleUpdateProfile = async (focus: string[], conditions: string[], never?: string[]) => {
     if (!profile) return;
-    const updated = await updateProfile(profile.id, focus, conditions, meatMaxPerWeek);
+    const updated = await updateProfile(profile.id, focus, conditions);
     if (!updated) throw new Error('Die Einstellungen konnten nicht gespeichert werden.');
     setProfile(never ? await setFamilyDislikes({ ids: never }) : updated);
   };
