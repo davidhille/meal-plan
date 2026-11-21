@@ -8,6 +8,8 @@ import { SIDE_KIND_LABEL } from '../lib/sides';
 interface SideAddSheetProps {
   mealName: string;
   initialKind: SideKind;
+  /** Mit welchem Weg das Fenster startet (Standard: Link) */
+  initialWay?: 'link' | 'ai';
   /** Nach dem Speichern: die neue Beilage (schon in den eigenen Beilagen) */
   onAdded: (side: Side) => void;
   onClose: () => void;
@@ -19,8 +21,8 @@ const inputClass =
   'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none';
 
 /** Eigene Beilage/Salat anlegen: Rezept-Link (Chefkoch & Co., auf 4 Portionen umgerechnet) oder KI-Vorschlag auf Knopfdruck */
-export default function SideAddSheet({ mealName, initialKind, onAdded, onClose }: SideAddSheetProps) {
-  const [way, setWay] = useState<Way>('link');
+export default function SideAddSheet({ mealName, initialKind, initialWay = 'link', onAdded, onClose }: SideAddSheetProps) {
+  const [way, setWay] = useState<Way>(initialWay);
   const [kind, setKind] = useState<SideKind>(initialKind);
   const [url, setUrl] = useState('');
   const [wish, setWish] = useState('');

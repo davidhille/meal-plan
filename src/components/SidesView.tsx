@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChefHat, ChevronRight, EyeOff, Link2, Search, Trash2 } from 'lucide-react';
+import { ChevronRight, EyeOff, Plus, Search, Trash2 } from 'lucide-react';
 import { Profile, Side, SideKind } from '../types';
 import { deleteCustomSide, getCustomSides, setSideVisibility } from '../lib/api';
 import { SIDES } from '../data/sides';
 import { SIDE_CARB_LABEL, SIDE_KIND_LABEL, planSideToMeal, toPlanSide } from '../lib/sides';
 import ChefkochSearchModal from './ChefkochSearchModal';
 import SideAddSheet from './SideAddSheet';
+import AddRecipeSheet from './AddRecipeSheet';
 import MealModal from './MealModal';
 import ConfirmDialog from './ConfirmDialog';
 
@@ -24,7 +25,9 @@ export default function SidesView({ profile, onProfileChange, defaultPortions }:
   const [custom, setCustom] = useState<Side[]>([]);
   const [open, setOpen] = useState<Side | null>(null);
   const [showChefkoch, setShowChefkoch] = useState(false);
-  const [showAdd, setShowAdd] = useState(false);
+  /** Auswahl „Wie hinzufügen?“ (Chefkoch, KI, Link) – wie bei Hauptgerichten und Nachtischen */
+  const [showWays, setShowWays] = useState(false);
+  const [showAdd, setShowAdd] = useState<'link' | 'ai' | null>(null);
   const [toDelete, setToDelete] = useState<Side | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +50,7 @@ export default function SidesView({ profile, onProfileChange, defaultPortions }:
     const q = query.trim().toLowerCase();
     const own = new Set(custom.map((c) => c.name));
     return [...custom, ...SIDES.filter((s) => !own.has(s.name) && !hidden.includes(s.name))].filter(
-      (s) => s.kind === kind && (!q || s.name.toLowerCase().includes(q))
+      (s) => s.kind === kind && (!q || s.name.toLowerCase().includes(q) || s.ingredients.some((i) => i.toLowerCase().includes(q)))
     );
   }, [custom, hidden, kind, query]);
 
@@ -83,25 +86,18 @@ export default function SidesView({ profile, onProfileChange, defaultPortions }:
           onChange={(e) => setQuery(e.target.value)}
           type="search"
           aria-label={`${SIDE_KIND_LABEL[kind]} suchen`}
-          placeholder="Suchen"
+          placeholder={`${SIDE_KIND_LABEL[kind]} oder Zutat suchen`}
           className="w-full h-11 pl-9 pr-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          onClick={() => setShowChefkoch(true)}
-          className="min-h-11 px-3 rounded-xl text-sm font-semibold bg-brand-700 text-white hover:bg-brand-800 flex items-center justify-center gap-1.5"
-        >
-          <ChefHat size={15} aria-hidden="true" /> Bei Chefkoch suchen
-        </button>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="min-h-11 px-3 rounded-xl text-sm font-semibold bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-1.5"
-        >
-          <Link2 size={15} aria-hidden="true" /> Link oder KI
-        </button>
-      </div>
+      <button
+        onClick={() => setShowWays(true)}
+        className="w-full h-11 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-brand-300 bg-brand-50/50 text-sm font-semibold text-brand-800 hover:bg-brand-50"
+      >
+        <Plus size={16} aria-hidden="true" />
+        {kind === 'beilage' ? 'Beilage hinzufügen' : 'Salat hinzufügen'}
+      </button>
 
       {notice && (
         <p role="status" className="text-xs text-brand-700 font-medium">
@@ -184,13 +180,26 @@ export default function SidesView({ profile, onProfileChange, defaultPortions }:
         />
       )}
 
+      {showWays && (
+        <AddRecipeSheet
+          title={kind === 'beilage' ? 'Beilage hinzufügen' : 'Salat hinzufügen'}
+          onPick={(way) => {
+            setShowWays(false);
+            if (way === 'chefkoch') setShowChefkoch(true);
+            else setShowAdd(way);
+          }}
+          onClose={() => setShowWays(false)}
+        />
+      )}
+
       {showAdd && (
         <SideAddSheet
           mealName=""
           initialKind={kind}
-          onClose={() => setShowAdd(false)}
+          initialWay={showAdd}
+          onClose={() => setShowAdd(null)}
           onAdded={(side) => {
-            setShowAdd(false);
+            setShowAdd(null);
             void reload();
             setKind(side.kind);
             flash(`„${side.name}“ ist jetzt bei den Beilagen.`);
