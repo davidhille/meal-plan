@@ -156,3 +156,23 @@ describe("parseVarietyRules", () => {
     expect(parseVarietyRules([])).toEqual([]);
   });
 });
+
+describe("Asiatische Gerichte", () => {
+  const asia = (n: string) => categoriesOf(n).some((c) => c.id === "asiatisch");
+  test("werden am Namen erkannt, Indisches und Italienisches nicht", () => {
+    for (const n of ["Scharfe Thai-Garnelennudeln mit Kräutern", "Vegetarisches Chicken Pad Thai", "Schnelles Hähnchen-Gemüse-Stirfry", "Chinesische Maultaschenpfanne mit Spitzkohl", "Vietnamesische Sommerrollen mit Tofu und Gemüse"]) {
+      expect(asia(n)).toBe(true);
+    }
+    for (const n of ["Zitronen-Zucchini-Pasta", "Linsen-Dal", "Big Mac Wrap", "Rinderrouladen mit Rotkohl"]) {
+      expect(asia(n)).toBe(false);
+    }
+  });
+  test("Standard: höchstens 2 pro Woche", () => {
+    const counts = countsOf([
+      { date: "2026-11-24", name: "Chicken Pad Thai" },
+      { date: "2026-11-25", name: "Stirfry mit Gemüse" },
+    ]);
+    expect(exceedsCap("Wok-Gemüse mit Reis", "2026-11-26", counts, DEFAULT_VARIETY_RULES)).toBe(true);
+    expect(exceedsCap("Wok-Gemüse mit Reis", "2026-12-01", counts, DEFAULT_VARIETY_RULES)).toBe(false);
+  });
+});

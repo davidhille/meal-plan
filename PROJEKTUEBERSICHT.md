@@ -311,7 +311,7 @@ Auf- und zuklappbare Karten:
   nur Gerichte, die reinpassen (bekannte Zeit zuerst). Gilt für neue Pläne, Routinen und „Alle tauschen“.
 - **Wie oft darf es vorkommen?** (Mengen-Regeln): pro Regel eine Kategorie (Nudeln & Pasta, Garnelen & Meeresfrüchte, Fisch, Geflügel, Rind, Schwein, Reis,
   Kartoffeln, Hülsenfrüchte, Pizza, Auflauf, Eintopf, Suppe, Curry, Salat, Burger & Wraps, Mehlspeisen, Eierspeise), „mindestens“ und/oder „höchstens“ (auch „nie“)
-  und der Zeitraum **Woche oder Monat** – z. B. höchstens 2× Nudeln pro Woche, höchstens 2× Garnelen pro Monat, mindestens 1× Fisch pro Woche. Gezählt wird pro Kalenderwoche
+  und der Zeitraum **Woche oder Monat** – z. B. höchstens 2× Nudeln oder Asiatische Gerichte pro Woche (beides Standard), höchstens 2× Garnelen pro Monat, mindestens 1× Fisch pro Woche. Gezählt wird pro Kalenderwoche
   bzw. Kalendermonat, schon geplante Tage zählen mit. Die Kategorie wird am Gerichtnamen erkannt. „Regel hinzufügen“, Löschen und „Standard wiederherstellen“; jede Änderung
   wird sofort gespeichert. Gilt für neue Pläne, Routinen, „Alle tauschen“ und „Neu“ (dort nur „höchstens“).
 - **Brotzeit:** Tage ohne Kochen – reiner Platzhalter „Brotzeit“, nichts auf der Einkaufsliste, kein Bild, keine Bewertung.

@@ -26,6 +26,10 @@ const NUDELN =
   /nudel|pasta|spaghetti|penne|tortellini|tortelloni|lasagne|fusilli|tagliatelle|rigatoni|maccheroni|makkaroni|farfalle|linguine|ravioli|cannelloni|orecchiette|carbonara|bolognese|mie\b|udon|ramen/;
 const MEERESFRUECHTE = /garnel|gambas|shrimp|scampi|krabbe|krevett|prawn|muschel|tintenfisch|calamari|meeresfr/;
 
+// Asiatische Küche am Namen erkannt (Thai, Chinesisch, Wok, Stir-Fry, Sushi …); Indisches zählt bewusst nicht dazu
+const ASIATISCH =
+  /asia|thai|chines|vietnam|korea|japan|wok\b|woks|wokgem|stir.?fry|bang.?bang|pad thai|teriyaki|sushi|ramen|udon|miso|gyoza|dim sum|bao\b|kimchi|bibimbap|satay|sommerroll|frühlingsroll|tom (kha|yum)|laksa|szechuan|sichuan|kung pao|mapo|chop suey|nasi goreng|bami/;
+
 const fromCategories = (id: string): VarietyCategory => {
   const c = ALL_CATEGORIES.find((x) => x.id === id);
   if (!c) throw new Error(`Unbekannte Kategorie: ${id}`);
@@ -35,6 +39,7 @@ const fromCategories = (id: string): VarietyCategory => {
 export const VARIETY_CATEGORIES: VarietyCategory[] = [
   { id: 'nudeln', label: 'Nudeln & Pasta', re: NUDELN },
   { id: 'meeresfruechte', label: 'Garnelen & Meeresfrüchte', re: MEERESFRUECHTE },
+  { id: 'asiatisch', label: 'Asiatische Gerichte', re: ASIATISCH },
   fromCategories('fisch'),
   fromCategories('gefluegel'),
   fromCategories('rind'),
@@ -57,6 +62,7 @@ export const VARIETY_CATEGORIES: VarietyCategory[] = [
 export const DEFAULT_VARIETY_RULES: VarietyRule[] = [
   { id: 'meeresfruechte', period: 'week', max: 1 },
   { id: 'nudeln', period: 'week', max: 2 },
+  { id: 'asiatisch', period: 'week', max: 2 },
 ];
 
 /** Größte wählbare Zahl je Zeitraum (Server und Einstellungen) */
