@@ -1,6 +1,6 @@
 # Status – miyummy
 
-Stand: 21.11.2026 (letzter Merge: #201, 21.11.2026). Diese Datei ist der Kurzüberblick „Wo stehen wir?“.
+Stand: 21.11.2026 (21.11.2026). Diese Datei ist der Kurzüberblick „Wo stehen wir?“.
 Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einrichtung: `SETUP_NEON_CLOUDFLARE.md`.
 
 ## Betrieb
@@ -11,6 +11,7 @@ Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einr
 
 ## Zuletzt erledigt
 
+- **Mengen-Regeln übersichtlicher (21.11.):** Woche- und Monatsgrenze derselben Kategorie stehen in einer Karte (vorher zwei gleich aussehende Zeilen, wirkte doppelt). Noch nicht live geprüft.
 - **Hinzufügen vereinheitlicht (21.11.):** Beilagen/Salate haben wie Hauptgerichte und Nachtische einen „… hinzufügen“-Knopf mit Auswahl (Chefkoch/KI/Link); Suchfelder angeglichen. Noch nicht live geprüft.
 - **Planung überarbeitet (21.11.):** Aufwand nach Zeit statt Art pro Wochentag, Vegetarisch-Mindestzahl pro Woche (Einstellung), weggetauschte/verworfene Gerichte merken (`meal_skips`, 90 Tage Pause), Sorten-Abzug, Pausen länger (unbewertet 70 Tage). Noch nicht live geprüft; ob es sich besser anfühlt, zeigt der nächste Plan.
 - **Rezept im Speiseplan bearbeiten (21.11.):** Stift im Rezept-Fenster des Plans öffnet `RecipeEditModal` (`MealPlanView`, `onRecipeEdited` in `App.tsx`). Art „Beilage“/„Salat“ im Bearbeiten-Fenster verschiebt das Gericht zu den eigenen Beilagen (`POST /recipes/to-side`). Noch nicht live geprüft.

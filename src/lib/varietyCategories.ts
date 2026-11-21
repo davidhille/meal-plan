@@ -127,3 +127,13 @@ export function describeVarietyRules(rules: VarietyRule[] | null | undefined): s
   const list = rules ?? DEFAULT_VARIETY_RULES;
   return list.length ? list.map(describeVarietyRule).join(' · ') : 'Keine Mengen-Regeln';
 }
+
+/**
+ * Gruppiert Regeln nach Kategorie (Reihenfolge des ersten Vorkommens), je Gruppe Woche vor Monat.
+ * Liefert Indizes in `rules`; so zeigt die Einstellung pro Kategorie eine Karte statt zwei gleich aussehender Zeilen.
+ */
+export function groupVarietyRules(rules: VarietyRule[]): number[][] {
+  const groups = new Map<string, number[]>();
+  rules.forEach((r, i) => groups.set(r.id, [...(groups.get(r.id) ?? []), i]));
+  return [...groups.values()].map((g) => g.sort((a, b) => Number(rules[a].period === 'month') - Number(rules[b].period === 'month')));
+}

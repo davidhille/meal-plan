@@ -311,7 +311,7 @@ Auf- und zuklappbare Karten:
 - **Wochentage:** pro Wochentag „Normal“, „Frei – nicht planen“ (auswärts essen, Reste) oder „höchstens 15/20/30/45/60 Min“.
   Freie Tage bleiben im Plan leer (schmale Zeile „frei“, Heute-Karte „Heute ist frei“); an Tagen mit Zeitlimit kommen
   nur Gerichte, die reinpassen (bekannte Zeit zuerst). Gilt für neue Pläne, Routinen und „Alle tauschen“.
-- **Wie oft darf es vorkommen?** (Mengen-Regeln): pro Regel eine Kategorie (Nudeln & Pasta, Garnelen & Meeresfrüchte, Asiatische Gerichte, Mexikanische Gerichte, Bowls & Pfannengerichte, Fisch, Geflügel, Rind, Schwein, Reis,
+- **Wie oft darf es vorkommen?** (Mengen-Regeln): pro Kategorie eine Karte (mit Zeile für Woche und/oder Monat; Kategorien: Nudeln & Pasta, Garnelen & Meeresfrüchte, Asiatische Gerichte, Mexikanische Gerichte, Bowls & Pfannengerichte, Fisch, Geflügel, Rind, Schwein, Reis,
   Kartoffeln, Hülsenfrüchte, Pizza, Auflauf, Eintopf, Suppe, Curry, Salat, Burger & Wraps, Mehlspeisen, Eierspeise), „mindestens“ und/oder „höchstens“ (auch „nie“)
   und der Zeitraum **Woche oder Monat** – z. B. höchstens 2× Nudeln oder Asiatische Gerichte pro Woche (beides Standard; Asiatisch zusätzlich höchstens 5× pro Monat; Pizza, Burger & Wraps und Curry je höchstens 1× pro Woche), höchstens 2× Garnelen pro Monat, mindestens 1× Fisch pro Woche. Gezählt wird pro Kalenderwoche
   bzw. Kalendermonat, schon geplante Tage zählen mit. Die Kategorie wird am Gerichtnamen erkannt; in der Rezept-Ansicht lässt sie sich unter „Zählt für Mengen-Regeln“ pro Gericht von Hand zuordnen oder abwählen. „Regel hinzufügen“, zu jeder Regel „Grenze pro Monat dazu“ (bzw. pro Woche), Löschen und „Standard wiederherstellen“; jede Änderung
