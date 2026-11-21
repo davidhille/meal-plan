@@ -200,7 +200,7 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
   Artikel lassen sich gesammelt zum günstigeren Shop verschieben.
 - **Warenkorb-Leiste** unten: aktueller Warenkorbwert je Shop und Fortschritt zum Mindestbestellwert.
 - **Warenkorb bei Knuspr und Picnic:** Artikel mit Menge übertragen, im Warenkorb Mengen ändern, entfernen, leeren;
-  Artikel, die schon im Warenkorb liegen, sind markiert.
+  Artikel, die schon im Warenkorb liegen, sind markiert. Nach dem Übertragen werden die übertragenen Artikel automatisch abgehakt und wandern nach „erledigt“ (nicht übertragene bleiben offen).
 
 ## 3. Rezepte
 
