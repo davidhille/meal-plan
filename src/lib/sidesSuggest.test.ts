@@ -24,6 +24,11 @@ describe('suggestSides', () => {
     const first = suggestSides(m)[0].name;
     expect(suggestSides(m, { [first]: 3 })[0].name).not.toBe(first);
   });
+  test('ausgeblendete werden nicht vorgeschlagen', () => {
+    const m = { name: 'Gebratenes Fischfilet', ingredients: ['600 g Kabeljaufilet', 'Zitrone'] };
+    const first = suggestSides(m)[0].name;
+    expect(suggestSides(m, {}, [first])[0].name).not.toBe(first);
+  });
   test('parseSidesMode', () => {
     expect(parseSidesMode('auto')).toBe('auto');
     expect(parseSidesMode('x')).toBe('off');

@@ -530,6 +530,7 @@ export default function App() {
             onSetDessert={currentPlan ? handleSetDessert : undefined}
             onSetSides={currentPlan ? handleSetSides : undefined}
             sidesMode={parseSidesMode(profile?.sides_mode)}
+            hiddenSides={profile?.hidden_sides}
             allPlanMeals={currentPlan ? planMeals : undefined}
             reminderTime={profile?.reminder_time}
             dayRules={profile?.day_rules}
@@ -572,6 +573,8 @@ export default function App() {
             familyDislikes={profile?.family_dislikes}
             onFamilyDislike={handleFamilyDislike}
             onDislikeHint={(hint) => setDislikeHint({ ...hint, phase: 'ask' })}
+            profile={profile}
+            onProfileChange={setProfile}
             onRecipesChanged={() => {
               loadPlanMeals();
               getFavorites().then(setFavorites).catch(() => {});

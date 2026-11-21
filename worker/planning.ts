@@ -257,7 +257,7 @@ export async function createPlan(
   const usedSides: Record<string, number> = {};
   const autoSides = (r: { name: string; ingredients: string[] }): string => {
     if (ctx.sidesMode !== "auto") return "";
-    const sides = suggestSides({ name: r.name, ingredients: r.ingredients }, usedSides);
+    const sides = suggestSides({ name: r.name, ingredients: r.ingredients }, usedSides, ctx.hiddenSides);
     for (const s of sides) usedSides[s.name] = (usedSides[s.name] ?? 0) + 1;
     return sides.length ? JSON.stringify(sides) : "";
   };

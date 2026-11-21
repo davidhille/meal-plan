@@ -44,9 +44,10 @@ export interface SuggestInput {
 /**
  * Vorschlag für Beilage und/oder Salat zu einem Gericht. Eine Sättigungsbeilage nur, wenn Nudeln, Reis, Kartoffeln, Brot o. Ä.
  * fehlen (Nudeln werden nicht vorgeschlagen, damit die Mengen-Regel „höchstens n× Nudeln“ nicht umgangen wird); ein Salat
- * nur, wenn auch kein Gemüse drin ist. `used` zählt, wie oft eine Beilage schon vergeben wurde (für Abwechslung im Plan).
+ * nur, wenn auch kein Gemüse drin ist. `hidden` = ausgeblendete Namen der festen Sammlung. `used` zählt, wie oft eine Beilage schon vergeben wurde (für Abwechslung im Plan).
  */
-export function suggestSides(meal: SuggestInput, used: Record<string, number> = {}): PlanSide[] {
+export function suggestSides(meal: SuggestInput, used: Record<string, number> = {}, hidden: string[] = []): PlanSide[] {
+  const pool = hidden.length ? SIDES.filter((s) => !hidden.includes(s.name)) : SIDES;
   if (meal.brotzeit || !meal.ingredients.length) return [];
   const text = `${meal.name} ${meal.ingredients.join(' ')}`;
   const out: Side[] = [];
@@ -58,14 +59,14 @@ export function suggestSides(meal: SuggestInput, used: Record<string, number> = 
         ? ['kartoffel', 'knoedel']
         : ['kartoffel', 'reis'];
     const side = pick(
-      SIDES.filter((s) => s.kind === 'beilage' && s.carb && carbs.includes(s.carb)),
+      pool.filter((s) => s.kind === 'beilage' && s.carb && carbs.includes(s.carb)),
       used,
       meal.name
     );
     if (side) out.push(side);
   }
   if (!VEG_RE.test(text)) {
-    const salat = pick(SIDES.filter((s) => s.kind === 'salat' && !s.carb), used, `${meal.name}-salat`);
+    const salat = pick(pool.filter((s) => s.kind === 'salat' && !s.carb), used, `${meal.name}-salat`);
     if (salat) out.push(salat);
   }
   return out.map(toPlanSide);

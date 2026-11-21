@@ -44,6 +44,8 @@ interface MealPlanViewProps {
   onSetSides?: (pm: PlanMeal, sides: PlanSide[]) => Promise<void>;
   /** Einstellung „Beilagen“: bei „suggest“ zeigt die Karte einen Vorschlag zum Übernehmen */
   sidesMode?: SidesMode;
+  /** Ausgeblendete Beilagen der festen Sammlung */
+  hiddenSides?: string[];
   /** Alle Gerichte des Plans (unabhängig von der KW-Auswahl) – für die Heute-Karte */
   allPlanMeals?: PlanMeal[];
   /** Uhrzeit der Erinnerung zum Bewerten („HH:MM“) */
@@ -129,6 +131,7 @@ export default function MealPlanView({
   onSetDessert,
   onSetSides,
   sidesMode,
+  hiddenSides,
   allPlanMeals,
   reminderTime,
   dayRules,
@@ -406,10 +409,10 @@ export default function MealPlanView({
               onPickSides={onSetSides ? () => setPickSidesFor(pm) : undefined}
               sideSuggestion={
                 onSetSides && sidesMode === 'suggest' && !pm.brotzeit && !pm.sides?.length
-                  ? suggestSides({ name: pm.meal_name, ingredients: pm.ingredients ?? [] })
+                  ? suggestSides({ name: pm.meal_name, ingredients: pm.ingredients ?? [] }, {}, hiddenSides)
                   : undefined
               }
-              onAcceptSideSuggestion={onSetSides ? withBusy(pm.id, () => onSetSides(pm, suggestSides({ name: pm.meal_name, ingredients: pm.ingredients ?? [] }))) : undefined}
+              onAcceptSideSuggestion={onSetSides ? withBusy(pm.id, () => onSetSides(pm, suggestSides({ name: pm.meal_name, ingredients: pm.ingredients ?? [] }, {}, hiddenSides))) : undefined}
               guests={pm.guests ?? 0}
               season={seasonHighlights(pm.meal_name, pm.ingredients ?? [], Number(pm.meal_date.slice(5, 7)))}
               onPickDessert={onSetDessert ? () => setPickDessertFor(pm) : undefined}
@@ -512,6 +515,7 @@ export default function MealPlanView({
           dayLabel={planMealToMeal(pickSidesFor).day}
           mealName={pickSidesFor.meal_name}
           current={pickSidesFor.sides}
+          hiddenSides={hiddenSides}
           onSave={(sides) => onSetSides(pickSidesFor, sides)}
           onClose={() => setPickSidesFor(null)}
         />

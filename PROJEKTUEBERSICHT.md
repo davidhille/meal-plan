@@ -78,6 +78,7 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
 - **Saison-Hinweis:** Gerichtkarten im Plan zeigen Zutaten, die am Plan-Tag Saison haben (z. B. „Kürbis“, Koralle mit
   Spross-Symbol). Saison-Liste in `src/lib/season.ts`, dieselbe bestimmt den Saison-Bonus bei der Planung.
 - Tagesrhythmus: Sa/So aufwendigere **Wochenend**-Gerichte, unter der Woche abwechselnd **vegetarisch** und **Fleisch/Fisch**.
+- Rezepte → Beilagen: Bereich neben Hauptgerichten und Nachtischen (`SidesView`); Chefkoch-Suche getrennt für Beilage und Salat (hängt „Beilagen“ bzw. „Salat“ an den Suchbegriff, auch ohne Suchbegriff), feste Einträge ausblenden, eigene löschen.
 - Eigene Beilagen/Salate: im Beilagen-Fenster „hinzufügen“ per Rezept-Link oder KI-Vorschlag (nur Vorschau, gespeichert erst nach Übernehmen); je Familie, löschbar.
 - Beilagen-Einstellung (Einstellungen → Planung): aus / nur vorschlagen / automatisch; Logik in `lib/sidesSuggest.ts` (Vorschlag nur bei fehlender Sättigungsbeilage, Salat nur ohne Gemüse, nie Nudeln wegen der Mengen-Regel).
 - Gerichtkarte: Bild, Typ, Zubereitungszeit, Bewertung, ggf. Nachtisch. Gerichte mit Fisch oder Meeresfrüchten (ohne Fleisch)
