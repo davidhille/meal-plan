@@ -13,6 +13,7 @@ import { ShopError } from "./shops";
 import { profileRoutes } from "./routes/profile";
 import { planRoutes } from "./routes/plans";
 import { recipeRoutes } from "./routes/recipes";
+import { sideRoutes } from "./routes/sides";
 import { shoppingRoutes } from "./routes/shopping";
 import { shopRoutes } from "./routes/shops";
 import { pushRoutes } from "./routes/push";
@@ -25,7 +26,7 @@ export type { Env } from "./http";
 export { runRoutines } from "./routines";
 
 /** Reihenfolge ist egal, die Routen überschneiden sich nicht */
-const ROUTES: RouteHandler[] = [profileRoutes, shareRoutes, planRoutes, recipeRoutes, shoppingRoutes, shopRoutes, pushRoutes];
+const ROUTES: RouteHandler[] = [profileRoutes, shareRoutes, planRoutes, recipeRoutes, sideRoutes, shoppingRoutes, shopRoutes, pushRoutes];
 
 export async function handleApi(
   request: Request,

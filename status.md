@@ -1,6 +1,6 @@
 # Status – miyummy
 
-Stand: 21.11.2026 (letzter Merge: #200, 21.11.2026). Diese Datei ist der Kurzüberblick „Wo stehen wir?“.
+Stand: 21.11.2026 (letzter Merge: #201, 21.11.2026). Diese Datei ist der Kurzüberblick „Wo stehen wir?“.
 Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einrichtung: `SETUP_NEON_CLOUDFLARE.md`.
 
 ## Betrieb
@@ -11,6 +11,7 @@ Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einr
 
 ## Zuletzt erledigt
 
+- **Beilagen & Salate, Teil 3 (21.11.):** im Beilagen-Fenster „Eigene Beilage hinzufügen“: per Rezept-Link (Chefkoch & Co., auf 4 Portionen) oder KI-Vorschlag auf Knopfdruck (zählt zum KI-Kontingent); eigene Beilagen je Familie (Tabelle `custom_sides`, Migration 0037), löschbar. Noch nicht live getestet.
 - **Beilagen & Salate, Teil 2 (21.11.):** Einstellungen → Planung → „Beilagen und Salate“: aus (Standard) / nur vorschlagen (Karte zeigt „Dazu? …“ zum Übernehmen) / automatisch (beim Planen ergänzt). Vorschlag nur, wenn Nudeln/Reis/Kartoffeln/Brot fehlen, Salat nur ohne Gemüse. Migration 0036 (`profiles.sides_mode`). Noch nicht live getestet.
 - **Beilagen beim Tauschen (21.11.):** „Neu“ und Ersetzen behalten Beilage und Salat am Tag (wie den Nachtisch); nur Brotzeit entfernt sie.
 - **Beilagen & Salate, Teil 1 (20.11.):** am Gericht „Beilage“ antippen → Beilage und/oder Salat aus fester Sammlung (35 Einträge, `src/data/sides.ts`); Zutaten kommen mit den Portionen (inkl. Gäste) auf die Einkaufsliste, „Gebraucht für“ nennt „Beilage (zu Gericht)“; auch in Heute, Teilen und Download. Migration 0035 (`plan_meals.sides`).
@@ -30,7 +31,6 @@ Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einr
 | Free-Limits des Workers | im Cloudflare-Dashboard zu bestätigen (`SETUP_NEON_CLOUDFLARE.md` 3b) |
 | Chefkoch-Foto bei Nachtischen | Server scheitert (403), Browser-Weg kennt nur Rezepte; Cron erzeugt KI-Bild |
 | Routinen | nur anlegen/löschen, nicht bearbeiten |
-| Beilagen & Salate, Teil 3 | Teil 3: Chefkoch (Art „Beilage“/„Salat“) und KI-Beilage auf Knopfdruck, eigene Beilagen. Entscheidung von David 20.11.: so umsetzen |
 | Tests | nur Kernlogik, keine Oberfläche/Datenbank/Shop-Anbindung |
 
 ## Bekannte Grenzen
