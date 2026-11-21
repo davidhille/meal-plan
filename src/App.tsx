@@ -288,9 +288,9 @@ export default function App() {
   };
 
   /** Laufenden Plan verlängern statt ersetzen (gleiche Plan-ID → Gerichte neu laden) */
-  const handleExtendPlan = async (startDate: string, endDate: string, includeCleared = false) => {
+  const handleExtendPlan = async (startDate: string, endDate: string, includeCleared = false, trimPast = false) => {
     if (!currentPlan) return;
-    const plan = await extendMealPlan(currentPlan.id, startDate, endDate, includeCleared);
+    const plan = await extendMealPlan(currentPlan.id, startDate, endDate, includeCleared, trimPast);
     setCurrentPlan(plan);
     setPlanMeals(await getPlanMeals(plan.id));
     setFavorites(await getFavorites());
@@ -305,7 +305,7 @@ export default function App() {
 
   /** Aus dem Plan-Fenster: neuen Plan erstellen oder den laufenden um den Zeitraum ergänzen (Wahl steht dort) */
   const requestCreatePlan = async (startDate: string, endDate: string, mode: PlanMode, includeCleared = false) => {
-    if (mode === 'extend') await handleExtendPlan(startDate, endDate, includeCleared);
+    if (mode === 'extend' || mode === 'continue') await handleExtendPlan(startDate, endDate, includeCleared, mode === 'continue');
     else await handleCreatePlan(startDate, endDate);
     setShowPlanModal(false);
   };

@@ -6,7 +6,7 @@ import { useDialog } from '../lib/useDialog';
 import { exportPlan } from '../lib/planExport';
 
 /** Was mit einem noch laufenden Plan geschieht: Tage hinzufügen (Standard) oder alles neu planen */
-export type PlanMode = 'extend' | 'replace';
+export type PlanMode = 'extend' | 'continue' | 'replace';
 
 interface PlanCreationModalProps {
   onCreate: (startDate: string, endDate: string, mode: PlanMode, includeCleared?: boolean) => Promise<void>;
@@ -234,6 +234,18 @@ export default function PlanCreationModal({ onCreate, running, onClose }: PlanCr
                   </p>
                 </button>
                 <button
+                  aria-pressed={mode === 'continue'}
+                  onClick={() => setMode('continue')}
+                  className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all border ${
+                    mode === 'continue' ? 'bg-brand-50 border-brand-300 text-brand-700 font-medium' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <p>Ab heute weiterplanen</p>
+                  <p className={`text-xs mt-1 ${mode === 'continue' ? 'text-brand-700' : 'text-gray-500'} font-normal`}>
+                    Heute und kommende Tage bleiben, Vergangenes wird aus dem Plan genommen. Freie Tage bekommen ein Gericht.
+                  </p>
+                </button>
+                <button
                   aria-pressed={mode === 'replace'}
                   onClick={() => setMode('replace')}
                   className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all border ${
@@ -246,13 +258,13 @@ export default function PlanCreationModal({ onCreate, running, onClose }: PlanCr
                   </p>
                 </button>
               </div>
-              {mode === 'extend' && overlaps && (
+              {(mode === 'extend' || mode === 'continue') && overlaps && (
                 <p className="mt-2 text-xs text-gray-600">
                   Ein Teil des Zeitraums ist schon geplant. Dort werden nur freie Tage gefüllt. Für neue Gerichte wähle Tage nach Planende (
                   {formatShortDate(running.plan.end_date)}).
                 </p>
               )}
-              {mode === 'extend' && clearedInRange > 0 && (
+              {(mode === 'extend' || mode === 'continue') && clearedInRange > 0 && (
                 <label className="mt-2 flex items-start gap-2 min-h-11 text-sm text-gray-700">
                   <input
                     type="checkbox"
