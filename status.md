@@ -11,6 +11,7 @@ Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einr
 
 ## Zuletzt erledigt
 
+- **Rezept im Speiseplan bearbeiten (21.11.):** Stift im Rezept-Fenster des Plans öffnet `RecipeEditModal` (`MealPlanView`, `onRecipeEdited` in `App.tsx`). Noch nicht live geprüft.
 - **Ente galt als vegetarisch (21.11.):** Fleisch-Erkennung kannte „Enten“ nicht; jetzt auch Gans, Wild, Kaninchen, Hack, Kotelett u. a.; gespeicherte Rezepte per Migration 0041 korrigiert. Live geprüft: Knusperente steht jetzt als Fleisch.
 - **Mengen-Regeln: Grenze pro Monat dazu (21.11.):** Unter jeder Regel ein Link „Grenze pro Monat dazu“ (bzw. pro Woche), der eine zweite Regel für dieselbe Kategorie anlegt. Noch nicht live getestet.
 - **Mengen-Regeln pro Rezept zuordnen (21.11.):** In der Rezept-Ansicht „Zählt für Mengen-Regeln“ → „Anpassen“: Kategorien von Hand zuordnen oder abwählen (Tabelle `recipe_variety_overrides`, Migration 0040). Noch nicht live getestet.
