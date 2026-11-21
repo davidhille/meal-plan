@@ -11,6 +11,7 @@ Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einr
 
 ## Zuletzt erledigt
 
+- **Warenkorb-Übertrag hakt ab (21.11.):** Nach „Übertragen“ in den Knuspr-/Picnic-Warenkorb werden die übertragenen Artikel auf der Einkaufsliste automatisch abgehakt (landen unter „erledigt“); Fehlgeschlagene bleiben offen. Noch nicht live geprüft.
 - **Fleisch-Grenze bei den Mengen-Regeln (21.11.):** „Fleisch pro Woche“ ist aus den Ernährungseinstellungen in Einstellungen → Planung → „Wie oft darf es vorkommen?“ gewandert (erste Zeile „Fleisch“, höchstens n× pro Woche; neue Route `PUT /profile/meat-max`). Planungslogik unverändert; Zeile sieht aus wie die anderen Karten (Papierkorb setzt auf „keine Grenze“). Noch nicht live geprüft.
 - **Mengen-Regeln übersichtlicher (21.11.):** Woche- und Monatsgrenze derselben Kategorie stehen in einer Karte (vorher zwei gleich aussehende Zeilen, wirkte doppelt). Noch nicht live geprüft.
 - **Hinzufügen vereinheitlicht (21.11.):** Beilagen/Salate haben wie Hauptgerichte und Nachtische einen „… hinzufügen“-Knopf mit Auswahl (Chefkoch/KI/Link); Suchfelder angeglichen. Noch nicht live geprüft.

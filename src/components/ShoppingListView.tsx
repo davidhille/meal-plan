@@ -425,6 +425,18 @@ export default function ShoppingListView({ plan, weeks, planMeals, onCreatePlan 
     try {
       const result = await addToShopCart(p, wanted);
       await refreshCart(p);
+      // Übertragene Artikel sind für die Liste erledigt: abhaken, damit sie nach „erledigt“ wandern (Fehlgeschlagene bleiben offen)
+      const sent = new Set(wanted.map((w) => w.productId).filter((id) => !result.failed.includes(id)));
+      const toCheck = items.filter((i) => !i.checked && !i.isBasic && providerOfLabel(i.label) === p && i.productId && sent.has(i.productId));
+      for (const item of toCheck) {
+        patchLocal(item.id, { checked: true });
+        if (planId) {
+          pendingToggles.current.add(item.id);
+          const ok = await updateShoppingItem(planId, item, { checked: true });
+          pendingToggles.current.delete(item.id);
+          if (!ok) patchLocal(item.id, { checked: false });
+        }
+      }
       return result.failed.length
         ? `${result.added} übertragen, ${result.failed.length} ließen sich nicht übertragen.`
         : `${result.added} ${result.added === 1 ? 'Produkt liegt' : 'Produkte liegen'} jetzt in deinem ${shopName(p)}-Warenkorb.`;
