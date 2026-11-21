@@ -9,6 +9,7 @@ import {
   VarietyPeriod,
   VarietyRule,
   describeVarietyRules,
+  groupVarietyRules,
   varietyLabel,
 } from '../lib/varietyCategories';
 import CollapsibleCard from './CollapsibleCard';
@@ -71,7 +72,7 @@ export default function VarietyRulesSettings({ profile, onSaved }: VarietyRulesS
   };
 
   const addRule = () => {
-    const free = VARIETY_CATEGORIES.find((c) => !rules.some((r) => r.id === c.id && r.period === 'week'));
+    const free = VARIETY_CATEGORIES.find((c) => !rules.some((r) => r.id === c.id));
     if (free) persist([...rules, { id: free.id, period: 'week', max: 2 }]);
   };
 
@@ -81,6 +82,15 @@ export default function VarietyRulesSettings({ profile, onSaved }: VarietyRulesS
     const period: VarietyPeriod = r.period === 'week' ? 'month' : 'week';
     const max = r.max !== undefined ? Math.min(VARIETY_LIMIT[period], period === 'month' ? r.max * 3 : Math.max(1, Math.ceil(r.max / 3))) : 1;
     persist([...rules.slice(0, index + 1), { id: r.id, period, max }, ...rules.slice(index + 1)]);
+  };
+
+  // Kategorie einer Karte wechseln: gilt für Wochen- und Monatsgrenze zusammen
+  const changeCategory = (group: number[], id: string) => {
+    if (rules.some((r, j) => r.id === id && !group.includes(j))) {
+      setError(`Für „${varietyLabel(id)}“ gibt es schon eine Regel.`);
+      return;
+    }
+    persist(rules.map((r, j) => (group.includes(j) ? { ...r, id } : r)));
   };
 
   const parse = (value: string) => (value === '' ? undefined : Number(value));
@@ -98,92 +108,102 @@ export default function VarietyRulesSettings({ profile, onSaved }: VarietyRulesS
         und bei „Neu“, „mindestens“ nur beim Planen.
       </p>
       <ul className="border-t border-gray-100 divide-y divide-gray-100">
-        {rules.map((r, i) => (
-          <li key={i} className="px-4 py-3 space-y-2">
-            <div className="flex items-center gap-2">
-              <select
-                aria-label="Kategorie"
-                value={r.id}
-                disabled={saving}
-                onChange={(e) => update(i, { id: e.target.value })}
-                className={`${selectClass} flex-1 min-w-0 font-semibold`}
-              >
-                {VARIETY_CATEGORIES.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => persist(rules.filter((_, j) => j !== i))}
-                aria-label={`Regel „${varietyLabel(r.id)}“ löschen`}
-                className="tap p-2 text-gray-500 hover:text-red-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-300"
-              >
-                <Trash2 size={16} aria-hidden="true" />
-              </button>
-            </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-700">
-              <label className="flex items-center gap-2">
-                mindestens
+        {groupVarietyRules(rules).map((group) => {
+          const first = rules[group[0]];
+          const other: VarietyPeriod | null = group.length === 1 ? (first.period === 'week' ? 'month' : 'week') : null;
+          return (
+            <li key={first.id} className="px-4 py-3 space-y-2">
+              <div className="flex items-center gap-2">
                 <select
-                  value={r.min ?? ''}
+                  aria-label="Kategorie"
+                  value={first.id}
                   disabled={saving}
-                  onChange={(e) => update(i, { min: parse(e.target.value) })}
-                  className={selectClass}
+                  onChange={(e) => changeCategory(group, e.target.value)}
+                  className={`${selectClass} flex-1 min-w-0 font-semibold`}
                 >
-                  <option value="">kein Minimum</option>
-                  {choicesFor(r.period, r.min, 1).map((n) => (
-                    <option key={n} value={n}>
-                      {n}×
+                  {VARIETY_CATEGORIES.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label}
                     </option>
                   ))}
                 </select>
-              </label>
-              <label className="flex items-center gap-2">
-                höchstens
-                <select
-                  value={r.max ?? ''}
+                <button
+                  type="button"
                   disabled={saving}
-                  onChange={(e) => update(i, { max: parse(e.target.value) })}
-                  className={selectClass}
+                  onClick={() => persist(rules.filter((_, j) => !group.includes(j)))}
+                  aria-label={`Regeln für „${varietyLabel(first.id)}“ löschen`}
+                  className="tap p-2 text-gray-500 hover:text-red-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-300"
                 >
-                  <option value="">keine Grenze</option>
-                  <option value="0">nie</option>
-                  {choicesFor(r.period, r.max, 1).map((n) => (
-                    <option key={n} value={n}>
-                      {n}×
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex items-center gap-2">
-                pro
-                <select
-                  value={r.period}
+                  <Trash2 size={16} aria-hidden="true" />
+                </button>
+              </div>
+              {group.map((i) => {
+                const r = rules[i];
+                const periodLabel = r.period === 'week' ? 'Woche' : 'Monat';
+                return (
+                  <div key={r.period} className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-700">
+                    <span className="w-16 font-semibold text-gray-600">pro {periodLabel}</span>
+                    <label className="flex items-center gap-2">
+                      mindestens
+                      <select
+                        value={r.min ?? ''}
+                        disabled={saving}
+                        onChange={(e) => update(i, { min: parse(e.target.value) })}
+                        className={selectClass}
+                      >
+                        <option value="">kein Minimum</option>
+                        {choicesFor(r.period, r.min, 1).map((n) => (
+                          <option key={n} value={n}>
+                            {n}×
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="flex items-center gap-2">
+                      höchstens
+                      <select
+                        value={r.max ?? ''}
+                        disabled={saving}
+                        onChange={(e) => update(i, { max: parse(e.target.value) })}
+                        className={selectClass}
+                      >
+                        <option value="">keine Grenze</option>
+                        <option value="0">nie</option>
+                        {choicesFor(r.period, r.max, 1).map((n) => (
+                          <option key={n} value={n}>
+                            {n}×
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    {group.length > 1 && (
+                      <button
+                        type="button"
+                        disabled={saving}
+                        onClick={() => persist(rules.filter((_, j) => j !== i))}
+                        aria-label={`Grenze pro ${periodLabel} für „${varietyLabel(r.id)}“ entfernen`}
+                        className="tap p-1.5 text-gray-400 hover:text-red-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-300"
+                      >
+                        <Trash2 size={14} aria-hidden="true" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+              {other && (
+                <button
+                  type="button"
                   disabled={saving}
-                  onChange={(e) => update(i, { period: e.target.value as VarietyPeriod })}
-                  className={selectClass}
+                  onClick={() => addOtherPeriod(group[0])}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:underline"
                 >
-                  <option value="week">Woche</option>
-                  <option value="month">Monat</option>
-                </select>
-              </label>
-            </div>
-            {!rules.some((o, j) => j !== i && o.id === r.id && o.period !== r.period) && (
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => addOtherPeriod(i)}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:underline"
-              >
-                <Plus size={12} aria-hidden="true" />
-                {r.period === 'week' ? 'Grenze pro Monat dazu' : 'Grenze pro Woche dazu'}
-              </button>
-            )}
-          </li>
-        ))}
+                  <Plus size={12} aria-hidden="true" />
+                  {other === 'month' ? 'Grenze pro Monat dazu' : 'Grenze pro Woche dazu'}
+                </button>
+              )}
+            </li>
+          );
+        })}
         {rules.length === 0 && <li className="px-4 py-3 text-sm text-gray-500">Keine Regeln: Der Plan achtet nur auf Abwechslung im Namen.</li>}
       </ul>
       <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-t border-gray-100">
