@@ -538,6 +538,10 @@ export default function App() {
             onRemove={currentPlan ? handleRemoveMeal : undefined}
             onBrotzeit={currentPlan ? handleBrotzeit : undefined}
             onSetGuests={currentPlan ? handleSetGuests : undefined}
+            onRecipeEdited={() => {
+              loadPlanMeals();
+              getFavorites().then(setFavorites).catch(() => {});
+            }}
             onSharedChange={(shared) => setCurrentPlan((p) => (p ? { ...p, shared } : p))}
             familyDislikes={profile?.family_dislikes}
             onFamilyDislike={handleFamilyDislike}

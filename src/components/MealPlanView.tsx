@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Trash2, CalendarPlus, RefreshCw, Loader2, Download, Share2 } from 'lucide-react';
 import { DayRules, Dessert, ImageCredit, Meal, MealPlan, MealType, PlanDessert, PlanMeal, PlanSide } from '../types';
-import { generateMealImage, removeMealImage } from '../lib/api';
+import { generateMealImage, removeMealImage, saveRecipeEdit } from '../lib/api';
+import RecipeEditModal from './RecipeEditModal';
 import { planDessertToMeal } from '../lib/desserts';
 import DessertPickerModal from './DessertPickerModal';
 import SidePickerModal from './SidePickerModal';
@@ -24,6 +25,8 @@ import HideMealDialog from './HideMealDialog';
 import EmptyPlanStart from './EmptyPlanStart';
 
 interface MealPlanViewProps {
+  /** Nach dem Bearbeiten eines Rezepts im Plan: Plan und Favoriten neu laden */
+  onRecipeEdited?: () => void;
   onCreatePlan: () => void;
   planMeals?: PlanMeal[];
   ratings: Record<string, number>;
@@ -114,6 +117,7 @@ function planMealToMeal(pm: PlanMeal): Meal {
 const FIRST_PLAN_HINT = 'miyummy.firstPlanHint';
 
 export default function MealPlanView({
+  onRecipeEdited,
   onCreatePlan,
   planMeals,
   ratings,
@@ -153,6 +157,7 @@ export default function MealPlanView({
   /** Plan-Eintrag des geöffneten Gerichts (für die Gäste) */
   const [selectedPmId, setSelectedPmId] = useState<string | null>(null);
   const [cookOnOpen, setCookOnOpen] = useState(false);
+  const [editingRecipe, setEditingRecipe] = useState<Meal | null>(null);
   const [moving, setMoving] = useState<PlanMeal | null>(null);
   const [pickDessertFor, setPickDessertFor] = useState<PlanMeal | null>(null);
   const [pickSidesFor, setPickSidesFor] = useState<PlanMeal | null>(null);
@@ -563,6 +568,7 @@ export default function MealPlanView({
           key={`${selectedMeal.meal}-${cookOnOpen}`}
           meal={selectedMeal}
           startCooking={cookOnOpen}
+          onEdit={onRecipeEdited ? () => setEditingRecipe(selectedMeal) : undefined}
           currentRating={ratings[selectedMeal.meal]}
           defaultPortions={(defaultPortions ?? 4) + (selectedPm?.guests ?? 0)}
           extra={
@@ -592,6 +598,25 @@ export default function MealPlanView({
             setSelectedMeal(null);
             setSelectedPmId(null);
           }}
+        />
+      )}
+      {editingRecipe && onRecipeEdited && (
+        <RecipeEditModal
+          recipe={{
+            name: editingRecipe.meal,
+            type: editingRecipe.type,
+            durationMin: editingRecipe.durationMin ?? null,
+            ingredients: editingRecipe.ingredients,
+            instructions: editingRecipe.instructions,
+          }}
+          onSave={async (draft) => {
+            await saveRecipeEdit(editingRecipe.meal, draft);
+            setEditingRecipe(null);
+            setSelectedMeal(null);
+            setSelectedPmId(null);
+            onRecipeEdited();
+          }}
+          onClose={() => setEditingRecipe(null)}
         />
       )}
       {hideCandidate && onReject && (
