@@ -19,6 +19,8 @@ export interface VarietyCategory {
   label: string;
   /** Trifft auf den kleingeschriebenen Gerichtnamen */
   re: RegExp;
+  /** `art` = Art des Gerichts (Fleisch, Vegetarisch): gezählt wird nach den Zutaten, nicht nach dem Namen (Planung: weekVariety.ts) */
+  group?: 'art';
 }
 
 // „Gambas“, „Shrimps“ und „Garnelen“ oder „Penne“, „Tortelloni“ und „Lasagne“ haben keine gemeinsamen Wörter
@@ -40,7 +42,12 @@ const fromCategories = (id: string): VarietyCategory => {
   return { id, label: c.label, re: c.name };
 };
 
+const NEVER = /(?!)/;
+
 export const VARIETY_CATEGORIES: VarietyCategory[] = [
+  // Art des Gerichts: Fisch zählt nicht als Fleisch; „vegetarisch“ heißt ohne Fleisch und Fisch
+  { id: 'fleisch', label: 'Fleisch', re: NEVER, group: 'art' },
+  { id: 'vegetarisch', label: 'Vegetarisch', re: NEVER, group: 'art' },
   { id: 'nudeln', label: 'Nudeln & Pasta', re: NUDELN },
   { id: 'meeresfruechte', label: 'Garnelen & Meeresfrüchte', re: MEERESFRUECHTE },
   { id: 'asiatisch', label: 'Asiatische Gerichte', re: ASIATISCH },
@@ -92,6 +99,7 @@ export function toggleVarietyCategory(c: VarietyCategory, name: string, override
 
 /** Solange eine Familie nichts eingestellt hat (`profiles.variety_rules` ist NULL) */
 export const DEFAULT_VARIETY_RULES: VarietyRule[] = [
+  { id: 'vegetarisch', period: 'week', min: 3 },
   { id: 'meeresfruechte', period: 'week', max: 1 },
   { id: 'nudeln', period: 'week', max: 2 },
   { id: 'asiatisch', period: 'week', max: 2 },

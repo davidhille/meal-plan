@@ -3,7 +3,8 @@
 // `overlapWithRecent`), die nur ähnliche Namen erkennt – „Gambas“, „Shrimps“ und „Garnelen“ oder „Penne“,
 // „Tortelloni“ und „Lasagne“ haben keine gemeinsamen Wörter.
 // Die Kategorien stehen in src/lib/varietyCategories.ts (gemeinsam mit den Einstellungen).
-import { isoWeekKey } from "./nutrition";
+import { isMeatDish, isoWeekKey } from "./nutrition";
+import { isVegetarianDish, type Recipe } from "./meals";
 import {
   DEFAULT_VARIETY_RULES,
   VARIETY_CATEGORIES,
@@ -62,15 +63,39 @@ export function parseVarietyRules(raw: unknown): VarietyRule[] | null {
   return out;
 }
 
+/**
+ * Ein Gericht für die Zählung. Kategorien erkennt die Planung am Namen; die Art (Fleisch, Vegetarisch) braucht die Zutaten
+ * (`ingredients`) – ohne sie zählt ein Gericht für keine Art.
+ */
+export interface Dish {
+  name: string;
+  ingredients?: string[];
+  type?: Recipe["type"];
+}
+
+const asDish = (d: string | Dish): Dish => (typeof d === "string" ? { name: d } : d);
+
+/** Art des Gerichts nach den Zutaten (Fisch ist kein Fleisch; vegetarisch = ohne Fleisch und Fisch) */
+const artTests: Record<string, (r: Recipe) => boolean> = { fleisch: isMeatDish, vegetarisch: isVegetarianDish };
+
+const inCategory = (c: VarietyCategory, dish: Dish, overrides?: VarietyOverrides): boolean => {
+  if (!c.group) return inVarietyCategory(c, dish.name, overrides);
+  const hand = overrides?.[dish.name]?.[c.id];
+  if (hand !== undefined) return hand;
+  if (!dish.ingredients) return false;
+  return !!artTests[c.id]?.({ name: dish.name, ingredients: dish.ingredients, type: dish.type ?? "wochenende", instructions: "" } as Recipe);
+};
+
 /** Zu welchen Kategorien gehört das Gericht? */
-export function categoriesOf(name: string, overrides?: VarietyOverrides): VarietyCategory[] {
-  return VARIETY_CATEGORIES.filter((c) => inVarietyCategory(c, name, overrides));
+export function categoriesOf(dish: string | Dish, overrides?: VarietyOverrides): VarietyCategory[] {
+  const d = asDish(dish);
+  return VARIETY_CATEGORIES.filter((c) => inCategory(c, d, overrides));
 }
 
 /** Gehört das Gericht zur Kategorie? (für „an diesem Tag soll Fisch auf den Teller“) */
-export const matchesCategory = (id: string, name: string, overrides?: VarietyOverrides) => {
+export const matchesCategory = (id: string, dish: string | Dish, overrides?: VarietyOverrides) => {
   const c = VARIETY_CATEGORIES.find((x) => x.id === id);
-  return !!c && inVarietyCategory(c, name, overrides);
+  return !!c && inCategory(c, asDish(dish), overrides);
 };
 
 /** Zähler je Zeitraum (Woche/Monat) und Kategorie */
@@ -78,8 +103,8 @@ export type VarietyCounts = Map<string, Map<string, number>>;
 
 const periodKey = (date: string, period: VarietyPeriod) => (period === "week" ? `w${isoWeekKey(date)}` : `m${date.slice(0, 7)}`);
 
-export function addToCounts(counts: VarietyCounts, date: string, name: string, overrides?: VarietyOverrides): void {
-  for (const c of categoriesOf(name, overrides)) {
+export function addToCounts(counts: VarietyCounts, date: string, dish: string | Dish, overrides?: VarietyOverrides): void {
+  for (const c of categoriesOf(dish, overrides)) {
     for (const period of ["week", "month"] as const) {
       const key = periodKey(date, period);
       const byCategory = counts.get(key) ?? new Map<string, number>();
@@ -89,9 +114,9 @@ export function addToCounts(counts: VarietyCounts, date: string, name: string, o
   }
 }
 
-export function countsOf(meals: { date: string; name: string }[], overrides?: VarietyOverrides): VarietyCounts {
+export function countsOf(meals: (Dish & { date: string })[], overrides?: VarietyOverrides): VarietyCounts {
   const counts: VarietyCounts = new Map();
-  for (const m of meals) addToCounts(counts, m.date, m.name, overrides);
+  for (const m of meals) addToCounts(counts, m.date, m, overrides);
   return counts;
 }
 
@@ -99,10 +124,14 @@ const countFor = (counts: VarietyCounts, rule: VarietyRule, date: string) =>
   counts.get(periodKey(date, rule.period))?.get(rule.id) ?? 0;
 
 /** Würde das Gericht an diesem Tag eine Höchstgrenze (max) überschreiten? */
-export function exceedsCap(name: string, date: string, counts: VarietyCounts, rules: VarietyRule[], overrides?: VarietyOverrides): boolean {
-  const ids = new Set(categoriesOf(name, overrides).map((c) => c.id));
+export function exceedsCap(dish: string | Dish, date: string, counts: VarietyCounts, rules: VarietyRule[], overrides?: VarietyOverrides): boolean {
+  const ids = new Set(categoriesOf(dish, overrides).map((c) => c.id));
   return rules.some((r) => r.max !== undefined && ids.has(r.id) && countFor(counts, r, date) >= r.max);
 }
+
+/** Ist die Höchstgrenze der Kategorie an diesem Tag schon erreicht? (z. B. „Fleisch ist diese Woche ausgeschöpft“) */
+export const capReached = (id: string, date: string, counts: VarietyCounts, rules: VarietyRule[]): boolean =>
+  rules.some((r) => r.id === id && r.max !== undefined && countFor(counts, r, date) >= r.max);
 
 /** Letzter Tag der Kalenderwoche (Sonntag) bzw. des Kalendermonats */
 function periodEnd(date: string, period: VarietyPeriod): string {

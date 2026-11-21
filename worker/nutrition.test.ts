@@ -55,8 +55,8 @@ describe("Fleisch-Grenze", () => {
     mealRatings: {},
     healthConditions: [],
     healthFocus: [],
-    meatMaxPerWeek,
-    vegMinPerWeek: 0,
+    // Fleisch-Grenze = Mengen-Regel der Art „fleisch“; ohne Grenze gar keine Regeln (auch kein Vegetarisch-Minimum)
+    varietyRules: meatMaxPerWeek == null ? [] : [{ id: "fleisch", period: "week", max: meatMaxPerWeek }],
   });
   const twoWeeks = Array.from({ length: 14 }, (_, i) => `2026-10-${String(12 + i).padStart(2, "0")}`);
   const meatByWeek = (meals: { date: string; recipe: Recipe }[]) => {

@@ -129,7 +129,7 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
   + KI-Rezepte + importierte Rezepte + Favoriten.
 - **Bewertung je Gericht:** Sterne (3 ★ neutral, 4–5 ★ heben an, 1–2 ★ senken ab), Vorlieben und Abneigungen der Familie (mit Oberbegriffen: „Fisch“ trifft auch Lachs),
   Ernährungs-Schwerpunkte, ein kleiner Favoriten-Bonus und etwas Zufall – Lieblingsgerichte entscheiden nicht allein.
-- **Planung (Stand 21.11.2026):** Montag bis Freitag bevorzugt schnelle Gerichte (bis 45 Minuten Zubereitungszeit), Samstag und Sonntag dürfen aufwendig sein; ob ein Gericht „Wochenende“ ist, richtet sich nach der Zeit (die Art muss man nur ohne Zeitangabe setzen). Vegetarisch/Fleisch über Wochenmengen: Fleisch höchstens X (Einstellungen → Planung → „Wie oft darf es vorkommen?“) und **vegetarisch mindestens X** (Einstellungen → Planung, Standard 3). **Gerichte, die ihr tauscht oder mit einem verworfenen Plan aussortiert, kommen 90 Tage nicht wieder** (+45 Tage je weiteres Mal); die Sorte (z. B. Kohlrouladen, Rotkohl) bekommt für drei Wochen einen Abzug.
+- **Planung (Stand 21.11.2026):** Montag bis Freitag bevorzugt schnelle Gerichte (bis 45 Minuten Zubereitungszeit), Samstag und Sonntag dürfen aufwendig sein; ob ein Gericht „Wochenende“ ist, richtet sich nach der Zeit (die Art muss man nur ohne Zeitangabe setzen). Vegetarisch/Fleisch über Wochenmengen: Fleisch höchstens X und **vegetarisch mindestens X** (Standard 3) – beides sind Regeln unter Einstellungen → Planung → „Wie oft darf es vorkommen?“, Auswahl „Art des Gerichts“: Fleisch, Vegetarisch (jeweils höchstens und/oder mindestens, pro Woche oder Monat; Fisch zählt nicht als Fleisch). **Gerichte, die ihr tauscht oder mit einem verworfenen Plan aussortiert, kommen 90 Tage nicht wieder** (+45 Tage je weiteres Mal); die Sorte (z. B. Kohlrouladen, Rotkohl) bekommt für drei Wochen einen Abzug.
 - **Pause nach Bewertung:** Ein Gericht kommt erst nach einer Pause wieder in den Plan: unbewertet nach 10 Wochen, 5 ★ nach 11 Wochen, 4 ★ nach 12, 3 ★ nach 13, 1–2 ★ praktisch nie wieder
   (nur wenn sonst nichts übrig ist; die KI liefert bei Bedarf neue Rezepte).
 - **Gesundheitsbedingungen** schließen hart aus: vegetarisch, vegan, glutenfrei, laktosefrei, Nussallergie, ohne Alkohol;
@@ -298,8 +298,6 @@ Auf- und zuklappbare Karten:
     Kinderfreundlich, Günstig – passende Gerichte bekommen Pluspunkte, nichts wird ausgeschlossen.
   - **Einschränkungen** (mehrere): Diabetes (nur Abzug bei Zucker), Cholesterin (nur Abzug bei viel Butter, Sahne, Speck, Wurst, Innereien), glutenfrei, laktosefrei, Nussallergie, vegetarisch,
     vegan, ohne Alkohol – schließen hart aus.
-  - **Fleisch pro Woche** (steht seit 21.11.2026 unter „Wie oft darf es vorkommen?“, nicht mehr hier): keine Grenze, nie oder höchstens 1–7× pro Kalenderwoche (Fisch zählt nicht mit);
-    gilt beim Planen und beim „Alle tauschen“.
 - **Familienmitglieder:** Name, Erwachsener/Kind mit Alter, mag/mag nicht – anlegen, bearbeiten, löschen (mit Bestätigung).
 - **Routinen:** wöchentlich oder monatlich automatisch einen neuen Plan erstellen (Cron stündlich, deutsche Zeit). Scheitert das Erstellen, versucht es der nächste Lauf erneut (höchstens 3 Versuche am Tag); danach bekommt der Betreiber eine Push-Nachricht.
 - **Einkaufslisten verwalten:** eigene Listen anlegen, umbenennen, umfärben, löschen.
@@ -311,7 +309,7 @@ Auf- und zuklappbare Karten:
 - **Wochentage:** pro Wochentag „Normal“, „Frei – nicht planen“ (auswärts essen, Reste) oder „höchstens 15/20/30/45/60 Min“.
   Freie Tage bleiben im Plan leer (schmale Zeile „frei“, Heute-Karte „Heute ist frei“); an Tagen mit Zeitlimit kommen
   nur Gerichte, die reinpassen (bekannte Zeit zuerst). Gilt für neue Pläne, Routinen und „Alle tauschen“.
-- **Wie oft darf es vorkommen?** (Mengen-Regeln): pro Kategorie eine Karte (mit Zeile für Woche und/oder Monat; Kategorien: Nudeln & Pasta, Garnelen & Meeresfrüchte, Asiatische Gerichte, Mexikanische Gerichte, Bowls & Pfannengerichte, Fisch, Geflügel, Rind, Schwein, Reis,
+- **Wie oft darf es vorkommen?** (Mengen-Regeln): pro Kategorie eine Karte (mit Zeile für Woche und/oder Monat; zuerst die **Art des Gerichts** Fleisch und Vegetarisch, dann die Kategorien: Nudeln & Pasta, Garnelen & Meeresfrüchte, Asiatische Gerichte, Mexikanische Gerichte, Bowls & Pfannengerichte, Fisch, Geflügel, Rind, Schwein, Reis,
   Kartoffeln, Hülsenfrüchte, Pizza, Auflauf, Eintopf, Suppe, Curry, Salat, Burger & Wraps, Mehlspeisen, Eierspeise), „mindestens“ und/oder „höchstens“ (auch „nie“)
   und der Zeitraum **Woche oder Monat** – z. B. höchstens 2× Nudeln oder Asiatische Gerichte pro Woche (beides Standard; Asiatisch zusätzlich höchstens 5× pro Monat; Pizza, Burger & Wraps und Curry je höchstens 1× pro Woche), höchstens 2× Garnelen pro Monat, mindestens 1× Fisch pro Woche. Gezählt wird pro Kalenderwoche
   bzw. Kalendermonat, schon geplante Tage zählen mit. Die Kategorie wird am Gerichtnamen erkannt; in der Rezept-Ansicht lässt sie sich unter „Zählt für Mengen-Regeln“ pro Gericht von Hand zuordnen oder abwählen. „Regel hinzufügen“, zu jeder Regel „Grenze pro Monat dazu“ (bzw. pro Woche), Löschen und „Standard wiederherstellen“; jede Änderung

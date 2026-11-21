@@ -21,7 +21,7 @@ const toggle = (set: Set<string>, id: string) => {
   return next;
 };
 
-/** Gesundheit & Ernährung: Schwerpunkte (mehrere), Einschränkungen (mehrere), Familien-Nein; die Fleisch-Grenze steht bei „Wie oft darf es vorkommen?“ */
+/** Gesundheit & Ernährung: Schwerpunkte (mehrere), Einschränkungen (mehrere), Familien-Nein */
 export default function PreferencesModal({ healthFocus, healthConditions, familyDislikes, onSave, onClose }: PreferencesModalProps) {
   const [focus, setFocus] = useState<Set<string>>(new Set(healthFocus));
   const [conditions, setConditions] = useState<Set<string>>(new Set(healthConditions));

@@ -28,12 +28,9 @@ export async function profileRoutes({ request, sql, body, parts, route, id, user
     const p = await getProfile(sql, user);
     const focus = onlyKnown(body.health_focus, FOCUS_IDS);
     const conditions = onlyKnown(body.health_conditions, CONDITION_IDS);
-    // Die Fleisch-Grenze wohnt in „Wie oft darf es vorkommen?“ (PUT /profile/meat-max); ohne Angabe bleibt sie wie sie ist
-    const meatMax = body.meat_max_per_week == null || body.meat_max_per_week === "" ? NaN : Number(body.meat_max_per_week);
-    const meatLimit =
-      "meat_max_per_week" in body ? (Number.isInteger(meatMax) && meatMax >= 0 && meatMax <= 7 ? meatMax : null) : p.meat_max_per_week ?? null;
+    // Fleisch-Grenze und Vegetarisch-Mindestzahl sind seit 0043 Mengen-Regeln (PUT /profile/variety-rules)
     const rows = await sql`UPDATE profiles
-      SET health_focus = ${focus}, health_conditions = ${conditions}, meat_max_per_week = ${meatLimit}, updated_at = now()
+      SET health_focus = ${focus}, health_conditions = ${conditions}, updated_at = now()
       WHERE id = ${p.id} RETURNING *`;
     return json(rows[0]);
   }
@@ -114,26 +111,6 @@ export async function profileRoutes({ request, sql, body, parts, route, id, user
     if (body.variety_rules !== null && rules === null) return json({ error: "Die Regeln konnten nicht gelesen werden." }, 400);
     const rows = await sql`UPDATE profiles SET variety_rules = ${rules === null ? null : JSON.stringify(rules)}::jsonb, updated_at = now()
       WHERE id = ${p.id} RETURNING *`;
-    return json(rows[0]);
-  }
-
-  // Fleischgerichte höchstens X-mal pro Kalenderwoche: { meat_max_per_week: 0–7 | null (= keine Grenze) }
-  if (route === "PUT /profile/meat-max") {
-    const p = await getProfile(sql, user);
-    const v = body.meat_max_per_week;
-    const n = v == null || v === "" ? null : Number(v);
-    if (n !== null && !(Number.isInteger(n) && n >= 0 && n <= 7)) return json({ error: "Ungültige Einstellung." }, 400);
-    const rows = await sql`UPDATE profiles SET meat_max_per_week = ${n}, updated_at = now() WHERE id = ${p.id} RETURNING *`;
-    return json(rows[0]);
-  }
-
-  // Vegetarisch mindestens X-mal pro Woche: { veg_min_per_week: 0–7 | null (= Standard 3) }
-  if (route === "PUT /profile/veg-min") {
-    const p = await getProfile(sql, user);
-    const v = body.veg_min_per_week;
-    const n = v == null || v === "" ? null : Number(v);
-    if (n !== null && !(Number.isInteger(n) && n >= 0 && n <= 7)) return json({ error: "Ungültige Einstellung." }, 400);
-    const rows = await sql`UPDATE profiles SET veg_min_per_week = ${n}, updated_at = now() WHERE id = ${p.id} RETURNING *`;
     return json(rows[0]);
   }
 

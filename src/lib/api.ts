@@ -415,15 +415,6 @@ export function saveSidesMode(mode: SidesMode): Promise<Profile> {
   return request<Profile>('PUT', '/profile/sides-mode', { sides_mode: mode });
 }
 
-/** Fleisch höchstens n× pro Woche (null = keine Grenze). Wirft bei Fehlern. */
-export function saveMeatMax(n: number | null): Promise<Profile> {
-  return request<Profile>('PUT', '/profile/meat-max', { meat_max_per_week: n });
-}
-
-export function saveVegMin(n: number | null): Promise<Profile> {
-  return request<Profile>('PUT', '/profile/veg-min', { veg_min_per_week: n });
-}
-
 export function saveVarietyRules(rules: VarietyRule[] | null): Promise<Profile> {
   return request<Profile>('PUT', '/profile/variety-rules', { variety_rules: rules });
 }
