@@ -93,7 +93,7 @@ export function pickDays(
   used: Set<string>,
   pool: Recipe[],
   assigned: Map<string, Recipe> = new Map(),
-  rand: () => number = Math.random
+  _rand: () => number = Math.random // nur noch für Tests (früher Zufall beim Vegetarisch-Minimum)
 ): { date: string; recipe: Recipe }[] {
   // Mengen-Regeln (Einstellungen → Planung): Zähler aus dem Verlauf vor dem Plan und den festen Tagen. Verlauf-Einträge, die
   // beim Verlängern schon als feste Tage dabei sind, zählen nicht doppelt.
@@ -117,10 +117,9 @@ export function pickDays(
   const meals: { date: string; recipe: Recipe }[] = [];
   for (const date of dates) {
     const fixed = assigned.get(date);
-    const base = pool;
     // Tage mit Zeitlimit: nur Gerichte, die reinpassen – passt keins, lieber irgendwas als ein leerer Tag
-    const quick = withinTime(base, date, ctx.dayRules);
-    const timed = quick.length ? quick : base;
+    const quick = withinTime(pool, date, ctx.dayRules);
+    const timed = quick.length ? quick : pool;
     // Höchstgrenzen für Hauptkomponenten; ist nichts anderes übrig, lieber ein Gericht als ein leerer Tag
     const varied = timed.filter((r) => !exceedsCap(r, date, varietyCounts, rules, ctx.varietyOverrides));
     let candidates = varied.length ? varied : timed;
