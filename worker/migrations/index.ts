@@ -36,6 +36,7 @@ import mengenRegeln from "./0033_mengen_regeln";
 import doppeltesNReparieren from "./0034_doppeltes_n_reparieren";
 import beilagen from "./0035_beilagen";
 import beilagenModus from "./0036_beilagen_modus";
+import eigeneBeilagen from "./0037_eigene_beilagen";
 
 export interface Migration {
   /** Eindeutig und aufsteigend, z. B. "0002_kochmodus" */
@@ -81,4 +82,5 @@ export const MIGRATIONS: Migration[] = [
   { id: "0034_doppeltes_n_reparieren", statements: doppeltesNReparieren },
   { id: "0035_beilagen", statements: beilagen },
   { id: "0036_beilagen_modus", statements: beilagenModus },
+  { id: "0037_eigene_beilagen", statements: eigeneBeilagen },
 ];

@@ -1,7 +1,7 @@
 import type { SidesMode } from './sidesSuggest';
 import {
   Profile, FamilyMember, MealRating, MealPlan, PlanMeal, Routine, ShoppingItem, ShoppingLabel, Favorite, MealType, ImageCredit,
-  ShopState, ShopProvider, ProductResult, CartItem, ShopRule, PlanDessert, PlanSide, Dessert, DessertCategory, RecipeCatalog, RecipeFilter, RecipeFilterInput, RecipeDraft, DayRules, RatingNote,
+  ShopState, ShopProvider, ProductResult, CartItem, ShopRule, PlanDessert, PlanSide, Side, SideKind, Dessert, DessertCategory, RecipeCatalog, RecipeFilter, RecipeFilterInput, RecipeDraft, DayRules, RatingNote,
 } from '../types';
 import type { CategoryOverride } from './recipeCategories';
 import type { VarietyRule } from './varietyCategories';
@@ -635,6 +635,25 @@ export async function removePlanMeal(planMealId: string, keepEmpty = false): Pro
 
 /** Nachtisch an ein Gericht hängen (null = entfernen); wirft bei Fehlern */
 /** Beilage und/oder Salat an ein Gericht hängen (leere Liste = entfernen) */
+/** Eigene Beilagen und Salate der Familie */
+export function getCustomSides(): Promise<Side[]> {
+  return request<Side[]>('GET', '/sides/custom');
+}
+
+export function saveCustomSide(side: { name: string; kind: SideKind; ingredients: string[]; instructions: string; durationMin: number | null; sourceUrl?: string | null }): Promise<Side[]> {
+  return request<Side[]>('POST', '/sides/custom', side);
+}
+
+export function deleteCustomSide(name: string): Promise<Side[]> {
+  return request<Side[]>('DELETE', `/sides/custom?name=${encodeURIComponent(name)}`);
+}
+
+/** KI-Vorschlag für eine Beilage/einen Salat (nicht gespeichert); wirft mit Klartext-Meldung */
+export async function previewAiSide(kind: SideKind, mealName: string, wish: string): Promise<{ name: string; kind: SideKind; ingredients: string[]; instructions: string; durationMin: number }> {
+  const r = await request<{ side: { name: string; kind: SideKind; ingredients: string[]; instructions: string; durationMin: number } }>('POST', '/sides/ai-preview', { kind, mealName, wish });
+  return r.side;
+}
+
 export async function setMealSides(planMealId: string, sides: PlanSide[]): Promise<PlanSide[] | null> {
   const result = await request<{ sides: PlanSide[] | null }>('PUT', `/plan-meals/${planMealId}/sides`, { sides });
   return result.sides;
