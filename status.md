@@ -1,6 +1,6 @@
 # Status – miyummy
 
-Stand: 20.11.2026 (letzter Merge: #198, 20.11.2026; Beilagen Teil 1 in Arbeit). Diese Datei ist der Kurzüberblick „Wo stehen wir?“.
+Stand: 21.11.2026 (letzter Merge: #199, 20.11.2026). Diese Datei ist der Kurzüberblick „Wo stehen wir?“.
 Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einrichtung: `SETUP_NEON_CLOUDFLARE.md`.
 
 ## Betrieb
@@ -11,6 +11,7 @@ Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einr
 
 ## Zuletzt erledigt
 
+- **Beilagen beim Tauschen (21.11.):** „Neu“ und Ersetzen behalten Beilage und Salat am Tag (wie den Nachtisch); nur Brotzeit entfernt sie.
 - **Beilagen & Salate, Teil 1 (20.11.):** am Gericht „Beilage“ antippen → Beilage und/oder Salat aus fester Sammlung (35 Einträge, `src/data/sides.ts`); Zutaten kommen mit den Portionen (inkl. Gäste) auf die Einkaufsliste, „Gebraucht für“ nennt „Beilage (zu Gericht)“; auch in Heute, Teilen und Download. Migration 0035 (`plan_meals.sides`).
 - **Fehler „Prisenn/Scheibenn“ (20.11.):** Import machte aus „Prise(n)“ ein doppeltes „n“, die Zutat blieb deshalb auf der Einkaufsliste statt im Vorrat; Ursache behoben, 27 gespeicherte Rezepte per Migration 0034 repariert; „Salz und Pfeffer“ zählt jetzt als Vorrat, Prisen stehen in der Mehrzahl.
 - **Einkaufsliste „Einkauf für“ (20.11.):** frühere Wochen sind ausgeblendet, Link „Frühere Wochen anzeigen“ holt sie zurück.
