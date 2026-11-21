@@ -11,6 +11,7 @@ Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einr
 
 ## Zuletzt erledigt
 
+- **Beilagen auf der Rezeptseite (21.11.):** dritter Bereich „Beilagen“ (Beilagen/Salate): ansehen, feste ausblenden (`profiles.hidden_sides`, Migration 0038; ausgeblendete kommen nicht als Vorschlag/Auswahl), eigene löschen, bei Chefkoch suchen (getrennt für Beilage und Salat) oder per Link/KI hinzufügen. Noch nicht live getestet.
 - **Beilagen & Salate, Teil 3 (21.11.):** im Beilagen-Fenster „Eigene Beilage hinzufügen“: per Rezept-Link (Chefkoch & Co., auf 4 Portionen) oder KI-Vorschlag auf Knopfdruck (zählt zum KI-Kontingent); eigene Beilagen je Familie (Tabelle `custom_sides`, Migration 0037), löschbar. Noch nicht live getestet.
 - **Beilagen & Salate, Teil 2 (21.11.):** Einstellungen → Planung → „Beilagen und Salate“: aus (Standard) / nur vorschlagen (Karte zeigt „Dazu? …“ zum Übernehmen) / automatisch (beim Planen ergänzt). Vorschlag nur, wenn Nudeln/Reis/Kartoffeln/Brot fehlen, Salat nur ohne Gemüse. Migration 0036 (`profiles.sides_mode`). Noch nicht live getestet.
 - **Beilagen beim Tauschen (21.11.):** „Neu“ und Ersetzen behalten Beilage und Salat am Tag (wie den Nachtisch); nur Brotzeit entfernt sie.

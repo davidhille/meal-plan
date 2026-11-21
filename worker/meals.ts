@@ -246,6 +246,8 @@ export interface ScoringContext {
   varietyRules?: VarietyRule[];
   /** Beilagen beim Planen: off | suggest | auto (nur auto ergänzt hier; suggest zeigt die App) */
   sidesMode?: SidesMode;
+  /** Ausgeblendete Beilagen/Salate der festen Sammlung (kommen nicht als Vorschlag) */
+  hiddenSides?: string[];
   /** Geplante Gerichte vor dem Planungsbeginn (Datum + Name): Zähler für Wochen-/Monats-Regeln */
   planHistory?: { date: string; name: string }[];
 }

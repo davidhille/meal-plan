@@ -9,6 +9,7 @@ import {
   ChefkochHit,
   previewChefkoch,
   saveCustomDessert,
+  saveCustomSide,
   saveImportedRecipe,
   searchChefkoch,
 } from '../lib/api';
@@ -16,7 +17,7 @@ import { useDialog } from '../lib/useDialog';
 
 interface ChefkochSearchModalProps {
   /** Hauptgerichte (Standard) oder Nachtische: Filter „Dessert“, Zutaten in Originalmenge, Kategorie statt Art */
-  mode?: 'main' | 'dessert';
+  mode?: 'main' | 'dessert' | 'beilage' | 'salat';
   /** Namen, die schon in der Sammlung sind */
   existingNames: Set<string>;
   /** Rezept übernommen – das Fenster bleibt offen (weitere Rezepte übernehmen) */
@@ -52,9 +53,14 @@ const formatRating = (r: number) =>
 /** Rezepte bei Chefkoch suchen, ansehen und in die eigene Sammlung übernehmen */
 export default function ChefkochSearchModal({ mode = 'main', existingNames, onSaved, onClose, initialQuery = '' }: ChefkochSearchModalProps) {
   const isDessert = mode === 'dessert';
-  const chipList = CHIPS.filter((c) => (isDessert ? c.id !== 'main' && c.id !== 'vegetarian' : c.id !== 'dessert'));
+  /** Beilagen/Salate: die Suche hängt „Beilagen“ bzw. „Salat“ an den Suchbegriff, gespeichert wird als eigene Beilage */
+  const sideKind = mode === 'beilage' || mode === 'salat' ? mode : null;
+  const isSide = sideKind !== null;
+  const chipList = CHIPS.filter((c) =>
+    isSide ? c.id !== 'main' && c.id !== 'dessert' : isDessert ? c.id !== 'main' && c.id !== 'vegetarian' : c.id !== 'dessert'
+  );
   const [query, setQuery] = useState(initialQuery);
-  const [chips, setChips] = useState<Set<ChipId>>(new Set([isDessert ? 'dessert' : 'main']));
+  const [chips, setChips] = useState<Set<ChipId>>(new Set(isSide ? [] : [isDessert ? 'dessert' : 'main']));
   const [hits, setHits] = useState<ChefkochHit[] | null>(null);
   /** Weiter bei … (null = keine weiteren Treffer); gilt für die Suche in `searched` */
   const [next, setNext] = useState<ChefkochCursor | null>(null);
@@ -107,11 +113,12 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
   });
 
   const search = async () => {
-    if (query.trim().length < 2 || searching) return;
+    if ((!isSide && query.trim().length < 2) || searching) return;
     setSearching(true);
     setError(null);
     try {
-      const q = { query: query.trim(), filters: filters() };
+      const term = sideKind === 'salat' ? 'Salat' : 'Beilagen';
+      const q = { query: isSide ? `${query.trim()} ${term}`.trim() : query.trim(), filters: filters() };
       const r = await searchChefkoch(q.query, q.filters);
       setHits(r.hits);
       setNext(r.next);
@@ -128,7 +135,7 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
 
   // Mit Suchbegriff geöffnet (z. B. KI-Kontingent leer): gleich suchen
   useEffect(() => {
-    if (initialQuery.trim().length >= 2) search();
+    if (isSide || initialQuery.trim().length >= 2) search();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -181,7 +188,16 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
     try {
       const r = detail.recipe;
       const finalName = name.trim() || r.name;
-      if (isDessert) {
+      if (sideKind) {
+        await saveCustomSide({
+          name: finalName,
+          kind: sideKind,
+          ingredients: r.ingredients,
+          instructions: r.instructions,
+          durationMin: r.durationMin ?? null,
+          sourceUrl: r.sourceUrl,
+        });
+      } else if (isDessert) {
         await saveCustomDessert({
           name: finalName,
           category,
@@ -208,7 +224,7 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
       }
       onSaved(finalName, favorite);
       setTaken((prev) => new Set(prev).add(r.name).add(finalName));
-      setNotice(`„${finalName}“ ist jetzt ${isDessert ? 'bei den Nachtischen' : 'in den Rezepten'}.`);
+      setNotice(`„${finalName}“ ist jetzt ${isSide ? 'bei den Beilagen' : isDessert ? 'bei den Nachtischen' : 'in den Rezepten'}.`);
       backToList();
     } catch (e) {
       setError((e as Error).message || 'Das Rezept konnte nicht gespeichert werden.');
@@ -220,7 +236,7 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
   const steps = detail ? detail.recipe.instructions.split('\n').filter(Boolean) : [];
   const already = detail ? existingNames.has(name.trim() || detail.recipe.name) : false;
   // Dieselbe Chefkoch-Nummer schon übernommen, aber unter anderem Namen (z. B. ohne Nutzernamen im Titel)
-  const knownAs = !isDessert && detail?.knownAs && detail.knownAs !== (name.trim() || detail.recipe.name) ? detail.knownAs : null;
+  const knownAs = !isDessert && !isSide && detail?.knownAs && detail.knownAs !== (name.trim() || detail.recipe.name) ? detail.knownAs : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -246,7 +262,7 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
             <ChefHat size={18} className="text-brand-700 ml-1" aria-hidden="true" />
           )}
           <h2 id="chefkoch-title" className="flex-1 text-lg font-bold text-gray-900 truncate">
-            {detail ? detail.recipe.name : isDessert ? 'Nachtisch bei Chefkoch suchen' : 'Bei Chefkoch suchen'}
+            {detail ? detail.recipe.name : isSide ? `${sideKind === 'salat' ? 'Salat' : 'Beilage'} bei Chefkoch suchen` : isDessert ? 'Nachtisch bei Chefkoch suchen' : 'Bei Chefkoch suchen'}
           </h2>
           {!detail && (
             <button
@@ -272,14 +288,14 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 type="search"
-                placeholder={isDessert ? 'z. B. Tiramisu, Apfelkuchen, Mousse' : 'z. B. Kürbis, Lasagne, Curry'}
+                placeholder={isSide ? (sideKind === 'salat' ? 'z. B. Gurke, Kartoffel, Linsen (leer = beliebt)' : 'z. B. Kürbis, Kartoffel, Reis (leer = beliebt)') : isDessert ? 'z. B. Tiramisu, Apfelkuchen, Mousse' : 'z. B. Kürbis, Lasagne, Curry'}
                 aria-label="Suchbegriff"
                 autoFocus
                 className="flex-1 h-11 px-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
               />
               <button
                 type="submit"
-                disabled={query.trim().length < 2 || searching}
+                disabled={(!isSide && query.trim().length < 2) || searching}
                 aria-label="Suchen"
                 className="w-11 h-11 flex items-center justify-center rounded-xl bg-brand-700 text-white disabled:bg-gray-200 disabled:text-gray-500"
               >
@@ -421,7 +437,7 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
                     ))}
                   </div>
                 </div>
-              ) : (
+              ) : isSide ? null : (
                 <>
                   <div>
                     <span className="block text-sm font-bold text-gray-900 mb-1">Einordnen als</span>
@@ -491,7 +507,7 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
                           <Loader2 size={20} className="animate-spin text-brand-700" />
                         </span>
                       )}
-                      {(existingNames.has(h.name) || taken.has(h.name) || (!isDessert && !!h.knownAs)) && (
+                      {(existingNames.has(h.name) || taken.has(h.name) || (!isDessert && !isSide && !!h.knownAs)) && (
                         <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/95 text-xs font-semibold text-brand-800">
                           <Check size={10} aria-hidden="true" /> schon da
                         </span>
@@ -546,7 +562,7 @@ export default function ChefkochSearchModal({ mode = 'main', existingNames, onSa
               className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 disabled:bg-brand-300"
             >
               {saving && <Loader2 size={15} className="animate-spin" />}
-              {isDessert ? 'Zu meinen Nachtischen' : 'In meine Rezepte übernehmen'}
+              {isSide ? 'Zu meinen Beilagen' : isDessert ? 'Zu meinen Nachtischen' : 'In meine Rezepte übernehmen'}
             </button>
           </div>
         )}

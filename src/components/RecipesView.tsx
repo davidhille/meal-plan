@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { CatalogRecipe, Dessert, PlanMeal, RecipeFilter } from '../types';
+import { CatalogRecipe, Dessert, PlanMeal, Profile, RecipeFilter } from '../types';
 import { getRecipeFilters, type DislikeHint } from '../lib/api';
 import { filtersFor } from '../lib/recipeFilters';
 import MainDishesView from './MainDishesView';
 import DessertsView from './DessertsView';
+import SidesView from './SidesView';
 
 interface RecipesViewProps {
   planMeals: PlanMeal[];
@@ -17,15 +18,19 @@ interface RecipesViewProps {
   familyDislikes?: string[];
   onFamilyDislike?: (groupId: string) => Promise<void>;
   onDislikeHint?: (hint: DislikeHint) => void;
+  /** Für „Beilagen“ (Ausblenden je Familie) */
+  profile?: Profile | null;
+  onProfileChange?: (p: Profile) => void;
 }
 
-type Section = 'gerichte' | 'nachtische';
+type Section = 'gerichte' | 'nachtische' | 'beilagen';
 
 /** Rezept-Übersicht: Hauptgerichte und Nachtische */
-export default function RecipesView({ planMeals, onReplace, onAssignDessert, defaultPortions, onRecipesChanged, favoriteNames, familyDislikes, onFamilyDislike, onDislikeHint }: RecipesViewProps) {
+export default function RecipesView({ planMeals, onReplace, onAssignDessert, defaultPortions, onRecipesChanged, favoriteNames, familyDislikes, onFamilyDislike, onDislikeHint, profile, onProfileChange }: RecipesViewProps) {
   const [section, setSection] = useState<Section>(() => {
     try {
-      return localStorage.getItem('rezepte-bereich') === 'nachtische' ? 'nachtische' : 'gerichte';
+      const saved = localStorage.getItem('rezepte-bereich');
+      return saved === 'nachtische' || saved === 'beilagen' ? saved : 'gerichte';
     } catch {
       return 'gerichte';
     }
@@ -51,11 +56,12 @@ export default function RecipesView({ planMeals, onReplace, onAssignDessert, def
   return (
     <>
       <div className="px-4 pt-4">
-        <div className="grid grid-cols-2 p-1 rounded-xl bg-gray-200/70" role="group" aria-label="Rezepte">
+        <div className="grid grid-cols-3 p-1 rounded-xl bg-gray-200/70" role="group" aria-label="Rezepte">
           {(
             [
               { id: 'gerichte', label: 'Hauptgerichte' },
               { id: 'nachtische', label: 'Nachtische' },
+              { id: 'beilagen', label: 'Beilagen' },
             ] as const
           ).map((s) => (
             <button
@@ -84,6 +90,8 @@ export default function RecipesView({ planMeals, onReplace, onAssignDessert, def
           onFamilyDislike={onFamilyDislike}
           onDislikeHint={onDislikeHint}
         />
+      ) : section === 'beilagen' ? (
+        <SidesView profile={profile ?? null} onProfileChange={onProfileChange} defaultPortions={defaultPortions} />
       ) : (
         <DessertsView
           planMeals={planMeals}

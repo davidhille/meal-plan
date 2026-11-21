@@ -12,6 +12,8 @@ interface SidePickerModalProps {
   dayLabel: string;
   mealName: string;
   current?: PlanSide[] | null;
+  /** Ausgeblendete Beilagen der festen Sammlung */
+  hiddenSides?: string[];
   /** Leere Liste = alles entfernen */
   onSave: (sides: PlanSide[]) => Promise<void>;
   onClose: () => void;
@@ -20,7 +22,7 @@ interface SidePickerModalProps {
 const TABS: SideKind[] = ['beilage', 'salat'];
 
 /** Beilage und/oder Salat für ein Gericht auswählen (je Art eine); Zutaten landen mit den Portionen auf der Einkaufsliste */
-export default function SidePickerModal({ dayLabel, mealName, current, onSave, onClose }: SidePickerModalProps) {
+export default function SidePickerModal({ dayLabel, mealName, current, hiddenSides = [], onSave, onClose }: SidePickerModalProps) {
   const dialogRef = useDialog(onClose);
   const [selected, setSelected] = useState<PlanSide[]>(current ?? []);
   const [tab, setTab] = useState<SideKind>('beilage');
@@ -53,8 +55,8 @@ export default function SidePickerModal({ dayLabel, mealName, current, onSave, o
     const q = query.trim().toLowerCase();
     // Eigene zuerst, dann die feste Sammlung (gleiche Namen: die eigene gilt)
     const own = new Set(custom.map((c) => c.name));
-    return [...custom, ...SIDES.filter((s) => !own.has(s.name))].filter((s) => s.kind === tab && (!q || s.name.toLowerCase().includes(q)));
-  }, [tab, query, custom]);
+    return [...custom, ...SIDES.filter((s) => !own.has(s.name) && !hiddenSides.includes(s.name))].filter((s) => s.kind === tab && (!q || s.name.toLowerCase().includes(q)));
+  }, [tab, query, custom, hiddenSides]);
 
   const save = async () => {
     if (saving) return;

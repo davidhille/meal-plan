@@ -124,6 +124,19 @@ export async function profileRoutes({ request, sql, body, parts, route, id, user
     return json(rows[0]);
   }
 
+  // Beilage/Salat der festen Sammlung aus- bzw. wieder einblenden: { name, hidden }
+  if (route === "PUT /profile/hidden-sides") {
+    const p = await getProfile(sql, user);
+    const name = String(body.name ?? "").trim().slice(0, 200);
+    if (!name) return json({ error: "Name fehlt" }, 400);
+    const rows = body.hidden
+      ? await sql`UPDATE profiles SET hidden_sides = array_append(array_remove(hidden_sides, ${name}), ${name}), updated_at = now()
+          WHERE id = ${p.id} RETURNING *`
+      : await sql`UPDATE profiles SET hidden_sides = array_remove(hidden_sides, ${name}), updated_at = now()
+          WHERE id = ${p.id} RETURNING *`;
+    return json(rows[0]);
+  }
+
   // Nachtisch aus der Sammlung aus- bzw. wieder einblenden: { name, hidden }
   if (route === "PUT /profile/hidden-desserts") {
     const p = await getProfile(sql, user);

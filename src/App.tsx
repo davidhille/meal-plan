@@ -530,6 +530,7 @@ export default function App() {
             onSetDessert={currentPlan ? handleSetDessert : undefined}
             onSetSides={currentPlan ? handleSetSides : undefined}
             sidesMode={parseSidesMode(profile?.sides_mode)}
+            hiddenSides={profile?.hidden_sides}
             allPlanMeals={currentPlan ? planMeals : undefined}
             reminderTime={profile?.reminder_time}
             dayRules={profile?.day_rules}
@@ -539,6 +540,8 @@ export default function App() {
             onSetGuests={currentPlan ? handleSetGuests : undefined}
             onSharedChange={(shared) => setCurrentPlan((p) => (p ? { ...p, shared } : p))}
             familyDislikes={profile?.family_dislikes}
+            profile={profile}
+            onProfileChange={setProfile}
             onFamilyDislike={handleFamilyDislike}
             onToggleDislike={handleToggleDislike}
             memberCount={familyMembers.length}

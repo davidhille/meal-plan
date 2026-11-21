@@ -409,6 +409,10 @@ export function saveDayRules(dayRules: DayRules, brotzeitPerWeek?: number): Prom
 }
 
 /** Mengen-Regeln speichern (null = Standard-Regeln); wirft bei Fehlern */
+export function setSideVisibility(name: string, hidden: boolean): Promise<Profile> {
+  return request<Profile>('PUT', '/profile/hidden-sides', { name, hidden });
+}
+
 export function saveSidesMode(mode: SidesMode): Promise<Profile> {
   return request<Profile>('PUT', '/profile/sides-mode', { sides_mode: mode });
 }
