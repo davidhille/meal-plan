@@ -106,6 +106,7 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
   mit „Nicht kochen“. Will man sie doch füllen, erscheint im Fenster das Häkchen „Auch die n Tage mit ‚Nicht kochen‘
   planen“ (nur Tage ab heute im Zeitraum), oder man tippt am Tag auf „Gericht planen“. Vergangene Tage bleiben immer leer. Nur freie Tage bekommen ein Gericht; Abwechslung, Fleisch-Grenze
   und Turnus-Favoriten berücksichtigen die schon geplanten Gerichte. „Alles neu planen“ ersetzt wie bisher alles.
+  **„Ab heute weiterplanen“** (dritte Wahl): wie Hinzufügen, nimmt aber alle Tage vor heute aus dem Plan (z. B. heute bis Montag bleiben, ab Dienstag wird ergänzt). Die entfernten Tage bleiben im Hintergrund als Verlauf erhalten, damit die Pause nach Bewertung weiter greift.
 - **Leere Tage bleiben sichtbar:** Tage ohne Gericht stehen im Plan als schmale Zeile
   „Nichts geplant“ (frei) bzw. „Nicht kochen“ mit „Gericht planen“ (füllt nur diesen Tag, ohne automatische Brotzeit); freie Wochentage als
   „frei (Wochentag)“.

@@ -290,6 +290,22 @@ export async function createPlan(
 }
 
 /** Zeitraum eines Plans erweitern (nie verkleinern) */
+/**
+ * „Ab heute weiterplanen“: Tage vor `today` aus dem Plan nehmen. Sie wandern in einen archivierten Plan
+ * (status = 'archived'), damit der Verlauf für Pause nach Bewertung und Mengen-Regeln erhalten bleibt
+ * (`loadPlanHistory` liest über alle Pläne der Familie). Der laufende Plan beginnt danach heute.
+ */
+export async function archivePastDays(sql: Sql, profileId: string, planId: string, today: string) {
+  const cur = await sql`SELECT start_date::text AS s FROM meal_plans WHERE id = ${planId} AND profile_id = ${profileId}`;
+  if (!cur[0] || (cur[0].s as string) >= today) return;
+  const arch = await sql`INSERT INTO meal_plans (profile_id, start_date, end_date, status)
+    VALUES (${profileId}, ${cur[0].s as string}, ${addDaysIso(today, -1)}, 'archived') RETURNING id`;
+  await sql`UPDATE plan_meals SET plan_id = ${arch[0].id as string} WHERE plan_id = ${planId} AND meal_date < ${today}::date`;
+  await sql`UPDATE meal_plans SET start_date = ${today}::date, end_date = GREATEST(end_date, ${today}::date),
+      cleared_dates = ARRAY(SELECT d FROM unnest(cleared_dates) d WHERE d >= ${today}::date)
+    WHERE id = ${planId}`;
+}
+
 async function extendPlanRange(sql: Sql, planId: string, startDate: string, endDate: string) {
   const rows = await sql.query(
     `UPDATE meal_plans SET start_date = LEAST(start_date, $2::date), end_date = GREATEST(end_date, $3::date)

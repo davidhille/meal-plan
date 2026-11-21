@@ -5,7 +5,7 @@ import { json } from "../http";
 import { IMAGE_URL_SQL, IMAGE_CREDIT_SQL, fillMissingImages } from "../images";
 import { PLAN_COLS, getProfile, latestPlan, planOwned } from "../repo";
 import { loadDislikeHint } from "../dislikePattern";
-import { createPlan, replaceMeal, replaceWithRecipe, setBrotzeit } from "../planning";
+import { archivePastDays, createPlan, replaceMeal, replaceWithRecipe, setBrotzeit } from "../planning";
 
 /** Nachtisch aus dem Request prüfen und auf die erlaubten Felder beschränken */
 function parseDessert(raw: unknown) {
@@ -226,7 +226,13 @@ export async function planRoutes({ request, env, sql, body, parts, route, id, wa
     if (!rows[0]) return json({ error: "Plan nicht gefunden" }, 404);
     // „Heute“ nach Berliner Zeit: ab da werden leere Tage gefüllt, Vergangenes bleibt leer
     const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(new Date());
-    const plan = await createPlan(env, sql, p.id, startDate, endDate, id, { today, includeCleared: body.includeCleared === true });
+    // „Ab heute weiterplanen“: Vergangenes aus dem Plan nehmen (bleibt als Verlauf erhalten), Zeitraum beginnt frühestens heute
+    const trimPast = body.trimPast === true;
+    if (trimPast) await archivePastDays(sql, p.id, id, today);
+    const plan = await createPlan(env, sql, p.id, trimPast && startDate < today ? today : startDate, endDate, id, {
+      today,
+      includeCleared: body.includeCleared === true,
+    });
     waitUntil(fillMissingImages(env, sql, 7, plan.id));
     return json(plan);
   }
