@@ -540,8 +540,6 @@ export default function App() {
             onSetGuests={currentPlan ? handleSetGuests : undefined}
             onSharedChange={(shared) => setCurrentPlan((p) => (p ? { ...p, shared } : p))}
             familyDislikes={profile?.family_dislikes}
-            profile={profile}
-            onProfileChange={setProfile}
             onFamilyDislike={handleFamilyDislike}
             onToggleDislike={handleToggleDislike}
             memberCount={familyMembers.length}
@@ -575,6 +573,8 @@ export default function App() {
             familyDislikes={profile?.family_dislikes}
             onFamilyDislike={handleFamilyDislike}
             onDislikeHint={(hint) => setDislikeHint({ ...hint, phase: 'ask' })}
+            profile={profile}
+            onProfileChange={setProfile}
             onRecipesChanged={() => {
               loadPlanMeals();
               getFavorites().then(setFavorites).catch(() => {});
