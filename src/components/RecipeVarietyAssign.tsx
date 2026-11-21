@@ -22,7 +22,7 @@ export default function RecipeVarietyAssign({ recipeName, overrides, onChange }:
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const active = VARIETY_CATEGORIES.filter((c) => inVarietyCategory(c, recipeName, overrides));
+  const active = VARIETY_CATEGORIES.filter((c) => !c.group && inVarietyCategory(c, recipeName, overrides));
 
   const toggle = async (c: VarietyCategory) => {
     if (busy) return;
@@ -52,7 +52,7 @@ export default function RecipeVarietyAssign({ recipeName, overrides, onChange }:
       </div>
       {editing ? (
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="Zählt für Mengen-Regeln">
-          {VARIETY_CATEGORIES.map((c) => {
+          {VARIETY_CATEGORIES.filter((c) => !c.group).map((c) => {
             const on = inVarietyCategory(c, recipeName, overrides);
             return (
               <button

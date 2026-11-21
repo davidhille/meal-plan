@@ -222,8 +222,6 @@ export interface ScoringContext {
   healthConditions: string[];
   /** Ernährungs-Schwerpunkte (mehrere möglich), siehe nutrition.ts */
   healthFocus: string[];
-  /** Fleisch höchstens so oft pro Kalenderwoche (null = keine Grenze) */
-  meatMaxPerWeek?: number | null;
   /** Kommentare der Familie zu bewerteten Gerichten (für KI-Rezepte) */
   feedback?: string[];
   /** Familie (für eigene Rezepte in der Tabelle recipes) */
@@ -251,9 +249,7 @@ export interface ScoringContext {
   /** Ausgeblendete Beilagen/Salate der festen Sammlung (kommen nicht als Vorschlag) */
   hiddenSides?: string[];
   /** Geplante Gerichte vor dem Planungsbeginn (Datum + Name): Zähler für Wochen-/Monats-Regeln */
-  planHistory?: { date: string; name: string }[];
-  /** Vegetarisch mindestens so oft pro Kalenderwoche (null/fehlt = Standard, siehe slotRules.ts) */
-  vegMinPerWeek?: number | null;
+  planHistory?: { date: string; name: string; ingredients?: string[]; type?: Recipe["type"] }[];
   /** Weggetauschte bzw. mit einem verworfenen Plan aussortierte Gerichte (Tabelle meal_skips) */
   skips?: Record<string, SkipInfo>;
   /** Namen aus den letzten Wochen und weggetauschte: gleiche *Sorte* (Kohlrouladen, Rotkohl …) bekommt einen Abzug */

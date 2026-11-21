@@ -12,7 +12,6 @@ import ReminderSettings from './ReminderSettings';
 import DayRulesSettings from './DayRulesSettings';
 import VarietyRulesSettings from './VarietyRulesSettings';
 import SidesSettings from './SidesSettings';
-import VegMinSettings from './VegMinSettings';
 import { CONDITION_LABELS, FOCUS_LABELS } from '../lib/health';
 import { familyDislikeLabel } from '../lib/familyDislikes';
 import CollapsibleCard from './CollapsibleCard';
@@ -244,7 +243,6 @@ export default function SettingsView({
           {/* Regeln pro Wochentag: frei / wenig Zeit */}
           {profile && onProfileChange && <DayRulesSettings profile={profile} onSaved={onProfileChange} />}
           {/* Mengen-Regeln: wie oft Nudeln, Garnelen, Fisch … pro Woche/Monat */}
-          {profile && onProfileChange && <VegMinSettings profile={profile} onSaved={onProfileChange} />}
           {profile && onProfileChange && <VarietyRulesSettings profile={profile} onSaved={onProfileChange} />}
           {/* Beilagen und Salate: aus / vorschlagen / automatisch */}
           {profile && onProfileChange && <SidesSettings profile={profile} onSaved={onProfileChange} />}

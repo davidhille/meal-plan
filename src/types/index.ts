@@ -213,8 +213,6 @@ export interface Profile {
   /** Ernährungs-Schwerpunkte (mehrere möglich): calorie_light, high_protein, low_carb … */
   health_focus: string[];
   health_conditions: string[];
-  /** Fleisch höchstens so oft pro Kalenderwoche (null = keine Grenze) */
-  meat_max_per_week: number | null;
   created_at: string;
   updated_at: string;
   /** Uhrzeit der Erinnerung zum Bewerten, z. B. „20:00“ */
@@ -241,7 +239,6 @@ export interface Profile {
   /** Beilagen und Salate: off (Standard) | suggest | auto */
   sides_mode?: 'off' | 'suggest' | 'auto' | null;
   /** Vegetarisch mindestens so oft pro Woche (null = Standard 3) */
-  veg_min_per_week?: number | null;
   /** Ausgeblendete Beilagen/Salate der festen Sammlung */
   hidden_sides?: string[];
 }

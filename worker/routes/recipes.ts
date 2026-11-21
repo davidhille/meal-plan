@@ -447,7 +447,7 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
     const name = String(body.name ?? "").trim().slice(0, 200);
     const categoryId = String(body.categoryId ?? "");
     const state = body.state as string;
-    if (!name || !VARIETY_CATEGORIES.some((c) => c.id === categoryId) || !["include", "exclude", "auto"].includes(state)) {
+    if (!name || !VARIETY_CATEGORIES.some((c) => c.id === categoryId && !c.group) || !["include", "exclude", "auto"].includes(state)) {
       return json({ error: "Angaben fehlen" }, 400);
     }
     if (state === "auto") {
