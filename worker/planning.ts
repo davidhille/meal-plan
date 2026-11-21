@@ -9,6 +9,7 @@ import { PLAN_COLS, PLAN_MEAL_COLS, favoriteToRecipe, loadContext, loadPool } fr
 import { isMeatDish, isoWeekKey } from "./nutrition";
 import { DEFAULT_VARIETY_RULES, addToCounts, countsOf, exceedsCap, matchesCategory, minimumSlots } from "./weekVariety";
 import { MAX_PAUSE_DAYS, pausedNames } from "./repeatPause";
+import { suggestSides } from "../src/lib/sidesSuggest";
 import { BROTZEIT, fitsTime, isOffDay, pickBrotzeitDates, ruleFor, withinTime } from "./dayRules";
 
 /**
@@ -252,11 +253,19 @@ export async function createPlan(
       [extendPlanId, opts.today, endDate]
     );
   }
+  // Einstellung „automatisch“: fehlende Beilage/Salat gleich mit anlegen (je Beilage im Plan abwechselnd)
+  const usedSides: Record<string, number> = {};
+  const autoSides = (r: { name: string; ingredients: string[] }): string => {
+    if (ctx.sidesMode !== "auto") return "";
+    const sides = suggestSides({ name: r.name, ingredients: r.ingredients }, usedSides);
+    for (const s of sides) usedSides[s.name] = (usedSides[s.name] ?? 0) + 1;
+    return sides.length ? JSON.stringify(sides) : "";
+  };
   if (meals.length) {
     await sql.query(
-      `INSERT INTO plan_meals (plan_id, meal_date, meal_name, meal_type, ingredients, instructions, duration_min)
-       SELECT $1, d::date, n, t, string_to_array(i, E'\\x1f'), ins, NULLIF(dur, 0)
-       FROM unnest($2::text[], $3::text[], $4::text[], $5::text[], $6::text[], $7::int[]) AS x(d, n, t, i, ins, dur)`,
+      `INSERT INTO plan_meals (plan_id, meal_date, meal_name, meal_type, ingredients, instructions, duration_min, sides)
+       SELECT $1, d::date, n, t, string_to_array(i, E'\\x1f'), ins, NULLIF(dur, 0), NULLIF(sd, '')::jsonb
+       FROM unnest($2::text[], $3::text[], $4::text[], $5::text[], $6::text[], $7::int[], $8::text[]) AS x(d, n, t, i, ins, dur, sd)`,
       [
         plan.id,
         meals.map((m) => m.date),
@@ -265,6 +274,7 @@ export async function createPlan(
         meals.map((m) => m.recipe.ingredients.join("\x1f")),
         meals.map((m) => m.recipe.instructions),
         meals.map((m) => m.recipe.durationMin ?? 0),
+        meals.map((m) => autoSides(m.recipe)),
       ]
     );
     await markFavoritesPlanned(sql, profileId, plan.id);

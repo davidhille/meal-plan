@@ -8,6 +8,7 @@ import { ROUTINE_COLS, getProfile } from "../repo";
 import { FOCUS_IDS } from "../nutrition";
 import { parseDayRules } from "../dayRules";
 import { parseVarietyRules } from "../weekVariety";
+import { SIDES_MODES, type SidesMode } from "../../src/lib/sidesSuggest";
 
 /** Erlaubte Einschränkungen (harte Ausschlüsse, siehe violatesHealthConditions) */
 const CONDITION_IDS = ["diabetes", "cholesterol", "gluten_free", "lactose_intolerant", "nut_allergy", "vegetarian", "vegan", "no_alcohol"];
@@ -110,6 +111,15 @@ export async function profileRoutes({ request, sql, body, parts, route, id, user
     const rules = body.variety_rules === null ? null : parseVarietyRules(body.variety_rules);
     if (body.variety_rules !== null && rules === null) return json({ error: "Die Regeln konnten nicht gelesen werden." }, 400);
     const rows = await sql`UPDATE profiles SET variety_rules = ${rules === null ? null : JSON.stringify(rules)}::jsonb, updated_at = now()
+      WHERE id = ${p.id} RETURNING *`;
+    return json(rows[0]);
+  }
+
+  // Beilagen und Salate: { sides_mode: "off" | "suggest" | "auto" }
+  if (route === "PUT /profile/sides-mode") {
+    const p = await getProfile(sql, user);
+    if (!SIDES_MODES.includes(body.sides_mode as SidesMode)) return json({ error: "Ungültige Einstellung." }, 400);
+    const rows = await sql`UPDATE profiles SET sides_mode = ${body.sides_mode as string}, updated_at = now()
       WHERE id = ${p.id} RETURNING *`;
     return json(rows[0]);
   }

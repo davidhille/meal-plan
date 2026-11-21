@@ -5,6 +5,7 @@ import { generateMealImage, removeMealImage } from '../lib/api';
 import { planDessertToMeal } from '../lib/desserts';
 import DessertPickerModal from './DessertPickerModal';
 import SidePickerModal from './SidePickerModal';
+import { suggestSides, SidesMode } from '../lib/sidesSuggest';
 import { formatShortDate, toIso } from '../lib/dateUtils';
 import { ruleForDate } from '../lib/dayRules';
 import { seasonHighlights } from '../lib/season';
@@ -41,6 +42,8 @@ interface MealPlanViewProps {
   /** Nachtisch an ein Gericht hängen (null = entfernen) */
   onSetDessert?: (pm: PlanMeal, dessert: Dessert | null) => Promise<void>;
   onSetSides?: (pm: PlanMeal, sides: PlanSide[]) => Promise<void>;
+  /** Einstellung „Beilagen“: bei „suggest“ zeigt die Karte einen Vorschlag zum Übernehmen */
+  sidesMode?: SidesMode;
   /** Alle Gerichte des Plans (unabhängig von der KW-Auswahl) – für die Heute-Karte */
   allPlanMeals?: PlanMeal[];
   /** Uhrzeit der Erinnerung zum Bewerten („HH:MM“) */
@@ -125,6 +128,7 @@ export default function MealPlanView({
   defaultPortions,
   onSetDessert,
   onSetSides,
+  sidesMode,
   allPlanMeals,
   reminderTime,
   dayRules,
@@ -400,6 +404,12 @@ export default function MealPlanView({
               dessert={pm.dessert}
               sides={pm.sides}
               onPickSides={onSetSides ? () => setPickSidesFor(pm) : undefined}
+              sideSuggestion={
+                onSetSides && sidesMode === 'suggest' && !pm.brotzeit && !pm.sides?.length
+                  ? suggestSides({ name: pm.meal_name, ingredients: pm.ingredients ?? [] })
+                  : undefined
+              }
+              onAcceptSideSuggestion={onSetSides ? withBusy(pm.id, () => onSetSides(pm, suggestSides({ name: pm.meal_name, ingredients: pm.ingredients ?? [] }))) : undefined}
               guests={pm.guests ?? 0}
               season={seasonHighlights(pm.meal_name, pm.ingredients ?? [], Number(pm.meal_date.slice(5, 7)))}
               onPickDessert={onSetDessert ? () => setPickDessertFor(pm) : undefined}

@@ -238,6 +238,8 @@ export interface Profile {
   brotzeit_per_week?: number;
   /** Mengen-Regeln (z. B. höchstens 2× Nudeln pro Woche); null = Standard-Regeln */
   variety_rules?: VarietyRule[] | null;
+  /** Beilagen und Salate: off (Standard) | suggest | auto */
+  sides_mode?: 'off' | 'suggest' | 'auto' | null;
 }
 
 export interface DayRule {

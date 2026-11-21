@@ -21,6 +21,9 @@ interface DayCardProps {
   /** Beilage/Salat zum Gericht */
   sides?: PlanSide[] | null;
   onPickSides?: () => void;
+  /** Vorschlag (Einstellung „nur vorschlagen“), wenn zum Gericht eine Beilage fehlt */
+  sideSuggestion?: PlanSide[];
+  onAcceptSideSuggestion?: () => void;
   /** Heutiger Tag – hervorgehoben */
   isToday?: boolean;
   /** Verschieben oder rausnehmen */
@@ -48,6 +51,8 @@ export default function DayCard({
   onOpenDessert,
   sides,
   onPickSides,
+  sideSuggestion,
+  onAcceptSideSuggestion,
   isToday,
   onMove,
   onRemoveDessert,
@@ -185,6 +190,21 @@ export default function DayCard({
             <span className="font-semibold text-brand-700 uppercase tracking-wider">Dazu </span>
             {sides.map((s) => s.name).join(' · ')}
           </span>
+        </button>
+      )}
+      {sideSuggestion && sideSuggestion.length > 0 && onAcceptSideSuggestion && (
+        <button
+          onClick={onAcceptSideSuggestion}
+          disabled={busy}
+          aria-label={`Vorschlag übernehmen: ${sideSuggestion.map((s) => s.name).join(' und ')}`}
+          className="w-full flex items-center gap-2 pl-5 pr-3 py-2 text-left border-t border-dashed border-brand-200 bg-brand-50/40 hover:bg-brand-50"
+        >
+          <Salad size={14} className="flex-shrink-0 text-brand-700" aria-hidden="true" />
+          <span className="flex-1 min-w-0 text-xs text-gray-700 truncate">
+            <span className="font-semibold text-brand-700">Dazu? </span>
+            {sideSuggestion.map((s) => s.name).join(' · ')}
+          </span>
+          <span className="flex-shrink-0 text-xs font-semibold text-brand-700">Übernehmen</span>
         </button>
       )}
       {dessert && (

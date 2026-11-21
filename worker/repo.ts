@@ -1,4 +1,5 @@
 // Gemeinsame Datenbank-Zugriffe: Profil, Bewertungs-Kontext, Rezept-Pool, Favoriten, Pläne.
+import { parseSidesMode } from "../src/lib/sidesSuggest";
 import type { Row, Sql } from "./db";
 import { parseDayRules } from "./dayRules";
 import { parseVarietyRules } from "./weekVariety";
@@ -96,7 +97,7 @@ export async function getProfile(sql: Sql, user?: { profileId: string } | null) 
 
 export async function loadContext(sql: Sql, profileId: string): Promise<ScoringContext> {
   const [profiles, members, ratings, rejected] = await Promise.all([
-    sql`SELECT health_focus, health_conditions, meat_max_per_week, day_rules, brotzeit_per_week, family_dislikes, variety_rules FROM profiles WHERE id = ${profileId}`,
+    sql`SELECT health_focus, health_conditions, meat_max_per_week, day_rules, brotzeit_per_week, family_dislikes, variety_rules, sides_mode FROM profiles WHERE id = ${profileId}`,
     sql`SELECT type, age, favorite_foods, disliked_foods FROM family_members WHERE profile_id = ${profileId}`,
     sql`SELECT meal_name, rating, notes FROM meal_ratings WHERE profile_id = ${profileId}
       ORDER BY COALESCE(updated_at, created_at) DESC`,
@@ -115,6 +116,7 @@ export async function loadContext(sql: Sql, profileId: string): Promise<ScoringC
     familyDislikes: p.family_dislikes || [],
     // NULL = nichts eingestellt: Standard-Regeln (siehe weekVariety.ts)
     varietyRules: parseVarietyRules(p.variety_rules) ?? undefined,
+    sidesMode: parseSidesMode(p.sides_mode),
     mealRatings: Object.fromEntries(ratings.map((r) => [r.meal_name, r.rating])),
     // Neueste Kommentare zu Bewertungen – gehen als Rückmeldung in die KI-Rezepte
     feedback: ratings
