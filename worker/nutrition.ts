@@ -82,7 +82,7 @@ export function focusScore(meal: Recipe, focus: string[]): number {
 
 /** Fleisch (ohne Fisch) – für „Fleisch höchstens X-mal pro Woche“ */
 const MEAT_ONLY_RE =
-  /hackfleisch|\bhack\b|hähnchen|huhn|hühnchen|pute|kalb|speck|schinken|wurst|würstchen|leberkäse|guanciale|pancetta|kassler|rindfleisch|schweinefleisch|lammfleisch|rippchen|schwein|\brind|\blamm|schnitzel|(?<!ge)braten|bacon|chorizo|salami|gulasch|frikadelle|bulette|cevapcici|gyros|ente\b|entenbrust/i;
+  /hackfleisch|\bhack\b|hähnchen|huhn|hühnchen|pute|kalb|speck|schinken|wurst|würstchen|leberkäse|guanciale|pancetta|kassler|rindfleisch|schweinefleisch|lammfleisch|rippchen|schwein|\brind|\blamm|schnitzel|(?<!ge)braten|bacon|chorizo|salami|gulasch|frikadelle|bulette|cevapcici|gyros|\bente\b|\benten\b|entenbrust|entenkeule|\bgans\b|gänse|truthahn|putenbrust|hirsch(?!horn)|kaninchen|wildschwein|kotelett|rumpsteak/i;
 
 export function isMeatDish(meal: Recipe): boolean {
   return MEAT_ONLY_RE.test(meal.name) || meal.ingredients.some((i) => MEAT_ONLY_RE.test(i));

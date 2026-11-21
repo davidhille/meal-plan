@@ -253,7 +253,7 @@ export interface ScoringContext {
 }
 
 const MEAT_RE =
-  /hackfleisch|hähnchen|huhn|hühner|pute|kalb|speck|schinken|wurst|würstchen|leberkäse|guanciale|kassler|fleisch|rippchen|schwein|\brind|\blamm|filet|schnitzel|(?<!ge)braten|burger|lachs|fisch|kabeljau|thunfisch|garnele|chorizo|salami|sardine|sardelle|barsch|forelle|dorade|makrele|hering|tintenfisch|muschel|scampi|krabbe|shrimp/i;
+  /hackfleisch|hähnchen|huhn|hühner|pute|kalb|speck|schinken|wurst|würstchen|leberkäse|guanciale|kassler|fleisch|rippchen|schwein|\brind|\blamm|filet|schnitzel|(?<!ge)braten|burger|lachs|fisch|kabeljau|thunfisch|garnele|chorizo|salami|sardine|sardelle|barsch|forelle|dorade|makrele|hering|tintenfisch|muschel|scampi|krabbe|shrimp|\bente\b|\benten\b|entenbrust|entenkeule|\bgans\b|gänse|truthahn|putenbrust|hirsch(?!horn)|\breh(rücken|keule|ragout|gulasch)|kaninchen|wildschwein|rumpsteak|entrecôte|entrecote|kotelett|gyros|frikadelle|bulette|gulasch|pancetta|bacon|\bhack\b|zander|scholle|seelachs|pangasius|matjes|anchovis|hummer|krebs/i;
 
 // Zutaten mit Gluten (Weizen, Dinkel, Roggen, Gerste …)
 const GLUTEN_RE =
