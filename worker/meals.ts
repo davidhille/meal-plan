@@ -7,7 +7,7 @@ import { VEGETARISCH } from "./recipes/vegetarisch";
 import { FLEISCH } from "./recipes/fleisch";
 import { WOCHENENDE } from "./recipes/wochenende";
 import { MEALDB } from "./recipes/mealdb";
-import { focusScore, seasonScore } from "./nutrition";
+import { focusScore } from "./nutrition";
 
 export interface Recipe {
   name: string;
@@ -222,8 +222,6 @@ export interface ScoringContext {
   healthFocus: string[];
   /** Fleisch höchstens so oft pro Kalenderwoche (null = keine Grenze) */
   meatMaxPerWeek?: number | null;
-  /** Monat 1–12 für „saisonal“ */
-  month?: number;
   /** Kommentare der Familie zu bewerteten Gerichten (für KI-Rezepte) */
   feedback?: string[];
   /** Familie (für eigene Rezepte in der Tabelle recipes) */
@@ -377,8 +375,6 @@ export function scoreMeal(meal: Recipe, ctx: ScoringContext): number {
   if (ctx.healthConditions.includes("cholesterol") && violates(meal, CHOLESTEROL_RE)) score -= 15;
 
   score += focusScore(meal, ctx.healthFocus ?? []);
-  // Saison nach dem Monat des Plan-Tags: höchstens +3, immer an (nicht nur mit dem Schwerpunkt „saisonal“)
-  score += seasonScore(meal, ctx.month);
   return Math.max(0, score);
 }
 
@@ -446,12 +442,10 @@ export function pickMeal(
   // Etwas Zufall, damit nicht jeder Plan dieselben Spitzenreiter bekommt; Gerichte, die den
   // letzten Tagen ähneln (z. B. die dritte Quinoa-Pfanne), rutschen nach hinten
   const recent = [...used].slice(-6);
-  // Saison nach dem Monat dieses Tages (ein Plan über den Monatswechsel hinweg)
-  const dayCtx = { ...ctx, month: Number(dateStr.slice(5, 7)) };
   // Die Wiederholungssperre gilt vor Bewertung und Vorlieben: Lieblingsgerichte (Bewertung, Favorit) sind sonst ständig vorn
   const all = withoutRecent(
     pool
-      .map((meal) => ({ meal, score: scoreMeal(meal, dayCtx) }))
+      .map((meal) => ({ meal, score: scoreMeal(meal, ctx) }))
       .filter((s) => s.score >= 0),
     ctx
   )
@@ -485,12 +479,11 @@ export function pickReplacement(
   exclude: Set<string>
 ): Recipe | null {
   const preferred = preferredTypeFor(dateStr);
-  const dayCtx = { ...ctx, month: Number(dateStr.slice(5, 7)) };
   // Etwas Zufall wie bei pickMeal, sonst kommt beim Austauschen immer derselbe Spitzenreiter
   const scored = withoutRecent(
     pool
       .filter((m) => !exclude.has(m.name))
-      .map((meal) => ({ meal, score: scoreMeal(meal, dayCtx) }))
+      .map((meal) => ({ meal, score: scoreMeal(meal, ctx) }))
       .filter((s) => s.score >= 0),
     ctx
   )

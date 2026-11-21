@@ -162,7 +162,6 @@ export async function createPlan(
   // Pause nach Bewertung (gestaffelt, siehe repeatPause.ts) und Zähler für die Mengen-Regeln
   ctx.planHistory = await loadPlanHistory(sql, profileId, startDate);
   ctx.recentNames = pausedNames(ctx.planHistory, ctx.mealRatings, startDate);
-  ctx.month = Number(startDate.slice(5, 7));
 
   // Beim Verlängern: vorhandene Gerichte (fest, zählen für Abwechslung und Fleisch-Grenze) und leere Tage
   const existing = new Map<string, Recipe>();
@@ -356,7 +355,6 @@ export async function replaceMeal(env: Env, sql: Sql, profileId: string, planMea
 
   const planHistory = await loadPlanHistory(sql, profileId, old.meal_date);
   ctx.recentNames = pausedNames(planHistory, ctx.mealRatings, old.meal_date);
-  ctx.month = Number(String(old.meal_date).slice(5, 7));
 
   // Die anderen Gerichte des Plans: für die Fleisch-Grenze und die Abwechslung in der Woche
   const others = await sql`SELECT meal_name, ingredients, meal_date::text AS d FROM plan_meals

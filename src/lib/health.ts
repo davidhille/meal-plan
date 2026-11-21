@@ -20,7 +20,6 @@ export const FOCUS_OPTIONS: { id: string; label: string; hint: string }[] = [
   { id: 'veggie_rich', label: 'Viel Gemüse', hint: 'mehrere Gemüsesorten im Gericht' },
   { id: 'whole_grain', label: 'Vollkorn & Ballaststoffe', hint: 'Hülsenfrüchte, Vollkorn, Quinoa' },
   { id: 'kid_friendly', label: 'Kinderfreundlich', hint: 'nicht scharf, eher einfache Gerichte' },
-  { id: 'seasonal', label: 'Saisonal', hint: 'was gerade in Deutschland Saison hat' },
   { id: 'budget', label: 'Günstig', hint: 'eher günstige Zutaten' },
 ];
 

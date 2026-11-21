@@ -206,7 +206,7 @@ export default function MainDishesView({
       sortRecipes(
         searched.filter((r) => matchesSelection(r, activeSelection, { customFilters, overrides })),
         sort,
-        { ratings, favorites: new Set(favoriteNames), month: new Date().getMonth() + 1 }
+        { ratings, favorites: new Set(favoriteNames) }
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [searched, activeSelection, customFilters, overrides, sort, ratings, favoriteNames.join('|')]

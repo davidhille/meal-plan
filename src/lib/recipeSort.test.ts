@@ -20,12 +20,12 @@ const recipes = [
   r('Pfannkuchen', ['3 Eier'], null),
   r('Zucchini-Pasta', ['2 Zucchini'], 20),
 ];
-const ctx = { ratings: { 'Linsen-Dal': 5, 'Zucchini-Pasta': 1 }, favorites: new Set(['Pfannkuchen']), month: 10 };
+const ctx = { ratings: { 'Linsen-Dal': 5, 'Zucchini-Pasta': 1 }, favorites: new Set(['Pfannkuchen']) };
 const names = (mode: Parameters<typeof sortRecipes>[1]) => sortRecipes(recipes, mode, ctx).map((x) => x.name);
 
 describe('Sortierung der Rezept-Übersicht', () => {
-  test('Empfohlen: Favorit, gut bewertet, Saison zuerst, schlecht bewertet zuletzt', () => {
-    expect(names('empfohlen')).toEqual(['Pfannkuchen', 'Linsen-Dal', 'Kürbissuppe', 'Ägyptisches Fatteh', 'Zucchini-Pasta']);
+  test('Empfohlen: Favorit, gut bewertet zuerst, schlecht bewertet zuletzt', () => {
+    expect(names('empfohlen')).toEqual(['Pfannkuchen', 'Linsen-Dal', 'Ägyptisches Fatteh', 'Kürbissuppe', 'Zucchini-Pasta']);
   });
   test('Beste Bewertung: Unbewertete hinten, sonst alphabetisch', () => {
     expect(names('bewertung')).toEqual(['Linsen-Dal', 'Zucchini-Pasta', 'Ägyptisches Fatteh', 'Kürbissuppe', 'Pfannkuchen']);

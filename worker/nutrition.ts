@@ -1,10 +1,6 @@
 // Ernährungs-Schwerpunkte (mehrere gleichzeitig): schließen nichts aus, geben passenden Gerichten Pluspunkte.
 // Heuristik auf Zutatentext – wie die Gesundheitsfilter keine Ernährungsberatung.
 import type { Recipe } from "./meals";
-import { seasonalWords } from "../src/lib/season";
-
-export { seasonalWords };
-
 export const FOCUS_IDS = [
   "calorie_light",
   "high_protein",
@@ -12,7 +8,6 @@ export const FOCUS_IDS = [
   "veggie_rich",
   "whole_grain",
   "kid_friendly",
-  "seasonal",
   "budget",
 ] as const;
 export type Focus = (typeof FOCUS_IDS)[number];
@@ -25,7 +20,6 @@ export const FOCUS_PROMPT: Record<Focus, string> = {
   veggie_rich: "viel Gemüse",
   whole_grain: "Vollkorn und Ballaststoffe (Hülsenfrüchte, Vollkorn, Quinoa)",
   kid_friendly: "kinderfreundlich (nicht scharf, eher bekannte Zutaten)",
-  seasonal: "saisonale Zutaten aus Deutschland",
   budget: "günstige Zutaten",
 };
 
@@ -46,21 +40,7 @@ const CHEAP = ["linsen", "bohnen", "kichererbsen", "kartoffel", "hack", "nudel",
 const PRICEY_RE = /lachs|garnele|scampi|filet|steak|lamm|pinienkern|parmesan|trüffel|entrecôte|jakobsmuschel|ente\b|entenbrust|kalb|wildlachs|serrano|parmaschinken/;
 
 
-/** Höchster Saison-Bonus (David 1.11.2026: höchstens +3, nur ein Tie-Breaker neben Bewertung und Pause) */
-export const SEASON_BONUS_MAX = 3;
-
-/**
- * Saison-Bonus eines Gerichts im Monat 1–12: eine Saison-Zutat (Name oder Zutatenliste, Wortliste in `src/lib/season.ts`)
- * +2, zwei oder mehr +3. Gilt immer, unabhängig von den Schwerpunkten.
- */
-export function seasonScore(meal: Recipe, month?: number): number {
-  if (!month) return 0;
-  const text = [meal.name, ...meal.ingredients].join(" | ").toLowerCase();
-  const n = count(text, seasonalWords(month));
-  return n >= 2 ? SEASON_BONUS_MAX : n === 1 ? SEASON_BONUS_MAX - 1 : 0;
-}
-
-/** Pluspunkte (oder Abzug) für die gewählten Schwerpunkte; „saisonal“ gibt beim Planen nichts extra (siehe `seasonScore`) */
+/** Pluspunkte (oder Abzug) für die gewählten Schwerpunkte */
 export function focusScore(meal: Recipe, focus: string[]): number {
   if (!focus.length) return 0;
   const text = [meal.name, ...meal.ingredients].join(" | ").toLowerCase();
@@ -88,9 +68,6 @@ export function focusScore(meal: Recipe, focus: string[]): number {
       case "kid_friendly":
         if (has(text, SPICY_RE)) score -= 15;
         else if (meal.ingredients.length <= 10 && (meal.durationMin ?? 30) <= 40) score += 5;
-        break;
-      case "seasonal":
-        // zählt über `seasonScore` immer mit (höchstens +3); der Schwerpunkt steuert nur noch die Vorgabe für neue KI-Rezepte
         break;
       case "budget":
         if (count(text, CHEAP) >= 2) score += 8;

@@ -8,7 +8,6 @@ import SidePickerModal from './SidePickerModal';
 import { suggestSides, SidesMode } from '../lib/sidesSuggest';
 import { formatShortDate, toIso } from '../lib/dateUtils';
 import { ruleForDate } from '../lib/dayRules';
-import { seasonHighlights } from '../lib/season';
 import TodayCard from './TodayCard';
 import GuestStepper from './GuestStepper';
 import SharePlanDialog from './SharePlanDialog';
@@ -414,7 +413,6 @@ export default function MealPlanView({
               }
               onAcceptSideSuggestion={onSetSides ? withBusy(pm.id, () => onSetSides(pm, suggestSides({ name: pm.meal_name, ingredients: pm.ingredients ?? [] }, {}, hiddenSides))) : undefined}
               guests={pm.guests ?? 0}
-              season={seasonHighlights(pm.meal_name, pm.ingredients ?? [], Number(pm.meal_date.slice(5, 7)))}
               onPickDessert={onSetDessert ? () => setPickDessertFor(pm) : undefined}
               onOpenDessert={() => pm.dessert && setOpenDessert({ pm, dessert: pm.dessert })}
               onRemoveDessert={onSetDessert && pm.dessert ? () => setRemoveDessertFor(pm) : undefined}

@@ -1,5 +1,5 @@
 import { Meal, PlanDessert, PlanSide } from '../types';
-import { ChevronRight, Star, X, Heart, RefreshCw, Clock, Loader2, CakeSlice, CalendarDays, Sprout, UserPlus, Salad } from 'lucide-react';
+import { ChevronRight, Star, X, Heart, RefreshCw, Clock, Loader2, CakeSlice, CalendarDays, UserPlus, Salad } from 'lucide-react';
 import { dessertPreview } from '../lib/desserts';
 import CardActionBar, { CardAction } from './CardActionBar';
 import { dishKind } from '../lib/dishType';
@@ -30,8 +30,6 @@ interface DayCardProps {
   onMove?: () => void;
   /** Nachtisch vom Tag entfernen */
   onRemoveDessert?: () => void;
-  /** Saison-Zutaten des Gerichts (z. B. „Kürbis“) */
-  season?: string[];
   /** Gäste an diesem Tag */
   guests?: number;
 }
@@ -56,7 +54,6 @@ export default function DayCard({
   isToday,
   onMove,
   onRemoveDessert,
-  season,
   guests = 0,
 }: DayCardProps) {
   // „Fleisch“-Tage mit Fisch oder Meeresfrüchten (ohne Fleisch) heißen „Fisch“ – gleiche Logik wie in den Rezepten
@@ -169,12 +166,6 @@ export default function DayCard({
                 </span>
               ) : null}
             </div>
-            {season && season.length > 0 && (
-              <p className="flex items-center gap-1 mt-1 min-w-0 text-xs text-coral-700" title="Hat gerade Saison">
-                <Sprout size={11} aria-hidden="true" className="flex-shrink-0" />
-                <span className="truncate">Saison: {season.join(', ')}</span>
-              </p>
-            )}
           </div>
           <ChevronRight size={16} className="text-gray-300 flex-shrink-0" aria-hidden="true" />
         </div>
