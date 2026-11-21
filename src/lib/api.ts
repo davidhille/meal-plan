@@ -1211,6 +1211,14 @@ export function moveRecipeToDessert(from: string, d: DessertInput): Promise<{ ca
   return request('POST', '/recipes/to-dessert', { ...d, from });
 }
 
+/** Hauptgericht zur Beilage/zum Salat machen (löscht es bei den Hauptgerichten); wirft bei Fehlern */
+export function moveRecipeToSide(
+  from: string,
+  s: { name: string; kind: SideKind; durationMin: number | null; ingredients: string[]; instructions: string }
+): Promise<{ catalog: RecipeCatalog; sides: Side[] }> {
+  return request('POST', '/recipes/to-side', { ...s, from });
+}
+
 /** Position für „Mehr laden“ (null = keine weiteren Treffer) */
 export interface ChefkochCursor {
   page: number;

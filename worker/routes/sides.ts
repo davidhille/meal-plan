@@ -26,7 +26,15 @@ export function parseSideInput(raw: Record<string, unknown>) {
   };
 }
 
-async function listCustomSides(sql: Sql, profileId: string) {
+/** Eigene Beilage/Salat speichern (bei gleichem Namen überschreiben) */
+export async function saveCustomSide(sql: Sql, profileId: string, s: NonNullable<ReturnType<typeof parseSideInput>>) {
+  await sql`INSERT INTO custom_sides (profile_id, name, kind, ingredients, instructions, duration_min, source_url)
+    VALUES (${profileId}, ${s.name}, ${s.kind}, ${s.ingredients}, ${s.instructions}, ${s.durationMin}, ${s.sourceUrl})
+    ON CONFLICT (profile_id, name) DO UPDATE SET kind = EXCLUDED.kind, ingredients = EXCLUDED.ingredients,
+      instructions = EXCLUDED.instructions, duration_min = EXCLUDED.duration_min, source_url = EXCLUDED.source_url`;
+}
+
+export async function listCustomSides(sql: Sql, profileId: string) {
   return sql`SELECT name, kind, ingredients, instructions, COALESCE(duration_min, 0) AS "durationMin", true AS custom
     FROM custom_sides WHERE profile_id = ${profileId} ORDER BY name`;
 }
@@ -40,10 +48,7 @@ export async function sideRoutes({ request, env, sql, body, route, user }: Ctx):
     const p = await getProfile(sql, user);
     const s = parseSideInput(body);
     if (!s) return json({ error: "Name, Art und Zutaten fehlen." }, 400);
-    await sql`INSERT INTO custom_sides (profile_id, name, kind, ingredients, instructions, duration_min, source_url)
-      VALUES (${p.id}, ${s.name}, ${s.kind}, ${s.ingredients}, ${s.instructions}, ${s.durationMin}, ${s.sourceUrl})
-      ON CONFLICT (profile_id, name) DO UPDATE SET kind = EXCLUDED.kind, ingredients = EXCLUDED.ingredients,
-        instructions = EXCLUDED.instructions, duration_min = EXCLUDED.duration_min, source_url = EXCLUDED.source_url`;
+    await saveCustomSide(sql, p.id, s);
     return json(await listCustomSides(sql, p.id));
   }
   if (route === "DELETE /sides/custom") {

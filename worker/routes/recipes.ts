@@ -13,6 +13,7 @@ import { loadDislikeHintFor } from "../dislikePattern";
 import { chefkochPhotoTodo, saveChefkochPhoto } from "../chefkochPhotos";
 import { RecipeEditError, parseRecipeInput, resetRecipe, saveRecipeEdit } from "../recipeEdits";
 import type { Sql } from "../db";
+import { parseSideInput, saveCustomSide, listCustomSides } from "./sides";
 
 const DESSERT_CATEGORIES = ["kuchen", "gebaeck", "creme", "pfanne", "obst", "eis"];
 
@@ -250,6 +251,17 @@ export async function recipeRoutes({ request, env, sql, body, parts, route, id, 
     await saveCustomDessert(sql, p.id, d);
     await deleteMainDish(sql, p.id, from);
     return json({ catalog: await recipeCatalog(sql, p.id), desserts: await listCustomDesserts(sql, p.id) });
+  }
+
+  // Hauptgericht zur Beilage bzw. zum Salat machen: als eigene Beilage speichern, bei den Hauptgerichten löschen (Bild bleibt)
+  if (route === "POST /recipes/to-side") {
+    const p = await getProfile(sql, user);
+    const s = parseSideInput(body);
+    if (!s) return json({ error: "Name, Art und Zutaten fehlen" }, 400);
+    const from = String(body.from ?? s.name).trim();
+    await saveCustomSide(sql, p.id, s);
+    await deleteMainDish(sql, p.id, from);
+    return json({ catalog: await recipeCatalog(sql, p.id), sides: await listCustomSides(sql, p.id) });
   }
 
   // ---------- Chefkoch-Suche ----------

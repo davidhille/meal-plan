@@ -240,7 +240,7 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
   „In meine Rezepte übernehmen“ speichert es mit Chefkoch-Foto und Link zum Original (optional als Favorit) und führt
   zurück zur Trefferliste (weitere Rezepte übernehmen). Pfeil, Escape oder Tipp daneben = zurück zur Liste.
   Abgerufen wird nur bei einer Suche (je Suche die Ergebnisseite plus bis zu 12 Rezepte, in Vierergruppen).
-- **Rezept im Speiseplan bearbeiten:** Im Rezept-Fenster eines Plan-Gerichts öffnet der Stift dieselbe Maske wie in der Rezeptübersicht (Name, Art, Zeit, Zutaten, Zubereitung); die Änderung gilt für kommende Plan-Tage und Favoriten (nicht für Brotzeit).
+- **Rezept im Speiseplan bearbeiten:** Im Rezept-Fenster eines Plan-Gerichts öffnet der Stift dieselbe Maske wie in der Rezeptübersicht (Name, Art, Zeit, Zutaten, Zubereitung); die Änderung gilt für kommende Plan-Tage und Favoriten (nicht für Brotzeit). Unter „Art“ lässt sich ein falsch einsortiertes Gericht auch als **Beilage** oder **Salat** zu den Beilagen & Salaten verschieben (wie „Nachtisch“; in der Rezeptübersicht und im Plan).
 - **Rezept-Ansicht in der Übersicht:** Bild erzeugen bzw. neues Bild, **Gericht bearbeiten** (Stift: Name, Art, Zeit,
   Zutaten, Zubereitung; gilt auch für kommende Plan-Tage und den Favoriten; Gerichte der Sammlung lassen sich auf das
   Original zurücksetzen) und **eigene Filter zuordnen** (Filter-Knöpfe unter dem Bild).

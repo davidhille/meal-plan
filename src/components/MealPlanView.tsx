@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Trash2, CalendarPlus, RefreshCw, Loader2, Download, Share2 } from 'lucide-react';
 import { DayRules, Dessert, ImageCredit, Meal, MealPlan, MealType, PlanDessert, PlanMeal, PlanSide } from '../types';
-import { generateMealImage, removeMealImage, saveRecipeEdit } from '../lib/api';
+import { generateMealImage, removeMealImage, saveRecipeEdit, moveRecipeToSide } from '../lib/api';
 import RecipeEditModal from './RecipeEditModal';
 import { planDessertToMeal } from '../lib/desserts';
 import DessertPickerModal from './DessertPickerModal';
@@ -611,6 +611,13 @@ export default function MealPlanView({
           }}
           onSave={async (draft) => {
             await saveRecipeEdit(editingRecipe.meal, draft);
+            setEditingRecipe(null);
+            setSelectedMeal(null);
+            setSelectedPmId(null);
+            onRecipeEdited();
+          }}
+          onMoveToSide={async (side) => {
+            await moveRecipeToSide(editingRecipe.meal, side);
             setEditingRecipe(null);
             setSelectedMeal(null);
             setSelectedPmId(null);
