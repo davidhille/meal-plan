@@ -390,11 +390,11 @@ export async function replaceMeal(env: Env, sql: Sql, profileId: string, planMea
   const mealDate = current[0].meal_date as string;
   if (!reject) await sql`DELETE FROM plan_meals WHERE id = ${planMealId}`;
   const inserted = await sql.query(
-    `INSERT INTO plan_meals (plan_id, meal_date, meal_name, meal_type, ingredients, instructions, duration_min, dessert, rejected, skipped_names, guests)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, $9, $10) RETURNING ${PLAN_MEAL_COLS}`,
-    // Der Nachtisch bleibt beim Austauschen am Tag hängen, der Verlauf auch
+    `INSERT INTO plan_meals (plan_id, meal_date, meal_name, meal_type, ingredients, instructions, duration_min, dessert, sides, rejected, skipped_names, guests)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, false, $10, $11) RETURNING ${PLAN_MEAL_COLS}`,
+    // Nachtisch und Beilagen bleiben beim Austauschen am Tag hängen, der Verlauf auch
     [old.plan_id, mealDate, best.name, best.type, best.ingredients, best.instructions, best.durationMin ?? null,
-      old.dessert ? JSON.stringify(old.dessert) : null, skipped, Number(old.guests) || 0]
+      old.dessert ? JSON.stringify(old.dessert) : null, old.sides ? JSON.stringify(old.sides) : null, skipped, Number(old.guests) || 0]
   );
   const replacement = inserted[0];
   await markFavoritesPlanned(sql, profileId, old.plan_id);
@@ -502,10 +502,10 @@ export async function replaceWithRecipe(env: Env, sql: Sql, profileId: string, p
   if (!recipe) return null;
   await sql`DELETE FROM plan_meals WHERE id = ${planMealId}`;
   const inserted = await sql.query(
-    `INSERT INTO plan_meals (plan_id, meal_date, meal_name, meal_type, ingredients, instructions, duration_min, dessert, rejected, guests)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, $9) RETURNING ${PLAN_MEAL_COLS}`,
+    `INSERT INTO plan_meals (plan_id, meal_date, meal_name, meal_type, ingredients, instructions, duration_min, dessert, sides, rejected, guests)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, false, $10) RETURNING ${PLAN_MEAL_COLS}`,
     [old.plan_id, old.meal_date, recipe.name, recipe.type, recipe.ingredients, recipe.instructions, recipe.durationMin ?? null,
-      old.dessert ? JSON.stringify(old.dessert) : null, Number(old.guests) || 0]
+      old.dessert ? JSON.stringify(old.dessert) : null, old.sides ? JSON.stringify(old.sides) : null, Number(old.guests) || 0]
   );
   const replacement = inserted[0];
   await markFavoritesPlanned(sql, profileId, old.plan_id);
