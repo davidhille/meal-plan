@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Loader2, Plus, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { Profile } from '../types';
-import { saveVarietyRules } from '../lib/api';
+import { saveMeatMax, saveVarietyRules } from '../lib/api';
 import {
   DEFAULT_VARIETY_RULES,
   VARIETY_CATEGORIES,
@@ -45,6 +45,19 @@ export default function VarietyRulesSettings({ profile, onSaved }: VarietyRulesS
       onSaved(await saveVarietyRules(next));
     } catch (e) {
       setError((e as Error).message || 'Die Regeln konnten nicht gespeichert werden.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const meatMax = profile.meat_max_per_week ?? null;
+  const persistMeat = async (n: number | null) => {
+    setSaving(true);
+    setError(null);
+    try {
+      onSaved(await saveMeatMax(n));
+    } catch (e) {
+      setError((e as Error).message || 'Die Regel konnte nicht gespeichert werden.');
     } finally {
       setSaving(false);
     }
@@ -100,7 +113,12 @@ export default function VarietyRulesSettings({ profile, onSaved }: VarietyRulesS
       storageKey="mengen-regeln"
       title="Wie oft darf es vorkommen?"
       icon={<SlidersHorizontal size={16} />}
-      summary={isDefault ? `Standard: ${describeVarietyRules(null)}` : describeVarietyRules(profile.variety_rules)}
+      summary={[
+        meatMax == null ? null : meatMax === 0 ? 'Kein Fleisch' : `Fleisch höchstens ${meatMax}× pro Woche`,
+        isDefault ? `Standard: ${describeVarietyRules(null)}` : describeVarietyRules(profile.variety_rules),
+      ]
+        .filter(Boolean)
+        .join(' · ')}
     >
       <p className="px-4 pb-3 text-xs text-gray-500">
         Begrenze, wie oft Nudeln, Garnelen und Co. im Plan vorkommen, oder lege fest, was mindestens einmal dran sein soll (z. B.
@@ -108,6 +126,30 @@ export default function VarietyRulesSettings({ profile, onSaved }: VarietyRulesS
         und bei „Neu“, „mindestens“ nur beim Planen.
       </p>
       <ul className="border-t border-gray-100 divide-y divide-gray-100">
+        <li className="px-4 py-3 space-y-2">
+          <p className="text-sm font-semibold text-gray-800">Fleisch</p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-700">
+            <span className="w-16 font-semibold text-gray-600">pro Woche</span>
+            <label className="flex items-center gap-2">
+              höchstens
+              <select
+                value={meatMax ?? ''}
+                disabled={saving}
+                onChange={(e) => persistMeat(parse(e.target.value) ?? null)}
+                className={selectClass}
+              >
+                <option value="">keine Grenze</option>
+                <option value="0">nie</option>
+                {choicesFor('week', meatMax ?? undefined, 1).map((n) => (
+                  <option key={n} value={n}>
+                    {n}×
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <p className="text-xs text-gray-500">Fisch und Vegetarisches zählen nicht mit; an den übrigen Tagen gibt es das.</p>
+        </li>
         {groupVarietyRules(rules).map((group) => {
           const first = rules[group[0]];
           const other: VarietyPeriod | null = group.length === 1 ? (first.period === 'week' ? 'month' : 'week') : null;

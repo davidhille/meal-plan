@@ -25,7 +25,7 @@ interface SettingsViewProps {
   profile: Profile | null;
   familyMembers: FamilyMember[];
   routines: Routine[];
-  onUpdateProfile: (focus: string[], conditions: string[], meatMaxPerWeek: number | null, familyDislikes?: string[]) => Promise<void>;
+  onUpdateProfile: (focus: string[], conditions: string[], familyDislikes?: string[]) => Promise<void>;
   onAddFamilyMember: (member: Omit<FamilyMember, 'id' | 'profile_id' | 'created_at'>) => Promise<void>;
   onUpdateFamilyMember: (id: string, member: Omit<FamilyMember, 'id' | 'profile_id' | 'created_at'>) => Promise<void>;
   onDeleteFamilyMember: (id: string) => Promise<void>;
@@ -170,7 +170,6 @@ export default function SettingsView({
               [
                 ...(profile.health_focus ?? []).map((f) => FOCUS_LABELS[f] || f),
                 ...profile.health_conditions.map((c) => CONDITION_LABELS[c] || c),
-                profile.meat_max_per_week != null ? `Fleisch max. ${profile.meat_max_per_week}×/Woche` : null,
                 profile.family_dislikes?.length ? `nie ${profile.family_dislikes.map(familyDislikeLabel).join(', ')}` : null,
               ]
                 .filter(Boolean)
@@ -202,14 +201,6 @@ export default function SettingsView({
                     <p className="text-sm text-gray-700 font-medium">Ausgewogen (keine besonderen)</p>
                   )}
                 </div>
-                {profile.meat_max_per_week != null && (
-                  <div>
-                    <p className="text-xs text-gray-500 mb-0.5">Regeln</p>
-                    <p className="text-sm text-gray-700">
-                      {profile.meat_max_per_week === 0 ? 'Kein Fleisch' : `Fleisch höchstens ${profile.meat_max_per_week}× pro Woche`}
-                    </p>
-                  </div>
-                )}
                 {profile.health_conditions.length > 0 && (
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Krankheiten & Einschränkungen</p>
@@ -367,10 +358,9 @@ export default function SettingsView({
         <PreferencesModal
           healthFocus={profile.health_focus ?? []}
           healthConditions={profile.health_conditions}
-          meatMaxPerWeek={profile.meat_max_per_week ?? null}
           familyDislikes={profile.family_dislikes ?? []}
-          onSave={async (focus, conditions, meatMax, never) => {
-            await onUpdateProfile(focus, conditions, meatMax, never);
+          onSave={async (focus, conditions, never) => {
+            await onUpdateProfile(focus, conditions, never);
             setShowPrefsModal(false);
           }}
           onClose={() => setShowPrefsModal(false)}

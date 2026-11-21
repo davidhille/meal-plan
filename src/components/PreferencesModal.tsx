@@ -7,20 +7,13 @@ import { FAMILY_DISLIKES } from '../lib/familyDislikes';
 interface PreferencesModalProps {
   healthFocus: string[];
   healthConditions: string[];
-  meatMaxPerWeek: number | null;
   /** „Kommt nie in den Plan“ (Kennungen aus lib/familyDislikes.ts) */
   familyDislikes: string[];
-  onSave: (focus: string[], conditions: string[], meatMaxPerWeek: number | null, familyDislikes: string[]) => Promise<void>;
+  onSave: (focus: string[], conditions: string[], familyDislikes: string[]) => Promise<void>;
   onClose: () => void;
 }
 
 const CONDITIONS = Object.entries(CONDITION_LABELS).map(([id, label]) => ({ id, label }));
-const MEAT_OPTIONS: { value: number | null; label: string }[] = [
-  { value: null, label: 'Keine Grenze' },
-  { value: 0, label: 'Kein Fleisch' },
-  ...[1, 2, 3, 4, 5].map((n) => ({ value: n, label: `${n}×` })),
-];
-
 const toggle = (set: Set<string>, id: string) => {
   const next = new Set(set);
   if (next.has(id)) next.delete(id);
@@ -28,11 +21,10 @@ const toggle = (set: Set<string>, id: string) => {
   return next;
 };
 
-/** Gesundheit & Ernährung: Schwerpunkte (mehrere), Einschränkungen (mehrere), Regeln */
-export default function PreferencesModal({ healthFocus, healthConditions, meatMaxPerWeek, familyDislikes, onSave, onClose }: PreferencesModalProps) {
+/** Gesundheit & Ernährung: Schwerpunkte (mehrere), Einschränkungen (mehrere), Familien-Nein; die Fleisch-Grenze steht bei „Wie oft darf es vorkommen?“ */
+export default function PreferencesModal({ healthFocus, healthConditions, familyDislikes, onSave, onClose }: PreferencesModalProps) {
   const [focus, setFocus] = useState<Set<string>>(new Set(healthFocus));
   const [conditions, setConditions] = useState<Set<string>>(new Set(healthConditions));
-  const [meatMax, setMeatMax] = useState<number | null>(meatMaxPerWeek);
   const [never, setNever] = useState<Set<string>>(new Set(familyDislikes));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +39,6 @@ export default function PreferencesModal({ healthFocus, healthConditions, meatMa
       await onSave(
         FOCUS_OPTIONS.map((f) => f.id).filter((id) => focus.has(id)),
         CONDITIONS.map((c) => c.id).filter((id) => conditions.has(id)),
-        meatMax,
         FAMILY_DISLIKES.map((d) => d.id).filter((id) => never.has(id))
       );
     } catch (e) {
@@ -166,32 +157,6 @@ export default function PreferencesModal({ healthFocus, healthConditions, meatMa
                   }`}
                 >
                   {d.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Regeln */}
-          <div>
-            <p id="prefs-meat" className="text-sm font-medium text-gray-700">
-              Fleisch pro Woche
-            </p>
-            <p className="text-xs text-gray-500 mb-2">
-              Höchstens so viele Fleischgerichte pro Kalenderwoche. Fisch zählt nicht mit; an den übrigen Tagen gibt es Fisch oder
-              Vegetarisches.
-            </p>
-            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-labelledby="prefs-meat">
-              {MEAT_OPTIONS.map((o) => (
-                <button
-                  key={String(o.value)}
-                  role="radio"
-                  aria-checked={meatMax === o.value}
-                  onClick={() => setMeatMax(o.value)}
-                  className={`px-3 h-9 rounded-lg text-xs font-semibold border ${
-                    meatMax === o.value ? 'bg-brand-700 border-brand-700 text-white' : 'bg-white border-gray-200 text-gray-600'
-                  }`}
-                >
-                  {o.label}
                 </button>
               ))}
             </div>

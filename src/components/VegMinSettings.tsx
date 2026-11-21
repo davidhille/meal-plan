@@ -10,7 +10,7 @@ const OPTIONS = [0, 1, 2, 3, 4, 5];
 
 const label = (n: number) => (n === 0 ? 'Keine Vorgabe' : `Mindestens ${n}× pro Woche`);
 
-/** Einstellungen → Planung: wie viele vegetarische Gerichte pro Woche mindestens (die Fleisch-Grenze steht bei den Vorlieben) */
+/** Einstellungen → Planung: wie viele vegetarische Gerichte pro Woche mindestens (die Fleisch-Grenze steht bei „Wie oft darf es vorkommen?“) */
 export default function VegMinSettings({ profile, onSaved }: { profile: Profile; onSaved: (p: Profile) => void }) {
   const value = profile.veg_min_per_week ?? DEFAULT_VEG_MIN;
   const [saving, setSaving] = useState(false);
