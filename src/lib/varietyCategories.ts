@@ -30,6 +30,10 @@ const MEERESFRUECHTE = /garnel|gambas|shrimp|scampi|krabbe|krevett|prawn|muschel
 const ASIATISCH =
   /asia|thai|chines|vietnam|korea|japan|wok\b|woks|wokgem|stir.?fry|bang.?bang|pad thai|teriyaki|sushi|ramen|udon|miso|gyoza|dim sum|bao\b|kimchi|bibimbap|satay|sommerroll|frühlingsroll|tom (kha|yum)|laksa|szechuan|sichuan|kung pao|mapo|chop suey|nasi goreng|bami/;
 
+const MEXIKANISCH = /mexikan|fajita|burrito|taco|quesadilla|enchilada|nacho|chili con|chili sin|chilli con|tex.?mex|huevos/;
+// Pfannen- und Bowl-Gerichte sehen oft ähnlich aus, auch wenn die Namen verschieden sind
+const BOWL_PFANNE = /bowl|pfanne|pfännchen|skillet/;
+
 const fromCategories = (id: string): VarietyCategory => {
   const c = ALL_CATEGORIES.find((x) => x.id === id);
   if (!c) throw new Error(`Unbekannte Kategorie: ${id}`);
@@ -40,6 +44,8 @@ export const VARIETY_CATEGORIES: VarietyCategory[] = [
   { id: 'nudeln', label: 'Nudeln & Pasta', re: NUDELN },
   { id: 'meeresfruechte', label: 'Garnelen & Meeresfrüchte', re: MEERESFRUECHTE },
   { id: 'asiatisch', label: 'Asiatische Gerichte', re: ASIATISCH },
+  { id: 'mexikanisch', label: 'Mexikanische Gerichte', re: MEXIKANISCH },
+  { id: 'bowlpfanne', label: 'Bowls & Pfannengerichte', re: BOWL_PFANNE },
   fromCategories('fisch'),
   fromCategories('gefluegel'),
   fromCategories('rind'),
@@ -64,6 +70,9 @@ export const DEFAULT_VARIETY_RULES: VarietyRule[] = [
   { id: 'nudeln', period: 'week', max: 2 },
   { id: 'asiatisch', period: 'week', max: 2 },
   { id: 'asiatisch', period: 'month', max: 5 },
+  { id: 'pizza', period: 'week', max: 1 },
+  { id: 'burger', period: 'week', max: 1 },
+  { id: 'curry', period: 'week', max: 1 },
 ];
 
 /** Größte wählbare Zahl je Zeitraum (Server und Einstellungen) */

@@ -218,7 +218,7 @@ optional `PIXABAY_API_KEY`, `PEXELS_API_KEY`. Nie ins Repo, nie in `wrangler.jso
   **Saison gibt es nicht mehr (Entscheidung von David 21.11.2026, „so viel Lauch seit Wochen“):** kein Bonus beim Planen, keine Zeile „Saison: …“ an den Karten, keine
   Sortierung danach, kein Schwerpunkt „Saisonal“ (Migration 0039 entfernt ihn aus den Familien). Nicht wieder einbauen.
   **Mengen-Regeln (Entscheidung von David 1.11.2026: einstellbar, mit Minimum und Monat):** `profiles.variety_rules` (jsonb, Migration 0033;
-  NULL = Standard `DEFAULT_VARIETY_RULES`: Meeresfrüchte höchstens 1×, Nudeln und Asiatisch (Thai, Chinesisch, Wok, Stir-Fry … am Namen erkannt, `ASIATISCH`; Indisches nicht, Entscheidung von David 21.11.2026: zu oft Asia) je höchstens 2× pro Woche, Asiatisch zusätzlich höchstens 5× pro Monat), `PUT /profile/variety-rules`
+  NULL = Standard `DEFAULT_VARIETY_RULES`: Meeresfrüchte höchstens 1×, Nudeln und Asiatisch (Thai, Chinesisch, Wok, Stir-Fry … am Namen erkannt, `ASIATISCH`; Indisches nicht, Entscheidung von David 21.11.2026: zu oft Asia) je höchstens 2× pro Woche, Asiatisch zusätzlich höchstens 5× pro Monat; Pizza, Burger/Wraps und Curry je höchstens 1× pro Woche; Kategorien `mexikanisch` und `bowlpfanne` ohne Standardregel), `PUT /profile/variety-rules`
   (`null` = Standard, `[]` = bewusst keine Regeln). Eine Regel = Kategorie (`VARIETY_CATEGORIES`, Treffer über den **Gerichtnamen**, nicht die
   Zutaten – Namen wie „Gambas“/„Garnelen“ oder „Penne“/„Lasagne“ teilen keine Wörter) + `max` und/oder `min` + Zeitraum Kalenderwoche oder
   Kalendermonat. Neue Kategorie = Eintrag in `src/lib/varietyCategories.ts`. Zähler = Verlauf (`ctx.planHistory`) + feste Tage des Plans
