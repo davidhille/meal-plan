@@ -13,7 +13,7 @@ export const EMPTY_SELECTION: FacetSelection = { types: [], kinds: [], ingredien
 export const TYPE_OPTIONS: { id: MealType; label: string }[] = [
   { id: 'vegetarisch', label: 'Vegetarisch' },
   { id: 'fleisch', label: 'Fleisch & Fisch' },
-  { id: 'wochenende', label: 'Wochenende' },
+  { id: 'wochenende', label: 'Aufwendig (ab 46 Min.)' },
 ];
 
 export interface FacetContext {
@@ -27,6 +27,8 @@ const byId = (list: RecipeCategory[], id: string) => list.find((c) => c.id === i
 export function matchesOption(group: FacetGroup, id: string, r: CatalogRecipe, ctx: FacetContext): boolean {
   switch (group) {
     case 'types':
+      // „Wochenende“ = aufwendig: nach Zubereitungszeit (ab 46 Minuten), ohne Zeitangabe nach der Art
+      if (id === 'wochenende') return r.durationMin ? r.durationMin > 45 : r.type === 'wochenende';
       return r.type === id;
     case 'kinds': {
       const c = byId(DISH_KINDS, id);

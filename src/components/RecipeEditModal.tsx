@@ -141,7 +141,7 @@ export default function RecipeEditModal({
             </label>
 
             <div>
-              <span className="text-xs font-semibold text-gray-500">Art (bestimmt den Tag im Wochenrhythmus)</span>
+              <span className="text-xs font-semibold text-gray-500">Art (Fleisch/vegetarisch; „Wochenende“ = aufwendig)</span>
               <div className={`mt-1 grid ${onMoveToDessert || onMoveToSide ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-3'} gap-1.5`} role="radiogroup" aria-label="Art">
                 {[
                   ...TYPES,
@@ -167,6 +167,13 @@ export default function RecipeEditModal({
                 ))}
               </div>
             </div>
+
+            {!asDessert && !asSide && (
+              <p className="text-xs text-gray-500">
+                Aufwendig oder schnell erkennt die Planung an der Zubereitungszeit (ab 46 Minuten aufwendig). „Wochenende“ musst du
+                nur wählen, wenn keine Zeit angegeben ist.
+              </p>
+            )}
 
             {asDessert && (
               <div className="space-y-3 p-3 rounded-xl bg-brand-50">

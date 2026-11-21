@@ -115,6 +115,16 @@ export async function profileRoutes({ request, sql, body, parts, route, id, user
     return json(rows[0]);
   }
 
+  // Vegetarisch mindestens X-mal pro Woche: { veg_min_per_week: 0–7 | null (= Standard 3) }
+  if (route === "PUT /profile/veg-min") {
+    const p = await getProfile(sql, user);
+    const v = body.veg_min_per_week;
+    const n = v == null || v === "" ? null : Number(v);
+    if (n !== null && !(Number.isInteger(n) && n >= 0 && n <= 7)) return json({ error: "Ungültige Einstellung." }, 400);
+    const rows = await sql`UPDATE profiles SET veg_min_per_week = ${n}, updated_at = now() WHERE id = ${p.id} RETURNING *`;
+    return json(rows[0]);
+  }
+
   // Beilagen und Salate: { sides_mode: "off" | "suggest" | "auto" }
   if (route === "PUT /profile/sides-mode") {
     const p = await getProfile(sql, user);

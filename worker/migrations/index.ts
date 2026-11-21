@@ -41,6 +41,7 @@ import beilagenAusblenden from "./0038_beilagen_ausblenden";
 import saisonEntfernt from "./0039_saison_entfernt";
 import mengenregelnZuordnung from "./0040_mengenregeln_zuordnung";
 import enteIstFleisch from "./0041_ente_ist_fleisch";
+import planungGedaechtnis from "./0042_planung_gedaechtnis";
 
 export interface Migration {
   /** Eindeutig und aufsteigend, z. B. "0002_kochmodus" */
@@ -91,4 +92,5 @@ export const MIGRATIONS: Migration[] = [
   { id: "0039_saison_entfernt", statements: saisonEntfernt },
   { id: "0040_mengenregeln_zuordnung", statements: mengenregelnZuordnung },
   { id: "0041_ente_ist_fleisch", statements: enteIstFleisch },
+  { id: "0042_planung_gedaechtnis", statements: planungGedaechtnis },
 ];
