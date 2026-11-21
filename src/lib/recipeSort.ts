@@ -1,5 +1,4 @@
 import { CatalogRecipe } from '../types';
-import { seasonHighlights } from './season';
 
 export type RecipeSort = 'empfohlen' | 'bewertung' | 'schnell' | 'az';
 
@@ -13,22 +12,19 @@ export const SORT_LABELS: Record<RecipeSort, string> = {
 interface SortContext {
   ratings: Record<string, number>;
   favorites: Set<string>;
-  /** Monat 1–12 für die Saison */
-  month: number;
 }
 
 const byName = (a: CatalogRecipe, b: CatalogRecipe) => a.name.localeCompare(b.name, 'de');
 
 /**
- * „Empfohlen“: Favoriten vor gut bewerteten vor saisonalen Gerichten; schlecht bewertete nach hinten.
- * Punkte: Favorit +3, Bewertung (Sterne − 3), Saison-Zutat +1,5.
+ * „Empfohlen“: Favoriten vor gut bewerteten Gerichten; schlecht bewertete nach hinten.
+ * Punkte: Favorit +3, Bewertung (Sterne − 3).
  */
 export function recommendScore(r: CatalogRecipe, ctx: SortContext): number {
   let score = 0;
   if (ctx.favorites.has(r.name)) score += 3;
   const stars = ctx.ratings[r.name];
   if (stars) score += stars - 3;
-  if (seasonHighlights(r.name, r.ingredients, ctx.month).length) score += 1.5;
   return score;
 }
 

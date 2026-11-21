@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { SEASON_BONUS_MAX, focusScore, isMeatDish, isoWeekKey, seasonScore, seasonalWords } from "./nutrition";
+import { focusScore, isMeatDish, isoWeekKey } from "./nutrition";
 import { MEAL_DATABASE, type Recipe, type ScoringContext } from "./meals";
 import { pickDays } from "./planning";
 
@@ -14,7 +14,6 @@ const r = (name: string, ingredients: string[], type: Recipe["type"] = "vegetari
 const pasta = r("Spaghetti mit Sahnesoße", ["400 g Spaghetti", "200 ml Sahne", "50 g Parmesan"]);
 const bowl = r("Linsen-Gemüse-Bowl", ["200 g Linsen", "1 Brokkoli", "2 Karotten", "1 Paprika", "100 g Spinat"]);
 const chili = r("Scharfes Chili", ["400 g Hackfleisch", "2 Chilischoten", "1 Dose Bohnen"], "fleisch");
-const kuerbis = r("Kürbissuppe mit Pilzen", ["1 Hokkaido-Kürbis", "200 g Champignons", "1 Zwiebel"]);
 
 describe("focusScore", () => {
   test("ohne Schwerpunkte neutral", () => expect(focusScore(pasta, [])).toBe(0));
@@ -29,20 +28,6 @@ describe("focusScore", () => {
   test("Kalorienbewusst: Sahne kostet Punkte", () => expect(focusScore(pasta, ["calorie_light"])).toBeLessThan(focusScore(bowl, ["calorie_light"])));
   test("Proteinreich", () => expect(focusScore(bowl, ["high_protein"])).toBeGreaterThan(focusScore(pasta, ["high_protein"])));
   test("Kinderfreundlich: scharf runter", () => expect(focusScore(chili, ["kid_friendly"])).toBeLessThan(0));
-  test("Saisonal: der Schwerpunkt gibt beim Planen nichts extra (der Bonus steht in seasonScore)", () => {
-    expect(focusScore(kuerbis, ["seasonal"])).toBe(0);
-    expect(seasonalWords(4)).toContain("spargel");
-  });
-  test("Saison-Bonus: eine Zutat +2, mehrere +3, nie mehr als +3", () => {
-    expect(SEASON_BONUS_MAX).toBe(3);
-    // Kürbis, Pilze und Champignons im Oktober → mehrere Treffer
-    expect(seasonScore(kuerbis, 10)).toBe(3);
-    expect(seasonScore(r("Kürbis-Risotto", ["1 Kürbis", "300 g Risottoreis"]), 10)).toBe(2);
-  });
-  test("Saison-Bonus: im Juli passt Kürbis nicht, ohne Monat gibt es nichts", () => {
-    expect(seasonScore(kuerbis, 7)).toBe(0);
-    expect(seasonScore(kuerbis, undefined)).toBe(0);
-  });
   test("Günstig: Linsen ja, Lachs nein", () => {
     expect(focusScore(bowl, ["budget"])).toBeGreaterThan(0);
     expect(focusScore(r("Lachs mit Spargel", ["4 Lachsfilets", "500 g Spargel"], "fleisch"), ["budget"])).toBeLessThan(0);

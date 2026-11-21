@@ -75,8 +75,6 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
 - **Wochen-Rückblick** (Sonntag: laufende Woche, Montag/Dienstag: Vorwoche; ab zwei gekochten Gerichten): Anzahl gekocht
   und Brotzeiten, Lieblingsgericht (höchste Sterne ab 4), noch nicht bewertete Gerichte zum Antippen. Mit × pro Woche
   ausblendbar (auf dem Gerät gemerkt). Logik `src/lib/weekReview.ts`.
-- **Saison-Hinweis:** Gerichtkarten im Plan zeigen Zutaten, die am Plan-Tag Saison haben (z. B. „Kürbis“, Koralle mit
-  Spross-Symbol). Saison-Liste in `src/lib/season.ts`, dieselbe bestimmt den Saison-Bonus bei der Planung.
 - Tagesrhythmus: Sa/So aufwendigere **Wochenend**-Gerichte, unter der Woche abwechselnd **vegetarisch** und **Fleisch/Fisch**.
 - Rezepte → Beilagen: Bereich neben Hauptgerichten und Nachtischen (`SidesView`); Chefkoch-Suche getrennt für Beilage und Salat (hängt „Beilagen“ bzw. „Salat“ an den Suchbegriff, auch ohne Suchbegriff), feste Einträge ausblenden, eigene löschen.
 - Eigene Beilagen/Salate: im Beilagen-Fenster „hinzufügen“ per Rezept-Link oder KI-Vorschlag (nur Vorschau, gespeichert erst nach Übernehmen); je Familie, löschbar.
@@ -130,7 +128,7 @@ Design „Aubergine“: Pflaume als Hauptfarbe, Koralle als Akzent, Schrift Plus
 - **Rezept-Pool:** feste Grundsammlung (383 Gerichte, davon 231 übersetzte TheMealDB-Rezepte mit Originalfoto)
   + KI-Rezepte + importierte Rezepte + Favoriten.
 - **Bewertung je Gericht:** Sterne (3 ★ neutral, 4–5 ★ heben an, 1–2 ★ senken ab), Vorlieben und Abneigungen der Familie (mit Oberbegriffen: „Fisch“ trifft auch Lachs),
-  Ernährungs-Schwerpunkte, ein kleiner Favoriten-Bonus und etwas Zufall – Lieblingsgerichte entscheiden nicht allein. **Saison** gibt immer einen kleinen Bonus (+2 bei einer, +3 bei mehreren Saison-Zutaten, nach dem Monat des jeweiligen Plan-Tags); er ist nur ein Tie-Breaker neben Bewertung und Pause.
+  Ernährungs-Schwerpunkte, ein kleiner Favoriten-Bonus und etwas Zufall – Lieblingsgerichte entscheiden nicht allein.
 - **Pause nach Bewertung:** Ein Gericht kommt erst nach einer Pause wieder in den Plan: unbewertet nach 5 Wochen, 5 ★ nach 8 Wochen, 4 ★ nach 9, 3 ★ nach 10, 1–2 ★ praktisch nie wieder
   (nur wenn sonst nichts übrig ist; die KI liefert bei Bedarf neue Rezepte).
 - **Gesundheitsbedingungen** schließen hart aus: vegetarisch, vegan, glutenfrei, laktosefrei, Nussallergie, ohne Alkohol;
@@ -224,8 +222,8 @@ meisten passenden Zutaten; „Neues Bild“ liefert nie wieder dasselbe Foto. Ge
   Hühnerbrühe oder Fischsauce zählen nicht, Hackfleisch ohne Angabe zählt zu Rind und Schwein). Liegt sie daneben, im
   Rezept unter „Kategorien“ → „Filter anpassen“ an- oder abwählen (gilt nur für die eigene Familie) (gespeichert in `recipe_category_overrides`, zieht beim
   Umbenennen mit).
-- **Sortierung** (Auswahl rechts über der Liste, auf dem Gerät gemerkt): Empfohlen (Favoriten, gut bewertete und
-  saisonale Gerichte zuerst, schlecht bewertete hinten; `lib/recipeSort.ts`), Beste Bewertung, Schnellste zuerst, A–Z.
+- **Sortierung** (Auswahl rechts über der Liste, auf dem Gerät gemerkt): Empfohlen (Favoriten und gut bewertete
+  Gerichte zuerst, schlecht bewertete hinten; `lib/recipeSort.ts`), Beste Bewertung, Schnellste zuerst, A–Z.
 - **Rezept hinzufügen** (Knopf oben in der Übersicht) bündelt drei Wege: Bei Chefkoch suchen, Mit KI erstellen,
   Von einem Link importieren (`AddRecipeSheet`). Im Link-Import-Dialog lässt sich die Art „Nachtisch“ wählen (Kategorie, „Ergibt“, Originalmengen bei Chefkoch); in der Nachtisch-Ansicht heißt der Knopf „Nachtisch hinzufügen“ (Chefkoch-Suche oder Link).
 - **Rezept mit KI erstellen** (über „Rezept hinzufügen“): Wunsch eingeben („etwas mit Kürbis, schnell“), Art wählen
@@ -295,7 +293,7 @@ Auf- und zuklappbare Karten:
   Familienmitglieder sie teilt.
 - **Gesundheit & Ernährung:**
   - **Schwerpunkte** (mehrere): Kalorienbewusst, Proteinreich, Low Carb, Viel Gemüse, Vollkorn & Ballaststoffe,
-    Kinderfreundlich, Saisonal, Günstig – passende Gerichte bekommen Pluspunkte, nichts wird ausgeschlossen. „Saisonal“ wirkt dabei nur noch auf neue KI-Rezepte; der Saison-Bonus beim Planen gilt immer.
+    Kinderfreundlich, Günstig – passende Gerichte bekommen Pluspunkte, nichts wird ausgeschlossen.
   - **Einschränkungen** (mehrere): Diabetes (nur Abzug bei Zucker), Cholesterin (nur Abzug bei viel Butter, Sahne, Speck, Wurst, Innereien), glutenfrei, laktosefrei, Nussallergie, vegetarisch,
     vegan, ohne Alkohol – schließen hart aus.
   - **Fleisch pro Woche:** keine Grenze, kein Fleisch oder höchstens 1–5× pro Kalenderwoche (Fisch zählt nicht mit);

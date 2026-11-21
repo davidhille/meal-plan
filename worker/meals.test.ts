@@ -222,30 +222,3 @@ describe("Bewertung wirkt um 3 Sterne zentriert", () => {
     expect(scoreMeal(meal, ctx({ favoriteNames: [meal.name] }))).toBeLessThan(rated(5));
   });
 });
-
-describe("Saison zählt nach dem Monat des Plan-Tags", () => {
-  const kuerbis = recipe("Kürbissuppe mit Apfel", ["500 g Kürbis", "1 Apfel"]);
-  const reis = recipe("Reispfanne", ["200 g Reis"]);
-
-  test("Saison gibt höchstens +3, auch ohne Schwerpunkt „saisonal“", () => {
-    const inSeason = scoreMeal(kuerbis, ctx({ month: 10 }));
-    expect(inSeason - scoreMeal(kuerbis, ctx({ month: 7 }))).toBe(3);
-    expect(scoreMeal(reis, ctx({ month: 10 }))).toBe(scoreMeal(reis, ctx({ month: 7 })));
-  });
-  // Zufall festnageln: bei Gleichstand zählt die Reihenfolge, nur die Saison kann umkehren
-  const withFixedRandom = <T,>(fn: () => T): T => {
-    const original = Math.random;
-    Math.random = () => 0.5;
-    try {
-      return fn();
-    } finally {
-      Math.random = original;
-    }
-  };
-  test("Oktober-Tag bevorzugt Kürbis, auch wenn der Plan im Juli begann (ctx.month = 7)", () => {
-    expect(withFixedRandom(() => pickMeal("2026-10-13", ctx({ month: 7 }), new Set(), [reis, kuerbis])?.name)).toBe(kuerbis.name);
-  });
-  test("Juli-Tag bevorzugt Kürbis nicht, auch wenn der Plan im Oktober begann", () => {
-    expect(withFixedRandom(() => pickMeal("2026-07-14", ctx({ month: 10 }), new Set(), [reis, kuerbis])?.name)).toBe(reis.name);
-  });
-});

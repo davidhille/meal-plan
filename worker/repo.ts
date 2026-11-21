@@ -111,7 +111,6 @@ export async function loadContext(sql: Sql, profileId: string): Promise<ScoringC
     meatMaxPerWeek: p.meat_max_per_week ?? null,
     dayRules: parseDayRules(p.day_rules),
     brotzeitPerWeek: Number(p.brotzeit_per_week) || 0,
-    month: new Date().getMonth() + 1,
     familyMembers: members as ScoringContext["familyMembers"],
     familyDislikes: p.family_dislikes || [],
     // NULL = nichts eingestellt: Standard-Regeln (siehe weekVariety.ts)
