@@ -44,6 +44,12 @@ Zurückspielen: Datei aus dem Bucket laden → Administration → Familie → *W
 **Tarif prüfen:** Cloudflare → *Workers & Pages* → `meal-plan` → *Metrics*: Anfragen/Tag (Free: 100.000) und Fehler „Too many subrequests“.
 Neon → *Billing*: Tarif und Verlauf (Free: 6 Stunden, 1 GB Speicher).
 
+## 3c. Confluence-Abgleich (GitHub, einmalig)
+
+Die GitHub Action `Confluence abgleichen` schreibt „Funktionen“ und „Änderungshistorie“ im Confluence-Space MP neu. Dafür unter
+GitHub → Repo → Settings → Secrets and variables → Actions zwei Secrets anlegen: `CONFLUENCE_EMAIL` (Atlassian-Konto) und
+`CONFLUENCE_API_TOKEN` (id.atlassian.com → Sicherheit → API-Token erstellen). Ohne sie läuft die Action durch, ohne etwas zu ändern.
+
 ## Lokal testen (optional)
 `.dev.vars.example` → `.dev.vars` kopieren, Werte eintragen, dann `npm install && npm run dev:worker`.
 

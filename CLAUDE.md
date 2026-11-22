@@ -45,6 +45,16 @@ Dieselben Prüfungen (typecheck, lint, test, build) laufen bei jedem PR in GitHu
 - Weiß diese Datei etwas nicht, das David voraussetzt: in früheren Chats des Claude-Projekts suchen (Chat-Suche), bevor man
   „geht nicht“ sagt.
 
+## Confluence (Space MP, davidhille.atlassian.net)
+
+- Zwei Seiten erzeugt `scripts/confluence/sync.ts` automatisch (GitHub Action `confluence.yml` bei jedem Push auf `main`, auch von Hand
+  startbar): „Funktionen (Benutzerhandbuch)“ ← `PROJEKTUEBERSICHT.md` (Seite wird überschrieben, nie dort von Hand ändern) und
+  „Änderungshistorie“ ← gemergte PRs. Der Markdown-Umsetzer steht in `scripts/confluence/markdown.ts` (getestet, nur das, was die Datei nutzt).
+  Ohne die Secrets `CONFLUENCE_EMAIL`/`CONFLUENCE_API_TOKEN` (GitHub → Settings → Secrets → Actions) tut der Lauf nichts. Lokal: `bun scripts/confluence/sync.ts --dry-run`.
+- Startseite, „Architektur & Technik“, „Datenbank & Migrationen“ und „Betrieb“ pflegt man von Hand (Atlassian-Werkzeuge in der Claude-Session;
+  vor dem Überschreiben mit `getConfluenceContent` als HTML lesen und gezielt per `edits` ändern, sonst gehen Panels verloren). Beim Abschluss
+  einer Aufgabe, die Module, Migrationen oder Betrieb ändert, diese Seiten mitziehen.
+
 ## Live prüfen
 
 - Die Claude-Cloud-Umgebung erreicht **weder Neon noch die Cloudflare-API noch miyummy.com** (der Proxy antwortet mit 403). Die
