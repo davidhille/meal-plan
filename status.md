@@ -1,6 +1,6 @@
 # Status – miyummy
 
-Stand: 21.11.2026 (21.11.2026). Diese Datei ist der Kurzüberblick „Wo stehen wir?“.
+Stand: 22.11.2026. Diese Datei ist der Kurzüberblick „Wo stehen wir?“.
 Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einrichtung: `SETUP_NEON_CLOUDFLARE.md`.
 
 ## Betrieb
@@ -11,6 +11,7 @@ Funktionen: `PROJEKTUEBERSICHT.md`. Arbeitsregeln und Technik: `CLAUDE.md`. Einr
 
 ## Zuletzt erledigt
 
+- **Confluence (22.11.):** alle sechs Seiten im Space MP auf den Stand #223/Migration 0043 gebracht; „Funktionen“ und „Änderungshistorie“ erzeugt jetzt `scripts/confluence/sync.ts` automatisch (Action `confluence.yml`). **Offen für David:** Secrets `CONFLUENCE_EMAIL` und `CONFLUENCE_API_TOKEN` in GitHub anlegen (`SETUP_NEON_CLOUDFLARE.md` 3c), dann einmal die Action von Hand starten.
 - **Warenkorb-Übertrag hakt ab (21.11.):** Nach „Übertragen“ in den Knuspr-/Picnic-Warenkorb werden die übertragenen Artikel auf der Einkaufsliste automatisch abgehakt (landen unter „erledigt“); Fehlgeschlagene bleiben offen. Noch nicht live geprüft.
 - **Regelarten Fleisch/Vegetarisch (21.11.):** In „Wie oft darf es vorkommen?“ gibt es in der Auswahl „Art des Gerichts“ (Fleisch, Vegetarisch, nach Zutaten gezählt) und die Kategorien; die alten Karten „Fleisch pro Woche“ (Ernährung) und „Vegetarisch pro Woche“ sind darin aufgegangen (Migration 0043 übernimmt eure Werte). Jetzt auch „höchstens 1× vegetarisch“ möglich. Noch nicht live geprüft.
 - **Mengen-Regeln übersichtlicher (21.11.):** Woche- und Monatsgrenze derselben Kategorie stehen in einer Karte (vorher zwei gleich aussehende Zeilen, wirkte doppelt). Noch nicht live geprüft.
